@@ -67,6 +67,7 @@
     activeRecStopper: null,
     recordingKind: null,
     resultTimers: [],
+    vaultDoorTimers: [],
     resultCounterRaf: null,
     confettiHandle: null,
     toastTimer: null
@@ -143,42 +144,29 @@
     }
   }
 
-  function emailAudioSound(sound, roleLabel) {
-    if (!sound || !sound.samples) return;
-    var Audio = root.TootApp && root.TootApp.Audio;
-    if (!Audio || typeof Audio.encodeWavBlob !== 'function') {
-      showToast('Audio encoder unavailable', true);
-      return;
-    }
-    var name = getSampleName(sound);
-    var filename = slugFilename(name) + '.wav';
-    var wavBlob = Audio.encodeWavBlob(sound.samples, sound.sampleRate || 44100);
-    var summary = TootLabs.Store.buildSingleAnalysisReportText(sound, roleLabel || 'FART RECORDING');
-
-    // Use native iOS/mobile share sheet with file attachment when supported
-    if (typeof File === 'function' && navigator.share && typeof navigator.canShare === 'function') {
-      try {
-        var file = new File([wavBlob], filename, { type: 'audio/wav' });
-        if (navigator.canShare({ files: [file] })) {
-          navigator
-            .share({
-              title: 'Toot Match — ' + name,
-              text: summary,
-              files: [file]
-            })
-            .catch(function () {});
-          return;
-        }
-      } catch (e) {}
-    }
-
-    // Desktop fallback: download WAV file + open pre-filled email draft
-    triggerBlobDownload(wavBlob, filename);
-    openMailDraft(
-      'Toot Match Audio: ' + name,
-      summary + '\n\n(Attach downloaded audio file "' + filename + '" to send.)'
-    );
-    showToast('Downloaded "' + filename + '" & opened email draft (attach file to send)');
+  function stitchComparisonAudio(soundA, soundB) {
+    if (!soundA || !soundA.samples) return soundB || null;
+    if (!soundB || !soundB.samples) return soundA;
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var sr = 44100;
+    var srA = soundA.sampleRate || sr;
+    var srB = soundB.sampleRate || sr;
+    var bufA = srA !== sr && DSP && typeof DSP.resampleAudio === 'function'
+      ? DSP.resampleAudio(soundA.samples, srA / sr, sr)
+      : soundA.samples;
+    var bufB = srB !== sr && DSP && typeof DSP.resampleAudio === 'function'
+      ? DSP.resampleAudio(soundB.samples, srB / sr, sr)
+      : soundB.samples;
+    var gap = Math.round(sr * 0.22);
+    var out = new Float32Array(bufA.length + gap + bufB.length);
+    out.set(bufA, 0);
+    out.set(bufB, bufA.length + gap);
+    return {
+      name: getSampleName(soundA) + '-vs-' + (soundB.name || 'guess'),
+      displayName: getSampleName(soundA) + ' vs ' + (soundB.name || 'Guess'),
+      sampleRate: sr,
+      samples: out
+    };
   }
 
   function buildPdfFromOpts(pdfOpts) {
@@ -202,17 +190,39 @@
     showToast('Saved ' + pdfRes.pageCount + '-page PDF "' + pdfRes.filename + '"');
   }
 
-  function emailAnalysisReport(subject, reportText, pdfOpts) {
+  function emailAnalysisReport(subject, reportText, pdfOpts, audioSound) {
+    var Audio = root.TootApp && root.TootApp.Audio;
     var pdfRes = pdfOpts ? buildPdfFromOpts(pdfOpts) : null;
-    if (pdfRes && pdfRes.blob && typeof File === 'function' && navigator.share && typeof navigator.canShare === 'function') {
+    var audioBlob = null;
+    var audioName = null;
+
+    if (audioSound && audioSound.samples && Audio && typeof Audio.encodeWavBlob === 'function') {
       try {
-        var pdfFile = new File([pdfRes.blob], pdfRes.filename, { type: 'application/pdf' });
-        if (navigator.canShare({ files: [pdfFile] })) {
+        audioName = slugFilename(getSampleName(audioSound)) + '.wav';
+        audioBlob = Audio.encodeWavBlob(audioSound.samples, audioSound.sampleRate || 44100);
+      } catch (e) {}
+    }
+
+    var shareFiles = [];
+    if (typeof File === 'function') {
+      try {
+        if (pdfRes && pdfRes.blob) {
+          shareFiles.push(new File([pdfRes.blob], pdfRes.filename, { type: 'application/pdf' }));
+        }
+        if (audioBlob && audioName) {
+          shareFiles.push(new File([audioBlob], audioName, { type: 'audio/wav' }));
+        }
+      } catch (e) {}
+    }
+
+    if (shareFiles.length > 0 && navigator.share && typeof navigator.canShare === 'function') {
+      try {
+        if (navigator.canShare({ files: shareFiles })) {
           navigator
             .share({
               title: subject,
               text: reportText || subject,
-              files: [pdfFile]
+              files: shareFiles
             })
             .catch(function () {});
           return;
@@ -221,16 +231,33 @@
     }
 
     var body = reportText || '';
+    var attachNames = [];
     if (pdfRes && pdfRes.blob) {
       triggerBlobDownload(pdfRes.blob, pdfRes.filename);
-      body = body + '\n\n(Attach downloaded multi-page PDF dossier "' + pdfRes.filename + '" to send.)';
+      attachNames.push(pdfRes.filename);
+    }
+    if (audioBlob && audioName) {
+      if (pdfRes && pdfRes.blob) {
+        var delayedBlob = audioBlob;
+        var delayedName = audioName;
+        setTimeout(function () {
+          triggerBlobDownload(delayedBlob, delayedName);
+        }, 180);
+      } else {
+        triggerBlobDownload(audioBlob, audioName);
+      }
+      attachNames.push(audioName);
+    }
+
+    if (attachNames.length > 0) {
+      body = body + '\n\n(Attach downloaded files to send: ' + attachNames.join(' + ') + ')';
     }
 
     copyTextQuiet(reportText || subject).then(function () {
       openMailDraft(subject, body);
       showToast(
-        pdfRes
-          ? 'Downloaded ' + pdfRes.pageCount + '-page PDF "' + pdfRes.filename + '" & opened email draft!'
+        attachNames.length > 0
+          ? 'Prepared ' + attachNames.join(' + ') + ' & opened email draft!'
           : 'Opened email draft & copied report to clipboard'
       );
     });
@@ -441,10 +468,69 @@
     }
   }
 
+  function clearVaultDoorTimers() {
+    for (var i = 0; i < state.vaultDoorTimers.length; i++) {
+      clearTimeout(state.vaultDoorTimers[i]);
+    }
+    state.vaultDoorTimers = [];
+  }
+
+  function dismissVaultDoorImmediate() {
+    clearVaultDoorTimers();
+    var chamber = $('vault-chamber');
+    var stage = $('vault-door-stage');
+    if (chamber) chamber.classList.remove('door-active');
+    if (stage) {
+      stage.classList.remove('sealed', 'opening');
+      stage.classList.add('opened');
+    }
+  }
+
+  function triggerVaultDoorOpen() {
+    clearVaultDoorTimers();
+    var chamber = $('vault-chamber');
+    var stage = $('vault-door-stage');
+    var countEl = $('vault-door-count');
+    var statusEl = $('vault-door-status');
+    if (!stage) return;
+
+    if (countEl) {
+      countEl.textContent = state.samples.length + (state.samples.length === 1 ? ' SPECIMEN' : ' SPECIMENS');
+    }
+    if (statusEl) {
+      statusEl.textContent = 'PRESSURE SEAL · DEPRESSURIZING…';
+    }
+    if (chamber) chamber.classList.add('door-active');
+
+    stage.classList.remove('opened', 'opening');
+    stage.classList.add('sealed');
+    try {
+      void stage.offsetWidth;
+    } catch (e) {}
+
+    var t1 = setTimeout(function () {
+      stage.classList.remove('sealed');
+      stage.classList.add('opening');
+      if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playVaultDoorOpen === 'function') {
+        TootLabs.AudioFx.playVaultDoorOpen();
+      }
+    }, 35);
+
+    var t2 = setTimeout(function () {
+      dismissVaultDoorImmediate();
+    }, 1220);
+
+    state.vaultDoorTimers.push(t1, t2);
+  }
+
   /* ==================== NAVIGATION ==================== */
   function showView(viewKey) {
-    if (state.view === 'result' && viewKey !== 'result') {
+    var prevView = state.view;
+    if (prevView === 'result' && viewKey !== 'result') {
       clearResultAnimations();
+    }
+    if (prevView === 'vault' && viewKey !== 'vault') {
+      dismissVaultDoorImmediate();
     }
     state.view = viewKey;
 
@@ -467,6 +553,10 @@
 
     if (typeof root.scrollTo === 'function') {
       root.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (viewKey === 'vault' && prevView !== 'vault' && prevView !== 'detail') {
+      triggerVaultDoorOpen();
     }
 
     if (typeof root.requestAnimationFrame === 'function') {
@@ -819,9 +909,6 @@
       '    <button type="button" class="labs-vc-btn vc-play" data-vc-act="play" data-vc-id="' + esc(s.id) + '">▶ Play</button>' +
       '    <button type="button" class="labs-vc-btn vc-analyze" data-vc-act="analyze" data-vc-id="' + esc(s.id) + '">🧪 Analyze</button>' +
       '    <button type="button" class="labs-vc-btn vc-guess" data-vc-act="guess" data-vc-id="' + esc(s.id) + '">🎯 Guess This Fart</button>' +
-      '    <button type="button" class="labs-vc-btn" data-vc-act="share" data-vc-id="' + esc(s.id) + '">📤 Share</button>' +
-      '    <button type="button" class="labs-vc-btn" data-vc-act="email_mp3" data-vc-id="' + esc(s.id) + '">🎵 Email MP3</button>' +
-      '    <button type="button" class="labs-vc-btn" data-vc-act="email_report" data-vc-id="' + esc(s.id) + '">📧 Email Analysis</button>' +
       '  </div>' +
       '</article>'
     );
@@ -843,20 +930,6 @@
           openFartnalysis('original', sample.id, null);
         } else if (act === 'guess') {
           openGuessMode(sample.id);
-        } else if (act === 'share') {
-          shareTextOrAudio(
-            'Toot Match — ' + getSampleName(sample),
-            TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'),
-            sample
-          );
-        } else if (act === 'email_mp3') {
-          emailAudioSound(sample, 'SAVED FART');
-        } else if (act === 'email_report') {
-          emailAnalysisReport(
-            'Fartnalysis Report: ' + getSampleName(sample),
-            TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'),
-            { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
-          );
         }
       });
     });
@@ -1502,8 +1575,8 @@
           state.groupSortDir = nextSortDir === 'desc' ? 'desc' : 'asc';
           renderFartnalysisView();
         },
-        onEmailAudio: function (g) {
-          emailAudioSound(g, 'MULTI-FART MEGAMIX');
+        onShare: function (g) {
+          shareTextOrAudio('Multi-Fart Megamix Analysis', TootLabs.Store.buildGroupAnalysisReportText(g), g);
         },
         onDownloadPdf: function (g, specCanvases) {
           downloadAnalysisPdf({ mode: 'group', groupObj: g, specCanvases: specCanvases });
@@ -1512,7 +1585,8 @@
           emailAnalysisReport(
             'Multi-Fart Megamix Analysis',
             TootLabs.Store.buildGroupAnalysisReportText(g),
-            { mode: 'group', groupObj: g, specCanvases: specCanvases }
+            { mode: 'group', groupObj: g, specCanvases: specCanvases },
+            g
           );
         }
       });
@@ -1541,9 +1615,6 @@
         onShare: function (s) {
           shareTextOrAudio('Fartnalysis: ' + getSampleName(s), TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'), s);
         },
-        onEmailAudio: function (s) {
-          emailAudioSound(s, 'ORIGINAL FART');
-        },
         onDownloadPdf: function (s, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases });
         },
@@ -1551,7 +1622,8 @@
           emailAnalysisReport(
             'Fartnalysis Report: ' + getSampleName(s),
             TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'),
-            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases }
+            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases },
+            s
           );
         }
       });
@@ -1581,9 +1653,6 @@
         onShare: function (g) {
           shareTextOrAudio('Guess Analysis: ' + g.name, TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'), g);
         },
-        onEmailAudio: function (g) {
-          emailAudioSound(g, 'GUESS RECORDING');
-        },
         onDownloadPdf: function (g, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases });
         },
@@ -1591,14 +1660,15 @@
           emailAnalysisReport(
             'Guess Fartnalysis: ' + g.name,
             TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'),
-            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases }
+            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases },
+            g
           );
         }
       });
       return;
     }
 
-    // 3. Comparison Analysis (full 12 circular gauges + 9 Forensics drawers + side-by-side 3D spectrograms)
+    // 3. Comparison Analysis (9 Forensics suites + side-by-side 3D spectrograms)
     emptyEl.classList.add('hidden');
     state.fnController = TootLabs.Fartnalysis.renderDashboard(mountEl, {
       soundA: sample,
@@ -1610,7 +1680,7 @@
         shareTextOrAudio(
           'Toot Match Comparison: ' + exact.toFixed(1) + '%',
           TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
-          null
+          stitchComparisonAudio(sA, sB)
         );
       },
       onDownloadPdf: function (sA, sB, r, exact, specCanvases) {
@@ -1620,7 +1690,8 @@
         emailAnalysisReport(
           'Toot Match Comparison: ' + sB.name + ' vs ' + getSampleName(sA),
           TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
-          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases }
+          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases },
+          stitchComparisonAudio(sA, sB)
         );
       }
     });
@@ -1749,10 +1820,18 @@
       showView('vault');
     });
 
-    // Vault View Buttons
+    // Vault View Buttons & Airlock Door
     $('btn-vault-record').addEventListener('click', startQuickRecordFart);
     $('btn-vault-megamix').addEventListener('click', function () {
       openFartnalysis('group', null, null);
+    });
+    $('btn-vault-reseal').addEventListener('click', triggerVaultDoorOpen);
+    $('vault-door-stage').addEventListener('click', dismissVaultDoorImmediate);
+    $('vault-door-stage').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        dismissVaultDoorImmediate();
+      }
     });
 
     // Detail View Buttons
@@ -1781,17 +1860,14 @@
         shareTextOrAudio('Toot Match — ' + getSampleName(sample), TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'), sample);
       }
     });
-    $('btn-detail-email-mp3').addEventListener('click', function () {
-      var sample = getSampleById(state.detailSampleId);
-      if (sample) emailAudioSound(sample, 'SAVED FART');
-    });
     $('btn-detail-email-analysis').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
       if (sample) {
         emailAnalysisReport(
           'Fartnalysis Report: ' + getSampleName(sample),
           TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'),
-          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
+          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' },
+          sample
         );
       }
     });
@@ -1887,7 +1963,8 @@
       emailAnalysisReport(
         'Toot Match Referee Report: ' + o.attempt.name,
         TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore),
-        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result }
+        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result },
+        stitchComparisonAudio(o.targetSound, o.attempt)
       );
     });
     $('btn-res-share').addEventListener('click', function () {

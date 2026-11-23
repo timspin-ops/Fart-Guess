@@ -2907,3 +2907,257 @@ select {
     min-width: 60px;
   }
 }
+
+/* Airtight Sliding Vault Door & Subtle Escaping Green Steam */
+.labs-vault-chamber {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.labs-vault-chamber.door-active {
+  min-height: 300px;
+}
+
+.labs-vault-door-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1.5px solid rgba(74, 222, 128, 0.35);
+  box-shadow: inset 0 0 42px rgba(0, 0, 0, 0.78);
+  cursor: pointer;
+}
+
+.labs-vault-door-stage.opened {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.24s ease, visibility 0.24s ease;
+}
+
+.labs-vdoor-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 14px;
+  background: linear-gradient(145deg, #1E293B 0%, #0F172A 55%, #090E1A 100%);
+  will-change: transform;
+  transition: transform 0.86s cubic-bezier(0.22, 1, 0.36, 1) 0.16s;
+}
+
+.labs-vdoor-left {
+  border-right: 3px solid rgba(15, 23, 42, 0.96);
+  box-shadow: inset -6px 0 14px rgba(34, 197, 94, 0.12);
+}
+
+.labs-vdoor-right {
+  border-left: 3px solid rgba(55, 65, 81, 0.9);
+  box-shadow: inset 6px 0 14px rgba(34, 197, 94, 0.12);
+}
+
+.labs-vault-door-stage.opening .labs-vdoor-left {
+  transform: translateX(-104%);
+}
+
+.labs-vault-door-stage.opening .labs-vdoor-right {
+  transform: translateX(104%);
+}
+
+.labs-vdoor-hazard {
+  height: 7px;
+  border-radius: 4px;
+  opacity: 0.72;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(250, 204, 21, 0.75) 0 8px,
+    rgba(17, 24, 39, 0.9) 8px 16px
+  );
+}
+
+.labs-vdoor-rivets {
+  position: absolute;
+  top: 30px;
+  bottom: 30px;
+  width: 6px;
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.42) 1.5px, transparent 2px);
+  background-size: 6px 22px;
+}
+
+.labs-vdoor-left .labs-vdoor-rivets {
+  right: 9px;
+}
+
+.labs-vdoor-right .labs-vdoor-rivets {
+  left: 9px;
+}
+
+.labs-vdoor-stencil {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 12px 10px;
+  z-index: 2;
+}
+
+.labs-vdoor-stencil-right {
+  text-align: right;
+  align-items: flex-end;
+}
+
+.labs-vdoor-tag {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #86EFAC;
+}
+
+.labs-vdoor-title,
+.labs-vdoor-count {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.labs-vdoor-psi {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-sec);
+}
+
+.labs-vdoor-wheel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 66px;
+  height: 66px;
+  margin-top: -33px;
+  margin-left: -33px;
+  border-radius: 50%;
+  border: 4px solid #64748B;
+  background: radial-gradient(circle at 35% 35%, #334155, #0F172A);
+  box-shadow: 0 0 22px rgba(0, 0, 0, 0.72), inset 0 0 8px rgba(34, 197, 94, 0.25);
+  z-index: 4;
+  transition: transform 0.36s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease 0.25s;
+}
+
+.labs-vault-door-stage.opening .labs-vdoor-wheel {
+  transform: rotate(-120deg) scale(0.92);
+  opacity: 0;
+}
+
+.labs-vdoor-wheel-hub {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  border-radius: 50%;
+  background: #22C55E;
+  border: 2px solid #0B1222;
+}
+
+.labs-vdoor-spoke {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 56px;
+  height: 4px;
+  margin-top: -2px;
+  margin-left: -28px;
+  background: #64748B;
+  border-radius: 2px;
+}
+
+.labs-vdoor-spoke.s2 {
+  transform: rotate(60deg);
+}
+
+.labs-vdoor-spoke.s3 {
+  transform: rotate(120deg);
+}
+
+.labs-vdoor-steam {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  overflow: hidden;
+}
+
+.labs-steam-wisp {
+  position: absolute;
+  left: 50%;
+  width: 78px;
+  height: 54px;
+  margin-left: -39px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.42) 0%, rgba(163, 230, 53, 0.16) 45%, rgba(34, 197, 94, 0) 76%);
+  filter: blur(10px);
+  opacity: 0;
+}
+
+.labs-steam-wisp.w1 { top: 18%; }
+.labs-steam-wisp.w2 { top: 36%; }
+.labs-steam-wisp.w3 { top: 58%; }
+.labs-steam-wisp.w4 { top: 26%; }
+.labs-steam-wisp.w5 { top: 48%; }
+.labs-steam-wisp.w6 { top: 72%; }
+
+.labs-vault-door-stage.opening .labs-steam-wisp.w1,
+.labs-vault-door-stage.opening .labs-steam-wisp.w2,
+.labs-vault-door-stage.opening .labs-steam-wisp.w3 {
+  animation: vaultSteamLeft 1.05s ease-out forwards;
+}
+
+.labs-vault-door-stage.opening .labs-steam-wisp.w4,
+.labs-vault-door-stage.opening .labs-steam-wisp.w5,
+.labs-vault-door-stage.opening .labs-steam-wisp.w6 {
+  animation: vaultSteamRight 1.05s ease-out forwards;
+}
+
+.labs-vault-door-stage.opening .labs-steam-wisp.w2,
+.labs-vault-door-stage.opening .labs-steam-wisp.w5 {
+  animation-delay: 0.08s;
+}
+
+.labs-vault-door-stage.opening .labs-steam-wisp.w3,
+.labs-vault-door-stage.opening .labs-steam-wisp.w6 {
+  animation-delay: 0.15s;
+}
+
+@keyframes vaultSteamLeft {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  20% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-115px, -26px) scale(2.05);
+  }
+}
+
+@keyframes vaultSteamRight {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  20% {
+    opacity: 0.65;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(115px, -24px) scale(2.05);
+  }
+}

@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261123c" />
-  <script defer src="../js/dsp.js?v=20261123c"></script>
-  <script defer src="../js/audioEngine.js?v=20261123c"></script>
-  <script defer src="../js/storage.js?v=20261123c"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261123c"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261123c"></script>
-  <script defer src="js/labsStore.js?v=20261123c"></script>
-  <script defer src="js/labsAudioFx.js?v=20261123c"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261123c"></script>
-  <script defer src="js/labsPdfExport.js?v=20261123c"></script>
-  <script defer src="js/labsApp.js?v=20261123c"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261123d" />
+  <script defer src="../js/dsp.js?v=20261123d"></script>
+  <script defer src="../js/audioEngine.js?v=20261123d"></script>
+  <script defer src="../js/storage.js?v=20261123d"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261123d"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261123d"></script>
+  <script defer src="js/labsStore.js?v=20261123d"></script>
+  <script defer src="js/labsAudioFx.js?v=20261123d"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261123d"></script>
+  <script defer src="js/labsPdfExport.js?v=20261123d"></script>
+  <script defer src="js/labsApp.js?v=20261123d"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -172,10 +172,50 @@
           <div class="labs-vault-top-btns">
             <button type="button" id="btn-vault-record" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
             <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
+            <button type="button" id="btn-vault-reseal" class="labs-btn-ghost labs-btn-sm" title="Close and re-open Vault airlock">🔒 Re-Seal</button>
           </div>
         </div>
 
-        <div id="vault-grid" class="labs-vault-grid"></div>
+        <div id="vault-chamber" class="labs-vault-chamber">
+          <div id="vault-grid" class="labs-vault-grid"></div>
+
+          <div id="vault-door-stage" class="labs-vault-door-stage opened" role="button" tabindex="0" aria-label="Pressurized Vault Door — tap to open immediately">
+            <div class="labs-vdoor-panel labs-vdoor-left">
+              <div class="labs-vdoor-hazard"></div>
+              <div class="labs-vdoor-stencil">
+                <span class="labs-vdoor-tag">AIRTIGHT CONTAINMENT</span>
+                <strong class="labs-vdoor-title">BIO-ACOUSTIC VAULT</strong>
+                <span class="labs-vdoor-psi" id="vault-door-status">PRESSURE SEAL · 14.7 PSI</span>
+              </div>
+              <div class="labs-vdoor-hazard"></div>
+              <div class="labs-vdoor-rivets"></div>
+            </div>
+            <div class="labs-vdoor-panel labs-vdoor-right">
+              <div class="labs-vdoor-hazard"></div>
+              <div class="labs-vdoor-stencil labs-vdoor-stencil-right">
+                <span class="labs-vdoor-tag">HERMETIC LOCK</span>
+                <strong class="labs-vdoor-count" id="vault-door-count">0 SPECIMENS</strong>
+                <span class="labs-vdoor-psi">VENTING SEAL…</span>
+              </div>
+              <div class="labs-vdoor-hazard"></div>
+              <div class="labs-vdoor-rivets"></div>
+            </div>
+            <div class="labs-vdoor-wheel" aria-hidden="true">
+              <div class="labs-vdoor-wheel-hub"></div>
+              <span class="labs-vdoor-spoke s1"></span>
+              <span class="labs-vdoor-spoke s2"></span>
+              <span class="labs-vdoor-spoke s3"></span>
+            </div>
+            <div class="labs-vdoor-steam" aria-hidden="true">
+              <span class="labs-steam-wisp w1"></span>
+              <span class="labs-steam-wisp w2"></span>
+              <span class="labs-steam-wisp w3"></span>
+              <span class="labs-steam-wisp w4"></span>
+              <span class="labs-steam-wisp w5"></span>
+              <span class="labs-steam-wisp w6"></span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ==================== SUB-VIEW: SAMPLE DETAIL ==================== -->
@@ -228,8 +268,7 @@
           <div class="labs-detail-sec-actions">
             <button type="button" id="btn-detail-analyze" class="labs-btn-ghost labs-btn-sm">🧪 Analyze Fart</button>
             <button type="button" id="btn-detail-share" class="labs-btn-ghost labs-btn-sm">📤 Share</button>
-            <button type="button" id="btn-detail-email-mp3" class="labs-btn-ghost labs-btn-sm">🎵 Email MP3</button>
-            <button type="button" id="btn-detail-email-analysis" class="labs-btn-ghost labs-btn-sm">📧 Email Analysis</button>
+            <button type="button" id="btn-detail-email-analysis" class="labs-btn-ghost labs-btn-sm">📧 Email (Audio + PDF)</button>
             <button type="button" id="btn-detail-rename" class="labs-btn-ghost labs-btn-sm">✏️ Rename</button>
             <button type="button" id="btn-detail-delete" class="labs-btn-danger labs-btn-sm">🗑️ Delete</button>
           </div>
@@ -418,7 +457,7 @@
           <div class="labs-result-sec-actions">
             <button type="button" id="btn-res-leaderboard" class="labs-btn-ghost labs-btn-sm">🏆 Leaderboard</button>
             <button type="button" id="btn-res-replay" class="labs-btn-ghost labs-btn-sm">▶ Replay A → B</button>
-            <button type="button" id="btn-res-email" class="labs-btn-ghost labs-btn-sm">📧 Email Report</button>
+            <button type="button" id="btn-res-email" class="labs-btn-ghost labs-btn-sm">📧 Email (Audio + PDF)</button>
             <button type="button" id="btn-res-share" class="labs-btn-ghost labs-btn-sm">📤 Share</button>
           </div>
         </div>

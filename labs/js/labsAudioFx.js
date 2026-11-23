@@ -74,6 +74,93 @@
       });
   }
 
+  function playVaultDoorOpen() {
+    return getAudioCtx()
+      .then(function (ctx) {
+        var t0 = ctx.currentTime;
+
+        // 1. Airlock latch clunk (0.00s - 0.11s)
+        var latchOsc = ctx.createOscillator();
+        var latchFilter = ctx.createBiquadFilter();
+        var latchGain = ctx.createGain();
+        latchOsc.type = 'triangle';
+        latchOsc.frequency.setValueAtTime(145, t0);
+        latchOsc.frequency.exponentialRampToValueAtTime(48, t0 + 0.11);
+        latchFilter.type = 'lowpass';
+        latchFilter.frequency.setValueAtTime(420, t0);
+        latchGain.gain.setValueAtTime(0.0001, t0);
+        latchGain.gain.linearRampToValueAtTime(0.14, t0 + 0.012);
+        latchGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+        latchOsc.connect(latchFilter);
+        latchFilter.connect(latchGain);
+        latchGain.connect(ctx.destination);
+        latchOsc.start(t0);
+        latchOsc.stop(t0 + 0.14);
+
+        // 2. Pneumatic pressure release "shhh" (0.05s - 0.92s)
+        var noiseDur = 0.95;
+        var noiseLen = Math.max(1, Math.floor(ctx.sampleRate * noiseDur));
+        var noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate);
+        var chan = noiseBuf.getChannelData(0);
+        for (var i = 0; i < noiseLen; i++) {
+          chan[i] = Math.random() * 2 - 1;
+        }
+
+        var noiseSrc = ctx.createBufferSource();
+        noiseSrc.buffer = noiseBuf;
+        var steamFilter = ctx.createBiquadFilter();
+        steamFilter.type = 'bandpass';
+        steamFilter.Q.setValueAtTime(1.65, t0 + 0.05);
+        steamFilter.frequency.setValueAtTime(3600, t0 + 0.05);
+        steamFilter.frequency.exponentialRampToValueAtTime(1250, t0 + 0.92);
+
+        var steamGain = ctx.createGain();
+        steamGain.gain.setValueAtTime(0.0001, t0 + 0.05);
+        steamGain.gain.linearRampToValueAtTime(0.15, t0 + 0.095);
+        steamGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.90);
+
+        noiseSrc.connect(steamFilter);
+        steamFilter.connect(steamGain);
+        steamGain.connect(ctx.destination);
+
+        // Faint high-frequency air tail
+        var airSrc = ctx.createBufferSource();
+        airSrc.buffer = noiseBuf;
+        var airFilter = ctx.createBiquadFilter();
+        airFilter.type = 'highpass';
+        airFilter.frequency.setValueAtTime(1800, t0 + 0.05);
+        var airGain = ctx.createGain();
+        airGain.gain.setValueAtTime(0.0001, t0 + 0.05);
+        airGain.gain.linearRampToValueAtTime(0.04, t0 + 0.10);
+        airGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.92);
+        airSrc.connect(airFilter);
+        airFilter.connect(airGain);
+        airGain.connect(ctx.destination);
+
+        noiseSrc.start(t0 + 0.05);
+        noiseSrc.stop(t0 + 0.95);
+        airSrc.start(t0 + 0.05);
+        airSrc.stop(t0 + 0.95);
+
+        // 3. Heavy sliding door hum (0.16s - 0.88s)
+        var slideOsc = ctx.createOscillator();
+        var slideGain = ctx.createGain();
+        slideOsc.type = 'sine';
+        slideOsc.frequency.setValueAtTime(62, t0 + 0.16);
+        slideOsc.frequency.exponentialRampToValueAtTime(46, t0 + 0.88);
+        slideGain.gain.setValueAtTime(0.0001, t0 + 0.16);
+        slideGain.gain.linearRampToValueAtTime(0.035, t0 + 0.25);
+        slideGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.88);
+        slideOsc.connect(slideGain);
+        slideGain.connect(ctx.destination);
+        slideOsc.start(t0 + 0.16);
+        slideOsc.stop(t0 + 0.90);
+      })
+      .catch(function () {
+        // Ignore locked autoplay contexts gracefully
+      });
+  }
+
   function launchConfetti(canvasEl) {
     if (!canvasEl || typeof canvasEl.getContext !== 'function') {
       return { stop: function () {} };
@@ -188,6 +275,7 @@
   TootLabs.AudioFx = {
     playBell: playBell,
     playLegendaryFinale: playLegendaryFinale,
+    playVaultDoorOpen: playVaultDoorOpen,
     launchConfetti: launchConfetti
   };
 })(typeof window !== 'undefined' ? window : globalThis);

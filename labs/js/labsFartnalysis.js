@@ -397,7 +397,7 @@
         ? '<div class="labs-fn-header-btns">' +
           (opts.onShare ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-share">📤 Share</button>' : '') +
           (opts.onDownloadPdf ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>' : '') +
-          (opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-email">📧 Email Analysis</button>' : '') +
+          (opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-email">📧 Email (Audio + PDF)</button>' : '') +
           '</div>'
         : '');
 
@@ -2066,9 +2066,8 @@
       '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play</button>' +
       compareBtnHtml +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-share">📤 Share</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-email-audio">🎵 Email MP3</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>' +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-email-report">📧 Email Analysis</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-email-report">📧 Email (Audio + PDF)</button>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       '      <button type="button" class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</button>' +
@@ -2295,12 +2294,6 @@
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
         if (opts.onShare) opts.onShare(sound);
-      });
-    }
-    var emailAudioBtn = mountEl.querySelector('.labs-s-email-audio');
-    if (emailAudioBtn) {
-      emailAudioBtn.addEventListener('click', function () {
-        if (opts.onEmailAudio) opts.onEmailAudio(sound);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-s-pdf');
@@ -2599,9 +2592,9 @@
       '    <div class="labs-fn-single-actions">' +
       '      <button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-g-play">▶ Play Combined Track</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-stop">⏹ Stop</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-email-audio">🎵 Email MP3</button>' +
+      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-share">📤 Share</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email Analysis</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email (Audio + PDF)</button>' +
       '    </div>' +
       '    <div class="labs-sort-bar">' +
       '      <label class="labs-sort-field" for="' + uid + 'sortby">' +
@@ -2729,10 +2722,10 @@
       });
     }
 
-    var emailAudioBtn = mountEl.querySelector('.labs-g-email-audio');
-    if (emailAudioBtn) {
-      emailAudioBtn.addEventListener('click', function () {
-        if (opts.onEmailAudio) opts.onEmailAudio(g);
+    var shareGrpBtn = mountEl.querySelector('.labs-g-share');
+    if (shareGrpBtn) {
+      shareGrpBtn.addEventListener('click', function () {
+        if (opts.onShare) opts.onShare(g);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-g-pdf');
