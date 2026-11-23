@@ -333,9 +333,10 @@
       : '';
 
     var headerBtnsHtml =
-      (opts.onEmailAnalysis || opts.onShare
+      (opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
         ? '<div class="labs-fn-header-btns">' +
           (opts.onShare ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-share">📤 Share</button>' : '') +
+          (opts.onDownloadPdf ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>' : '') +
           (opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-email">📧 Email Analysis</button>' : '') +
           '</div>'
         : '');
@@ -668,10 +669,16 @@
         opts.onShare(soundA, soundB, result, exactScore);
       });
     }
+    var cmpPdfBtn = mountEl.querySelector('.labs-cmp-pdf');
+    if (cmpPdfBtn && opts.onDownloadPdf) {
+      cmpPdfBtn.addEventListener('click', function () {
+        opts.onDownloadPdf(soundA, soundB, result, exactScore, [canvasA, canvasB]);
+      });
+    }
     var cmpEmailBtn = mountEl.querySelector('.labs-cmp-email');
     if (cmpEmailBtn && opts.onEmailAnalysis) {
       cmpEmailBtn.addEventListener('click', function () {
-        opts.onEmailAnalysis(soundA, soundB, result, exactScore);
+        opts.onEmailAnalysis(soundA, soundB, result, exactScore, [canvasA, canvasB]);
       });
     }
 
@@ -698,20 +705,35 @@
   }
 
   /* ==================== SHARED CANVAS 2D HELPERS ==================== */
-  function setupDarkPlot(canvas, minH) {
-    if (!canvas) return null;
-    var rect = canvas.getBoundingClientRect();
-    var w = rect && rect.width > 20 ? rect.width : 320;
-    var h = rect && rect.height > 20 ? rect.height : minH || 195;
-    var dpr = Math.min(2, root.devicePixelRatio || 1);
-    var tw = Math.round(w * dpr);
-    var th = Math.round(h * dpr);
-    if (canvas.width !== tw || canvas.height !== th) {
-      canvas.width = tw;
-      canvas.height = th;
+  function setupDarkPlot(target, minH) {
+    if (!target) return null;
+    var ctx, w, h, saved = false;
+    if (target.ctx && typeof target.w === 'number' && typeof target.h === 'number') {
+      ctx = target.ctx;
+      w = target.w;
+      h = target.h;
+      ctx.save();
+      ctx.translate(target.x || 0, target.y || 0);
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+      saved = true;
+    } else {
+      var canvas = target;
+      var rect = typeof canvas.getBoundingClientRect === 'function' ? canvas.getBoundingClientRect() : null;
+      w = rect && rect.width > 20 ? rect.width : 320;
+      h = rect && rect.height > 20 ? rect.height : minH || 195;
+      var dpr = Math.min(2, root.devicePixelRatio || 1);
+      var tw = Math.round(w * dpr);
+      var th = Math.round(h * dpr);
+      if (canvas.width !== tw || canvas.height !== th) {
+        canvas.width = tw;
+        canvas.height = th;
+      }
+      ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    var ctx = canvas.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     ctx.fillStyle = '#0B1222';
     ctx.fillRect(0, 0, w, h);
 
@@ -724,15 +746,53 @@
       ctx.lineTo(w, gy);
       ctx.stroke();
     }
-    return { ctx: ctx, w: w, h: h };
+    return { ctx: ctx, w: w, h: h, saved: saved };
   }
 
-  function renderGaugeCardsHtml(gauges) {
+  function finishDarkPlot(p) {
+    if (p && p.saved) {
+      p.ctx.restore();
+    }
+  }
+
+  function renderGaugeCardsHtml(gauges, clickableAttr) {
     var rGauge = 34;
     var cGauge = 2 * Math.PI * rGauge;
     return gauges
       .map(function (g) {
         var offset = cGauge * (1 - clamp(safeNum(g.score, 0), 0, 100) / 100);
+        if (clickableAttr) {
+          return (
+            '<button type="button" class="labs-gauge-card" ' +
+            clickableAttr +
+            '="' +
+            esc(g.id) +
+            '">' +
+            '  <div class="labs-gauge-ring-wrap">' +
+            '    <svg class="labs-gauge-svg" viewBox="0 0 84 84" aria-hidden="true">' +
+            '      <circle class="labs-gauge-track" cx="42" cy="42" r="' + rGauge + '"></circle>' +
+            '      <circle class="labs-gauge-fill" data-target-offset="' +
+            offset.toFixed(2) +
+            '" cx="42" cy="42" r="' +
+            rGauge +
+            '" stroke="' +
+            g.color +
+            '" stroke-dasharray="' +
+            cGauge.toFixed(2) +
+            '" stroke-dashoffset="' +
+            cGauge.toFixed(2) +
+            '"></circle>' +
+            '    </svg>' +
+            '    <div class="labs-gauge-center">' +
+            '      <span class="labs-gauge-num" style="color:' + g.color + '">' + g.score + '%</span>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="labs-gauge-title">' + esc(g.title) + '</div>' +
+            '  <div class="labs-gauge-sub">' + esc(g.sub) + '</div>' +
+            '  <span class="labs-status-pill labs-tone-' + esc(g.tone) + '">' + esc(g.status) + '</span>' +
+            '</button>'
+          );
+        }
         return (
           '<div class="labs-gauge-card labs-gauge-static">' +
           '  <div class="labs-gauge-ring-wrap">' +
@@ -775,9 +835,165 @@
     }
   }
 
-  function drawSpectrumPlot(canvas, feat, accent) {
-    var p = setupDarkPlot(canvas, 195);
-    if (!p || !feat || !feat.avgSpectrum) return;
+  /* ==================== ON-DEVICE ML CLASSIFIER ==================== */
+  var ML_PROTOTYPES = [
+    {
+      name: 'Sub-Bass Brass',
+      emoji: '🎺',
+      color: '#60A5FA',
+      pitchLog: Math.log2(82),
+      flatness: 0.16,
+      modDepth: 0.25,
+      subShare: 0.56,
+      crest: 0.52,
+      wetness: 0.25,
+      description: 'Low-frequency brass resonance anchored below 120 Hz with deep room-coupling bass.'
+    },
+    {
+      name: 'High-Pressure Squeaker',
+      emoji: '🎈',
+      color: '#FACC15',
+      pitchLog: Math.log2(340),
+      flatness: 0.22,
+      modDepth: 0.22,
+      subShare: 0.14,
+      crest: 0.55,
+      wetness: 0.22,
+      description: 'Pinched aperture oscillation generating elevated pitch stability above 220 Hz.'
+    },
+    {
+      name: 'Staccato Sputterer',
+      emoji: '🛵',
+      color: '#F97316',
+      pitchLog: Math.log2(145),
+      flatness: 0.30,
+      modDepth: 0.68,
+      subShare: 0.35,
+      crest: 0.65,
+      wetness: 0.48,
+      description: 'Multi-burst oscillating valve event driven by strong 8–30 Hz amplitude flutter.'
+    },
+    {
+      name: 'Stealth Airband',
+      emoji: '💨',
+      color: '#9CA3AF',
+      pitchLog: Math.log2(260),
+      flatness: 0.62,
+      modDepth: 0.16,
+      subShare: 0.16,
+      crest: 0.28,
+      wetness: 0.16,
+      description: 'High spectral flatness turbulent airstream engineered for plausible office deniability.'
+    },
+    {
+      name: 'Wet Squelch Event',
+      emoji: '💦',
+      color: '#8B5CF6',
+      pitchLog: Math.log2(135),
+      flatness: 0.34,
+      modDepth: 0.55,
+      subShare: 0.32,
+      crest: 0.48,
+      wetness: 0.78,
+      description: 'Elevated mid-band spectral flux and rapid transient micro-gurgling topology.'
+    },
+    {
+      name: 'Classic Mid-Rumble',
+      emoji: '⚡',
+      color: '#22C55E',
+      pitchLog: Math.log2(150),
+      flatness: 0.25,
+      modDepth: 0.32,
+      subShare: 0.40,
+      crest: 0.54,
+      wetness: 0.34,
+      description: 'Balanced midrange reed timbre displaying textbook acoustic equilibrium.'
+    }
+  ];
+
+  function classifyAcousticProfile(feat, bonus) {
+    feat = feat || {};
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    if (!bonus && Forensics && typeof Forensics.computeBonusMetrics === 'function') {
+      bonus = Forensics.computeBonusMetrics(feat, feat);
+    }
+
+    var effHz =
+      feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? feat.medianPitchHz
+        : clamp(safeNum(feat.spectralCentroidHz, 220), 50, 2200);
+    var pLog = Math.log2(clamp(effHz, 45, 1600));
+    var flat = clamp(safeNum(feat.spectralFlatness, 0.28), 0, 1);
+    var mod = clamp(safeNum(feat.modDepth, 0.25), 0, 1.2);
+    var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
+    var subShare = clamp(safeNum(bp[0], 0.25) + safeNum(bp[1], 0.25) * 0.45, 0, 1);
+    var crest = clamp(safeNum(feat.crestFactorDb, 8) / 18, 0, 1);
+    var wetness = bonus ? clamp(safeNum(bonus.wetness.wetA, 28) / 100, 0, 1) : clamp(safeNum(feat.spectralFlux, 0.08) * 3, 0, 1);
+
+    var rawWeights = [];
+    var sumW = 0;
+    for (var i = 0; i < ML_PROTOTYPES.length; i++) {
+      var pr = ML_PROTOTYPES[i];
+      var dPitch = Math.abs(pLog - pr.pitchLog) / 1.15;
+      var dFlat = Math.abs(flat - pr.flatness) / 0.28;
+      var dMod = Math.abs(mod - pr.modDepth) / 0.32;
+      var dSub = Math.abs(subShare - pr.subShare) / 0.28;
+      var dCrest = Math.abs(crest - pr.crest) / 0.32;
+      var dWet = Math.abs(wetness - pr.wetness) / 0.30;
+      var dist = dPitch * 0.26 + dFlat * 0.18 + dMod * 0.18 + dSub * 0.14 + dCrest * 0.10 + dWet * 0.14;
+      var w = Math.exp(-dist / 0.55);
+      rawWeights.push(w);
+      sumW += w;
+    }
+
+    var classes = ML_PROTOTYPES.map(function (pr, idx) {
+      var prob = sumW > 0 ? Math.round((rawWeights[idx] / sumW) * 100) : Math.round(100 / ML_PROTOTYPES.length);
+      return {
+        name: pr.name,
+        emoji: pr.emoji,
+        color: pr.color,
+        prob: prob,
+        description: pr.description
+      };
+    });
+
+    classes.sort(function (a, b) {
+      return b.prob - a.prob;
+    });
+
+    // Ensure rounded probabilities sum cleanly to 100
+    var totalP = classes.reduce(function (acc, c) { return acc + c.prob; }, 0);
+    if (classes.length > 0 && totalP !== 100) {
+      classes[0].prob = clamp(classes[0].prob + (100 - totalP), 1, 99);
+    }
+
+    var topClass = classes[0];
+    var runnerUp = classes[1] || classes[0];
+
+    return {
+      classes: classes,
+      topClass: topClass,
+      runnerUp: runnerUp,
+      confidence: topClass ? topClass.prob : 50,
+      featureVector: {
+        pitchHz: Math.round(effHz),
+        centroidHz: Math.round(safeNum(feat.spectralCentroidHz, 220)),
+        flatnessPct: Math.round(flat * 100),
+        modDepthPct: Math.round(mod * 100),
+        bursts: feat.burstCount || 1,
+        subBandPct: Math.round(safeNum(bp[0], 0) * 100),
+        crestDb: Number(safeNum(feat.crestFactorDb, 0).toFixed(1)),
+        wetnessPct: Math.round(wetness * 100)
+      },
+      methodologyNote:
+        'Uses a deterministic 22-dimension DSP feature vector (13 MFCCs + pitch, flatness, sub-bass ratio, modulation depth, crest factor, and spectral flux) compared against 6 calibrated archetypes via temperature-scaled softmax.'
+    };
+  }
+
+  /* ==================== REUSABLE SINGLE & GROUP 2D CHART PLOTS ==================== */
+  function drawSpectrumPlot(target, feat, accent) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat || !feat.avgSpectrum) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
     var pad = { l: 34, r: 12, t: 14, b: 24 };
     var pw = w - pad.l - pad.r;
@@ -828,11 +1044,12 @@
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9CA3AF';
     ctx.fillText('4.2 kHz', pad.l + pw, h - 7);
+    finishDarkPlot(p);
   }
 
-  function drawPitchContourPlot(canvas, feat) {
-    var p = setupDarkPlot(canvas, 195);
-    if (!p || !feat || !feat.pitchHzArr) return;
+  function drawPitchContourPlot(target, feat) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat || !feat.pitchHzArr) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
     var pad = { l: 38, r: 12, t: 16, b: 24 };
     var pw = w - pad.l - pad.r;
@@ -874,11 +1091,12 @@
     ctx.fillText('0s', pad.l, h - 7);
     ctx.textAlign = 'right';
     ctx.fillText(safeNum(feat.duration, 0).toFixed(2) + 's', pad.l + pw, h - 7);
+    finishDarkPlot(p);
   }
 
-  function drawModulationPlot(canvas, feat) {
-    var p = setupDarkPlot(canvas, 195);
-    if (!p || !feat || !feat.modSpectrum) return;
+  function drawModulationPlot(target, feat) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat || !feat.modSpectrum) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
     var pad = { l: 28, r: 12, t: 16, b: 24 };
     var pw = w - pad.l - pad.r;
@@ -918,11 +1136,12 @@
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9CA3AF';
     ctx.fillText('45 Hz', pad.l + pw, h - 7);
+    finishDarkPlot(p);
   }
 
-  function drawEnvelopePlot(canvas, feat) {
-    var p = setupDarkPlot(canvas, 195);
-    if (!p || !feat || !feat.envelope) return;
+  function drawEnvelopePlot(target, feat) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat || !feat.envelope) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
     var pad = { l: 28, r: 12, t: 16, b: 24 };
     var pw = w - pad.l - pad.r;
@@ -952,7 +1171,6 @@
     }
     ctx.stroke();
 
-    // T50 energy median marker
     var t50x = pad.l + clamp(safeNum(feat.t50Ratio, 0.5), 0, 1) * pw;
     ctx.strokeStyle = '#60A5FA';
     ctx.setLineDash([4, 3]);
@@ -969,67 +1187,691 @@
     ctx.textAlign = 'right';
     ctx.fillStyle = '#93C5FD';
     ctx.fillText('T50 @ ' + Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', pad.l + pw, h - 7);
+    finishDarkPlot(p);
   }
 
-  /* ==================== 1 & 2: SINGLE FART / GUESS ANALYSIS ==================== */
+  function drawHorizontalBarsPlot(target, items) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !items || items.length === 0) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var padL = Math.min(130, Math.round(w * 0.36));
+    var padR = 38;
+    var padT = 12;
+    var padB = 10;
+    var pw = Math.max(40, w - padL - padR);
+    var rowH = (h - padT - padB) / items.length;
+
+    ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var cy = padT + i * rowH + rowH * 0.5;
+      var barH = Math.min(14, Math.max(7, rowH * 0.52));
+      var pct = clamp(safeNum(it.pct, 0), 0, 100);
+
+      ctx.fillStyle = '#D1D5DB';
+      ctx.textAlign = 'right';
+      ctx.fillText(String(it.label || '').slice(0, 18), padL - 8, cy + 3.5);
+
+      ctx.fillStyle = 'rgba(55, 65, 81, 0.55)';
+      ctx.fillRect(padL, cy - barH * 0.5, pw, barH);
+
+      ctx.fillStyle = it.color || '#60A5FA';
+      ctx.fillRect(padL, cy - barH * 0.5, Math.max(2, (pct / 100) * pw), barH);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textAlign = 'left';
+      ctx.fillText(Math.round(pct) + '%', padL + pw + 6, cy + 3.5);
+    }
+    finishDarkPlot(p);
+  }
+
+  function drawMfcc13Plot(target, feat) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var vec = feat.mfccMean || new Float32Array(13);
+    var n = Math.min(13, vec.length || 13);
+    var pad = { l: 26, r: 12, t: 16, b: 24 };
+    var pw = w - pad.l - pad.r;
+    var ph = h - pad.t - pad.b;
+    var midY = pad.t + ph * 0.5;
+
+    var maxAbs = 1;
+    for (var i = 0; i < n; i++) {
+      maxAbs = Math.max(maxAbs, Math.abs(safeNum(vec[i], 0)));
+    }
+
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(pad.l, midY);
+    ctx.lineTo(pad.l + pw, midY);
+    ctx.stroke();
+
+    var colW = pw / n;
+    for (var k = 0; k < n; k++) {
+      var val = safeNum(vec[k], 0) / maxAbs;
+      var barH = val * (ph * 0.44);
+      var x = pad.l + k * colW + colW * 0.16;
+      var bw = Math.max(4, colW * 0.68);
+      ctx.fillStyle = val >= 0 ? '#60A5FA' : '#FB7185';
+      if (barH >= 0) ctx.fillRect(x, midY - barH, bw, Math.max(2, barH));
+      else ctx.fillRect(x, midY, bw, Math.max(2, -barH));
+    }
+
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '600 10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('C1', pad.l, h - 7);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#D1D5DB';
+    ctx.fillText('13-Dim MFCC Vocal/Cheek Filterbank Signature', pad.l + pw * 0.5, h - 7);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#9CA3AF';
+    ctx.fillText('C13', pad.l + pw, h - 7);
+    finishDarkPlot(p);
+  }
+
+  function drawCumulativeEnergyPlot(target, feat) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !feat || !feat.envelope) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var pad = { l: 28, r: 12, t: 16, b: 24 };
+    var pw = w - pad.l - pad.r;
+    var ph = h - pad.t - pad.b;
+    var env = feat.envelope;
+    var cum = new Float32Array(env.length);
+    var total = 0;
+    for (var i = 0; i < env.length; i++) {
+      total += safeNum(env[i], 0) * safeNum(env[i], 0);
+      cum[i] = total;
+    }
+
+    ctx.strokeStyle = '#22C55E';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (var k = 0; k < cum.length; k++) {
+      var x = pad.l + (k / Math.max(1, cum.length - 1)) * pw;
+      var frac = total > 0 ? cum[k] / total : 0;
+      var y = pad.t + ph - frac * ph;
+      if (k === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    var markers = [
+      { ratio: safeNum(feat.t10Ratio, 0.1), label: 'T10', color: '#FACC15' },
+      { ratio: safeNum(feat.t50Ratio, 0.5), label: 'T50', color: '#60A5FA' },
+      { ratio: safeNum(feat.t90Ratio, 0.9), label: 'T90', color: '#F97316' }
+    ];
+    ctx.font = '700 10px "JetBrains Mono", monospace';
+    for (var m = 0; m < markers.length; m++) {
+      var mk = markers[m];
+      var mx = pad.l + clamp(mk.ratio, 0, 1) * pw;
+      ctx.strokeStyle = mk.color;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(mx, pad.t);
+      ctx.lineTo(mx, pad.t + ph);
+      ctx.stroke();
+      ctx.fillStyle = mk.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(mk.label, mx, pad.t + 11 + m * 12);
+    }
+    ctx.setLineDash([]);
+    finishDarkPlot(p);
+  }
+
+  function drawSeriesPlot(target, values, opts) {
+    opts = opts || {};
+    var p = setupDarkPlot(target, 195);
+    if (!p || !values || values.length === 0) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var pad = { l: 28, r: 12, t: 16, b: 24 };
+    var pw = w - pad.l - pad.r;
+    var ph = h - pad.t - pad.b;
+
+    var maxV = opts.maxVal || 0.001;
+    if (!opts.maxVal) {
+      for (var i = 0; i < values.length; i++) {
+        if (values[i] > maxV) maxV = values[i];
+      }
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t + ph);
+    for (var k = 0; k < values.length; k++) {
+      var x = pad.l + (k / Math.max(1, values.length - 1)) * pw;
+      var y = pad.t + ph - clamp(safeNum(values[k], 0) / maxV, 0, 1) * ph;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(pad.l + pw, pad.t + ph);
+    ctx.closePath();
+    ctx.fillStyle = opts.fill || 'rgba(96, 165, 250, 0.22)';
+    ctx.fill();
+
+    ctx.strokeStyle = opts.stroke || '#60A5FA';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (var j = 0; j < values.length; j++) {
+      var lx = pad.l + (j / Math.max(1, values.length - 1)) * pw;
+      var ly = pad.t + ph - clamp(safeNum(values[j], 0) / maxV, 0, 1) * ph;
+      if (j === 0) ctx.moveTo(lx, ly);
+      else ctx.lineTo(lx, ly);
+    }
+    ctx.stroke();
+
+    if (typeof opts.threshA === 'number') {
+      var ty = pad.t + ph - clamp(opts.threshA / maxV, 0, 1) * ph;
+      ctx.strokeStyle = '#FACC15';
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, ty);
+      ctx.lineTo(pad.l + pw, ty);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    ctx.fillStyle = '#D1D5DB';
+    ctx.font = '600 10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(opts.caption || '', pad.l + pw * 0.5, h - 7);
+    finishDarkPlot(p);
+  }
+
+  function drawBlastZonePlot(target, radiusM, panicPct) {
+    var p = setupDarkPlot(target, 195);
+    if (!p) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var cx = w * 0.5;
+    var cy = h * 0.52;
+    var maxR = Math.min(w, h) * 0.42;
+    var rEvent = clamp((safeNum(radiusM, 4) / 13.0) * maxR, 14, maxR);
+    var rElevator = (2.2 / 13.0) * maxR;
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(cx - rElevator, cy - rElevator, rElevator * 2, rElevator * 2);
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(251, 113, 133, 0.2)';
+    ctx.strokeStyle = '#FB7185';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rEvent, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.font = '700 10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#FECDD3';
+    ctx.fillText('Blast Radius ' + safeNum(radiusM, 4).toFixed(1) + 'm · Panic ' + Math.round(panicPct || 50) + '%', cx, 16);
+    ctx.fillStyle = '#9CA3AF';
+    ctx.fillText('Dashed box = Standard 2.2m Elevator Cabin', cx, h - 7);
+    finishDarkPlot(p);
+  }
+
+  function drawTwinMapPlot(target, bonus) {
+    var p = setupDarkPlot(target, 195);
+    if (!p || !bonus) return finishDarkPlot(p);
+    var ctx = p.ctx, w = p.w, h = p.h;
+    var pad = { l: 34, r: 16, t: 16, b: 24 };
+    var pw = w - pad.l - pad.r;
+    var ph = h - pad.t - pad.b;
+    var items = bonus.acoustics.items || [];
+    var logMin = Math.log2(50);
+    var logMax = Math.log2(1600);
+
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var x = pad.l + clamp((Math.log2(it.freq) - logMin) / (logMax - logMin), 0, 1) * pw;
+      var y = pad.t + ph - clamp(it.flat, 0, 1) * ph;
+      ctx.fillStyle = '#FACC15';
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#9CA3AF';
+      ctx.font = '600 9px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = x > w * 0.72 ? 'right' : 'left';
+      ctx.fillText(it.short, x + (x > w * 0.72 ? -7 : 7), y + 3);
+    }
+
+    var sx = pad.l + clamp((Math.log2(clamp(bonus.acoustics.detailA.effFreq, 50, 1600)) - logMin) / (logMax - logMin), 0, 1) * pw;
+    var sy = pad.t + ph - clamp(bonus.acoustics.detailA.flat, 0, 1) * ph;
+    ctx.fillStyle = '#22C55E';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    ctx.fillStyle = '#86EFAC';
+    ctx.font = '700 10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Closest Twin: ' + bonus.acoustics.twinA.short + ' (' + bonus.acoustics.topScoreA + '%)', w * 0.5, h - 7);
+    finishDarkPlot(p);
+  }
+
+  function drawSingleChartType(target, chartType, sound, feat, bonus, ml) {
+    if (!feat) return;
+    if (chartType === 's_spectrum') return drawSpectrumPlot(target, feat, '#60A5FA');
+    if (chartType === 's_pitch') return drawPitchContourPlot(target, feat);
+    if (chartType === 's_mod') return drawModulationPlot(target, feat);
+    if (chartType === 's_envelope') return drawEnvelopePlot(target, feat);
+    if (chartType === 's_mfcc13') return drawMfcc13Plot(target, feat);
+    if (chartType === 's_energy_cum') return drawCumulativeEnergyPlot(target, feat);
+    if (chartType === 's_centroid_contour') {
+      return drawSeriesPlot(target, feat.centroidContour || [], { stroke: '#60A5FA', fill: 'rgba(96, 165, 250, 0.2)', caption: 'Spectral Brightness Evolution Across Event' });
+    }
+    if (chartType === 's_onset_zoom') {
+      var env = feat.envelope || [];
+      var half = env.slice ? env.slice(0, Math.max(8, Math.floor(env.length * 0.5))) : env;
+      return drawSeriesPlot(target, half, { stroke: '#22C55E', fill: 'rgba(34, 197, 94, 0.24)', maxVal: 1.0, caption: 'Initial Attack Surge (First 50% of Event)' });
+    }
+    if (chartType === 's_burst_gate') {
+      return drawSeriesPlot(target, feat.envelope || [], { stroke: '#F97316', fill: 'rgba(249, 115, 22, 0.2)', maxVal: 1.0, threshA: 0.35, caption: 'Envelope vs 0.35 Burst Gate Threshold (' + (feat.burstCount || 1) + ' bursts)' });
+    }
+    if (chartType === 's_flux') {
+      var fx = bonus && bonus.wetness ? bonus.wetness.fluxSeriesA : [];
+      return drawSeriesPlot(target, fx, { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.25)', caption: 'Instantaneous Spectral Change (Wetness Driver)' });
+    }
+    if (chartType === 's_4band') {
+      var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
+      return drawHorizontalBarsPlot(target, [
+        { label: '45-150Hz Sub-Bass', pct: safeNum(bp[0], 0) * 100, color: '#60A5FA' },
+        { label: '150-450Hz Mid-Buzz', pct: safeNum(bp[1], 0) * 100, color: '#22C55E' },
+        { label: '450-1.2kHz Upper', pct: safeNum(bp[2], 0) * 100, color: '#F97316' },
+        { label: '1.2k-4.2kHz Air/Hiss', pct: safeNum(bp[3], 0) * 100, color: '#FB7185' }
+      ]);
+    }
+    if (chartType === 's_mod3band') {
+      var mb = feat.modBands || [0.34, 0.33, 0.33];
+      return drawHorizontalBarsPlot(target, [
+        { label: '2-8Hz Slow Stutter', pct: safeNum(mb[0], 0) * 100, color: '#60A5FA' },
+        { label: '8-20Hz Cheek Flutter', pct: safeNum(mb[1], 0) * 100, color: '#22C55E' },
+        { label: '20-45Hz Fast Rattle', pct: safeNum(mb[2], 0) * 100, color: '#8B5CF6' }
+      ]);
+    }
+    if (chartType === 's_attack_decay') {
+      var dur = Math.max(0.05, safeNum(feat.duration, 0.5));
+      var atkPct = clamp((safeNum(feat.attackSec, 0.1) / dur) * 100, 1, 95);
+      var decPct = clamp((safeNum(feat.decaySec, 0.2) / dur) * 100, 1, 95);
+      var sustPct = clamp(100 - atkPct - decPct * 0.5, 5, 95);
+      return drawHorizontalBarsPlot(target, [
+        { label: 'Attack Rise', pct: atkPct, color: '#FACC15' },
+        { label: 'Core Sustain', pct: sustPct, color: '#22C55E' },
+        { label: 'Decay Tail', pct: decPct, color: '#60A5FA' }
+      ]);
+    }
+    if (chartType === 's_squelch_mix') {
+      var dA = bonus && bonus.wetness ? bonus.wetness.detailA : { md: 0.2, flux: 0.1, squelchBand: 0.2 };
+      return drawHorizontalBarsPlot(target, [
+        { label: 'Flutter Factor', pct: clamp(safeNum(dA.md, 0) / 0.65, 0, 1) * 100, color: '#22C55E' },
+        { label: 'Spectral Flux', pct: clamp(safeNum(dA.flux, 0) / 0.22, 0, 1) * 100, color: '#8B5CF6' },
+        { label: 'Mid Squelch Band', pct: clamp(safeNum(dA.squelchBand, 0), 0, 1) * 100, color: '#F97316' }
+      ]);
+    }
+    if (chartType === 's_twin_bars' && bonus) {
+      var its = bonus.acoustics.items || [];
+      var affs = bonus.acoustics.affinitiesA || [];
+      return drawHorizontalBarsPlot(
+        target,
+        its.map(function (it, idx) {
+          return { label: it.emoji + ' ' + it.short, pct: safeNum(affs[idx], 0), color: idx === bonus.acoustics.detailA.bestIdx ? '#22C55E' : '#60A5FA' };
+        })
+      );
+    }
+    if (chartType === 's_twin_map') return drawTwinMapPlot(target, bonus);
+    if (chartType === 's_blast_map') return drawBlastZonePlot(target, bonus ? bonus.social.a.radiusM : 4.5, bonus ? bonus.social.a.panicPct : 50);
+    if (chartType === 's_alibi_bars' && bonus) {
+      var soc = bonus.social.a;
+      return drawHorizontalBarsPlot(target, [
+        { label: 'Blame Family Dog', pct: soc.dogBlame, color: '#22C55E' },
+        { label: 'Sneaker Scuff', pct: soc.shoeScuff, color: '#60A5FA' },
+        { label: 'Leather Office Chair', pct: soc.leatherChair, color: '#F97316' }
+      ]);
+    }
+    if (chartType === 's_ml_probs' && ml) {
+      return drawHorizontalBarsPlot(
+        target,
+        ml.classes.map(function (c) {
+          return { label: c.emoji + ' ' + c.name, pct: c.prob, color: c.color };
+        })
+      );
+    }
+    if (chartType === 's_wall_atten') {
+      var lowPct = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25) : 0.4;
+      var penBase = clamp(45 + lowPct * 55, 25, 99);
+      return drawHorizontalBarsPlot(target, [
+        { label: 'Immediate Vicinity', pct: penBase, color: '#FB7185' },
+        { label: 'Thin Drywall Wall', pct: clamp(penBase * (0.52 + lowPct * 0.35), 10, 95), color: '#F97316' },
+        { label: 'Across Hallway', pct: clamp(penBase * (0.34 + lowPct * 0.28), 5, 85), color: '#60A5FA' },
+        { label: 'Floor Below', pct: clamp(penBase * (0.24 + safeNum(feat.bandProfile ? feat.bandProfile[0] : 0.2, 0.2) * 0.5), 4, 78), color: '#22C55E' }
+      ]);
+    }
+  }
+
+  /* ==================== 1 & 2: INDIVIDUAL 12-DIAL FARTNALYSIS ==================== */
   function buildSingleGauges(sound) {
     var DSP = root.TootApp && root.TootApp.DSP;
     var Forensics = root.TootApp && root.TootApp.Forensics;
     var feat = (sound && (sound.features || (DSP && DSP.extractFeatures(sound.samples, sound.sampleRate)))) || {};
     if (sound && !sound.features) sound.features = feat;
     var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
+    var ml = classifyAcousticProfile(feat, bonus);
 
-    var crestScore = Math.round(clamp((safeNum(feat.crestFactorDb, 8) / 18) * 100, 15, 99));
-    var lowShare = feat.bandProfile ? (safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25)) : 0.5;
-    var resScore = Math.round(clamp(lowShare * 88 + (1 - safeNum(feat.spectralFlatness, 0.3)) * 22, 12, 99));
-    var turbScore = Math.round(clamp(safeNum(feat.modDepth, 0.25) * 92 + ((feat.burstCount || 1) > 1 ? 15 : 0), 8, 99));
+    var crestScore = Math.round(clamp((safeNum(feat.crestFactorDb, 8) / 17.5) * 100, 15, 99));
+    var lowShare = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25) : 0.5;
+    var resScore = Math.round(clamp(lowShare * 86 + (1 - safeNum(feat.spectralFlatness, 0.3)) * 22, 14, 99));
+    var toneScore = Math.round(
+      feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? clamp(50 + feat.voicedRatio * 46, 20, 99)
+        : clamp(45 - safeNum(feat.spectralFlatness, 0.4) * 28, 12, 70)
+    );
+    var turbScore = Math.round(clamp(safeNum(feat.modDepth, 0.25) * 92 + ((feat.burstCount || 1) > 1 ? 15 : 0), 10, 99));
+    var burstScore = Math.round(clamp(28 + (feat.burstCount || 1) * 16 + safeNum(feat.modDepth, 0.2) * 24, 18, 99));
+    var timbreScore = Math.round(clamp(55 + (1 - clamp(safeNum(feat.spectralFlatness, 0.3), 0, 1)) * 42, 18, 99));
     var moistScore = bonus ? bonus.wetness.wetA : 30;
     var twinScore = bonus ? bonus.acoustics.topScoreA : 60;
     var panicScore = bonus ? bonus.social.a.panicPct : 45;
+    var mlScore = ml.confidence;
+    var durMs = Math.max(40, safeNum(feat.duration, 0.5) * 1000);
+    var atkMs = Math.max(8, safeNum(feat.attackSec, 0.08) * 1000);
+    var velocityScore = Math.round(clamp(96 - (atkMs / durMs) * 75, 22, 99));
+    var subRatio = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) : 0.25;
+    var neighborScore = Math.round(clamp(subRatio * 82 + panicScore * 0.52, 15, 99));
 
     var list = [
-      {
-        id: 's_crest',
-        title: 'Crest Intensity',
-        score: crestScore,
-        sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak ratio'
-      },
-      {
-        id: 's_resonance',
-        title: 'Resonance Depth',
-        score: resScore,
-        sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz centroid'
-      },
-      {
-        id: 's_turbulence',
-        title: 'Flutter Turbulence',
-        score: turbScore,
-        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz · ' + (feat.burstCount || 1) + ' burst(s)'
-      },
-      {
-        id: 's_moisture',
-        title: 'Moisture Probability',
-        score: moistScore,
-        sub: bonus ? bonus.wetness.labelA : 'Acoustic surface'
-      },
-      {
-        id: 's_twin',
-        title: 'Acoustic Twin Affinity',
-        score: twinScore,
-        sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short : 'Sonic Archetype'
-      },
-      {
-        id: 's_panic',
-        title: 'Elevator Panic Risk',
-        score: panicScore,
-        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm blast zone' : 'Room acoustics'
-      }
+      { id: 's_crest', title: 'Crest Intensity', score: crestScore, sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak' },
+      { id: 's_resonance', title: 'Resonance Depth', score: resScore, sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center' },
+      { id: 's_tone', title: 'Fundamental Tone', score: toneScore, sub: formatHzLabel(feat) },
+      { id: 's_turbulence', title: 'Flutter Turbulence', score: turbScore, sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz flutter' },
+      { id: 's_burst', title: 'Rhythmic Burst Profile', score: burstScore, sub: (feat.burstCount || 1) + ' distinct burst(s)' },
+      { id: 's_timbre', title: 'Timbre & MFCC', score: timbreScore, sub: 'Flatness ' + safeNum(feat.spectralFlatness, 0).toFixed(2) },
+      { id: 's_moisture', title: 'Moisture Probability', score: moistScore, sub: bonus ? bonus.wetness.labelA : 'Surface flux' },
+      { id: 's_twin', title: 'Acoustic Twin', score: twinScore, sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short : 'Archetype' },
+      { id: 's_panic', title: 'Elevator Panic Risk', score: panicScore, sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm blast zone' : 'Radius' },
+      { id: 's_ml', title: 'ML Classification', score: mlScore, sub: ml.topClass.emoji + ' ' + ml.topClass.name },
+      { id: 's_velocity', title: 'Airflow Velocity', score: velocityScore, sub: Math.round(atkMs) + 'ms onset' },
+      { id: 's_neighbor', title: 'Neighbor Disturbance', score: neighborScore, sub: Math.round(subRatio * 100) + '% wall-bass' }
     ];
 
     return list.map(function (g) {
       var st = gaugeStatus(g.score);
       return Object.assign({}, g, { status: st.label, color: st.color, tone: st.tone });
     });
+  }
+
+  function buildSingleDialReport(dialId, sound) {
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var feat = (sound && (sound.features || (DSP && DSP.extractFeatures(sound.samples, sound.sampleRate)))) || {};
+    if (sound && !sound.features) sound.features = feat;
+    var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
+    var ml = classifyAcousticProfile(feat, bonus);
+    var gauges = buildSingleGauges(sound);
+    var g = gauges.find(function (x) { return x.id === dialId; }) || gauges[0];
+    var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
+    var dur = safeNum(feat.duration, 0);
+    var atkMs = Math.round(safeNum(feat.attackSec, 0) * 1000);
+    var decMs = Math.round(safeNum(feat.decaySec, 0) * 1000);
+    var noteStr = Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? Forensics.hzToNoteName(feat.medianPitchHz) : 'Unpitched Air';
+
+    if (g.id === 's_ml') {
+      return {
+        id: g.id,
+        badgeCode: 'ML-10 // ON-DEVICE CEPSTRAL CLASSIFIER',
+        title: 'Machine Learning Acoustic Classification: ' + ml.topClass.emoji + ' ' + ml.topClass.name,
+        subtitle: ml.topClass.description,
+        score: g.score,
+        color: g.color,
+        commentary:
+          'How our ML analysis actually works: before any guessing begins, the engine extracts 22 acoustic descriptors (13 MFCCs, fundamental pitch, spectral flatness, modulation depth, crest dynamics, sub-bass ratio, and flux) and runs a calibrated softmax distance classifier across 6 trained archetype profiles. Confidence is ' +
+          ml.confidence +
+          '% for "' +
+          ml.topClass.name +
+          '" (runner-up: "' +
+          ml.runnerUp.name +
+          '" at ' +
+          ml.runnerUp.prob +
+          '%). Your neural-free feature model remained disturbingly serious throughout.',
+        charts: [
+          { title: '6-Class Softmax Probability Distribution', sub: 'Nearest acoustic archetype fit', drawType: 's_ml_probs' },
+          { title: '13-Band MFCC Input Tensor', sub: 'Primary cepstral classification features', drawType: 's_mfcc13' }
+        ],
+        stats: [
+          { label: 'Top Class', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
+          { label: 'Runner-Up', value: ml.runnerUp.name, sub: ml.runnerUp.prob + '% posterior' },
+          { label: 'Pitch / Centroid', value: ml.featureVector.pitchHz + ' Hz', sub: ml.featureVector.subBandPct + '% sub-bass' },
+          { label: 'Model Type', value: '22-D Softmax', sub: '100% local · zero cloud upload' }
+        ],
+        formula: 'P(class_k) = exp(-d_weighted(x_22d, mu_k) / 0.55) / SUM(exp(-d / 0.55))'
+      };
+    }
+
+    var map = {
+      s_crest: {
+        badgeCode: 'DOC-01 // TRANSIENT CREST TELEMETRY',
+        title: 'Crest Intensity & Impulse Force',
+        subtitle: 'Peak-to-RMS pressure shockwave ratio across ' + dur.toFixed(2) + 's.',
+        commentary:
+          'Measured ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB of peak-to-average pressure punch. ' +
+          (safeNum(feat.crestFactorDb, 0) >= 12 ? 'Noticeably explosive onset — nearby glassware probably noticed.' : 'Controlled acoustic release without extreme pressure clipping.'),
+        charts: [
+          { title: 'Blast Pressure Envelope', sub: 'RMS contour vs time', drawType: 's_envelope' },
+          { title: 'Cumulative Energy Integral', sub: 'T10 / T50 / T90 energy milestones', drawType: 's_energy_cum' }
+        ],
+        stats: [
+          { label: 'Crest Factor', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Peak / RMS ratio' },
+          { label: 'Peak Timing', value: Math.round(safeNum(feat.peakTimeRatio, 0.5) * 100) + '%', sub: 'Point of max pressure' },
+          { label: 'Total Span', value: dur.toFixed(2) + 's', sub: 'Auto-trimmed active window' },
+          { label: 'Half-Energy T50', value: Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', sub: '50% acoustic output reached' }
+        ],
+        formula: 'Crest_dB = 20 * log10(max(|x|) / RMS(x))'
+      },
+      s_resonance: {
+        badgeCode: 'DOC-02 // FORMANT CHAMBER RESONANCE',
+        title: 'Resonance Depth & Spectral Energy',
+        subtitle: '40-band STFT distribution and sub-bass rumble balance.',
+        commentary:
+          'Spectral center of mass sits at ' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz with ' +
+          Math.round(safeNum(bp[0], 0) * 100) + '% of acoustic power below 150 Hz. ' +
+          (bp[0] >= 0.35 ? 'Substantial subwoofer-grade chamber depth confirmed.' : 'Upper cheek harmonics dominate over sub-bass rumble.'),
+        charts: [
+          { title: '40-Band FFT Energy Spectrum', sub: '45 Hz to 4.2 kHz logarithmic surface', drawType: 's_spectrum' },
+          { title: '4-Band Energy Breakdown', sub: 'Sub-bass vs rumble vs rasp vs air', drawType: 's_4band' }
+        ],
+        stats: [
+          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Spectral center of mass' },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Room-shaking band' },
+          { label: 'Mid Buzz', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz reed band' },
+          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Hiss / turbulence band' }
+        ],
+        formula: 'Centroid = SUM(f_k * E_k) / SUM(E_k)'
+      },
+      s_tone: {
+        badgeCode: 'DOC-03 // FUNDAMENTAL F0 TELEMETRY',
+        title: 'Fundamental Pitch & Sweep Track',
+        subtitle: 'Autocorrelation voiced pitch stability and intonation.',
+        commentary:
+          (feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+            ? 'Clean tonal core locked near ' + Math.round(feat.medianPitchHz) + ' Hz (' + noteStr + ') across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Theoretically harmonious enough for a brass quintet.'
+            : 'Mostly unvoiced broadband air noise (voiced ratio ' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%). Operates like a stealth valve rather than a brass horn.'),
+        charts: [
+          { title: '32-Frame Pitch Sweep (Hz)', sub: 'Fundamental frequency over time', drawType: 's_pitch' },
+          { title: 'Spectral Brightness Drift', sub: 'Log2 centroid trajectory across frames', drawType: 's_centroid_contour' }
+        ],
+        stats: [
+          { label: 'Median Pitch', value: formatHzLabel(feat), sub: noteStr },
+          { label: 'Pitch Span', value: safeNum(feat.pitchRangeSemitones, 0).toFixed(1) + ' st', sub: 'Semitone bend range' },
+          { label: 'Voiced Ratio', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Tonal frame share' },
+          { label: 'Sweep Slope', value: (safeNum(feat.pitchTrend, 0) >= 0 ? 'Rising ' : 'Falling ') + Math.abs(safeNum(feat.pitchTrend, 0)).toFixed(2), sub: 'Octave delta' }
+        ],
+        formula: 'F0(frame) via Normalized Lag Autocorrelation; MIDI = 69 + 12 * log2(Hz / 440)'
+      },
+      s_turbulence: {
+        badgeCode: 'DOC-04 // CHEEK FLUTTER SPECTROSCOPY',
+        title: 'Turbulence & Modulation Spectrum',
+        subtitle: '4–45 Hz cheek valve oscillation analysis.',
+        commentary:
+          'Envelope modulation oscillates at ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz with ' + Math.round(safeNum(feat.modDepth, 0) * 100) + '% flutter depth. ' +
+          (feat.modRateHz >= 18 ? 'High-RPM valve chatter detected.' : 'Smooth low-frequency aerodynamic ripple.'),
+        charts: [
+          { title: 'Modulation FFT (4–45 Hz)', sub: 'Stutter, flutter, and fast rattle peaks', drawType: 's_mod' },
+          { title: '3-Band Turbulence Split', sub: 'Stutter vs Flutter vs Fast Rattle', drawType: 's_mod3band' }
+        ],
+        stats: [
+          { label: 'Peak Rate', value: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz', sub: 'Primary flutter speed' },
+          { label: 'Flutter Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Coefficient of modulation' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame volatility' },
+          { label: 'ZCR', value: safeNum(feat.zcr, 0).toFixed(3), sub: 'Zero-crossing turbulence' }
+        ],
+        formula: 'ModDepth = std(Env) / mean(Env); FFT(Hann(Env - mean)) over [4Hz..45Hz]'
+      },
+      s_burst: {
+        badgeCode: 'DOC-05 // PULSE SEGMENTATION TELEMETRY',
+        title: 'Rhythmic Burst & Cadence Profile',
+        subtitle: 'Discrete pressure impulse segmentation across ' + dur.toFixed(2) + 's.',
+        commentary:
+          'Segmented ' + (feat.burstCount || 1) + ' distinct emission burst(s) above the 0.35 envelope gate. ' +
+          ((feat.burstCount || 1) >= 3 ? 'Classic machine-gun sputtering cadence — unpredictable rhythmic phrasing.' : feat.burstCount === 2 ? 'Clean double-tap timing; deliberate or unavoidable.' : 'Unified single-stream release.'),
+        charts: [
+          { title: 'Envelope vs 0.35 Gate Threshold', sub: 'Burst detection hysteresis peaks', drawType: 's_burst_gate' },
+          { title: 'Attack / Sustain / Decay Ratio', sub: 'Temporal anatomy percentages', drawType: 's_attack_decay' }
+        ],
+        stats: [
+          { label: 'Bursts Detected', value: String(feat.burstCount || 1), sub: 'Gate > 0.35 / reset < 0.18' },
+          { label: 'Attack Time', value: atkMs + ' ms', sub: 'Rise to peak' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Release duration' },
+          { label: 'Duration', value: dur.toFixed(2) + 's', sub: 'Total event' }
+        ],
+        formula: 'BurstCount = peaks(SmoothEnv > 0.35 separated by < 0.18)'
+      },
+      s_timbre: {
+        badgeCode: 'DOC-06 // 13-BAND CEPSTRAL FINGERPRINT',
+        title: 'Timbre & MFCC Vocal-Tract Texture',
+        subtitle: 'Harmonic tonal purity vs noisy broadband rasp.',
+        commentary:
+          'Wiener Spectral Flatness is ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'windy/breathy stealth character' : 'rich harmonic reed buzz') + '). Every acoustic fingerprint here stays 100% locally computed.',
+        charts: [
+          { title: '13-Band MFCC Signature', sub: 'Spectral envelope shape vector', drawType: 's_mfcc13' },
+          { title: '40-Band FFT Energy Spectrum', sub: 'Formant resonances & overtones', drawType: 's_spectrum' }
+        ],
+        stats: [
+          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = pure tone, 1 = air noise' },
+          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Timbral brightness' },
+          { label: 'ML Top Fit', value: ml.topClass.name, sub: ml.confidence + '% match' },
+          { label: 'Voice Share', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Harmonic frames' }
+        ],
+        formula: 'Flatness = geomMean(|X|) / arithMean(|X|); MFCC = DCT(log(MelEnergy))'
+      },
+      s_moisture: {
+        badgeCode: 'DOC-07 // SPECTRAL FLUX & SQUELCH LAB',
+        title: 'Moisture Probability & Wetness Telemetry',
+        subtitle: 'Quantifying suspicious mid-band micro-gurgling dynamics.',
+        commentary:
+          bonus
+            ? 'Classified as "' + bonus.wetness.labelA + '" (' + bonus.wetness.wetA + '%). ' + (bonus.wetness.wetA >= 65 ? 'Consult emergency laundry protocols immediately.' : 'Dry aerodynamic exit confirmed — carry on with confidence.')
+            : 'Surface moisture metrics computed from modulation flux.',
+        charts: [
+          { title: 'Instantaneous Spectral Flux', sub: 'Micro-texture volatility across event', drawType: 's_flux' },
+          { title: 'Moisture Index Components', sub: 'Flutter + Flux + Squelch Band weightings', drawType: 's_squelch_mix' }
+        ],
+        stats: [
+          { label: 'Wetness Score', value: (bonus ? bonus.wetness.wetA : 25) + '%', sub: bonus ? bonus.wetness.labelA : '' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame spectral shift' },
+          { label: 'Mod Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Flutter contributor' },
+          { label: 'Bursts', value: String(feat.burstCount || 1), sub: 'Interrupt count' }
+        ],
+        formula: 'Wetness = 22*norm(Mod) + 46*norm(Flux) + 22*SquelchBand + BurstBonus'
+      },
+      s_twin: {
+        badgeCode: 'DOC-08 // ACOUSTIC DOPPELGANGER MATCHER',
+        title: 'Acoustic Twin: ' + (bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference'),
+        subtitle: 'Cross-referenced against 8 calibrated non-human noisemakers.',
+        commentary:
+          bonus
+            ? 'In a blind acoustic lineup, this specimen matches a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Try playing that comparison card at dinner parties.'
+            : 'Matched against calibrated noisemaker archetypes.',
+        charts: [
+          { title: '8-Archetype Affinity Breakdown', sub: 'Tuba, Foghorn, Bullfrog, Vespa, Goose, Duck...', drawType: 's_twin_bars' },
+          { title: '2D Hz × Airiness Archetype Map', sub: 'Green dot = Your recording vs archetypes', drawType: 's_twin_map' }
+        ],
+        stats: [
+          { label: 'Top Twin', value: bonus ? bonus.acoustics.twinA.short : '—', sub: bonus ? bonus.acoustics.topScoreA + '% similarity' : '' },
+          { label: 'Effective Tone', value: formatHzLabel(feat), sub: 'Comparison frequency' },
+          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Buzz vs airiness axis' },
+          { label: 'Orchestral Seat', value: (feat.medianPitchHz || 200) < 130 ? 'Tuba / Foghorn' : 'Woodwind / Brass', sub: 'Register' }
+        ],
+        formula: 'Affinity = 100 * exp(-(|deltaOct|/1.15 + |deltaFlat|*1.4 + |deltaMod|*0.75))'
+      },
+      s_panic: {
+        badgeCode: 'DOC-09 // CONFINED-SPACE ALIBI PROTOCOL',
+        title: 'Elevator Panic & Deflection Odds',
+        subtitle: 'Social survivability and plausible deniability modeling.',
+        commentary:
+          bonus
+            ? 'Predicted Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm (Panic Risk ' + bonus.social.a.panicPct + '%). Official Laboratory Recommendation: "' + bonus.social.a.verdict + '"'
+            : 'Social blast telemetry.',
+        charts: [
+          { title: 'Elevator Cabin Blast Radius', sub: 'Event perimeter vs 2.2m cabin box', drawType: 's_blast_map' },
+          { title: 'Alibi Deflection Success Odds', sub: 'Dog vs Shoe vs Leather Office Chair', drawType: 's_alibi_bars' }
+        ],
+        stats: [
+          { label: 'Blast Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + ' m' : '—', sub: 'Detectable perimeter' },
+          { label: 'Panic Level', value: (bonus ? bonus.social.a.panicPct : 40) + '%', sub: 'Social urgency' },
+          { label: 'Best Alibi', value: bonus ? bonus.social.a.verdict.split('(')[0].trim().slice(0, 22) : 'Dog', sub: 'Highest cover probability' },
+          { label: 'Duration Factor', value: dur.toFixed(2) + 's', sub: 'Exposure window' }
+        ],
+        formula: 'Radius_m = 1.8 + 10.5 * (PanicPct / 100); Deflection = f(Pitch, Duration, Centroid)'
+      },
+      s_velocity: {
+        badgeCode: 'DOC-11 // ONSET VELOCITY & IMPULSE RISE',
+        title: 'Airflow Velocity & Attack Speed',
+        subtitle: 'How violently the acoustic pressure ramped from zero to peak.',
+        commentary:
+          'Peak amplitude arrived in just ' + atkMs + 'ms (' + Math.round((atkMs / Math.max(40, dur * 1000)) * 100) + '% into the recording). ' +
+          (atkMs <= 70 ? 'Hair-trigger transient snap — zero warning shots were fired.' : 'Gradual crescendo buildup followed by ' + decMs + 'ms dissipation.'),
+        charts: [
+          { title: 'Initial Attack Surge Zoom', sub: 'First 50% normalized onset envelope', drawType: 's_onset_zoom' },
+          { title: 'Cumulative Energy T10/T50/T90', sub: 'Cumulative acoustic power milestones', drawType: 's_energy_cum' }
+        ],
+        stats: [
+          { label: 'Attack Rise', value: atkMs + ' ms', sub: 'Time to peak RMS' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Release duration' },
+          { label: 'T10 / T90', value: Math.round(safeNum(feat.t10Ratio, 0.1) * 100) + '% / ' + Math.round(safeNum(feat.t90Ratio, 0.9) * 100) + '%', sub: 'Energy bounds' },
+          { label: 'Crest Impulse', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Sharpness' }
+        ],
+        formula: 'AttackVelocity = PeakRMS / max(0.01, AttackSec)'
+      },
+      s_neighbor: {
+        badgeCode: 'DOC-12 // STRUCTURAL WALL ATTENUATION FORECAST',
+        title: 'Neighbor & Drywall Penetration Risk',
+        subtitle: 'Estimating low-frequency structural transmission beyond the room.',
+        commentary:
+          'Sub-150 Hz waves punch straight through hollow-core doors and standard drywall while high hiss decays quickly. With ' +
+          Math.round(safeNum(bp[0], 0) * 100) + '% sub-bass content, wall penetration probability stands at ' + g.score + '%.',
+        charts: [
+          { title: 'Structural Transmission Forecast', sub: 'Audibility across walls & floors', drawType: 's_wall_atten' },
+          { title: '4-Band Frequency Attenuation', sub: 'Low frequencies travel farthest', drawType: 's_4band' }
+        ],
+        stats: [
+          { label: 'Wall Risk', value: g.score + '%', sub: g.status },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Primary wall-piercing band' },
+          { label: 'Blast Reach', value: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm' : '4.0m', sub: 'Open-air propagation' },
+          { label: 'ML Profile', value: ml.topClass.short || ml.topClass.name, sub: ml.confidence + '% fit' }
+        ],
+        formula: 'Transmission = 0.82 * SubBassRatio + 0.52 * PanicIndex'
+      }
+    };
+
+    var found = map[g.id] || map.s_crest;
+    return Object.assign({ id: g.id, score: g.score, color: g.color }, found);
   }
 
   function renderSingleDashboard(mountEl, opts) {
@@ -1046,6 +1888,7 @@
     sound.features = feat;
     var prof = DSP.describeSoundProfile(feat);
     var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
+    var ml = classifyAcousticProfile(feat, bonus);
     var gauges = buildSingleGauges(sound);
     var label = opts.label || sound.displayName || sound.name || 'Recording';
     var eyebrow = opts.eyebrow || 'SINGLE FART FORENSIC DOSSIER';
@@ -1057,10 +1900,17 @@
     var uid = 'lfs_' + (++gaugeUid) + '_';
     var chan = uid + 'S';
     var spec = null;
+    var activeDialId = null;
 
     var compareBtnHtml = opts.onPrimaryAction
       ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🎯 Guess This Fart') + '</button>'
       : '';
+
+    var dialPillsHtml = gauges
+      .map(function (g) {
+        return '<button type="button" class="labs-dossier-pill" data-sdial-pill="' + esc(g.id) + '">' + esc(g.title) + '</button>';
+      })
+      .join('');
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -1078,17 +1928,40 @@
       compareBtnHtml +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-share">📤 Share</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-email-audio">🎵 Email MP3</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-email-report">📧 Email Analysis</button>' +
+      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-email-report">📧 Email Analysis</button>' +
+      '    </div>' +
+      '    <div class="labs-fn-meta-row">' +
+      '      <span class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</span>' +
+      '      <span class="labs-hint-text">Tap any of the 12 circular dials below to expand complete instrumentation &amp; plots</span>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-gauges-grid">' +
-      renderGaugeCardsHtml(gauges) +
+      renderGaugeCardsHtml(gauges, 'data-sdial-id') +
+      '  </section>' +
+      '  <section class="labs-expanded-panel hidden" id="' + uid + 'sexpanded">' +
+      '    <div class="labs-expanded-top">' +
+      '      <div>' +
+      '        <div class="labs-eyebrow" id="' + uid + 'sexp-code">FORENSIC DIAL</div>' +
+      '        <h3 class="labs-expanded-title" id="' + uid + 'sexp-title"></h3>' +
+      '        <p class="labs-expanded-note" id="' + uid + 'sexp-sub"></p>' +
+      '      </div>' +
+      '      <div class="labs-fn-right-cluster">' +
+      '        <span class="labs-fn-score-val" id="' + uid + 'sexp-score" style="font-size:1.2rem">0%</span>' +
+      '        <button type="button" class="labs-btn-ghost labs-btn-sm" id="' + uid + 'sexp-close">✕ Collapse</button>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="labs-dossier-strip">' + dialPillsHtml + '</div>' +
+      '    <div class="forensics-commentary labs-single-commentary" id="' + uid + 'sexp-comm"></div>' +
+      '    <div class="labs-single-charts-grid" id="' + uid + 'sexp-charts"></div>' +
+      '    <div class="labs-single-facts-grid" id="' + uid + 'sexp-stats"></div>' +
+      '    <div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code id="' + uid + 'sexp-formula"></code></div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-single-dossier">' +
-      '    <div class="labs-eyebrow">ACOUSTIC LABORATORY OBSERVATIONS</div>' +
+      '    <div class="labs-eyebrow">COMPLETE ACOUSTIC DOSSIER SUMMARY</div>' +
       '    <div class="labs-single-facts-grid">' +
-      '      <div class="labs-fact-box"><span>Signature Archetype</span><strong>' + esc(prof.profileTag) + '</strong></div>' +
-      '      <div class="labs-fact-box"><span>Musical Equivalent</span><strong>' + esc(noteStr) + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>Musical Note</span><strong>' + esc(noteStr) + '</strong></div>' +
       (bonus
         ? '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
           '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
@@ -1097,7 +1970,7 @@
       '  </section>' +
       '  <section class="labs-single-charts-grid">' +
       '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>40-Band FFT Energy Spectrum</span><small>Spectral Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz</small></div>' +
+      '      <div class="labs-chart-box-head"><span>40-Band FFT Energy Spectrum</span><small>Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz</small></div>' +
       '      <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
       '    </div>' +
       '    <div class="labs-glass-card labs-chart-box">' +
@@ -1136,11 +2009,118 @@
 
     animateGaugeRings(mountEl);
 
+    var expandedEl = mountEl.querySelector('#' + uid + 'sexpanded');
+    var expCode = mountEl.querySelector('#' + uid + 'sexp-code');
+    var expTitle = mountEl.querySelector('#' + uid + 'sexp-title');
+    var expSub = mountEl.querySelector('#' + uid + 'sexp-sub');
+    var expScore = mountEl.querySelector('#' + uid + 'sexp-score');
+    var expComm = mountEl.querySelector('#' + uid + 'sexp-comm');
+    var expCharts = mountEl.querySelector('#' + uid + 'sexp-charts');
+    var expStats = mountEl.querySelector('#' + uid + 'sexp-stats');
+    var expFormula = mountEl.querySelector('#' + uid + 'sexp-formula');
+
+    function redrawExpandedSingle() {
+      if (!activeDialId || !expCharts) return;
+      var canvases = expCharts.querySelectorAll('canvas[data-schart]');
+      for (var i = 0; i < canvases.length; i++) {
+        drawSingleChartType(canvases[i], canvases[i].getAttribute('data-schart'), sound, feat, bonus, ml);
+      }
+    }
+
+    function openSingleDial(dialId) {
+      var rep = buildSingleDialReport(dialId, sound);
+      activeDialId = rep.id;
+
+      var cards = mountEl.querySelectorAll('[data-sdial-id]');
+      for (var c = 0; c < cards.length; c++) {
+        cards[c].classList.toggle('selected', cards[c].getAttribute('data-sdial-id') === activeDialId);
+      }
+      var pills = mountEl.querySelectorAll('[data-sdial-pill]');
+      for (var pIdx = 0; pIdx < pills.length; pIdx++) {
+        pills[pIdx].classList.toggle('active', pills[pIdx].getAttribute('data-sdial-pill') === activeDialId);
+      }
+
+      expCode.textContent = rep.badgeCode;
+      expTitle.textContent = rep.title;
+      expSub.textContent = rep.subtitle;
+      expScore.textContent = rep.score + '%';
+      expScore.style.color = rep.color;
+      expComm.textContent = rep.commentary;
+      expFormula.textContent = rep.formula;
+
+      expCharts.innerHTML = rep.charts
+        .map(function (ch) {
+          return (
+            '<div class="labs-glass-card labs-chart-box">' +
+            '  <div class="labs-chart-box-head"><span>' + esc(ch.title) + '</span><small>' + esc(ch.sub) + '</small></div>' +
+            '  <canvas class="labs-2d-canvas" data-schart="' + esc(ch.drawType) + '"></canvas>' +
+            '</div>'
+          );
+        })
+        .join('');
+
+      expStats.innerHTML = rep.stats
+        .map(function (st) {
+          return (
+            '<div class="labs-fact-box"><span>' + esc(st.label) + '</span><strong>' + esc(st.value) + '</strong><small class="labs-fact-sub">' + esc(st.sub) + '</small></div>'
+          );
+        })
+        .join('');
+
+      expandedEl.classList.remove('hidden');
+      if (typeof root.requestAnimationFrame === 'function') {
+        root.requestAnimationFrame(function () {
+          redrawExpandedSingle();
+          if (typeof expandedEl.scrollIntoView === 'function') {
+            try { expandedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+          }
+        });
+      } else {
+        redrawExpandedSingle();
+      }
+    }
+
+    function closeSingleDial() {
+      activeDialId = null;
+      expandedEl.classList.add('hidden');
+      var cards = mountEl.querySelectorAll('[data-sdial-id]');
+      for (var c = 0; c < cards.length; c++) cards[c].classList.remove('selected');
+    }
+
+    var dialCards = mountEl.querySelectorAll('[data-sdial-id]');
+    for (var dc = 0; dc < dialCards.length; dc++) {
+      dialCards[dc].addEventListener('click', function () {
+        var did = this.getAttribute('data-sdial-id');
+        if (activeDialId === did && !expandedEl.classList.contains('hidden')) {
+          closeSingleDial();
+        } else {
+          openSingleDial(did);
+        }
+      });
+    }
+
+    var dialPills = mountEl.querySelectorAll('[data-sdial-pill]');
+    for (var dp = 0; dp < dialPills.length; dp++) {
+      dialPills[dp].addEventListener('click', function () {
+        openSingleDial(this.getAttribute('data-sdial-pill'));
+      });
+    }
+
+    mountEl.querySelector('#' + uid + 'sexp-close').addEventListener('click', closeSingleDial);
+    var mlCue = mountEl.querySelector('.labs-s-ml-cue');
+    if (mlCue) {
+      mlCue.style.cursor = 'pointer';
+      mlCue.addEventListener('click', function () {
+        openSingleDial('s_ml');
+      });
+    }
+
     function drawAllSingleCharts() {
       drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), feat, '#60A5FA');
       drawPitchContourPlot(mountEl.querySelector('#' + uid + 'c_pitch'), feat);
       drawModulationPlot(mountEl.querySelector('#' + uid + 'c_mod'), feat);
       drawEnvelopePlot(mountEl.querySelector('#' + uid + 'c_env'), feat);
+      redrawExpandedSingle();
     }
 
     var specCanvas = mountEl.querySelector('#' + uid + 'spec3d');
@@ -1179,8 +2159,11 @@
     mountEl.querySelector('.labs-s-email-audio').addEventListener('click', function () {
       if (opts.onEmailAudio) opts.onEmailAudio(sound);
     });
+    mountEl.querySelector('.labs-s-pdf').addEventListener('click', function () {
+      if (opts.onDownloadPdf) opts.onDownloadPdf(sound, [specCanvas]);
+    });
     mountEl.querySelector('.labs-s-email-report').addEventListener('click', function () {
-      if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound);
+      if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
     });
 
     var pBtns = mountEl.querySelectorAll('[data-spreset]');
@@ -1346,6 +2329,7 @@
     ctx.fillText('100% Wet', 4, pad.t + 8);
     ctx.textAlign = 'right';
     ctx.fillText('1.6kHz ->', pad.l + pw, h - 7);
+    finishDarkPlot(p);
   }
 
   function renderGroupDashboard(mountEl, opts) {
@@ -1387,7 +2371,8 @@
       '      <button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-g-play">▶ Play Combined Track</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-stop">⏹ Stop</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-email-audio">🎵 Email MP3</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-email-report">📧 Email Group Report</button>' +
+      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email Analysis</button>' +
       '    </div>' +
       '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
       '  </section>' +
@@ -1474,8 +2459,11 @@
     mountEl.querySelector('.labs-g-email-audio').addEventListener('click', function () {
       if (opts.onEmailAudio) opts.onEmailAudio(g);
     });
+    mountEl.querySelector('.labs-g-pdf').addEventListener('click', function () {
+      if (opts.onDownloadPdf) opts.onDownloadPdf(g, [specCanvas]);
+    });
     mountEl.querySelector('.labs-g-email-report').addEventListener('click', function () {
-      if (opts.onEmailAnalysis) opts.onEmailAnalysis(g);
+      if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
     });
 
     var gBtns = mountEl.querySelectorAll('[data-gpreset]');
@@ -1510,9 +2498,18 @@
 
   TootLabs.Fartnalysis = {
     gaugeStatus: gaugeStatus,
+    classifyAcousticProfile: classifyAcousticProfile,
     buildExecutiveGauges: buildExecutiveGauges,
     buildSingleGauges: buildSingleGauges,
+    buildSingleDialReport: buildSingleDialReport,
     buildGroupGauges: buildGroupGauges,
+    drawSingleChartType: drawSingleChartType,
+    drawSpectrumPlot: drawSpectrumPlot,
+    drawPitchContourPlot: drawPitchContourPlot,
+    drawModulationPlot: drawModulationPlot,
+    drawEnvelopePlot: drawEnvelopePlot,
+    drawConstellationPlot: drawConstellationPlot,
+    drawSegmentedWaveform: drawSegmentedWaveform,
     renderDashboard: renderDashboard,
     renderSingleDashboard: renderSingleDashboard,
     renderGroupDashboard: renderGroupDashboard

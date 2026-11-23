@@ -179,11 +179,58 @@
     showToast('Downloaded "' + filename + '" & opened email draft (attach file to send)');
   }
 
-  function emailAnalysisReport(subject, reportText) {
-    if (!reportText) return;
-    copyTextQuiet(reportText).then(function (copied) {
-      openMailDraft(subject, reportText);
-      showToast(copied ? 'Opened email draft & copied report to clipboard' : 'Opened email draft with report');
+  function buildPdfFromOpts(pdfOpts) {
+    if (!TootLabs.PdfExport || typeof TootLabs.PdfExport.generateAnalysisPdf !== 'function') {
+      return null;
+    }
+    try {
+      return TootLabs.PdfExport.generateAnalysisPdf(pdfOpts);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function downloadAnalysisPdf(pdfOpts) {
+    var pdfRes = buildPdfFromOpts(pdfOpts);
+    if (!pdfRes || !pdfRes.blob) {
+      showToast('PDF generator unavailable', true);
+      return;
+    }
+    triggerBlobDownload(pdfRes.blob, pdfRes.filename);
+    showToast('Saved ' + pdfRes.pageCount + '-page PDF "' + pdfRes.filename + '"');
+  }
+
+  function emailAnalysisReport(subject, reportText, pdfOpts) {
+    var pdfRes = pdfOpts ? buildPdfFromOpts(pdfOpts) : null;
+    if (pdfRes && pdfRes.blob && typeof File === 'function' && navigator.share && typeof navigator.canShare === 'function') {
+      try {
+        var pdfFile = new File([pdfRes.blob], pdfRes.filename, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [pdfFile] })) {
+          navigator
+            .share({
+              title: subject,
+              text: reportText || subject,
+              files: [pdfFile]
+            })
+            .catch(function () {});
+          return;
+        }
+      } catch (e) {}
+    }
+
+    var body = reportText || '';
+    if (pdfRes && pdfRes.blob) {
+      triggerBlobDownload(pdfRes.blob, pdfRes.filename);
+      body = body + '\n\n(Attach downloaded multi-page PDF dossier "' + pdfRes.filename + '" to send.)';
+    }
+
+    copyTextQuiet(reportText || subject).then(function () {
+      openMailDraft(subject, body);
+      showToast(
+        pdfRes
+          ? 'Downloaded ' + pdfRes.pageCount + '-page PDF "' + pdfRes.filename + '" & opened email draft!'
+          : 'Opened email draft & copied report to clipboard'
+      );
     });
   }
 
@@ -805,7 +852,8 @@
         } else if (act === 'email_report') {
           emailAnalysisReport(
             'Fartnalysis Report: ' + getSampleName(sample),
-            TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS')
+            TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'),
+            { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
           );
         }
       });
@@ -1444,8 +1492,15 @@
         onEmailAudio: function (g) {
           emailAudioSound(g, 'MULTI-FART MEGAMIX');
         },
-        onEmailAnalysis: function (g) {
-          emailAnalysisReport('Multi-Fart Megamix Analysis', TootLabs.Store.buildGroupAnalysisReportText(g));
+        onDownloadPdf: function (g, specCanvases) {
+          downloadAnalysisPdf({ mode: 'group', groupObj: g, specCanvases: specCanvases });
+        },
+        onEmailAnalysis: function (g, specCanvases) {
+          emailAnalysisReport(
+            'Multi-Fart Megamix Analysis',
+            TootLabs.Store.buildGroupAnalysisReportText(g),
+            { mode: 'group', groupObj: g, specCanvases: specCanvases }
+          );
         }
       });
       return;
@@ -1476,8 +1531,15 @@
         onEmailAudio: function (s) {
           emailAudioSound(s, 'ORIGINAL FART');
         },
-        onEmailAnalysis: function (s) {
-          emailAnalysisReport('Fartnalysis Report: ' + getSampleName(s), TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'));
+        onDownloadPdf: function (s, specCanvases) {
+          downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases });
+        },
+        onEmailAnalysis: function (s, specCanvases) {
+          emailAnalysisReport(
+            'Fartnalysis Report: ' + getSampleName(s),
+            TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'),
+            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases }
+          );
         }
       });
       return;
@@ -1509,8 +1571,15 @@
         onEmailAudio: function (g) {
           emailAudioSound(g, 'GUESS RECORDING');
         },
-        onEmailAnalysis: function (g) {
-          emailAnalysisReport('Guess Fartnalysis: ' + g.name, TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'));
+        onDownloadPdf: function (g, specCanvases) {
+          downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases });
+        },
+        onEmailAnalysis: function (g, specCanvases) {
+          emailAnalysisReport(
+            'Guess Fartnalysis: ' + g.name,
+            TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'),
+            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases }
+          );
         }
       });
       return;
@@ -1531,10 +1600,14 @@
           null
         );
       },
-      onEmailAnalysis: function (sA, sB, r, exact) {
+      onDownloadPdf: function (sA, sB, r, exact, specCanvases) {
+        downloadAnalysisPdf({ mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases });
+      },
+      onEmailAnalysis: function (sA, sB, r, exact, specCanvases) {
         emailAnalysisReport(
           'Toot Match Comparison: ' + sB.name + ' vs ' + getSampleName(sA),
-          TootLabs.Store.buildComparisonReportText(sA, sB, r, exact)
+          TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
+          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases }
         );
       }
     });
@@ -1702,7 +1775,11 @@
     $('btn-detail-email-analysis').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
       if (sample) {
-        emailAnalysisReport('Fartnalysis Report: ' + getSampleName(sample), TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'));
+        emailAnalysisReport(
+          'Fartnalysis Report: ' + getSampleName(sample),
+          TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'),
+          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
+        );
       }
     });
     $('btn-detail-rename').addEventListener('click', function () {
@@ -1796,7 +1873,8 @@
       var o = state.lastOutcome;
       emailAnalysisReport(
         'Toot Match Referee Report: ' + o.attempt.name,
-        TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore)
+        TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore),
+        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result }
       );
     });
     $('btn-res-share').addEventListener('click', function () {
