@@ -3161,3 +3161,210 @@ select {
     transform: translate(115px, -24px) scale(2.05);
   }
 }
+
+/* ==================== AUTHENTICITY ANALYSIS MODULE ==================== */
+.labs-auth-summary {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.labs-auth-ring-wrap {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.labs-auth-ring-svg {
+  transform: rotate(-90deg);
+  display: block;
+}
+
+.labs-auth-ring-track {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.16);
+  stroke-width: 9;
+}
+
+.labs-auth-ring-fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.labs-auth-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+}
+
+.labs-auth-ring-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.labs-auth-ring-lbl {
+  margin-top: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #CBD5E1;
+  line-height: 1.15;
+}
+
+.labs-auth-kpis {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.labs-auth-verdict-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+  border-left: 3px solid rgba(56, 189, 248, 0.65);
+}
+
+.labs-auth-verdict-text {
+  margin: 4px 0 0;
+  font-size: 0.84rem;
+  line-height: 1.48;
+  color: #E2E8F0;
+}
+
+.labs-auth-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.labs-auth-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(10, 15, 25, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.labs-auth-row-overall {
+  background: rgba(16, 26, 44, 0.92);
+  border-color: rgba(56, 189, 248, 0.34);
+}
+
+.labs-auth-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.labs-auth-row-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 170px;
+}
+
+.labs-auth-row-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #F8FAFC;
+}
+
+.labs-auth-row-hint {
+  font-size: 0.72rem;
+  color: #94A3B8;
+}
+
+.labs-auth-row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.labs-auth-bar-track {
+  width: 92px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  overflow: hidden;
+}
+
+.labs-auth-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.labs-auth-row-score {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.86rem;
+  font-weight: 800;
+  min-width: 38px;
+  text-align: right;
+}
+
+.labs-auth-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.labs-auth-row-explain {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: #CBD5E1;
+}
+
+.labs-auth-cmp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.labs-auth-cmp-col .labs-auth-summary {
+  margin-top: 0;
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 780px) {
+  .labs-auth-summary {
+    grid-template-columns: 1fr;
+  }
+  .labs-auth-cmp-grid {
+    grid-template-columns: 1fr;
+  }
+  .labs-auth-row-right {
+    margin-left: 0;
+    width: 100%;
+  }
+}

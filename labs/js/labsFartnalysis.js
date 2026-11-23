@@ -299,6 +299,8 @@
     var labelA = opts.labelA || soundA.displayName || soundA.name || 'Reference';
     var labelB = opts.labelB || soundB.displayName || soundB.name || 'Attempt';
     var exactScore = root.TootLabs.Store ? root.TootLabs.Store.computeExactScore(result) : result.overall;
+    var authA = computeAuthenticityAnalysis(soundA);
+    var authB = computeAuthenticityAnalysis(soundB);
 
     var rowItems = gauges.slice();
     if (bonus && bonus.acoustics) {
@@ -320,6 +322,7 @@
         tone: twinSt.tone
       });
     }
+    rowItems.push(buildAuthenticitySummaryRow('authenticity', authA, authB, labelA, labelB));
 
     var cmpVerdict = root.TootLabs.Store
       ? root.TootLabs.Store.buildScientificVerdict(soundA, soundB, result, exactScore)
@@ -518,7 +521,6 @@
     }
 
     function openInlineRow(rowId, fKey) {
-      if (!Forensics) return;
       var matched = null;
       for (var i = 0; i < rowItems.length; i++) {
         if (rowItems[i].id === rowId) {
@@ -529,6 +531,7 @@
       if (!matched && rowItems.length > 0) matched = rowItems[0];
       var resolvedId = matched ? matched.id : rowId;
       var targetFKey = fKey || (matched ? matched.forensicsKey : 'overall');
+      if (resolvedId !== 'authenticity' && !Forensics) return;
 
       closeActiveRow();
 
@@ -542,6 +545,28 @@
       if (itemEl) itemEl.classList.add('open');
       if (rowBtn) rowBtn.setAttribute('aria-expanded', 'true');
       slotEl.classList.remove('hidden');
+
+      if (resolvedId === 'authenticity') {
+        activeMountEl = slotEl;
+        slotEl.innerHTML = renderAuthenticityComparisonAccordionHtml(labelA, authA, labelB, authB);
+        var closeAuthBtn = slotEl.querySelector('.labs-acc-close');
+        if (closeAuthBtn) closeAuthBtn.addEventListener('click', closeActiveRow);
+        var drawAuthNow = function () {
+          var authCanvas = slotEl.querySelector('canvas[data-auth-chart]');
+          if (authCanvas) drawAuthenticityPlot(authCanvas, authA, authB, labelA, labelB);
+          if (itemEl && typeof itemEl.scrollIntoView === 'function') {
+            try {
+              itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {}
+          }
+        };
+        if (typeof root.requestAnimationFrame === 'function') {
+          root.requestAnimationFrame(drawAuthNow);
+        } else {
+          drawAuthNow();
+        }
+        return;
+      }
 
       slotEl.innerHTML = '<div class="labs-forensics-mount"></div>';
 
@@ -744,7 +769,10 @@
       resize: function () {
         if (specA) specA.resize();
         if (specB) specB.resize();
-        if (Forensics && activeMountEl && activeForensicsKey) {
+        if (activeRowId === 'authenticity' && activeMountEl) {
+          var authCanvas = activeMountEl.querySelector('canvas[data-auth-chart]');
+          if (authCanvas) drawAuthenticityPlot(authCanvas, authA, authB, labelA, labelB);
+        } else if (Forensics && activeMountEl && activeForensicsKey) {
           Forensics.redrawDrawer(activeMountEl);
         }
       },
@@ -2015,6 +2043,760 @@
     return Object.assign({ id: g.id, score: g.score, color: g.color }, found);
   }
 
+  /* ==================== AUTHENTICITY ANALYSIS (PURE HEURISTICS, INFORMATIONAL ONLY) ==================== */
+  function classifyAuthenticityScore(score) {
+    var s = clamp(safeNum(score, 50), 0, 100);
+    if (s < 20) {
+      return { key: 'highly_suspicious', label: 'Highly Suspicious', color: '#F87171', tone: 'low' };
+    }
+    if (s < 40) {
+      return { key: 'likely_mouth', label: 'Likely Mouth Generated', color: '#FB923C', tone: 'warn' };
+    }
+    if (s < 60) {
+      return { key: 'uncertain', label: 'Uncertain', color: '#FBBF24', tone: 'mid' };
+    }
+    if (s < 80) {
+      return { key: 'likely_authentic', label: 'Likely Authentic', color: '#38BDF8', tone: 'good' };
+    }
+    return { key: 'highly_authentic', label: 'Highly Authentic', color: '#22C55E', tone: 'good' };
+  }
+
+  function metricIntensityLabel(score) {
+    var s = clamp(safeNum(score, 0), 0, 100);
+    if (s < 30) return 'Low';
+    if (s < 55) return 'Moderate';
+    if (s < 75) return 'Elevated';
+    return 'High';
+  }
+
+  function authenticityMetricColor(score, polarity) {
+    var s = clamp(safeNum(score, 0), 0, 100);
+    if (polarity === 'overall') return classifyAuthenticityScore(s).color;
+    var favorable = polarity === 'suspicious' ? 100 - s : s;
+    if (favorable >= 70) return '#22C55E';
+    if (favorable >= 45) return '#38BDF8';
+    if (favorable >= 25) return '#FBBF24';
+    return '#F87171';
+  }
+
+  function computeAuthenticityAnalysis(soundOrFeat) {
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var feat = null;
+    if (soundOrFeat) {
+      if (soundOrFeat.features) {
+        feat = soundOrFeat.features;
+      } else if (typeof soundOrFeat.spectralCentroidHz === 'number' && soundOrFeat.avgSpectrum) {
+        feat = soundOrFeat;
+      } else if (DSP && soundOrFeat.samples && soundOrFeat.samples.length > 0) {
+        feat = DSP.extractFeatures(soundOrFeat.samples, soundOrFeat.sampleRate || 44100);
+        soundOrFeat.features = feat;
+      }
+    }
+
+    if (!feat) {
+      var fallbackTier = classifyAuthenticityScore(50);
+      return {
+        authenticityScore: 50,
+        organicProbability: 50,
+        mouthSuspicion: 50,
+        tier: fallbackTier,
+        confidenceLevel: 'Low',
+        confidenceScore: 15,
+        verdict: 'Evidence is inconclusive due to insufficient acoustic telemetry. Further investigation recommended.',
+        breakdown: [
+          { key: 'pitch_stability', name: 'Pitch Stability', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.12, explanation: 'Insufficient voiced frames to isolate vocal pitch locking.' },
+          { key: 'harmonic_regularity', name: 'Harmonic Regularity', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.13, explanation: 'Overtone periodicity could not be conclusively resolved.' },
+          { key: 'spectral_complexity', name: 'Spectral Complexity', score: 50, status: 'Moderate', statusColor: '#38BDF8', polarity: 'authentic', weight: 0.14, explanation: 'Baseline spectral spread metrics unavailable.' },
+          { key: 'airflow_turbulence', name: 'Airflow Turbulence', score: 50, status: 'Moderate', statusColor: '#38BDF8', polarity: 'authentic', weight: 0.17, explanation: 'Modulation depth and impulse transients unavailable.' },
+          { key: 'resonance_pattern', name: 'Resonance Pattern', score: 50, status: 'Moderate', statusColor: '#38BDF8', polarity: 'authentic', weight: 0.16, explanation: 'Acoustic chamber distribution unavailable.' },
+          { key: 'formant_presence', name: 'Formant Presence', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.15, explanation: 'Speech-tract formant scan yielded inconclusive baseline.' },
+          { key: 'breath_contamination', name: 'Breath Contamination', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.13, explanation: 'Boundary respiratory air telemetry unavailable.' },
+          { key: 'overall_authenticity', name: 'Overall Authenticity Score', score: 50, status: fallbackTier.label, statusColor: fallbackTier.color, polarity: 'overall', weight: 1.0, explanation: 'Informational origin likelihood score derived solely from DSP heuristics.' }
+        ]
+      };
+    }
+
+    var bp = feat.bandProfile && feat.bandProfile.length >= 4 ? feat.bandProfile : [0.25, 0.35, 0.25, 0.15];
+    var subShare = clamp(safeNum(bp[0], 0), 0, 1);
+    var lowMidShare = clamp(safeNum(bp[1], 0), 0, 1);
+    var upperMidShare = clamp(safeNum(bp[2], 0), 0, 1);
+    var highAirShare = clamp(safeNum(bp[3], 0), 0, 1);
+    var lowChamberShare = clamp(subShare + lowMidShare, 0, 1);
+
+    var duration = clamp(safeNum(feat.duration, 0.4), 0.04, 30);
+    var voicedRatio = clamp(safeNum(feat.voicedRatio, 0), 0, 1);
+    var medianPitchHz = clamp(safeNum(feat.medianPitchHz, 0), 0, 1200);
+    var pitchRangeSt = clamp(safeNum(feat.pitchRangeSemitones, 0), 0, 36);
+    var pitchTrend = safeNum(feat.pitchTrend, 0);
+    var centroidHz = clamp(safeNum(feat.spectralCentroidHz, 240), 40, 6000);
+    var spectralFlatness = clamp(safeNum(feat.spectralFlatness, 0.2), 0, 1);
+    var spectralFlux = clamp(safeNum(feat.spectralFlux, 0.04), 0, 1);
+    var attackSec = clamp(safeNum(feat.attackSec, 0.06), 0.001, 10);
+    var decaySec = clamp(safeNum(feat.decaySec, 0.15), 0.001, 15);
+    var crestDb = clamp(safeNum(feat.crestFactorDb, 8), 0, 35);
+    var modRateHz = clamp(safeNum(feat.modRateHz, 12), 0, 60);
+    var modDepth = clamp(safeNum(feat.modDepth, 0.4), 0, 3);
+    var modBands = feat.modBands && feat.modBands.length >= 3 ? feat.modBands : [0.3, 0.4, 0.3];
+    var burstCount = Math.max(1, Math.round(safeNum(feat.burstCount, 1)));
+    var zcr = clamp(safeNum(feat.zcr, 200), 0, 8000);
+
+    // Inspect 40-band spectrum & 32-frame grid for formants, harmonics & boundary breathiness
+    var avgSpec = feat.avgSpectrum && feat.avgSpectrum.length ? feat.avgSpectrum : [];
+    var specObj = feat.spectrogram || null;
+    var centers = specObj && specObj.freqCenters && specObj.freqCenters.length ? specObj.freqCenters : null;
+    var nBands = avgSpec.length || (centers ? centers.length : 40);
+
+    var specSum = 0;
+    var subBandSum = 0;
+    var subBandCount = 0;
+    var f1Sum = 0;
+    var f1Peak = 0;
+    var f1Count = 0;
+    var f2Sum = 0;
+    var f2Peak = 0;
+    var f2Count = 0;
+    var hiAirSpecSum = 0;
+    var hiAirSpecCount = 0;
+    for (var bi = 0; bi < nBands; bi++) {
+      var mag = clamp(safeNum(avgSpec[bi], 0), 0, 1);
+      var freq = centers && bi < centers.length ? safeNum(centers[bi], 200) : 45 * Math.pow(4200 / 45, bi / Math.max(1, nBands - 1));
+      specSum += mag;
+      if (freq < 330) {
+        subBandSum += mag;
+        subBandCount++;
+      } else if (freq >= 350 && freq <= 850) {
+        f1Sum += mag;
+        if (mag > f1Peak) f1Peak = mag;
+        f1Count++;
+      } else if (freq >= 950 && freq <= 2300) {
+        f2Sum += mag;
+        if (mag > f2Peak) f2Peak = mag;
+        f2Count++;
+      }
+      if (freq >= 1200) {
+        hiAirSpecSum += mag;
+        hiAirSpecCount++;
+      }
+    }
+
+    // Spectral Shannon Entropy across 40 frequency bins
+    var specEntropy = 0.5;
+    if (specSum > 1e-6 && nBands > 1) {
+      var rawH = 0;
+      for (var ei = 0; ei < nBands; ei++) {
+        var pk = clamp(safeNum(avgSpec[ei], 0), 0, 1) / specSum;
+        if (pk > 1e-9) rawH -= pk * Math.log(pk);
+      }
+      specEntropy = clamp(rawH / Math.log(nBands), 0, 1);
+    }
+
+    // Pitch frame-to-frame jitter across voiced frames
+    var pitchArr = feat.pitchHzArr || [];
+    var prevHz = 0;
+    var stepSum = 0;
+    var stepCnt = 0;
+    for (var pi = 0; pi < pitchArr.length; pi++) {
+      var curHz = safeNum(pitchArr[pi], 0);
+      if (curHz > 20) {
+        if (prevHz > 20) {
+          stepSum += 12 * Math.abs(Math.log(curHz / prevHz) / Math.LN2);
+          stepCnt++;
+        }
+        prevHz = curHz;
+      } else {
+        prevHz = 0;
+      }
+    }
+    var meanPitchStep = stepCnt > 0 ? stepSum / stepCnt : 0;
+
+    // Centroid variation across frames
+    var cArr = feat.centroidContour || [];
+    var cMean = 0;
+    var cCnt = cArr.length || 0;
+    for (var ci = 0; ci < cCnt; ci++) cMean += safeNum(cArr[ci], 0);
+    cMean = cCnt > 0 ? cMean / cCnt : 0;
+    var cVar = 0;
+    for (var cj = 0; cj < cCnt; cj++) {
+      var cd = safeNum(cArr[cj], 0) - cMean;
+      cVar += cd * cd;
+    }
+    var centroidStd = cCnt > 0 ? Math.sqrt(cVar / cCnt) : 0.25;
+
+    // Envelope frame-to-frame delta & mean energy (checks abrupt airflow turbulence vs smooth vocal/breath plateau)
+    var env = feat.envelope || [];
+    var envMean = 0;
+    var envDeltaSum = 0;
+    for (var vi = 0; vi < env.length; vi++) {
+      var ev = clamp(safeNum(env[vi], 0), 0, 1);
+      envMean += ev;
+      if (vi > 0) envDeltaSum += Math.abs(ev - clamp(safeNum(env[vi - 1], 0), 0, 1));
+    }
+    envMean = env.length > 0 ? envMean / env.length : 0.2;
+    var envJitter = env.length > 1 ? envDeltaSum / (env.length - 1) : 0.08;
+
+    // Boundary breathiness from spectrogram grid (high-frequency fraction in first 15% and last 22% frames)
+    var boundaryHighRatio = highAirShare;
+    if (specObj && specObj.grid && specObj.frames > 4 && nBands > 0) {
+      var nFrames = specObj.frames;
+      var startEnd = Math.max(1, Math.floor(nFrames * 0.16));
+      var tailStart = Math.max(startEnd, Math.floor(nFrames * 0.78));
+      var bHi = 0;
+      var bTot = 0;
+      for (var fi = 0; fi < nFrames; fi++) {
+        if (fi < startEnd || fi >= tailStart) {
+          var rowOff = fi * nBands;
+          for (var kb = 0; kb < nBands; kb++) {
+            var gv = clamp(safeNum(specObj.grid[rowOff + kb], 0), 0, 1);
+            var fc = centers && kb < centers.length ? safeNum(centers[kb], 200) : 45 * Math.pow(4200 / 45, kb / Math.max(1, nBands - 1));
+            bTot += gv;
+            if (fc >= 1150) bHi += gv;
+          }
+        }
+      }
+      if (bTot > 1e-4) boundaryHighRatio = clamp(bHi / bTot, 0, 1);
+    }
+
+    // 1. PITCH STABILITY (0-100; high = steady vocal pitch control -> suspicious)
+    var steadiness = stepCnt > 0 ? clamp(1 - meanPitchStep / 3.4, 0, 1) : clamp(1 - centroidStd / 0.55, 0, 1);
+    var narrowness = stepCnt > 0 ? clamp(1 - pitchRangeSt / 8.5, 0, 1) : clamp(1 - Math.abs(safeNum(feat.centroidTrend, 0)) / 0.7, 0, 1);
+    var pitchZoneRisk = medianPitchHz >= 120 && medianPitchHz <= 290 ? 1.0 : (medianPitchHz > 290 ? 0.78 : 0.28);
+    var subBassDamp = lowChamberShare > 0.78 && upperMidShare < 0.16 ? 0.65 : 1.0;
+    var stabilityRaw = voicedRatio >= 0.22
+      ? (0.34 * voicedRatio + 0.28 * steadiness + 0.18 * narrowness + 0.20 * pitchZoneRisk) * subBassDamp
+      : 0.18 * steadiness + 0.14 * narrowness + 0.08 * voicedRatio;
+    var pitchStabilityScore = Math.round(clamp(stabilityRaw * 100, 4, 96));
+
+    // 2. HARMONIC REGULARITY (0-100; high = clean mid-band vocal harmonics -> suspicious)
+    var harmonicOrder = clamp(1 - spectralFlatness * 2.1, 0, 1);
+    var lowChaosBonus = clamp(1 - spectralFlux / 0.12, 0, 1);
+    var singleBurstOrder = clamp(1 - (burstCount - 1) / 3, 0, 1);
+    var vocalBandFocus = clamp((upperMidShare - 0.08) / 0.36, 0, 1);
+    var harmonicRaw = 0.28 * voicedRatio * (0.45 + 0.55 * vocalBandFocus) + 0.24 * harmonicOrder * (0.4 + 0.6 * vocalBandFocus) + 0.22 * lowChaosBonus + 0.16 * vocalBandFocus + 0.10 * singleBurstOrder;
+    if (subShare > 0.35 && upperMidShare < 0.18) harmonicRaw *= 0.62;
+    var harmonicRegularityScore = Math.round(clamp(harmonicRaw * 100, 5, 95));
+
+    // 3. SPECTRAL COMPLEXITY (0-100; high = rich entropy + dynamic flux -> authentic)
+    var fluxRichness = clamp(spectralFlux / 0.095, 0, 1);
+    var centroidDynamics = clamp(centroidStd / 0.45, 0, 1);
+    var pitchSweepDiversity = clamp(pitchRangeSt / 7.5, 0, 1);
+    var hissDamp = highAirShare > 0.32 ? clamp(1 - (highAirShare - 0.32) * 1.45, 0.25, 1) : 1.0;
+    var complexityRaw = (0.46 * specEntropy + 0.28 * fluxRichness + 0.16 * centroidDynamics + 0.10 * pitchSweepDiversity) * hissDamp;
+    var spectralComplexityScore = Math.round(clamp(complexityRaw * 100, 8, 97));
+
+    // 4. AIRFLOW TURBULENCE (0-100; high = explosive attack + cheek flutter + burst irregularity -> authentic)
+    var attackSharpness = clamp(1 - (attackSec - 0.015) / 0.21, 0, 1);
+    var crestPunch = clamp((crestDb - 4.0) / 13.5, 0, 1);
+    var flutterIndex = clamp(modDepth / 0.85, 0, 1);
+    var flutterBandFit = clamp((safeNum(modBands[1], 0) + safeNum(modBands[2], 0)) / 0.72, 0, 1);
+    var burstTurbulence = clamp(envJitter / 0.12, 0, 1);
+    var rateAffinity = modRateHz >= 6 && modRateHz <= 34 ? 1.0 : 0.42;
+    var turbulenceRaw =
+      0.26 * attackSharpness +
+      0.22 * crestPunch +
+      0.24 * (0.65 * flutterIndex + 0.35 * rateAffinity) +
+      0.16 * flutterBandFit +
+      0.12 * burstTurbulence;
+    var airflowTurbulenceScore = Math.round(clamp(turbulenceRaw * 100, 6, 98));
+
+    // 5. RESONANCE PATTERN (0-100; high = authentic pelvic low-mid chamber dominance + pressure drop -> authentic)
+    var chamberDominance = clamp((lowChamberShare - 0.30) / 0.62, 0, 1);
+    var centroidFit =
+      centroidHz <= 320
+        ? clamp(1 - Math.max(0, 75 - centroidHz) / 120, 0.72, 1)
+        : clamp(1 - (centroidHz - 320) / 520, 0.04, 1);
+    var pressureDecayDrop = (pitchTrend < -0.4 || safeNum(feat.centroidTrend, 0) < -0.03) ? 0.96 : 0.44;
+    var subVsMouthRatio = clamp(lowChamberShare / (upperMidShare * 1.4 + highAirShare * 1.6 + 0.12), 0, 2.2) / 2.2;
+    var resonanceRaw = 0.42 * chamberDominance + 0.30 * centroidFit + 0.18 * subVsMouthRatio + 0.10 * pressureDecayDrop;
+    var resonancePatternScore = Math.round(clamp(resonanceRaw * 100, 5, 98));
+
+    // 6. FORMANT PRESENCE (0-100; high = strong speech F1/F2 or bilabial lip signatures -> suspicious)
+    var subAvg = subBandCount > 0 ? subBandSum / subBandCount : 0.25;
+    var f1Avg = f1Count > 0 ? f1Sum / f1Count : 0;
+    var f2Avg = f2Count > 0 ? f2Sum / f2Count : 0;
+    var f1Signal = 0.45 * f1Avg + 0.55 * f1Peak;
+    var f2Signal = 0.45 * f2Avg + 0.55 * f2Peak;
+    var f1Ratio = clamp(f1Signal / Math.max(0.16, subAvg * 0.95), 0, 1.15) / 1.15;
+    var f2Ratio = clamp(f2Signal / Math.max(0.14, subAvg * 0.85), 0, 1.15) / 1.15;
+    var midTractEnergy = clamp((upperMidShare - 0.08) / 0.32, 0, 1);
+    var lipSpitCue = centroidHz > 280 ? clamp((centroidHz - 280) / 520, 0, 1) : 0;
+    var mfccSlopeCue = feat.mfccMean && feat.mfccMean.length >= 3
+      ? clamp((safeNum(feat.mfccMean[1], 0) < 12 ? (12 - safeNum(feat.mfccMean[1], 0)) / 22 : 0.15), 0, 1)
+      : 0.25;
+    var formantRaw = 0.28 * f1Ratio + 0.28 * f2Ratio + 0.24 * midTractEnergy + 0.14 * lipSpitCue + 0.06 * mfccSlopeCue;
+    var formantPresenceScore = Math.round(clamp(formantRaw * 100, 4, 96));
+
+    // 7. BREATH CONTAMINATION (0-100; high = upper-band respiratory hiss & boundary exhalation bleed -> suspicious)
+    var upperAirCue = clamp((highAirShare - 0.03) / 0.24, 0, 1);
+    var boundaryCue = clamp((boundaryHighRatio - 0.06) / 0.28, 0, 1);
+    var zcrBreathCue = clamp((zcr - 220) / 1100, 0, 1);
+    var slowRampBreath = clamp((attackSec - 0.035) / 0.20, 0, 1) * clamp(highAirShare / 0.14, 0, 1);
+    var hiAvgSpec = hiAirSpecCount > 0 ? hiAirSpecSum / hiAirSpecCount : 0;
+    var hissPresence = clamp(hiAvgSpec / 0.30, 0, 1);
+    var breathRaw = 0.30 * upperAirCue + 0.28 * boundaryCue + 0.18 * zcrBreathCue + 0.14 * hissPresence + 0.10 * slowRampBreath;
+    var breathContaminationScore = Math.round(clamp(breathRaw * 100, 3, 97));
+
+    // Weighted contribution toward Overall Authenticity Score (weights sum to 1.00)
+    var contribs = [
+      { key: 'pitch_stability', weight: 0.12, organic: (100 - pitchStabilityScore) / 100 },
+      { key: 'harmonic_regularity', weight: 0.13, organic: (100 - harmonicRegularityScore) / 100 },
+      { key: 'spectral_complexity', weight: 0.14, organic: spectralComplexityScore / 100 },
+      { key: 'airflow_turbulence', weight: 0.17, organic: airflowTurbulenceScore / 100 },
+      { key: 'resonance_pattern', weight: 0.16, organic: resonancePatternScore / 100 },
+      { key: 'formant_presence', weight: 0.15, organic: (100 - formantPresenceScore) / 100 },
+      { key: 'breath_contamination', weight: 0.13, organic: (100 - breathContaminationScore) / 100 }
+    ];
+
+    var weightedOrganic = 0;
+    var meanOrganic = 0;
+    for (var wi = 0; wi < contribs.length; wi++) {
+      weightedOrganic += contribs[wi].weight * contribs[wi].organic;
+      meanOrganic += contribs[wi].organic;
+    }
+    meanOrganic /= contribs.length;
+
+    var authenticityScore = Math.round(clamp(weightedOrganic * 100, 2, 98));
+    var organicProbability = authenticityScore;
+    var mouthSuspicion = 100 - authenticityScore;
+    var tier = classifyAuthenticityScore(authenticityScore);
+
+    // Separate Confidence Score (certainty of measurement, NOT authenticity itself)
+    var orgVar = 0;
+    for (var vi2 = 0; vi2 < contribs.length; vi2++) {
+      var dOrg = contribs[vi2].organic - meanOrganic;
+      orgVar += dOrg * dOrg;
+    }
+    var orgStd = Math.sqrt(orgVar / contribs.length);
+    var agreementScore = clamp(1 - orgStd / 0.36, 0, 1);
+    var durationScore = clamp((duration - 0.10) / 0.55, 0, 1);
+    var signalEnergyScore = clamp((envMean - 0.04) / 0.22, 0, 1);
+    var decisivenessBonus = clamp(Math.abs(authenticityScore - 50) / 38, 0, 1);
+    var confidenceScore = Math.round(
+      clamp(100 * (0.38 * agreementScore + 0.27 * durationScore + 0.18 * signalEnergyScore + 0.17 * decisivenessBonus), 10, 96)
+    );
+    var confidenceLevel = confidenceScore >= 68 ? 'High' : (confidenceScore >= 40 ? 'Moderate' : 'Low');
+
+    var pitchExplain =
+      pitchStabilityScore >= 70
+        ? 'Suspiciously steady F0 lock (' + (voicedRatio * 100).toFixed(0) + '% voiced) consistent with deliberate vocal pitch control.'
+        : pitchStabilityScore >= 45
+          ? 'Moderately stabilized frequency contour; minor tonal control or steady cavity oscillation observed.'
+          : 'Organic pitch instability and irregular frame drift observed across the emission.';
+
+    var harmonicExplain =
+      harmonicRegularityScore >= 70
+        ? 'Clean overtone spacing and low spectral mutation suggest probable vocal-fold periodicity.'
+        : harmonicRegularityScore >= 45
+          ? 'Mixed periodic pulse train with intermittent harmonic disruption.'
+          : 'Chaotic pulse-train harmonics and rapid spectral mutation support involuntary flutter.';
+
+    var complexityExplain =
+      spectralComplexityScore >= 70
+        ? 'Rich spectral entropy and vigorous frame-to-frame texture evolution support organic gas dynamics.'
+        : spectralComplexityScore >= 45
+          ? 'Moderate spectral complexity with balanced broadband dispersion.'
+          : 'Narrow, overly uniform frequency contour typical of simplified tonal imitation.';
+
+    var turbulenceExplain =
+      airflowTurbulenceScore >= 70
+        ? 'Strong turbulence signatures, explosive attack (' + (attackSec * 1000).toFixed(0) + ' ms), and ' + Math.round(modRateHz) + ' Hz flutter support authenticity.'
+        : airflowTurbulenceScore >= 45
+          ? 'Moderate airflow irregularity and impulse modulation detected.'
+          : 'Smooth ramp-up and muted turbulence suggest controlled oral or gentle steady air release.';
+
+    var resonanceExplain =
+      resonancePatternScore >= 70
+        ? 'Dominant sub-450 Hz resonance (' + Math.round(lowChamberShare * 100) + '% energy) matches lower acoustic chamber geometry.'
+        : resonancePatternScore >= 45
+          ? 'Intermediate cavity weighting; resonance distribution partially straddles lower and upper chambers.'
+          : 'Underpowered sub-450 Hz foundation; acoustic energy sits suspiciously high for pelvic cavity resonance.';
+
+    var formantExplain =
+      formantPresenceScore >= 70
+        ? 'Speech-like resonance patterns and elevated F1/F2 lip-activity signatures detected.'
+        : formantPresenceScore >= 45
+          ? 'Mild mid-band formant peaks detected; possible lip-cushion shaping or upholstery coloration.'
+          : 'Negligible speech formant clustering; frequency profile bypasses human vowel corridors.';
+
+    var breathExplain =
+      breathContaminationScore >= 70
+        ? 'Elevated upper-band air hiss (' + Math.round(highAirShare * 100) + '% >1.2 kHz) suggests probable respiratory exhalation bleed.'
+        : breathContaminationScore >= 45
+          ? 'Moderate high-frequency air turbulence present near transient boundaries.'
+          : 'Minimal respiratory air contamination detected before onset or after decay.';
+
+    // Humorous, strictly probabilistic laboratory verdict (NEVER uses "REAL FART" / "FAKE FART")
+    var verdict;
+    if (authenticityScore >= 80) {
+      verdict =
+        airflowTurbulenceScore >= 65
+          ? 'Authentic characteristics observed. Acoustic characteristics are consistent with naturally occurring gastrointestinal gas release; strong turbulence signatures support authenticity.'
+          : 'Authentic characteristics observed. Dominant low-chamber resonance and minimal speech formant telemetry indicate highly probable involuntary emission.';
+    } else if (authenticityScore >= 60) {
+      verdict =
+        formantPresenceScore >= 55
+          ? 'Likely authentic rear-origin acoustic event. Mild mid-band resonance anomalies prevent complete exclusion of oral assistance, though probable organic origin prevails.'
+          : 'Likely authentic rear-origin acoustic event. Sub-450 Hz cavity profile and irregular airflow modulation support naturally occurring emission.';
+    } else if (authenticityScore >= 40) {
+      verdict =
+        breathContaminationScore >= 55 || formantPresenceScore >= 55
+          ? 'Evidence is inconclusive. The laboratory remains divided regarding the origin of this sample; elevated lip-resonance indicators coexist with plausible lower-chamber rumble. Further investigation recommended.'
+          : 'Evidence is inconclusive. Conflicting pitch, formant, and airflow indicators leave organic versus oral origin uncertain; further investigation recommended.';
+    } else if (authenticityScore >= 20) {
+      verdict =
+        breathContaminationScore >= 60
+          ? 'Likely mouth generated. Several indicators suggest possible facially generated emission activity with suspicious upper-band respiratory bleed.'
+          : 'Elevated lip-resonance indicators detected. Several indicators suggest possible facially generated emission activity rather than involuntary rear propulsion.';
+    } else {
+      verdict =
+        'Highly suspicious acoustic signature. Prominent formant structure, vocal pitch stability, and respiratory hiss indicate probable mouth-origin mimicry; further committee review advised.';
+    }
+
+    var breakdown = [
+      {
+        key: 'pitch_stability',
+        name: 'Pitch Stability',
+        score: pitchStabilityScore,
+        status: metricIntensityLabel(pitchStabilityScore),
+        statusColor: authenticityMetricColor(pitchStabilityScore, 'suspicious'),
+        polarity: 'suspicious',
+        weight: 0.12,
+        explanation: pitchExplain
+      },
+      {
+        key: 'harmonic_regularity',
+        name: 'Harmonic Regularity',
+        score: harmonicRegularityScore,
+        status: metricIntensityLabel(harmonicRegularityScore),
+        statusColor: authenticityMetricColor(harmonicRegularityScore, 'suspicious'),
+        polarity: 'suspicious',
+        weight: 0.13,
+        explanation: harmonicExplain
+      },
+      {
+        key: 'spectral_complexity',
+        name: 'Spectral Complexity',
+        score: spectralComplexityScore,
+        status: metricIntensityLabel(spectralComplexityScore),
+        statusColor: authenticityMetricColor(spectralComplexityScore, 'authentic'),
+        polarity: 'authentic',
+        weight: 0.14,
+        explanation: complexityExplain
+      },
+      {
+        key: 'airflow_turbulence',
+        name: 'Airflow Turbulence',
+        score: airflowTurbulenceScore,
+        status: metricIntensityLabel(airflowTurbulenceScore),
+        statusColor: authenticityMetricColor(airflowTurbulenceScore, 'authentic'),
+        polarity: 'authentic',
+        weight: 0.17,
+        explanation: turbulenceExplain
+      },
+      {
+        key: 'resonance_pattern',
+        name: 'Resonance Pattern',
+        score: resonancePatternScore,
+        status: metricIntensityLabel(resonancePatternScore),
+        statusColor: authenticityMetricColor(resonancePatternScore, 'authentic'),
+        polarity: 'authentic',
+        weight: 0.16,
+        explanation: resonanceExplain
+      },
+      {
+        key: 'formant_presence',
+        name: 'Formant Presence',
+        score: formantPresenceScore,
+        status: metricIntensityLabel(formantPresenceScore),
+        statusColor: authenticityMetricColor(formantPresenceScore, 'suspicious'),
+        polarity: 'suspicious',
+        weight: 0.15,
+        explanation: formantExplain
+      },
+      {
+        key: 'breath_contamination',
+        name: 'Breath Contamination',
+        score: breathContaminationScore,
+        status: metricIntensityLabel(breathContaminationScore),
+        statusColor: authenticityMetricColor(breathContaminationScore, 'suspicious'),
+        polarity: 'suspicious',
+        weight: 0.13,
+        explanation: breathExplain
+      },
+      {
+        key: 'overall_authenticity',
+        name: 'Overall Authenticity Score',
+        score: authenticityScore,
+        status: tier.label,
+        statusColor: tier.color,
+        polarity: 'overall',
+        weight: 1.0,
+        explanation: verdict
+      }
+    ];
+
+    return {
+      authenticityScore: authenticityScore,
+      organicProbability: organicProbability,
+      mouthSuspicion: mouthSuspicion,
+      tier: tier,
+      confidenceLevel: confidenceLevel,
+      confidenceScore: confidenceScore,
+      verdict: verdict,
+      breakdown: breakdown
+    };
+  }
+
+  function buildAuthenticitySummaryRow(rowId, authA, authB, labelA, labelB) {
+    if (authB) {
+      var avgScore = Math.round(clamp((authA.authenticityScore + authB.authenticityScore) / 2, 0, 100));
+      var avgTier = classifyAuthenticityScore(avgScore);
+      return {
+        id: rowId || 'authenticity',
+        title: '🔬 Authenticity Analysis',
+        score: avgScore,
+        sub: (labelA || 'Original') + ': ' + authA.authenticityScore + '% (' + authA.tier.label + ') vs ' + (labelB || 'Guess') + ': ' + authB.authenticityScore + '% (' + authB.tier.label + ')',
+        quip: 'Informational heuristic origin check (Organic vs Mouth Suspicion) — excluded from match scoring & rankings.',
+        forensicsKey: 'authenticity',
+        status: avgTier.label,
+        color: avgTier.color,
+        tone: avgTier.tone
+      };
+    }
+    var a = authA;
+    return {
+      id: rowId || 's_authenticity',
+      title: '🔬 Authenticity Analysis',
+      score: a.authenticityScore,
+      sub: a.tier.label + ' · Organic ' + a.organicProbability + '% · Mouth Suspicion ' + a.mouthSuspicion + '% · Confidence: ' + a.confidenceLevel,
+      quip: 'Informational origin check — heuristic estimate of natural acoustic release vs mouth-generated mimicry.',
+      status: a.tier.label,
+      color: a.tier.color,
+      tone: a.tier.tone
+    };
+  }
+
+  function drawAuthenticityPlot(target, authA, authB, labelA, labelB) {
+    var p = setupDarkPlot(target, 215);
+    if (!p || !authA || !authA.breakdown) return;
+    var ctx = p.ctx;
+    var w = p.w;
+    var h = p.h;
+    ctx.fillStyle = '#070B12';
+    ctx.fillRect(0, 0, w, h);
+
+    var items = authA.breakdown;
+    var padL = 136;
+    var padR = 44;
+    var padT = 18;
+    var padB = 18;
+    var plotW = Math.max(40, w - padL - padR);
+    var plotH = Math.max(40, h - padT - padB);
+    var rowStep = plotH / Math.max(1, items.length);
+
+    // Reference vertical grid lines at 20%, 40%, 60%, 80%, 100%
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+    ctx.lineWidth = 1;
+    var ticks = [20, 40, 60, 80, 100];
+    for (var ti = 0; ti < ticks.length; ti++) {
+      var tx = padL + (ticks[ti] / 100) * plotW;
+      ctx.beginPath();
+      ctx.moveTo(tx, padT);
+      ctx.lineTo(tx, padT + plotH);
+      ctx.stroke();
+      ctx.fillStyle = '#64748B';
+      ctx.font = '600 9px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(ticks[ti] + '%', tx, h - 5);
+    }
+
+    for (var i = 0; i < items.length; i++) {
+      var row = items[i];
+      var yMid = padT + i * rowStep + rowStep / 2;
+      ctx.fillStyle = row.polarity === 'overall' ? '#F8FAFC' : '#CBD5E1';
+      ctx.font = (row.polarity === 'overall' ? '700 ' : '600 ') + '10px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(row.name.slice(0, 22), padL - 8, yMid + 3.5);
+
+      if (authB && authB.breakdown && authB.breakdown[i]) {
+        var rowB = authB.breakdown[i];
+        var bh = Math.max(4, Math.min(8, rowStep * 0.28));
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(padL, yMid - bh - 1, plotW, bh);
+        ctx.fillRect(padL, yMid + 1, plotW, bh);
+
+        ctx.fillStyle = '#60A5FA';
+        ctx.fillRect(padL, yMid - bh - 1, (row.score / 100) * plotW, bh);
+        ctx.fillStyle = '#FB7185';
+        ctx.fillRect(padL, yMid + 1, (rowB.score / 100) * plotW, bh);
+
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '600 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(row.score + '/' + rowB.score, padL + plotW + 5, yMid + 3);
+      } else {
+        var bh1 = Math.max(6, Math.min(12, rowStep * 0.48));
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(padL, yMid - bh1 / 2, plotW, bh1);
+        ctx.fillStyle = row.statusColor || '#38BDF8';
+        ctx.fillRect(padL, yMid - bh1 / 2, (row.score / 100) * plotW, bh1);
+
+        ctx.fillStyle = row.statusColor || '#E2E8F0';
+        ctx.font = '700 9px "JetBrains Mono", monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(row.score + '%', padL + plotW + 6, yMid + 3);
+      }
+    }
+
+    if (authB) {
+      ctx.fillStyle = '#60A5FA';
+      ctx.fillRect(padL, 5, 8, 6);
+      ctx.fillStyle = '#93C5FD';
+      ctx.font = '600 9px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(String(labelA || 'A').slice(0, 14), padL + 12, 11);
+
+      ctx.fillStyle = '#FB7185';
+      ctx.fillRect(padL + 115, 5, 8, 6);
+      ctx.fillStyle = '#FDA4AF';
+      ctx.fillText(String(labelB || 'B').slice(0, 14), padL + 127, 11);
+    }
+
+    finishDarkPlot(p);
+  }
+
+  function renderAuthenticityGaugeHtml(auth, tagLabel) {
+    var score = auth.authenticityScore;
+    var r = 42;
+    var c = 2 * Math.PI * r;
+    var dashOffset = c * (1 - score / 100);
+    return (
+      '<div class="labs-auth-summary">' +
+      '  <div class="labs-auth-ring-wrap">' +
+      '    <svg class="labs-auth-ring-svg" viewBox="0 0 108 108" width="108" height="108" aria-label="Authenticity Score ' + score + '%">' +
+      '      <circle class="labs-auth-ring-track" cx="54" cy="54" r="' + r + '" />' +
+      '      <circle class="labs-auth-ring-fill" cx="54" cy="54" r="' + r + '" stroke="' + auth.tier.color + '" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + dashOffset.toFixed(1) + '" />' +
+      '    </svg>' +
+      '    <div class="labs-auth-ring-center">' +
+      '      <span class="labs-auth-ring-num" style="color:' + auth.tier.color + '">' + score + '%</span>' +
+      '      <span class="labs-auth-ring-lbl">' + esc(auth.tier.label) + '</span>' +
+      '    </div>' +
+      '  </div>' +
+      '  <div class="labs-auth-kpis">' +
+      (tagLabel ? '<div class="labs-eyebrow">' + esc(tagLabel) + '</div>' : '') +
+      '    <div class="labs-single-facts-grid">' +
+      '      <div class="labs-fact-box"><span>Authenticity Score</span><strong style="color:' + auth.tier.color + '">' + score + '%</strong><small class="labs-fact-sub">' + esc(auth.tier.label) + '</small></div>' +
+      '      <div class="labs-fact-box"><span>Organic Emission Probability</span><strong>' + auth.organicProbability + '%</strong><small class="labs-fact-sub">Posterior heuristic weight</small></div>' +
+      '      <div class="labs-fact-box"><span>Mouth-Fart Suspicion Level</span><strong>' + auth.mouthSuspicion + '%</strong><small class="labs-fact-sub">Oral mimicry likelihood</small></div>' +
+      '      <div class="labs-fact-box"><span>Analysis Confidence</span><strong>' + esc(auth.confidenceLevel) + '</strong><small class="labs-fact-sub">Signal certainty (' + auth.confidenceScore + '%)</small></div>' +
+      '    </div>' +
+      '    <div class="labs-auth-verdict-box">' +
+      '      <div class="labs-eyebrow">LABORATORY VERDICT</div>' +
+      '      <p class="labs-auth-verdict-text">' + esc(auth.verdict) + '</p>' +
+      '    </div>' +
+      '  </div>' +
+      '</div>'
+    );
+  }
+
+  function renderAuthenticityBreakdownRowsHtml(breakdown) {
+    return (
+      '<div class="labs-auth-breakdown">' +
+      breakdown
+        .map(function (row) {
+          var isOverall = row.polarity === 'overall';
+          var dirHint =
+            row.polarity === 'suspicious'
+              ? 'Higher = Elevated oral/vocal indicator'
+              : row.polarity === 'authentic'
+                ? 'Higher = Stronger organic trait'
+                : 'Weighted heuristic composite';
+          return (
+            '<div class="labs-auth-row' + (isOverall ? ' labs-auth-row-overall' : '') + '">' +
+            '  <div class="labs-auth-row-main">' +
+            '    <div class="labs-auth-row-title-group">' +
+            '      <span class="labs-auth-row-name">' + esc(row.name) + '</span>' +
+            '      <small class="labs-auth-row-hint">' + esc(dirHint) + '</small>' +
+            '    </div>' +
+            '    <div class="labs-auth-row-right">' +
+            '      <div class="labs-auth-bar-track"><div class="labs-auth-bar-fill" style="width:' + row.score + '%;background:' + row.statusColor + '"></div></div>' +
+            '      <span class="labs-auth-row-score" style="color:' + row.statusColor + '">' + row.score + '%</span>' +
+            '      <span class="labs-auth-status-pill" style="border-color:' + row.statusColor + ';color:' + row.statusColor + '">' + esc(row.status) + '</span>' +
+            '    </div>' +
+            '  </div>' +
+            '  <div class="labs-auth-row-explain">' + esc(row.explanation) + '</div>' +
+            '</div>'
+          );
+        })
+        .join('') +
+      '</div>'
+    );
+  }
+
+  function renderAuthenticityAccordionHtml(auth, extraNote) {
+    return (
+      '<div class="labs-acc-head">' +
+      '  <div>' +
+      '    <div class="labs-eyebrow">INFORMATIONAL DSP HEURISTICS · NOT USED IN GAME SCORING</div>' +
+      '    <div class="labs-expanded-note">' + esc(extraNote || 'Pure heuristic acoustic evaluation of natural gastrointestinal release vs mouth-generated emission signatures. Results express probability only.') + '</div>' +
+      '  </div>' +
+      '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
+      '</div>' +
+      renderAuthenticityGaugeHtml(auth, 'SPECIMEN ORIGIN TELEMETRY') +
+      '<div class="labs-chart-box-inner" style="margin:12px 0">' +
+      '  <div class="labs-chart-box-head"><span>Authenticity Indicator Matrix</span><small>Heuristic DSP signals (0–100%)</small></div>' +
+      '  <canvas class="labs-2d-canvas" data-auth-chart="single" style="height:220px"></canvas>' +
+      '</div>' +
+      '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
+      renderAuthenticityBreakdownRowsHtml(auth.breakdown) +
+      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Authenticity = 100 * sum(w_i * OrganicTrait_i); Confidence = Consensus(7) + Duration + SNR (Zero Game Score Impact)</code></div>'
+    );
+  }
+
+  function renderAuthenticityComparisonAccordionHtml(labelA, authA, labelB, authB) {
+    var rowsHtml = authA.breakdown
+      .map(function (rA, idx) {
+        var rB = authB.breakdown[idx] || rA;
+        var isOverall = rA.polarity === 'overall';
+        return (
+          '<div class="labs-auth-row' + (isOverall ? ' labs-auth-row-overall' : '') + '">' +
+          '  <div class="labs-auth-row-main">' +
+          '    <div class="labs-auth-row-title-group">' +
+          '      <span class="labs-auth-row-name">' + esc(rA.name) + '</span>' +
+          '      <small class="labs-auth-row-hint">' + esc(labelA) + ' vs ' + esc(labelB) + '</small>' +
+          '    </div>' +
+          '    <div class="labs-auth-row-right labs-auth-row-right-cmp">' +
+          '      <span class="labs-auth-status-pill" style="border-color:' + rA.statusColor + ';color:' + rA.statusColor + '">A: ' + rA.score + '% ' + esc(rA.status) + '</span>' +
+          '      <span class="labs-auth-status-pill" style="border-color:' + rB.statusColor + ';color:' + rB.statusColor + '">B: ' + rB.score + '% ' + esc(rB.status) + '</span>' +
+          '    </div>' +
+          '  </div>' +
+          '  <div class="labs-auth-row-explain"><strong>' + esc(labelA) + ':</strong> ' + esc(rA.explanation) + ' · <strong>' + esc(labelB) + ':</strong> ' + esc(rB.explanation) + '</div>' +
+          '</div>'
+        );
+      })
+      .join('');
+
+    return (
+      '<div class="labs-acc-head">' +
+      '  <div>' +
+      '    <div class="labs-eyebrow">INFORMATIONAL ORIGIN AUDIT · ZERO IMPACT ON MATCH SCORE OR WINNER</div>' +
+      '    <div class="labs-expanded-note">Independent probabilistic heuristic scan for both specimens. Rankings and Guess The Fart scores remain purely acoustic match based.</div>' +
+      '  </div>' +
+      '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
+      '</div>' +
+      '<div class="labs-auth-cmp-grid">' +
+      '  <div class="labs-auth-cmp-col">' + renderAuthenticityGaugeHtml(authA, 'SPECIMEN A · ' + labelA) + '</div>' +
+      '  <div class="labs-auth-cmp-col">' + renderAuthenticityGaugeHtml(authB, 'SPECIMEN B · ' + labelB) + '</div>' +
+      '</div>' +
+      '<div class="labs-chart-box-inner" style="margin:12px 0">' +
+      '  <div class="labs-chart-box-head"><span>Side-by-Side Authenticity Telemetry</span><small>Blue: ' + esc(labelA) + ' · Rose: ' + esc(labelB) + '</small></div>' +
+      '  <canvas class="labs-2d-canvas" data-auth-chart="compare" style="height:220px"></canvas>' +
+      '</div>' +
+      '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
+      '<div class="labs-auth-breakdown">' + rowsHtml + '</div>' +
+      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in Guess The Fart leaderboard)</code></div>'
+    );
+  }
+
   function renderSingleDashboard(mountEl, opts) {
     if (!mountEl || !opts || !opts.sound) {
       return { destroy: function () {}, resize: function () {} };
@@ -2031,6 +2813,9 @@
     var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
     var ml = classifyAcousticProfile(feat, bonus);
     var gauges = buildSingleGauges(sound);
+    var auth = computeAuthenticityAnalysis(sound);
+    var displayGauges = gauges.slice();
+    displayGauges.push(buildAuthenticitySummaryRow('s_authenticity', auth));
     var label = opts.label || sound.displayName || sound.name || 'Recording';
     var eyebrow = opts.eyebrow || 'SINGLE FART FORENSIC DOSSIER';
     var noteStr =
@@ -2049,7 +2834,7 @@
       ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🎯 Guess This Fart') + '</button>'
       : '';
 
-    var rowsHtml = renderMetricRowsHtml(gauges, { expandable: true });
+    var rowsHtml = renderMetricRowsHtml(displayGauges, { expandable: true });
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -2117,7 +2902,7 @@
           '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
         : '') +
       '    </div>' +
-      '    <div class="labs-hint-text">Tap any of the 12 metrics below to expand charts, scientific commentary, stats &amp; equation inline.</div>' +
+      '    <div class="labs-hint-text">Tap any of the ' + displayGauges.length + ' metrics below to expand charts, scientific commentary, stats &amp; equation inline.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
@@ -2146,6 +2931,11 @@
 
     function redrawExpandedSingle() {
       if (!activeDialId || !activeSlotEl) return;
+      if (activeDialId === 's_authenticity') {
+        var authCanvas = activeSlotEl.querySelector('canvas[data-auth-chart]');
+        if (authCanvas) drawAuthenticityPlot(authCanvas, auth);
+        return;
+      }
       var canvases = activeSlotEl.querySelectorAll('canvas[data-schart]');
       for (var i = 0; i < canvases.length; i++) {
         drawSingleChartType(canvases[i], canvases[i].getAttribute('data-schart'), sound, feat, bonus, ml);
@@ -2167,6 +2957,36 @@
     }
 
     function openSingleRow(dialId) {
+      if (dialId === 's_authenticity') {
+        closeSingleRow();
+        var aItemEl = mountEl.querySelector('.labs-metric-item[data-item-id="s_authenticity"]');
+        var aRowBtn = mountEl.querySelector('.labs-metric-row[data-row-id="s_authenticity"]');
+        var aSlotEl = mountEl.querySelector('.labs-row-accordion[data-slot-id="s_authenticity"]');
+        if (!aSlotEl) return;
+
+        activeDialId = 's_authenticity';
+        activeSlotEl = aSlotEl;
+        if (aItemEl) aItemEl.classList.add('open');
+        if (aRowBtn) aRowBtn.setAttribute('aria-expanded', 'true');
+        aSlotEl.classList.remove('hidden');
+        aSlotEl.innerHTML = renderAuthenticityAccordionHtml(auth);
+
+        var aCloseBtn = aSlotEl.querySelector('.labs-acc-close');
+        if (aCloseBtn) aCloseBtn.addEventListener('click', closeSingleRow);
+
+        if (typeof root.requestAnimationFrame === 'function') {
+          root.requestAnimationFrame(function () {
+            redrawExpandedSingle();
+            if (aItemEl && typeof aItemEl.scrollIntoView === 'function') {
+              try { aItemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+            }
+          });
+        } else {
+          redrawExpandedSingle();
+        }
+        return;
+      }
+
       var rep = buildSingleDialReport(dialId, sound);
       closeSingleRow();
 
@@ -2541,10 +3361,14 @@
     var Spectrogram3D = root.TootApp.Spectrogram3D;
     var Audio = root.TootApp.Audio;
     var gauges = buildGroupGauges(g);
+    var authGrp = computeAuthenticityAnalysis({ features: g.features, samples: g.samples, sampleRate: g.sampleRate });
+    var authGrpRow = buildAuthenticitySummaryRow('g_authenticity', authGrp);
     var uid = 'lfg_' + (++gaugeUid) + '_';
     var chan = uid + 'MIX';
     var spec = null;
     var lastProg = null;
+    var authGrpOpen = false;
+    var authGrpSlotEl = null;
 
     var sortBy = opts.sortBy || (g.metrics && g.metrics.sortBy) || 'pitch';
     var sortDir = opts.sortDir || (g.metrics && g.metrics.sortDir) || 'asc';
@@ -2577,7 +3401,7 @@
       .join('');
 
     var sortLabel = (g.metrics && g.metrics.sortLabel) || 'Pitch (Hz) · Ascending';
-    var rowsHtml = renderMetricRowsHtml(gauges, { expandable: false });
+    var rowsHtml = renderMetricRowsHtml(gauges, { expandable: false }) + renderMetricRowsHtml([authGrpRow], { expandable: true });
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -2663,6 +3487,53 @@
       drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, lastProg);
       drawConstellationPlot(mountEl.querySelector('#' + uid + 'c_map'), g);
       drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), g.features, '#22C55E');
+      if (authGrpOpen && authGrpSlotEl) {
+        var ac = authGrpSlotEl.querySelector('canvas[data-auth-chart]');
+        if (ac) drawAuthenticityPlot(ac, authGrp);
+      }
+    }
+
+    function closeGroupAuthRow() {
+      authGrpOpen = false;
+      authGrpSlotEl = null;
+      var itemEl = mountEl.querySelector('.labs-metric-item[data-item-id="g_authenticity"]');
+      var rowBtn = mountEl.querySelector('.labs-metric-row[data-row-id="g_authenticity"]');
+      var slotEl = mountEl.querySelector('.labs-row-accordion[data-slot-id="g_authenticity"]');
+      if (itemEl) itemEl.classList.remove('open');
+      if (rowBtn) rowBtn.setAttribute('aria-expanded', 'false');
+      if (slotEl) {
+        slotEl.classList.add('hidden');
+        slotEl.innerHTML = '';
+      }
+    }
+
+    var gAuthBtn = mountEl.querySelector('.labs-metric-row[data-row-id="g_authenticity"]');
+    if (gAuthBtn) {
+      gAuthBtn.addEventListener('click', function () {
+        if (authGrpOpen) {
+          closeGroupAuthRow();
+          return;
+        }
+        var itemEl = mountEl.querySelector('.labs-metric-item[data-item-id="g_authenticity"]');
+        var slotEl = mountEl.querySelector('.labs-row-accordion[data-slot-id="g_authenticity"]');
+        if (!slotEl) return;
+        authGrpOpen = true;
+        authGrpSlotEl = slotEl;
+        if (itemEl) itemEl.classList.add('open');
+        gAuthBtn.setAttribute('aria-expanded', 'true');
+        slotEl.classList.remove('hidden');
+        slotEl.innerHTML = renderAuthenticityAccordionHtml(
+          authGrp,
+          'Heuristic origin evaluation computed across the combined multi-fart master track and movement spectrum (informational only).'
+        );
+        var closeBtn = slotEl.querySelector('.labs-acc-close');
+        if (closeBtn) closeBtn.addEventListener('click', closeGroupAuthRow);
+        if (typeof root.requestAnimationFrame === 'function') {
+          root.requestAnimationFrame(drawGroupVisuals);
+        } else {
+          drawGroupVisuals();
+        }
+      });
     }
 
     var specCanvas = mountEl.querySelector('#' + uid + 'spec3d');
@@ -2774,6 +3645,9 @@
   TootLabs.Fartnalysis = {
     gaugeStatus: gaugeStatus,
     classifyAcousticProfile: classifyAcousticProfile,
+    classifyAuthenticityScore: classifyAuthenticityScore,
+    computeAuthenticityAnalysis: computeAuthenticityAnalysis,
+    drawAuthenticityPlot: drawAuthenticityPlot,
     buildSingleFieldVerdict: buildSingleFieldVerdict,
     buildExecutiveGauges: buildExecutiveGauges,
     buildSingleGauges: buildSingleGauges,
