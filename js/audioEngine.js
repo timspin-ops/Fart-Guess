@@ -7,6 +7,7 @@
   var activeChannels = new Map();
   var seqGeneration = 0;
   var recState = null;
+  var autoDetectState = null;
   var micTestState = null;
   var warmStream = null;
   var warmDeviceId = null;
@@ -15,6 +16,7 @@
   var selectedDeviceId = '';
   var micBoost = 1.0;
   var startingRecording = false;
+  var startingAutoDetect = false;
 
   function ensureContext() {
     if (!audioCtx) {
@@ -282,6 +284,9 @@
     if (recState && recState.inputGain) {
       recState.inputGain.gain.value = micBoost;
     }
+    if (autoDetectState && autoDetectState.inputGain) {
+      autoDetectState.inputGain.gain.value = micBoost;
+    }
   }
 
   function getMicBoost() {
@@ -355,6 +360,9 @@
   function releaseMicStream() {
     if (micTestState && micTestState.active) {
       stopMicTest();
+    }
+    if (autoDetectState && autoDetectState.active) {
+      stopAutoDetect(true);
     }
     if (warmSourceNode) {
       try { warmSourceNode.disconnect(); } catch (e) {}
@@ -457,7 +465,7 @@
 
   function startMicTest(onLevel) {
     stopMicTest();
-    if (recState && recState.active) {
+    if ((recState && recState.active) || (autoDetectState && autoDetectState.active)) {
       return Promise.reject(new Error('Stop recording before testing microphone.'));
     }
 
@@ -543,7 +551,7 @@
    */
   function startRecording(opts) {
     opts = opts || {};
-    if (startingRecording || (recState && recState.active)) {
+    if (startingRecording || startingAutoDetect || (recState && recState.active) || (autoDetectState && autoDetectState.active)) {
       return Promise.reject(new Error('Recording already in progress.'));
     }
 
@@ -818,11 +826,442 @@
   }
 
   function isRecording() {
-    return Boolean(recState && recState.active);
+    return Boolean((recState && recState.active) || (autoDetectState && autoDetectState.active));
   }
 
   function isRecordingOrStarting() {
-    return Boolean(startingRecording || (recState && recState.active));
+    return Boolean(
+      startingRecording ||
+        startingAutoDetect ||
+        (recState && recState.active) ||
+        (autoDetectState && autoDetectState.active)
+    );
+  }
+
+  function isAutoDetecting() {
+    return Boolean(autoDetectState && autoDetectState.active);
+  }
+
+  /**
+   * Pure rolling-buffer state machine for Auto Detect recording mode.
+   * Maintains a fixed 5-second circular buffer, detects likely fart signatures,
+   * records through the event + trailing silence, and returns bounded clipped samples.
+   */
+  function createAutoDetectEngine(sampleRate, opts) {
+    opts = opts || {};
+    var sr = Math.max(8000, Number(sampleRate) || 44100);
+    var ringSeconds = Math.max(2.0, Number(opts.ringSeconds) || 5.0);
+    var preEventSec = Math.max(2.0, Math.min(ringSeconds, Number(opts.preEventSec) || 3.0));
+    var calibrationSec = Math.max(0.15, Number(opts.calibrationSec) || 0.35);
+    var minPostEventSec = Math.max(1.2, Number(opts.minPostEventSec) || 1.85);
+    var postSilenceSec = Math.max(0.8, Number(opts.postSilenceSec) || 1.55);
+    var maxPostEventSec = Math.max(minPostEventSec + 1.0, Number(opts.maxPostEventSec) || 8.0);
+
+    var ringCap = Math.max(1, Math.round(sr * ringSeconds));
+    var ringBuf = new Float32Array(ringCap);
+    var ringWrite = 0;
+    var ringTotalWritten = 0;
+
+    var phase = 'listening'; // 'listening' | 'triggered' | 'completed'
+    var calSamples = 0;
+    var calRmsSum = 0;
+    var calChunks = 0;
+    var noiseFloorRms = 0.004;
+    var consecutiveHits = 0;
+
+    var lpState = 0;
+    var lpAlpha = 1 - Math.exp((-2 * Math.PI * 850) / sr);
+
+    var preSnapshot = null;
+    var postChunks = [];
+    var postSamples = 0;
+    var silentSamples = 0;
+    var finalizedResult = null;
+
+    function writeToRing(chunk) {
+      var n = chunk.length;
+      if (n >= ringCap) {
+        ringBuf.set(chunk.subarray(n - ringCap), 0);
+        ringWrite = 0;
+        ringTotalWritten += n;
+        return;
+      }
+      var firstLen = Math.min(n, ringCap - ringWrite);
+      ringBuf.set(chunk.subarray(0, firstLen), ringWrite);
+      if (n > firstLen) {
+        ringBuf.set(chunk.subarray(firstLen), 0);
+      }
+      ringWrite = (ringWrite + n) % ringCap;
+      ringTotalWritten += n;
+    }
+
+    function readRecentRing(maxSamples) {
+      var available = Math.min(ringTotalWritten, ringCap);
+      var count = maxSamples > 0 ? Math.min(available, maxSamples) : available;
+      var out = new Float32Array(count);
+      if (count === 0) return out;
+      var startPos = (ringWrite - count + ringCap) % ringCap;
+      var firstLen = Math.min(count, ringCap - startPos);
+      out.set(ringBuf.subarray(startPos, startPos + firstLen), 0);
+      if (count > firstLen) {
+        out.set(ringBuf.subarray(0, count - firstLen), firstLen);
+      }
+      return out;
+    }
+
+    function finalize(trackLabel, trackMuted) {
+      if (finalizedResult) return finalizedResult;
+      phase = 'completed';
+
+      var rawSamples;
+      var preSecActual = 0;
+      var postSecActual = postSamples / sr;
+
+      if (preSnapshot && postChunks.length > 0) {
+        rawSamples = new Float32Array(preSnapshot.length + postSamples);
+        rawSamples.set(preSnapshot, 0);
+        var off = preSnapshot.length;
+        for (var i = 0; i < postChunks.length; i++) {
+          rawSamples.set(postChunks[i], off);
+          off += postChunks[i].length;
+        }
+        preSecActual = preSnapshot.length / sr;
+      } else {
+        rawSamples = readRecentRing(ringCap);
+        preSecActual = rawSamples.length / sr;
+      }
+
+      var DSP = root.TootApp && root.TootApp.DSP;
+      var clipInfo =
+        DSP && typeof DSP.autoClipAudio === 'function'
+          ? DSP.autoClipAudio(rawSamples, sr)
+          : {
+              ok: rawSamples.length > 0,
+              clipped: rawSamples,
+              maxRMS: 0.05
+            };
+
+      finalizedResult = {
+        ok: Boolean(clipInfo.ok),
+        reason: clipInfo.reason || null,
+        trackLabel: trackLabel || 'Default Microphone',
+        muted: Boolean(trackMuted),
+        maxRMS: clipInfo.maxRMS || 0,
+        rawSamples: rawSamples,
+        clippedSamples: clipInfo.clipped,
+        sampleRate: sr,
+        clipInfo: clipInfo,
+        autoDetectMeta: {
+          preEventSec: preSecActual,
+          postEventSec: postSecActual,
+          totalCaptureSec: rawSamples.length / sr
+        }
+      };
+      return finalizedResult;
+    }
+
+    function pushChunk(chunk, trackLabel, trackMuted) {
+      var n = chunk ? chunk.length : 0;
+      if (n === 0 || phase === 'completed') {
+        return {
+          phase: phase,
+          rms: 0,
+          peak: 0,
+          lowRatio: 0,
+          bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
+          triggeredNow: false,
+          completedNow: false,
+          result: finalizedResult
+        };
+      }
+
+      var sumSq = 0;
+      var lowSumSq = 0;
+      var peak = 0;
+      var zc = 0;
+      var prevS = chunk[0];
+      for (var i = 0; i < n; i++) {
+        var s = chunk[i];
+        var a = s < 0 ? -s : s;
+        if (a > peak) peak = a;
+        sumSq += s * s;
+        lpState += lpAlpha * (s - lpState);
+        lowSumSq += lpState * lpState;
+        if (i > 0 && ((s >= 0 && prevS < 0) || (s < 0 && prevS >= 0))) zc++;
+        prevS = s;
+      }
+
+      var rms = Math.sqrt(sumSq / n);
+      var lowRms = Math.sqrt(lowSumSq / n);
+      var lowRatio = rms > 1e-7 ? lowRms / rms : 0;
+      var zcrHz = (zc * 0.5 * sr) / Math.max(1, n);
+
+      var triggeredNow = false;
+      var completedNow = false;
+
+      if (phase === 'listening') {
+        calSamples += n;
+        var elapsedSec = calSamples / sr;
+
+        if (elapsedSec <= calibrationSec) {
+          calRmsSum += rms;
+          calChunks++;
+          noiseFloorRms = Math.max(0.002, Math.min(0.035, calRmsSum / Math.max(1, calChunks)));
+          writeToRing(chunk);
+        } else {
+          var thresh = Math.max(0.022, noiseFloorRms * 3.2);
+          var isStrongBurst = rms >= thresh * 1.9 && lowRatio >= 0.36;
+          var isSustainedLowMid =
+            (rms >= thresh && lowRatio >= 0.32 && zcrHz < 3400) ||
+            (peak >= Math.max(0.11, noiseFloorRms * 6.0) && lowRatio >= 0.38 && zcrHz < 3400);
+
+          if (isStrongBurst) {
+            consecutiveHits += 2;
+          } else if (isSustainedLowMid) {
+            consecutiveHits++;
+          } else {
+            consecutiveHits = 0;
+            if (rms < Math.max(0.025, noiseFloorRms * 1.8)) {
+              noiseFloorRms = Math.max(0.002, Math.min(0.04, noiseFloorRms * 0.92 + rms * 0.08));
+            }
+          }
+
+          if (consecutiveHits >= 2) {
+            preSnapshot = readRecentRing(Math.round(sr * preEventSec));
+            postChunks = [new Float32Array(chunk)];
+            postSamples = n;
+            silentSamples = 0;
+            phase = 'triggered';
+            triggeredNow = true;
+          } else {
+            writeToRing(chunk);
+          }
+        }
+      } else if (phase === 'triggered') {
+        postChunks.push(new Float32Array(chunk));
+        postSamples += n;
+
+        var silThresh = Math.max(0.014, Math.min(0.032, noiseFloorRms * 2.1));
+        if (rms <= silThresh) {
+          silentSamples += n;
+        } else {
+          silentSamples = 0;
+        }
+
+        var postSec = postSamples / sr;
+        var silentSec = silentSamples / sr;
+        if ((postSec >= minPostEventSec && silentSec >= postSilenceSec) || postSec >= maxPostEventSec) {
+          finalize(trackLabel, trackMuted);
+          completedNow = true;
+        }
+      }
+
+      return {
+        phase: phase,
+        rms: rms,
+        peak: peak,
+        lowRatio: lowRatio,
+        bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
+        triggeredNow: triggeredNow,
+        completedNow: completedNow,
+        result: finalizedResult
+      };
+    }
+
+    return {
+      pushChunk: pushChunk,
+      finalize: finalize,
+      getPhase: function () { return phase; },
+      getRingCapacitySamples: function () { return ringCap; },
+      getBufferedSec: function () { return Math.min(ringSeconds, ringTotalWritten / sr); }
+    };
+  }
+
+  function startAutoDetect(opts) {
+    opts = opts || {};
+    if (startingRecording || startingAutoDetect || (recState && recState.active) || (autoDetectState && autoDetectState.active)) {
+      return Promise.reject(new Error('Recording already in progress.'));
+    }
+
+    stopMicTest();
+    stopAll();
+    startingAutoDetect = true;
+
+    var onStarted = typeof opts.onStarted === 'function' ? opts.onStarted : null;
+    var onLevel = typeof opts.onLevel === 'function' ? opts.onLevel : null;
+    var onDetected = typeof opts.onDetected === 'function' ? opts.onDetected : null;
+    var onAutoStop = typeof opts.onAutoStop === 'function' ? opts.onAutoStop : null;
+
+    return ensureContext()
+      .then(function (ctx) {
+        return openMicStream(selectedDeviceId).then(function (stream) {
+          var track = stream.getAudioTracks()[0];
+          var trackLabel = (track && track.label) || 'Default Microphone';
+          var trackMuted = Boolean(track && track.muted);
+
+          var sourceNode = getOrCreateSourceNode(ctx, stream);
+          var inputGain = ctx.createGain();
+          inputGain.gain.value = micBoost;
+
+          var analyser = ctx.createAnalyser();
+          analyser.fftSize = 1024;
+
+          var zeroGain = ctx.createGain();
+          zeroGain.gain.value = 0;
+
+          var scriptNode = null;
+          if (typeof ctx.createScriptProcessor === 'function') {
+            scriptNode = ctx.createScriptProcessor(2048, 1, 1);
+          }
+
+          sourceNode.connect(inputGain);
+          inputGain.connect(analyser);
+          if (scriptNode) {
+            analyser.connect(scriptNode);
+            scriptNode.connect(zeroGain);
+          } else {
+            analyser.connect(zeroGain);
+          }
+          zeroGain.connect(ctx.destination);
+
+          var sr = ctx.sampleRate || 44100;
+          var engine = createAutoDetectEngine(sr, opts);
+          var timeData = new Float32Array(analyser.fftSize);
+          var startPerf = performance.now();
+
+          var state = {
+            active: true,
+            ctx: ctx,
+            stream: stream,
+            trackLabel: trackLabel,
+            trackMuted: trackMuted,
+            sourceNode: sourceNode,
+            inputGain: inputGain,
+            analyser: analyser,
+            scriptNode: scriptNode,
+            zeroGain: zeroGain,
+            engine: engine,
+            lastPhase: 'listening',
+            lastBufferedSec: 0,
+            rafId: null,
+            stopPromise: null
+          };
+          autoDetectState = state;
+          startingAutoDetect = false;
+
+          function disconnectAuto() {
+            state.active = false;
+            if (state.rafId) {
+              cancelAnimationFrame(state.rafId);
+              state.rafId = null;
+            }
+            if (state.scriptNode) {
+              state.scriptNode.onaudioprocess = null;
+              try { state.scriptNode.disconnect(); } catch (e) {}
+            }
+            try { state.sourceNode.disconnect(); } catch (e) {}
+            try { state.inputGain.disconnect(); } catch (e) {}
+            try { state.analyser.disconnect(); } catch (e) {}
+            try { state.zeroGain.disconnect(); } catch (e) {}
+            if (state.stream && state.stream !== warmStream) {
+              try {
+                state.stream.getTracks().forEach(function (t) { t.stop(); });
+              } catch (e) {}
+            }
+            if (autoDetectState === state) autoDetectState = null;
+          }
+          state.disconnectAuto = disconnectAuto;
+
+          if (scriptNode) {
+            scriptNode.onaudioprocess = function (ev) {
+              if (!state.active) return;
+              var inputBuf = ev.inputBuffer.getChannelData(0);
+              var info = engine.pushChunk(inputBuf, trackLabel, trackMuted);
+              state.lastPhase = info.phase;
+              state.lastBufferedSec = info.bufferedSec;
+              if (info.triggeredNow && onDetected) {
+                try { onDetected(info); } catch (e) {}
+              }
+              if (info.completedNow) {
+                disconnectAuto();
+                if (onAutoStop) {
+                  try { onAutoStop(info.result); } catch (e2) {}
+                }
+              }
+            };
+          }
+
+          function pumpLevel() {
+            if (!state.active) return;
+            analyser.getFloatTimeDomainData(timeData);
+            var sumSq = 0;
+            for (var i = 0; i < timeData.length; i++) {
+              sumSq += timeData[i] * timeData[i];
+            }
+            var rms = Math.sqrt(sumSq / timeData.length);
+            var elapsed = (performance.now() - startPerf) / 1000;
+            if (!scriptNode) {
+              // Fallback chunk feeding if ScriptProcessor unavailable
+              var info = engine.pushChunk(timeData, trackLabel, trackMuted);
+              state.lastPhase = info.phase;
+              state.lastBufferedSec = info.bufferedSec;
+              if (info.triggeredNow && onDetected) onDetected(info);
+              if (info.completedNow) {
+                disconnectAuto();
+                if (onAutoStop) onAutoStop(info.result);
+                return;
+              }
+            }
+            if (onLevel) {
+              onLevel(timeData, rms, {
+                phase: state.lastPhase,
+                bufferedSec: state.lastBufferedSec,
+                elapsedSec: elapsed
+              });
+            }
+            state.rafId = requestAnimationFrame(pumpLevel);
+          }
+
+          state.rafId = requestAnimationFrame(pumpLevel);
+          if (onStarted) {
+            onStarted({ trackLabel: trackLabel, muted: trackMuted });
+          }
+          return true;
+        });
+      })
+      .catch(function (err) {
+        startingAutoDetect = false;
+        throw err;
+      });
+  }
+
+  function stopAutoDetect(cancelOnly) {
+    if (!autoDetectState) {
+      return Promise.resolve({ ok: false, reason: 'not_recording' });
+    }
+    if (autoDetectState.stopPromise) {
+      return autoDetectState.stopPromise;
+    }
+
+    var state = autoDetectState;
+    var wasListening = state.engine && state.engine.getPhase() === 'listening';
+    if (typeof state.disconnectAuto === 'function') {
+      state.disconnectAuto();
+    }
+
+    if (cancelOnly || wasListening) {
+      state.stopPromise = Promise.resolve({
+        ok: false,
+        reason: 'cancelled',
+        trackLabel: state.trackLabel,
+        muted: state.trackMuted
+      });
+      return state.stopPromise;
+    }
+
+    var res = state.engine.finalize(state.trackLabel, state.trackMuted);
+    state.stopPromise = Promise.resolve(res);
+    return state.stopPromise;
   }
 
   /**
@@ -917,6 +1356,10 @@
     isMicTesting: isMicTesting,
     startRecording: startRecording,
     stopRecording: stopRecording,
+    createAutoDetectEngine: createAutoDetectEngine,
+    startAutoDetect: startAutoDetect,
+    stopAutoDetect: stopAutoDetect,
+    isAutoDetecting: isAutoDetecting,
     isRecording: isRecording,
     isRecordingOrStarting: isRecordingOrStarting,
     decodeAudioFile: decodeAudioFile,

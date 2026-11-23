@@ -61,6 +61,40 @@
       });
   }
 
+  function playLabTick(stepIndex) {
+    var idx = Math.max(0, Number(stepIndex) || 0);
+    var freq = Math.min(1180, 440 + idx * 42);
+    return getAudioCtx()
+      .then(function (ctx) {
+        var t0 = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.032, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.065);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.08);
+      })
+      .catch(function () {
+        // Ignore locked autoplay contexts gracefully
+      });
+  }
+
+  function playAnalysisComplete() {
+    return getAudioCtx()
+      .then(function (ctx) {
+        triggerChimeTone(ctx, 587.33, 0, 0.055, 0.24);
+        triggerChimeTone(ctx, 880.0, 0.08, 0.06, 0.34);
+      })
+      .catch(function () {
+        // Ignore locked autoplay contexts gracefully
+      });
+  }
+
   function playLegendaryFinale() {
     return getAudioCtx()
       .then(function (ctx) {
@@ -274,6 +308,8 @@
 
   TootLabs.AudioFx = {
     playBell: playBell,
+    playLabTick: playLabTick,
+    playAnalysisComplete: playAnalysisComplete,
     playLegendaryFinale: playLegendaryFinale,
     playVaultDoorOpen: playVaultDoorOpen,
     launchConfetti: launchConfetti

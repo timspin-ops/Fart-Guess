@@ -66,8 +66,12 @@
     renameTarget: null,
     activeRecStopper: null,
     recordingKind: null,
+    recordMode: 'manual',
     resultTimers: [],
     vaultDoorTimers: [],
+    analysisTimers: [],
+    analysisDoneCb: null,
+    autoDetectMsgTimer: null,
     resultCounterRaf: null,
     confettiHandle: null,
     toastTimer: null
@@ -472,6 +476,284 @@
   }
 
   /* ==================== ANIMATION CLEANUP ==================== */
+  var ANALYSIS_OPENING_POOL = [
+    'Capturing acoustic signature...',
+    'Generating waveform model...'
+  ];
+
+  var ANALYSIS_STANDARD_POOL = [
+    'Mapping resonance profile...',
+    'Comparing airflow dynamics...',
+    'Measuring turbulence patterns...',
+    'Calibrating frequency spectrum...',
+    'Comparing pressure distribution...',
+    'Running similarity algorithms...',
+    'Evaluating thunder quotient...',
+    'Calculating cheek resonance...',
+    'Consulting historical fart archive...',
+    'Running machine learning validation...',
+    'Analyzing harmonic distribution...',
+    'Computing pressure profile...',
+    'Matching turbulence characteristics...',
+    'Comparing resonance events...',
+    'Detecting acoustic anomalies...',
+    'Evaluating authenticity indicators...',
+    'Running temporal analysis...',
+    'Examining frequency structures...',
+    'Calculating moisture estimate...',
+    'Reviewing historical specimens...',
+    'Performing multi-dimensional comparison...',
+    'Analyzing waveform morphology...',
+    'Detecting airflow irregularities...',
+    'Processing gastrointestinal acoustics...',
+    'Evaluating sonic fingerprints...',
+    'Reconstructing emission profile...',
+    'Checking for suspicious facial involvement...',
+    'Estimating neighbour awareness risk...',
+    'Validating laboratory findings...'
+  ];
+
+  var ANALYSIS_RARE_POOL = [
+    'Laboratory disagreement detected...',
+    'Science team requests additional coffee...',
+    'This one is unusual...',
+    'Unexpected harmonic behaviour observed...',
+    'Results under peer review...',
+    'Rechecking findings...',
+    'Further investigation recommended...'
+  ];
+
+  var AUTO_DETECT_WAIT_MESSAGES = [
+    'Listening for emissions...',
+    'Monitoring acoustic activity...',
+    'Awaiting gastrointestinal event...',
+    'Acoustic sensors armed...',
+    'Standing by...',
+    'Monitoring pressure conditions...'
+  ];
+
+  var AUTO_DETECT_TRIGGER_TITLES = [
+    'EVENT DETECTED',
+    'TARGET ACQUIRED',
+    'ACOUSTIC EVENT DETECTED'
+  ];
+
+  function clearAnalysisSequence() {
+    for (var i = 0; i < state.analysisTimers.length; i++) {
+      clearTimeout(state.analysisTimers[i]);
+    }
+    state.analysisTimers = [];
+    state.analysisDoneCb = null;
+    var overlay = $('labs-analysis-overlay');
+    if (overlay) {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('fading-out');
+    }
+  }
+
+  function clearAutoDetectUI() {
+    if (state.autoDetectMsgTimer) {
+      clearInterval(state.autoDetectMsgTimer);
+      state.autoDetectMsgTimer = null;
+    }
+    var quickBadge = $('labs-quick-auto-status');
+    if (quickBadge) {
+      quickBadge.classList.add('hidden');
+      quickBadge.classList.remove('triggered');
+    }
+    var guessPanel = $('guess-autodetect-panel');
+    if (guessPanel) {
+      guessPanel.classList.add('hidden');
+      guessPanel.classList.remove('triggered');
+    }
+  }
+
+  function pickAnalysisStages() {
+    var opening = ANALYSIS_OPENING_POOL[Math.floor(Math.random() * ANALYSIS_OPENING_POOL.length)];
+    var pool = ANALYSIS_STANDARD_POOL.slice();
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i];
+      pool[i] = pool[j];
+      pool[j] = tmp;
+    }
+
+    var midCount = Math.random() < 0.5 ? 5 : 6;
+    var stages = [{ text: opening, rare: false }];
+    var pickedMid = pool.slice(0, midCount).map(function (t) {
+      return { text: t, rare: false };
+    });
+
+    if (Math.random() < 0.42) {
+      var rareTxt = ANALYSIS_RARE_POOL[Math.floor(Math.random() * ANALYSIS_RARE_POOL.length)];
+      var insertPos = Math.max(2, Math.min(pickedMid.length, 2 + Math.floor(Math.random() * 3)));
+      pickedMid.splice(insertPos, 0, { text: rareTxt, rare: true });
+    }
+
+    for (var m = 0; m < pickedMid.length; m++) {
+      stages.push(pickedMid[m]);
+    }
+    stages.push({ text: 'Finalizing laboratory verdict', rare: false });
+
+    // Target 3.4s to 5.4s total across stages (plus ~300ms fade out)
+    var targetTotalMs = 3400 + Math.random() * 1950;
+    var weights = stages.map(function (st, idx) {
+      if (idx === stages.length - 1) return 1.15;
+      return (st.rare ? 1.25 : 0.85) + Math.random() * 0.45;
+    });
+    var sumW = weights.reduce(function (a, b) { return a + b; }, 0) || stages.length;
+
+    return stages.map(function (st, idx) {
+      return {
+        text: st.text,
+        rare: st.rare,
+        durationMs: Math.max(320, Math.round((weights[idx] / sumW) * targetTotalMs))
+      };
+    });
+  }
+
+  function runAnalysisSequence(opts, onComplete) {
+    clearAnalysisSequence();
+    opts = opts || {};
+
+    var overlay = $('labs-analysis-overlay');
+    var stagesEl = $('labs-an-stages');
+    var pctEl = $('labs-an-pct');
+    var barEl = $('labs-an-bar-fill');
+    var subEl = $('labs-an-subtitle');
+
+    if (!overlay || !stagesEl) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
+
+    var stages = pickAnalysisStages(opts.context);
+    var finished = false;
+
+    function finishNow(immediate) {
+      if (finished) return;
+      finished = true;
+      for (var t = 0; t < state.analysisTimers.length; t++) {
+        clearTimeout(state.analysisTimers[t]);
+      }
+      state.analysisTimers = [];
+      state.analysisDoneCb = null;
+
+      if (immediate) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('fading-out');
+        if (typeof onComplete === 'function') onComplete();
+        return;
+      }
+
+      if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAnalysisComplete === 'function') {
+        TootLabs.AudioFx.playAnalysisComplete();
+      }
+      if (pctEl) pctEl.textContent = '100%';
+      if (barEl) barEl.style.width = '100%';
+      overlay.classList.add('fading-out');
+      var endTimer = setTimeout(function () {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('fading-out');
+        if (typeof onComplete === 'function') onComplete();
+      }, 310);
+      state.analysisTimers.push(endTimer);
+    }
+
+    state.analysisDoneCb = function () {
+      finishNow(true);
+    };
+
+    if (subEl) subEl.textContent = opts.subtitle || 'Executing multi-dimensional acoustic pipeline...';
+    if (pctEl) pctEl.textContent = '0%';
+    if (barEl) barEl.style.width = '0%';
+    stagesEl.innerHTML = '';
+    overlay.classList.remove('hidden', 'fading-out');
+
+    var elapsed = 0;
+    for (var sIdx = 0; sIdx < stages.length; sIdx++) {
+      (function (index, stage) {
+        var rowEl = null;
+        var startTimer = setTimeout(function () {
+          if (finished) return;
+          rowEl = document.createElement('li');
+          rowEl.className = 'labs-an-stage' + (stage.rare ? ' rare' : '');
+          rowEl.innerHTML =
+            '<span class="labs-an-stage-ico">◌</span>' +
+            '<span class="labs-an-stage-txt">' + esc(stage.text) + '</span>';
+          if (typeof stagesEl.appendChild === 'function') {
+            stagesEl.appendChild(rowEl);
+          } else {
+            stagesEl.innerHTML = stagesEl.innerHTML + '<li class="' + rowEl.className + '">' + rowEl.innerHTML + '</li>';
+          }
+          try { stagesEl.scrollTop = stagesEl.scrollHeight; } catch (e) {}
+
+          var startPct = Math.round(((index + 0.35) / stages.length) * 96);
+          if (pctEl) pctEl.textContent = startPct + '%';
+          if (barEl) barEl.style.width = startPct + '%';
+        }, elapsed);
+        state.analysisTimers.push(startTimer);
+
+        elapsed += stage.durationMs;
+
+        var doneTimer = setTimeout(function () {
+          if (finished) return;
+          if (rowEl) {
+            rowEl.classList.add('done');
+            var ico = rowEl.querySelector ? rowEl.querySelector('.labs-an-stage-ico') : null;
+            if (ico) ico.textContent = '✓';
+          }
+          var donePct = Math.round(((index + 1) / stages.length) * 98);
+          if (pctEl) pctEl.textContent = donePct + '%';
+          if (barEl) barEl.style.width = donePct + '%';
+          if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playLabTick === 'function') {
+            TootLabs.AudioFx.playLabTick(index);
+          }
+          if (index === stages.length - 1) {
+            var pauseTimer = setTimeout(function () {
+              finishNow(false);
+            }, 220);
+            state.analysisTimers.push(pauseTimer);
+          }
+        }, elapsed);
+        state.analysisTimers.push(doneTimer);
+      })(sIdx, stages[sIdx]);
+    }
+  }
+
+  function setRecordMode(mode) {
+    var next = mode === 'auto' ? 'auto' : 'manual';
+    state.recordMode = next;
+    var btns = document.querySelectorAll('.labs-rec-mode-btn[data-rec-mode]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-rec-mode') === next);
+    }
+
+    var homeHint = $('home-mode-hint');
+    if (homeHint) {
+      homeHint.textContent =
+        next === 'auto'
+          ? 'AUTO DETECT active: arms mic with a 5s rolling buffer & auto-clips after silence'
+          : 'Manual Record captures immediately · Auto Detect arms a 5s rolling trigger buffer';
+    }
+
+    if (!TootApp.Audio || !TootApp.Audio.isRecordingOrStarting()) {
+      var gLabel = $('guess-rec-label');
+      var gStatus = $('guess-rec-status');
+      var target = getSampleById(state.guessTargetId);
+      if (gLabel && !state.pendingGuess) {
+        gLabel.textContent = next === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
+      }
+      if (gStatus && !state.pendingGuess) {
+        gStatus.textContent = target
+          ? next === 'auto'
+            ? 'AUTO DETECT ready — tap to arm sensors & maintain a 5s rolling buffer.'
+            : 'Next default label: Guesser ' + (state.guessAttempts.length + 1)
+          : 'Record or select a saved fart above first.';
+      }
+    }
+  }
+
   function clearResultAnimations() {
     for (var i = 0; i < state.resultTimers.length; i++) {
       clearTimeout(state.resultTimers[i]);
@@ -547,6 +829,12 @@
     var prevView = state.view;
     if (prevView === 'result' && viewKey !== 'result') {
       clearResultAnimations();
+    }
+    if (prevView === 'guess' && viewKey !== 'guess' && state.recordingKind === 'guess' && TootApp.Audio && TootApp.Audio.isAutoDetecting && TootApp.Audio.isAutoDetecting()) {
+      TootApp.Audio.stopAutoDetect(true);
+      clearAutoDetectUI();
+      state.activeRecStopper = null;
+      state.recordingKind = null;
     }
     if (prevView === 'vault' && viewKey !== 'vault') {
       dismissVaultDoorImmediate();
@@ -689,7 +977,7 @@
     refreshMicDevices();
   }
 
-  /* Instant 1-Tap Quick Record (Anywhere in App) */
+  /* Instant 1-Tap Quick Record & Auto Detect (Anywhere in App) */
   function startQuickRecordFart() {
     if (TootApp.Audio.isRecordingOrStarting()) {
       if (state.recordingKind === 'quick' && TootApp.Audio.isRecording() && state.activeRecStopper) {
@@ -699,7 +987,9 @@
     }
 
     resetMicTestUI('Ready');
+    clearAutoDetectUI();
     state.recordingKind = 'quick';
+    var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
     var topBtn = $('btn-labs-quick-record');
     var bar = $('labs-quick-rec-bar');
     var capPane = $('labs-quick-capturing');
@@ -707,7 +997,11 @@
     var timerEl = $('labs-quick-timer');
     var waveEl = $('labs-quick-wave');
     var stopBtn = $('btn-quick-stop-save');
+    var autoBadge = $('labs-quick-auto-status');
+    var autoTitleEl = $('labs-quick-auto-title');
+    var autoMsgEl = $('labs-quick-auto-msg');
     var settled = false;
+    var autoWaitIdx = 0;
 
     bar.classList.remove('hidden');
     capPane.classList.remove('hidden');
@@ -715,20 +1009,44 @@
     stopBtn.disabled = false;
 
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
-    timerEl.textContent = isWarm ? 'Recording…' : 'Requesting mic…';
-    topBtn.classList.add('recording');
-    topBtn.textContent = '⏹ Stop & Save';
+    if (useAuto) {
+      timerEl.textContent = isWarm ? 'Arming sensors…' : 'Requesting mic…';
+      topBtn.classList.add('recording');
+      topBtn.textContent = '⏹ Disarm';
+      stopBtn.textContent = '⏹ Cancel Auto';
+      if (autoBadge) {
+        autoBadge.classList.remove('hidden', 'triggered');
+        if (autoTitleEl) autoTitleEl.textContent = 'LISTENING FOR EVENT';
+        if (autoMsgEl) autoMsgEl.textContent = 'Acoustic sensors armed — ' + AUTO_DETECT_WAIT_MESSAGES[0];
+      }
+    } else {
+      timerEl.textContent = isWarm ? 'Recording…' : 'Requesting mic…';
+      topBtn.classList.add('recording');
+      topBtn.textContent = '⏹ Stop & Save';
+      stopBtn.textContent = '⏹ Stop & Save';
+    }
 
     function finalizeQuick(res) {
       if (settled) return;
       settled = true;
+      clearAutoDetectUI();
       state.activeRecStopper = null;
       state.recordingKind = null;
       topBtn.classList.remove('recording');
       topBtn.textContent = '● Record Fart';
+      stopBtn.textContent = '⏹ Stop & Save';
       stopBtn.disabled = false;
 
-      if (!res || !res.ok) {
+      if (!res || res.reason === 'cancelled') {
+        capPane.classList.add('hidden');
+        bar.classList.add('hidden');
+        if (res && res.reason === 'cancelled') {
+          showToast('Auto Detect disarmed');
+        }
+        return;
+      }
+
+      if (!res.ok) {
         capPane.classList.add('hidden');
         bar.classList.add('hidden');
         var micName = (res && res.trackLabel) || 'Default Microphone';
@@ -746,21 +1064,87 @@
         return;
       }
 
+      capPane.classList.add('hidden');
+      bar.classList.add('hidden');
       TootLabs.Store.saveNewSpecimen(res).then(function (saved) {
         state.samples.unshift(saved);
         state.quickSavedId = saved.id;
         if (!state.guessTargetId) state.guessTargetId = saved.id;
         if (!state.fnSampleId) state.fnSampleId = saved.id;
 
-        capPane.classList.add('hidden');
-        savedPane.classList.remove('hidden');
-        $('labs-quick-saved-name').textContent = getSampleName(saved);
-
         renderHomeView();
         renderVaultView();
         if (state.view === 'guess') renderGuessView();
-        showToast('Saved "' + getSampleName(saved) + '" to Fart Vault!');
+
+        runAnalysisSequence(
+          {
+            context: 'specimen',
+            subtitle: 'Cataloging "' + getSampleName(saved) + '" in Bio-Acoustic Vault'
+          },
+          function () {
+            bar.classList.remove('hidden');
+            capPane.classList.add('hidden');
+            savedPane.classList.remove('hidden');
+            $('labs-quick-saved-name').textContent = getSampleName(saved);
+            showToast('Saved "' + getSampleName(saved) + '" to Fart Vault!');
+          }
+        );
       });
+    }
+
+    if (useAuto) {
+      state.activeRecStopper = function () {
+        stopBtn.disabled = true;
+        timerEl.textContent = 'Disarming sensors…';
+        TootApp.Audio.stopAutoDetect(false).then(finalizeQuick);
+      };
+
+      TootApp.Audio.startAutoDetect({
+        onStarted: function () {
+          timerEl.textContent = 'Buffer 0.0 / 5.0s';
+          refreshMicDevices();
+          state.autoDetectMsgTimer = setInterval(function () {
+            autoWaitIdx = (autoWaitIdx + 1) % AUTO_DETECT_WAIT_MESSAGES.length;
+            if (autoMsgEl) {
+              autoMsgEl.textContent = 'Acoustic sensors armed — ' + AUTO_DETECT_WAIT_MESSAGES[autoWaitIdx];
+            }
+          }, 2200);
+        },
+        onLevel: function (timeData, rms, info) {
+          if (info && info.phase === 'triggered') {
+            timerEl.textContent = 'Capturing event…';
+          } else {
+            timerEl.textContent = 'Buffer ' + (info ? info.bufferedSec.toFixed(1) : '0.0') + ' / 5.0s';
+          }
+          drawLiveWaveform(waveEl, timeData, rms);
+        },
+        onDetected: function () {
+          if (state.autoDetectMsgTimer) {
+            clearInterval(state.autoDetectMsgTimer);
+            state.autoDetectMsgTimer = null;
+          }
+          var trigHead = AUTO_DETECT_TRIGGER_TITLES[Math.floor(Math.random() * AUTO_DETECT_TRIGGER_TITLES.length)];
+          topBtn.textContent = '⏹ Finish & Save';
+          stopBtn.textContent = '⏹ Finish & Save';
+          if (autoBadge) autoBadge.classList.add('triggered');
+          if (autoTitleEl) autoTitleEl.textContent = trigHead;
+          if (autoMsgEl) autoMsgEl.textContent = 'Capturing sample...';
+        },
+        onAutoStop: function (res) {
+          finalizeQuick(res);
+        }
+      }).catch(function (err) {
+        settled = true;
+        clearAutoDetectUI();
+        state.activeRecStopper = null;
+        state.recordingKind = null;
+        topBtn.classList.remove('recording');
+        topBtn.textContent = '● Record Fart';
+        stopBtn.textContent = '⏹ Stop & Save';
+        bar.classList.add('hidden');
+        showToast((err && err.message) || 'Microphone unavailable.', true);
+      });
+      return;
     }
 
     state.activeRecStopper = function () {
@@ -808,13 +1192,21 @@
     }
 
     resetMicTestUI('Ready');
+    clearAutoDetectUI();
     state.recordingKind = 'guess';
+    var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
     var btn = $('btn-guess-rec');
     var labelEl = $('guess-rec-label');
     var iconEl = $('guess-rec-icon');
     var statusEl = $('guess-rec-status');
     var waveCanvas = $('guess-live-wave');
+    var adPanel = $('guess-autodetect-panel');
+    var adHead = $('guess-ad-headline');
+    var adSub = $('guess-ad-sub');
+    var adMsg = $('guess-ad-msg');
+    var adBuf = $('guess-ad-buf');
     var settled = false;
+    var waitIdx = 0;
 
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
     if (!isWarm) {
@@ -823,22 +1215,31 @@
       iconEl.textContent = '⏳';
       statusEl.textContent = 'Requesting microphone permission…';
     } else {
-      statusEl.textContent = 'Arming microphone…';
+      statusEl.textContent = useAuto ? 'Arming Auto Detect sensors…' : 'Arming microphone…';
     }
     waveCanvas.classList.remove('hidden');
 
     function finalizeGuess(res) {
       if (settled) return;
       settled = true;
+      clearAutoDetectUI();
       state.activeRecStopper = null;
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = 'Record Guess';
+      labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
       iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
 
-      if (!res || !res.ok) {
+      if (!res || res.reason === 'cancelled') {
+        statusEl.textContent = 'Auto Detect disarmed — tap Arm Auto Detect when ready.';
+        if (res && res.reason === 'cancelled') {
+          showToast('Auto Detect disarmed');
+        }
+        return;
+      }
+
+      if (!res.ok) {
         var micName = (res && res.trackLabel) || 'Default Microphone';
         var msg =
           res && res.reason === 'all_zeros'
@@ -864,6 +1265,74 @@
       var defaultNum = state.guessAttempts.length + 1;
       $('guess-name-input').value = 'Guesser ' + defaultNum;
       renderGuessView();
+    }
+
+    if (useAuto) {
+      if (adPanel) {
+        adPanel.classList.remove('hidden', 'triggered');
+        if (adHead) adHead.textContent = 'LISTENING FOR EVENT';
+        if (adSub) adSub.textContent = 'Acoustic sensors armed';
+        if (adMsg) adMsg.textContent = AUTO_DETECT_WAIT_MESSAGES[0];
+        if (adBuf) adBuf.textContent = 'Buffer: 0.0s / 5.0s';
+      }
+
+      state.activeRecStopper = function () {
+        btn.disabled = true;
+        statusEl.textContent = 'Disarming sensors…';
+        TootApp.Audio.stopAutoDetect(false).then(finalizeGuess);
+      };
+
+      TootApp.Audio.startAutoDetect({
+        onStarted: function () {
+          btn.disabled = false;
+          btn.classList.add('recording');
+          labelEl.textContent = 'Disarm';
+          iconEl.textContent = '📡';
+          statusEl.textContent = 'LISTENING FOR EVENT — 5s rolling buffer armed.';
+          refreshMicDevices();
+          state.autoDetectMsgTimer = setInterval(function () {
+            waitIdx = (waitIdx + 1) % AUTO_DETECT_WAIT_MESSAGES.length;
+            if (adMsg) adMsg.textContent = AUTO_DETECT_WAIT_MESSAGES[waitIdx];
+          }, 2300);
+        },
+        onLevel: function (timeData, rms, info) {
+          drawLiveWaveform(waveCanvas, timeData, rms);
+          if (adBuf && info) {
+            adBuf.textContent =
+              info.phase === 'triggered'
+                ? 'EVENT LOCKED'
+                : 'Buffer: ' + info.bufferedSec.toFixed(1) + 's / 5.0s';
+          }
+        },
+        onDetected: function () {
+          if (state.autoDetectMsgTimer) {
+            clearInterval(state.autoDetectMsgTimer);
+            state.autoDetectMsgTimer = null;
+          }
+          var trigHead = AUTO_DETECT_TRIGGER_TITLES[Math.floor(Math.random() * AUTO_DETECT_TRIGGER_TITLES.length)];
+          if (adPanel) adPanel.classList.add('triggered');
+          if (adHead) adHead.textContent = trigHead;
+          if (adSub) adSub.textContent = 'Capturing sample...';
+          if (adMsg) adMsg.textContent = 'Recording event tail — auto-stop on silence';
+          labelEl.textContent = 'Finish Now';
+          statusEl.textContent = trigHead + ' — Capturing sample...';
+        },
+        onAutoStop: function (res) {
+          finalizeGuess(res);
+        }
+      }).catch(function (err) {
+        settled = true;
+        clearAutoDetectUI();
+        state.activeRecStopper = null;
+        state.recordingKind = null;
+        btn.disabled = false;
+        btn.classList.remove('recording');
+        labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
+        iconEl.textContent = '🎤';
+        waveCanvas.classList.add('hidden');
+        showToast((err && err.message) || 'Microphone unavailable.', true);
+      });
+      return;
     }
 
     state.activeRecStopper = function () {
@@ -894,7 +1363,7 @@
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = 'Record Guess';
+      labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
       iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
       showToast((err && err.message) || 'Microphone unavailable.', true);
@@ -1264,6 +1733,9 @@
     $('guess-empty-target').classList.toggle('hidden', Boolean(target));
     $('guess-loaded-pane').classList.toggle('hidden', !target);
     $('btn-guess-rec').disabled = !target;
+    if ($('btn-guess-random')) {
+      $('btn-guess-random').disabled = state.samples.length === 0;
+    }
 
     if (target) {
       var feat = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
@@ -1286,8 +1758,11 @@
       prevPanel.classList.add('hidden');
       $('guess-attempt-dur').textContent = target ? 'Standby' : 'No Fart';
       if (!TootApp.Audio.isRecordingOrStarting()) {
+        $('guess-rec-label').textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
         $('guess-rec-status').textContent = target
-          ? 'Next default label: Guesser ' + (state.guessAttempts.length + 1)
+          ? state.recordMode === 'auto'
+            ? 'AUTO DETECT ready — tap to arm sensors & maintain a 5s rolling buffer.'
+            : 'Next default label: Guesser ' + (state.guessAttempts.length + 1)
           : 'Record or select a saved fart above first.';
       }
     }
@@ -1317,6 +1792,21 @@
     });
   }
 
+  function pickRandomGuessTarget() {
+    if (!state.samples || state.samples.length === 0) {
+      showToast('No saved farts in Vault yet — record one first!', true);
+      return null;
+    }
+    var pool = state.samples.length > 1
+      ? state.samples.filter(function (s) { return s.id !== state.guessTargetId; })
+      : state.samples;
+    if (pool.length === 0) pool = state.samples;
+    var chosen = pool[Math.floor(Math.random() * pool.length)];
+    openGuessMode(chosen.id);
+    showToast('🎲 Random Vault Fart: "' + getSampleName(chosen) + '"');
+    return chosen;
+  }
+
   function judgePendingGuess() {
     var target = getSampleById(state.guessTargetId);
     if (!target || !state.pendingGuess) {
@@ -1341,8 +1831,16 @@
 
       renderHomeView();
       renderVaultView();
-      showView('result');
-      renderResultScreen(state.lastOutcome);
+      runAnalysisSequence(
+        {
+          context: 'comparison',
+          subtitle: 'Analyzing ' + (outcome.attempt.name || 'Guesser') + ' vs ' + getSampleName(target)
+        },
+        function () {
+          showView('result');
+          renderResultScreen(state.lastOutcome);
+        }
+      );
     });
   }
 
@@ -1357,11 +1855,23 @@
     var reward = outcome.reward;
     var stats = outcome.sampleStats || {};
 
+    var stageEl = document.querySelector ? document.querySelector('#labs-view-result .labs-result-stage') : null;
+    if (stageEl && stageEl.classList) {
+      stageEl.classList.remove('reveal-enter');
+      try { void stageEl.offsetWidth; } catch (e) {}
+      stageEl.classList.add('reveal-enter');
+    }
+
     $('res-sample-context').textContent =
       (outcome.attempt.name || 'Guesser').toUpperCase() + ' vs ' + getSampleName(target).toUpperCase();
 
     var pbEl = $('res-pb-pill');
     pbEl.classList.add('hidden');
+
+    var rankBlockEl = document.querySelector ? document.querySelector('#labs-view-result .labs-rank-block') : null;
+    var rewardStageEl = $('res-reward-stage');
+    if (rankBlockEl && rankBlockEl.classList) rankBlockEl.classList.add('labs-reveal-pending');
+    if (rewardStageEl && rewardStageEl.classList) rewardStageEl.classList.add('labs-reveal-pending');
 
     var ringFg = $('res-ring-fg');
     var radius = 90;
@@ -1369,10 +1879,10 @@
     ringFg.style.transition = 'none';
     ringFg.style.strokeDasharray = circ.toFixed(2);
     ringFg.style.strokeDashoffset = circ.toFixed(2);
-    void ringFg.getBoundingClientRect();
+    try { void ringFg.getBoundingClientRect(); } catch (e) {}
 
     var targetOffset = circ * (1 - Math.max(0, Math.min(100, exact)) / 100);
-    ringFg.style.transition = 'stroke-dashoffset 1.15s cubic-bezier(0.22, 1, 0.36, 1)';
+    ringFg.style.transition = 'stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1)';
     if (typeof root.requestAnimationFrame === 'function') {
       root.requestAnimationFrame(function () {
         ringFg.style.strokeDashoffset = targetOffset.toFixed(2);
@@ -1384,7 +1894,7 @@
     var scoreValEl = $('res-score-value');
     scoreValEl.textContent = '0.0%';
     var animStart = performance.now();
-    var durationMs = 1100;
+    var durationMs = 1320;
     function tickCounter(now) {
       var t = Math.min(1, (now - animStart) / durationMs);
       var eased = 1 - Math.pow(1 - t, 3);
@@ -1433,16 +1943,24 @@
     var bellLabel = $('res-bell-label');
     var legTitleEl = $('res-legendary-title');
     starsRow.innerHTML = '';
-    bellLabel.textContent = 'Assigning Telemetry Rating…';
+    bellLabel.textContent = 'Calibrating Match Quality…';
     legTitleEl.classList.add('hidden');
     legTitleEl.textContent = '';
 
-    if (outcome.isPersonalBest) {
-      state.resultTimers.push(setTimeout(function () { pbEl.classList.remove('hidden'); }, 480));
-    }
+    state.resultTimers.push(
+      setTimeout(function () {
+        if (state.view !== 'result') return;
+        if (rankBlockEl && rankBlockEl.classList) rankBlockEl.classList.remove('labs-reveal-pending');
+        if (rewardStageEl && rewardStageEl.classList) rewardStageEl.classList.remove('labs-reveal-pending');
+        bellLabel.textContent = 'Assigning Telemetry Rating…';
+        if (outcome.isPersonalBest) {
+          pbEl.classList.remove('hidden');
+        }
+      }, 1360)
+    );
 
-    var startDelay = 620;
-    var stepMs = 340;
+    var startDelay = 1750;
+    var stepMs = 480;
     for (var sIdx = 0; sIdx < reward.stars; sIdx++) {
       (function (starIndex) {
         state.resultTimers.push(
@@ -1466,7 +1984,9 @@
     }
 
     if (reward.stars === 5) {
-      var finaleAt = startDelay + reward.stars * stepMs + 340;
+      // Dramatic brief freeze (~680ms) after the 5th star bell before special victory finale
+      var lastStarAt = startDelay + (reward.stars - 1) * stepMs;
+      var finaleAt = lastStarAt + 680;
       state.resultTimers.push(
         setTimeout(function () {
           if (state.view !== 'result') return;
@@ -1928,6 +2448,9 @@
     });
 
     // Guess View Buttons
+    if ($('btn-guess-random')) {
+      $('btn-guess-random').addEventListener('click', pickRandomGuessTarget);
+    }
     $('btn-guess-record-new').addEventListener('click', startQuickRecordFart);
     $('btn-guess-empty-rec').addEventListener('click', startQuickRecordFart);
 
@@ -2043,6 +2566,19 @@
       openGuessMode(state.fnSampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id));
     });
 
+    var skipAnalysisBtn = $('btn-labs-an-skip');
+    if (skipAnalysisBtn) {
+      skipAnalysisBtn.addEventListener('click', function () {
+        if (typeof state.analysisDoneCb === 'function') state.analysisDoneCb();
+      });
+    }
+
+    document.querySelectorAll('.labs-rec-mode-btn[data-rec-mode]').forEach(function (modeBtn) {
+      modeBtn.addEventListener('click', function () {
+        setRecordMode(this.getAttribute('data-rec-mode'));
+      });
+    });
+
     root.addEventListener('resize', function () {
       if (state.view === 'home') drawVaultWaveforms('home-recent-vault');
       else if (state.view === 'vault') drawVaultWaveforms('vault-grid');
@@ -2088,6 +2624,10 @@
     getState: function () { return state; },
     showView: showView,
     openGuessMode: openGuessMode,
-    openFartnalysis: openFartnalysis
+    pickRandomGuessTarget: pickRandomGuessTarget,
+    openFartnalysis: openFartnalysis,
+    setRecordMode: setRecordMode,
+    pickAnalysisStages: pickAnalysisStages,
+    runAnalysisSequence: runAnalysisSequence
   };
 })(typeof window !== 'undefined' ? window : globalThis);

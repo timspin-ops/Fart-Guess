@@ -62,9 +62,9 @@
     options = options || {};
 
     this.spectrogram = options.spectrogram || null;
-    this.azimuth = typeof options.azimuth === 'number' ? options.azimuth : 0.65;
-    this.elevation = typeof options.elevation === 'number' ? options.elevation : 0.52;
-    this.zoom = typeof options.zoom === 'number' ? options.zoom : 1.0;
+    this.azimuth = typeof options.azimuth === 'number' ? options.azimuth : 0.60;
+    this.elevation = typeof options.elevation === 'number' ? options.elevation : 0.48;
+    this.zoom = typeof options.zoom === 'number' ? options.zoom : 1.06;
     this.colormap = options.colormap || 'plasma';
     this.wireframe = options.wireframe !== false;
     this.autoRotate = Boolean(options.autoRotate);
@@ -80,6 +80,9 @@
     this._dragging = false;
     this._lastX = 0;
     this._lastY = 0;
+    this._pointers = typeof Map !== 'undefined' ? new Map() : null;
+    this._pinchDist = 0;
+    this._projCache = null;
     this._rafAnim = null;
     this._tweenTarget = null;
     this._destroyed = false;
@@ -97,9 +100,20 @@
 
     this._onPointerDown = function (e) {
       if (e.button && e.button !== 0) return;
-      self._dragging = true;
-      self._lastX = e.clientX;
-      self._lastY = e.clientY;
+      if (self._pointers && e.pointerId !== undefined) {
+        self._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+      if (self._pointers && self._pointers.size === 2) {
+        self._dragging = false;
+        var pts = [];
+        self._pointers.forEach(function (pt) { pts.push(pt); });
+        self._pinchDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+      } else {
+        self._dragging = true;
+        self._pinchDist = 0;
+        self._lastX = e.clientX;
+        self._lastY = e.clientY;
+      }
       self._tweenTarget = null;
       if (canvas.setPointerCapture) {
         try {
@@ -109,6 +123,21 @@
     };
 
     this._onPointerMove = function (e) {
+      if (self._pointers && e.pointerId !== undefined && self._pointers.has(e.pointerId)) {
+        self._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        if (self._pointers.size === 2 && self._pinchDist > 4) {
+          var pts = [];
+          self._pointers.forEach(function (pt) { pts.push(pt); });
+          var newDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+          if (newDist > 4) {
+            self.zoom = clamp(self.zoom * (newDist / self._pinchDist), 0.70, 2.40);
+            self._pinchDist = newDist;
+            self.render();
+            self._notifyPartners();
+          }
+          return;
+        }
+      }
       if (!self._dragging) return;
       var dx = e.clientX - self._lastX;
       var dy = e.clientY - self._lastY;
@@ -121,14 +150,26 @@
       self._notifyPartners();
     };
 
-    this._onPointerUp = function () {
-      self._dragging = false;
+    this._onPointerUp = function (e) {
+      if (self._pointers && e && e.pointerId !== undefined) {
+        self._pointers.delete(e.pointerId);
+      }
+      self._pinchDist = 0;
+      if (!self._pointers || self._pointers.size !== 1) {
+        self._dragging = false;
+      } else {
+        self._pointers.forEach(function (pt) {
+          self._lastX = pt.x;
+          self._lastY = pt.y;
+        });
+        self._dragging = true;
+      }
     };
 
     this._onWheel = function (e) {
       e.preventDefault();
-      var delta = e.deltaY > 0 ? -0.08 : 0.08;
-      self.zoom = clamp(self.zoom + delta, 0.65, 1.85);
+      var delta = e.deltaY > 0 ? -0.09 : 0.09;
+      self.zoom = clamp(self.zoom + delta, 0.70, 2.40);
       self.render();
       self._notifyPartners();
     };
@@ -223,11 +264,11 @@
   };
 
   Spectrogram3D.prototype.setPreset = function (preset) {
-    var target = { az: 0.65, el: 0.52, zoom: 1.0 };
+    var target = { az: 0.60, el: 0.48, zoom: 1.06 };
     if (preset === 'top') {
       target = { az: 0.0, el: 1.54, zoom: 1.06 };
     } else if (preset === 'side') {
-      target = { az: 0.04, el: 0.14, zoom: 1.05 };
+      target = { az: 0.04, el: 0.14, zoom: 1.06 };
     }
     this.autoRotate = false;
     this._tweenTarget = target;
@@ -301,34 +342,93 @@
     this._rafAnim = requestAnimationFrame(step);
   };
 
-  Spectrogram3D.prototype._project = function (x, y, z) {
-    var centerY = 0.34;
-    var dx = x;
-    var dy = y - centerY;
-    var dz = z;
-
+  Spectrogram3D.prototype._computeProjection = function () {
+    var w = Math.max(1, this.width || 320);
+    var h = Math.max(1, this.height || 220);
+    var centerY = 0.44;
+    var camDist = 3.85;
     var cosAz = Math.cos(this.azimuth);
     var sinAz = Math.sin(this.azimuth);
     var cosEl = Math.cos(this.elevation);
     var sinEl = Math.sin(this.elevation);
 
+    var minU = Infinity;
+    var maxU = -Infinity;
+    var minV = Infinity;
+    var maxV = -Infinity;
+    var xs = [-1, 1];
+    var ys = [0, 1.05];
+    var zs = [-1, 1];
+    for (var xi = 0; xi < 2; xi++) {
+      for (var yi = 0; yi < 2; yi++) {
+        for (var zi = 0; zi < 2; zi++) {
+          var cx = xs[xi];
+          var cy = ys[yi] - centerY;
+          var cz = zs[zi];
+          var rx = cx * cosAz - cz * sinAz;
+          var rz1 = cx * sinAz + cz * cosAz;
+          var ry = cy * cosEl - rz1 * sinEl;
+          var rz = cy * sinEl + rz1 * cosEl;
+          var depth = Math.max(0.4, camDist - rz);
+          var u = rx / depth;
+          var v = -ry / depth;
+          if (u < minU) minU = u;
+          if (u > maxU) maxU = u;
+          if (v < minV) minV = v;
+          if (v > maxV) maxV = v;
+        }
+      }
+    }
+
+    var isNarrow = w < 240;
+    var padL = isNarrow ? 8 : 22;
+    var padR = isNarrow ? 8 : 16;
+    var padT = isNarrow ? 8 : 10;
+    var padB = isNarrow ? 14 : 22;
+    var availW = Math.max(20, w - padL - padR);
+    var availH = Math.max(20, h - padT - padB);
+    var spanU = Math.max(0.05, maxU - minU);
+    var spanV = Math.max(0.05, maxV - minV);
+    var zoomVal = clamp(this.zoom || 1.06, 0.5, 3.0);
+    var fitFov = Math.min(availW / spanU, availH / spanV) * zoomVal;
+    var originX = padL + availW * 0.5 - ((minU + maxU) * 0.5) * fitFov;
+    var originY = padT + availH * 0.5 - ((minV + maxV) * 0.5) * fitFov;
+
+    this._projCache = {
+      camDist: camDist,
+      centerY: centerY,
+      cosAz: cosAz,
+      sinAz: sinAz,
+      cosEl: cosEl,
+      sinEl: sinEl,
+      fitFov: fitFov,
+      originX: originX,
+      originY: originY
+    };
+    return this._projCache;
+  };
+
+  Spectrogram3D.prototype._project = function (x, y, z) {
+    var p = this._projCache || this._computeProjection();
+    var dx = x;
+    var dy = y - p.centerY;
+    var dz = z;
+
     // Rotate around Y by -azimuth
-    var rx = dx * cosAz - dz * sinAz;
-    var rz1 = dx * sinAz + dz * cosAz;
+    var rx = dx * p.cosAz - dz * p.sinAz;
+    var rz1 = dx * p.sinAz + dz * p.cosAz;
     var ry1 = dy;
 
     // Rotate around X by +elevation
-    var ry = ry1 * cosEl - rz1 * sinEl;
-    var rz = ry1 * sinEl + rz1 * cosEl;
+    var ry = ry1 * p.cosEl - rz1 * p.sinEl;
+    var rz = ry1 * p.sinEl + rz1 * p.cosEl;
 
-    var camDist = 3.85 / this.zoom;
-    var depth = Math.max(0.4, camDist - rz);
-    var fov = Math.min(this.width, this.height) * 0.92;
-    var factor = fov / depth;
+    var depth = Math.max(0.4, p.camDist - rz);
+    var factor = p.fitFov / depth;
 
     return {
-      x: this.width * 0.5 + rx * factor,
-      y: this.height * 0.53 - ry * factor,
+      x: p.originX + rx * factor,
+      y: p.originY - ry * factor,
       depth: depth
     };
   };
@@ -337,6 +437,7 @@
     if (this._destroyed || !this.ctx) return;
     if (this.width <= 0 || this.height <= 0) return;
 
+    this._computeProjection();
     var ctx = this.ctx;
     var w = this.width;
     var h = this.height;
@@ -443,11 +544,13 @@
       this._drawPlayheadCurtain(ctx, spec, maxH);
     }
 
-    // HUD hint in corner
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.58)';
-    ctx.font = '500 10px system-ui, -apple-system, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('Drag to orbit • Scroll to zoom • Dbl-click reset', w - 10, h - 8);
+    // HUD hint in corner on wider canvases
+    if (w >= 260) {
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.58)';
+      ctx.font = '500 10px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText('Drag to orbit • Scroll/pinch to zoom • Dbl-click reset', w - 10, h - 8);
+    }
 
     ctx.restore();
   };
@@ -457,6 +560,7 @@
     var backZ = camZ >= 0 ? -1 : 1;
     var frontX = -backX;
     var frontZ = -backZ;
+    var isNarrow = (this.width || 320) < 240;
 
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
@@ -509,42 +613,53 @@
 
     // Axis Labels
     ctx.fillStyle = 'rgba(203, 213, 225, 0.78)';
-    ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.font = isNarrow
+      ? '600 8px ui-monospace, SFMono-Regular, Menlo, monospace'
+      : '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
 
     // Time ticks along frontZ floor edge
     var effDur = (spec.duration || 0) / Math.max(0.25, this.playbackRate || 1.0);
     ctx.textAlign = 'center';
-    for (var ti = 0; ti <= 2; ti++) {
-      var tx = -1 + ti;
-      var tSec = ((ti / 2) * effDur).toFixed(2) + 's';
-      var tp = this._project(tx, -0.02, frontZ * 1.12);
-      ctx.fillText(tSec, tp.x, tp.y + 4);
+    var tickCount = isNarrow ? 1 : 2;
+    for (var ti = 0; ti <= tickCount; ti++) {
+      var fracT = tickCount === 1 ? ti : ti / 2;
+      var tx = -1 + 2 * fracT;
+      var tSec = (fracT * effDur).toFixed(isNarrow ? 1 : 2) + 's';
+      var tp = this._project(tx, -0.02, frontZ * (isNarrow ? 1.04 : 1.10));
+      ctx.fillText(tSec, tp.x, tp.y + (isNarrow ? 2 : 4));
     }
 
     // Frequency ticks along frontX floor edge
-    var freqTicks = [
-      { z: -1.0, label: '45Hz' },
-      { z: -0.35, label: '200Hz' },
-      { z: 0.30, label: '1kHz' },
-      { z: 1.0, label: '4.2kHz' }
-    ];
+    var freqTicks = isNarrow
+      ? [
+          { z: -1.0, label: '45Hz' },
+          { z: 1.0, label: '4.2kHz' }
+        ]
+      : [
+          { z: -1.0, label: '45Hz' },
+          { z: -0.35, label: '200Hz' },
+          { z: 0.30, label: '1kHz' },
+          { z: 1.0, label: '4.2kHz' }
+        ];
     ctx.textAlign = camX >= 0 ? 'left' : 'right';
     for (var fi = 0; fi < freqTicks.length; fi++) {
       var ft = freqTicks[fi];
-      var fp = this._project(frontX * 1.08, -0.02, ft.z);
-      ctx.fillText(ft.label, fp.x + (camX >= 0 ? 4 : -4), fp.y + 3);
+      var fp = this._project(frontX * (isNarrow ? 1.03 : 1.07), -0.02, ft.z);
+      ctx.fillText(ft.label, fp.x + (camX >= 0 ? 3 : -3), fp.y + 3);
     }
 
-    // dB labels on back corner post
-    var dbLabels = [
-      { y: 0.0, text: '-55dB' },
-      { y: 0.525, text: '-27dB' },
-      { y: 1.05, text: '0dB' }
-    ];
-    ctx.textAlign = 'right';
-    for (var di = 0; di < dbLabels.length; di++) {
-      var dp = this._project(backX * 1.06, dbLabels[di].y, backZ);
-      ctx.fillText(dbLabels[di].text, dp.x - 4, dp.y + 3);
+    // dB labels on back corner post (skip mid label on very narrow canvases)
+    if (!isNarrow) {
+      var dbLabels = [
+        { y: 0.0, text: '-55dB' },
+        { y: 0.525, text: '-27dB' },
+        { y: 1.05, text: '0dB' }
+      ];
+      ctx.textAlign = 'right';
+      for (var di = 0; di < dbLabels.length; di++) {
+        var dp = this._project(backX * 1.05, dbLabels[di].y, backZ);
+        ctx.fillText(dbLabels[di].text, dp.x - 4, dp.y + 3);
+      }
     }
   };
 

@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261123f" />
-  <script defer src="../js/dsp.js?v=20261123f"></script>
-  <script defer src="../js/audioEngine.js?v=20261123f"></script>
-  <script defer src="../js/storage.js?v=20261123f"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261123f"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261123f"></script>
-  <script defer src="js/labsStore.js?v=20261123f"></script>
-  <script defer src="js/labsAudioFx.js?v=20261123f"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261123f"></script>
-  <script defer src="js/labsPdfExport.js?v=20261123f"></script>
-  <script defer src="js/labsApp.js?v=20261123f"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261123i" />
+  <script defer src="../js/dsp.js?v=20261123i"></script>
+  <script defer src="../js/audioEngine.js?v=20261123i"></script>
+  <script defer src="../js/storage.js?v=20261123i"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261123i"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261123i"></script>
+  <script defer src="js/labsStore.js?v=20261123i"></script>
+  <script defer src="js/labsAudioFx.js?v=20261123i"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261123i"></script>
+  <script defer src="js/labsPdfExport.js?v=20261123i"></script>
+  <script defer src="js/labsApp.js?v=20261123i"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -49,6 +49,10 @@
         <div class="labs-quick-info">
           <span class="labs-quick-dot"></span>
           <span id="labs-quick-timer" class="labs-quick-timer">Starting mic…</span>
+        </div>
+        <div id="labs-quick-auto-status" class="labs-quick-auto-badge hidden">
+          <strong id="labs-quick-auto-title">LISTENING FOR EVENT</strong>
+          <span id="labs-quick-auto-msg">Acoustic sensors armed</span>
         </div>
         <canvas id="labs-quick-wave" class="labs-quick-wave"></canvas>
         <button type="button" id="btn-quick-stop-save" class="labs-btn labs-btn-emerald labs-btn-sm">⏹ Stop &amp; Save</button>
@@ -123,6 +127,17 @@
             <span class="labs-ac-title">Analyze A Fart</span>
             <span class="labs-ac-desc">Deep FFT &amp; 3D lab reports for one fart, a guess, or all combined.</span>
           </button>
+        </section>
+
+        <section class="labs-glass-card labs-home-mode-bar" aria-label="Capture Mode">
+          <div class="labs-mode-bar-label">
+            <span class="labs-eyebrow">CAPTURE MODE</span>
+            <span class="labs-mode-bar-sub" id="home-mode-hint">Manual Record captures immediately · Auto Detect arms a 5s rolling trigger buffer</span>
+          </div>
+          <div class="labs-rec-mode-switch" role="group" aria-label="Recording Mode">
+            <button type="button" class="labs-rec-mode-btn active" data-rec-mode="manual">Manual Record</button>
+            <button type="button" class="labs-rec-mode-btn" data-rec-mode="auto">AUTO DETECT</button>
+          </div>
         </section>
 
         <section class="labs-glass-card labs-summary-card" aria-label="Lab Summary">
@@ -292,7 +307,10 @@
             <div class="labs-eyebrow">GAME MODE · RECORD &amp; RANK GUESSES</div>
             <h2 class="labs-section-heading">Guess A Fart</h2>
           </div>
-          <button type="button" id="btn-guess-record-new" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
+          <div class="labs-vault-top-btns">
+            <button type="button" id="btn-guess-random" class="labs-btn labs-btn-purple labs-btn-sm">🎲 Random Fart</button>
+            <button type="button" id="btn-guess-record-new" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
+          </div>
         </div>
 
         <div class="labs-vault-strip-wrap">
@@ -341,6 +359,14 @@
             <span class="labs-chip labs-chip-orange" id="guess-attempt-dur">Standby</span>
           </div>
 
+          <div class="labs-guess-mode-bar">
+            <span class="labs-eyebrow">CAPTURE MODE</span>
+            <div class="labs-rec-mode-switch" role="group" aria-label="Guess Recording Mode">
+              <button type="button" class="labs-rec-mode-btn active" data-rec-mode="manual">Manual Record</button>
+              <button type="button" class="labs-rec-mode-btn" data-rec-mode="auto">AUTO DETECT</button>
+            </div>
+          </div>
+
           <div class="labs-mic-stage">
             <button type="button" id="btn-guess-rec" class="labs-mic-ring-btn labs-mic-coral">
               <span class="labs-mic-ring-inner">
@@ -348,6 +374,20 @@
                 <span class="labs-mic-btn-text" id="guess-rec-label">Record Guess</span>
               </span>
             </button>
+          </div>
+
+          <div id="guess-autodetect-panel" class="labs-autodetect-panel hidden">
+            <div class="labs-sonar-wrap" aria-hidden="true">
+              <span class="labs-sonar-ring r1"></span>
+              <span class="labs-sonar-ring r2"></span>
+              <span class="labs-sonar-core"></span>
+            </div>
+            <div class="labs-ad-copy">
+              <div class="labs-ad-headline" id="guess-ad-headline">LISTENING FOR EVENT</div>
+              <div class="labs-ad-sub" id="guess-ad-sub">Acoustic sensors armed</div>
+              <div class="labs-ad-msg" id="guess-ad-msg">Listening for emissions...</div>
+            </div>
+            <span class="labs-chip labs-chip-blue" id="guess-ad-buf">Buffer: 0.0s / 5.0s</span>
           </div>
 
           <canvas id="guess-live-wave" class="labs-live-wave hidden"></canvas>
@@ -518,6 +558,51 @@
         <span class="labs-nav-lbl">Fartnalysis</span>
       </button>
     </nav>
+  </div>
+
+  <!-- Immersive Laboratory Analysis Sequence Overlay -->
+  <div id="labs-analysis-overlay" class="labs-analysis-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="labs-an-title">
+    <div class="labs-glass-card labs-analysis-modal">
+      <div class="labs-an-top">
+        <div>
+          <div class="labs-eyebrow">TOOT MATCH ACOUSTIC LABORATORY</div>
+          <h3 id="labs-an-title" class="labs-an-title">ANALYZING RECORDING</h3>
+          <div id="labs-an-subtitle" class="labs-an-sub">Calibrating multi-dimensional acoustic telemetry...</div>
+        </div>
+        <span id="labs-an-pct" class="labs-an-pct">0%</span>
+      </div>
+
+      <div class="labs-an-scanner" aria-hidden="true">
+        <div class="labs-an-scanline"></div>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+        <span class="labs-an-eq-bar"></span>
+      </div>
+
+      <div class="labs-an-progress-track">
+        <div id="labs-an-bar-fill" class="labs-an-progress-fill"></div>
+      </div>
+
+      <ul id="labs-an-stages" class="labs-an-stages" aria-live="polite"></ul>
+
+      <div class="labs-an-foot">
+        <span class="labs-hint-text">Peer-reviewed on-device acoustic pipeline</span>
+        <button type="button" id="btn-labs-an-skip" class="labs-btn-ghost labs-btn-sm">Skip →</button>
+      </div>
+    </div>
   </div>
 
   <!-- Rename Specimen Modal -->
