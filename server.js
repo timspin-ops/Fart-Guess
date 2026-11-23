@@ -25,9 +25,6 @@ var server = http.createServer(function (req, res) {
     res.end('toot-match-ok');
     return;
   }
-  if (reqUrl === '/') {
-    reqUrl = '/index.html';
-  }
 
   var safeRel = path.normalize(reqUrl).replace(/^(\.\.[/\\])+/, '');
   var filePath = path.join(ROOT_DIR, safeRel);
@@ -38,20 +35,42 @@ var server = http.createServer(function (req, res) {
     return;
   }
 
+  function serveFile(resolvedPath) {
+    var ext = path.extname(resolvedPath).toLowerCase();
+    var mime = MIME_TYPES[ext] || 'application/octet-stream';
+    res.writeHead(200, {
+      'Content-Type': mime,
+      'Cache-Control': 'no-cache'
+    });
+    fs.createReadStream(resolvedPath).pipe(res);
+  }
+
   fs.stat(filePath, function (err, stats) {
+    if (!err && stats.isDirectory()) {
+      if (reqUrl.charAt(reqUrl.length - 1) !== '/') {
+        res.writeHead(302, { Location: reqUrl + '/' });
+        res.end();
+        return;
+      }
+      var indexPath = path.join(filePath, 'index.html');
+      fs.stat(indexPath, function (idxErr, idxStats) {
+        if (idxErr || !idxStats.isFile()) {
+          res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('404 Not Found');
+          return;
+        }
+        serveFile(indexPath);
+      });
+      return;
+    }
+
     if (err || !stats.isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('404 Not Found');
       return;
     }
 
-    var ext = path.extname(filePath).toLowerCase();
-    var mime = MIME_TYPES[ext] || 'application/octet-stream';
-    res.writeHead(200, {
-      'Content-Type': mime,
-      'Cache-Control': 'no-cache'
-    });
-    fs.createReadStream(filePath).pipe(res);
+    serveFile(filePath);
   });
 });
 

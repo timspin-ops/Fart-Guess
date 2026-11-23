@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Toot Match Labs — Acoustic Mimicry Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="css/labs.css" />
+  <script defer src="../js/dsp.js"></script>
+  <script defer src="../js/audioEngine.js"></script>
+  <script defer src="../js/storage.js"></script>
+  <script defer src="../js/spectrogram3d.js"></script>
+  <script defer src="../js/forensicsCharts.js"></script>
+  <script defer src="js/labsStore.js"></script>
+  <script defer src="js/labsAudioFx.js"></script>
+  <script defer src="js/labsFartnalysis.js"></script>
+  <script defer src="js/labsApp.js"></script>
+</head>
+<body>
+  <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
+
+  <div class="labs-shell">
+    <header class="labs-topbar">
+      <div class="labs-brand">
+        <div class="labs-brand-mark" aria-hidden="true">
+          <span class="labs-pulse-dot"></span>
+          <span>TM</span>
+        </div>
+        <div>
+          <div class="labs-brand-name">TOOT MATCH <span class="labs-brand-tag">LABS</span></div>
+          <div class="labs-brand-sub">TELEMETRY DIVISION · V2</div>
+        </div>
+      </div>
+
+      <div class="labs-topbar-actions">
+        <button type="button" id="btn-labs-mic-drawer" class="labs-btn-ghost labs-btn-sm" title="Microphone input settings">🎙️ Mic</button>
+        <button type="button" id="btn-labs-stop" class="labs-btn-ghost labs-btn-sm" title="Stop active playback">⏹ Stop</button>
+        <a href="../" class="labs-btn-ghost labs-btn-sm labs-link-btn" title="Switch back to classic Toot Match">Classic</a>
+      </div>
+    </header>
+
+    <div id="labs-file-banner" class="labs-alert-banner hidden">
+      ⚠️ Opened via <code>file://</code> — browsers block the microphone here. Launch via <strong>Launch Toot Match.bat</strong> at <code>http://localhost:3000/labs/</code>.
+    </div>
+
+    <div id="labs-mic-drawer" class="labs-glass-card labs-mic-drawer hidden">
+      <div class="labs-mic-grid">
+        <label class="labs-mic-field" for="labs-mic-device">
+          <span>Input Device</span>
+          <select id="labs-mic-device">
+            <option value="">System Default Microphone</option>
+          </select>
+        </label>
+        <label class="labs-mic-field" for="labs-mic-boost">
+          <span>Preamp Gain</span>
+          <select id="labs-mic-boost">
+            <option value="1">1.0x Nominal</option>
+            <option value="2">2.0x Boost</option>
+            <option value="4">4.0x High Gain</option>
+          </select>
+        </label>
+      </div>
+      <div class="labs-mic-meter-row">
+        <button type="button" id="btn-labs-mic-test" class="labs-btn-ghost labs-btn-sm">🔊 Test Input</button>
+        <div class="labs-meter-track">
+          <div id="labs-mic-meter" class="labs-meter-fill"></div>
+        </div>
+        <span id="labs-mic-status" class="labs-mic-status">Ready</span>
+        <button type="button" id="btn-labs-mic-release" class="labs-btn-ghost labs-btn-sm">🔇 Release Mic</button>
+      </div>
+    </div>
+
+    <main class="labs-main">
+      <!-- ==================== VIEW 1: HOME ==================== -->
+      <section id="labs-view-home" class="labs-view active">
+        <div class="labs-hero">
+          <div class="labs-hero-badge">ACOUSTIC TELEMETRY &amp; CEPSTRAL CORRELATION</div>
+          <h1 class="labs-hero-title">TOOT MATCH LABS</h1>
+          <div class="labs-hero-kicker">Acoustic Mimicry Analysis</div>
+          <p class="labs-hero-sub">The world's most unnecessarily advanced fart analysis platform.</p>
+        </div>
+
+        <section class="labs-glass-card labs-summary-card" aria-label="Lab Summary">
+          <div class="labs-summary-head">
+            <span class="labs-eyebrow">LAB SUMMARY</span>
+            <span class="labs-live-pill">LIVE TELEMETRY</span>
+          </div>
+          <div class="labs-summary-grid">
+            <div class="labs-stat-tile">
+              <div class="labs-stat-num" id="stat-samples-recorded">0</div>
+              <div class="labs-stat-label">Samples Recorded</div>
+            </div>
+            <div class="labs-stat-tile">
+              <div class="labs-stat-num labs-num-green" id="stat-best-score">0.0%</div>
+              <div class="labs-stat-label">Best Match Score</div>
+            </div>
+            <div class="labs-stat-tile">
+              <div class="labs-stat-num labs-num-blue" id="stat-challenges-completed">0</div>
+              <div class="labs-stat-label">Challenges Completed</div>
+            </div>
+            <div class="labs-stat-tile">
+              <div class="labs-stat-num labs-num-purple" id="stat-avg-quality">0.0%</div>
+              <div class="labs-stat-label">Average Match Quality</div>
+            </div>
+          </div>
+        </section>
+
+        <div class="labs-home-cta-stack">
+          <button type="button" id="btn-home-start-challenge" class="labs-primary-cta">
+            <span class="labs-cta-glow"></span>
+            <span class="labs-cta-label">START CHALLENGE</span>
+            <span class="labs-cta-sub" id="home-cta-sub">Record a reference fart or challenge a stored specimen</span>
+          </button>
+          <button type="button" id="btn-home-record-new" class="labs-secondary-cta">
+            ＋ Record New Specimen to Vault
+          </button>
+        </div>
+
+        <section class="labs-vault-section">
+          <div class="labs-section-head">
+            <div>
+              <div class="labs-eyebrow">CLASSIFIED SPECIMEN ARCHIVE</div>
+              <h2 class="labs-section-heading">YOUR FART VAULT</h2>
+            </div>
+            <span class="labs-count-pill" id="home-vault-count">0 specimens</span>
+          </div>
+          <div id="home-vault-grid" class="labs-vault-grid"></div>
+        </section>
+      </section>
+
+      <!-- ==================== VIEW 2: SAMPLE DETAIL ==================== -->
+      <section id="labs-view-detail" class="labs-view">
+        <div class="labs-subview-bar">
+          <button type="button" id="btn-detail-back" class="labs-btn-ghost labs-btn-sm">← Your Fart Vault</button>
+          <span class="labs-eyebrow" id="detail-specimen-id">SPECIMEN RECORD</span>
+        </div>
+
+        <section class="labs-glass-card labs-detail-hero">
+          <div class="labs-detail-head">
+            <div>
+              <div class="labs-eyebrow">ARCHIVED REFERENCE SIGNATURE</div>
+              <h2 class="labs-detail-title" id="detail-sample-name">Specimen</h2>
+              <div class="labs-detail-meta" id="detail-sample-meta">—</div>
+            </div>
+            <span class="labs-chip labs-chip-blue" id="detail-sample-dur">0.00s</span>
+          </div>
+
+          <div class="labs-waveform-box">
+            <canvas id="detail-waveform-canvas" class="labs-wave-canvas"></canvas>
+          </div>
+
+          <div class="labs-improvement-strip">
+            <div class="labs-imp-cell">
+              <span class="labs-imp-lbl">BEST SCORE</span>
+              <span class="labs-imp-val labs-num-green" id="detail-best-score">—</span>
+            </div>
+            <div class="labs-imp-cell">
+              <span class="labs-imp-lbl">PREVIOUS SCORE</span>
+              <span class="labs-imp-val" id="detail-prev-score">—</span>
+            </div>
+            <div class="labs-imp-cell">
+              <span class="labs-imp-lbl">MOST RECENT</span>
+              <span class="labs-imp-val labs-num-blue" id="detail-latest-score">—</span>
+            </div>
+            <div class="labs-imp-cell">
+              <span class="labs-imp-lbl">ATTEMPTS</span>
+              <span class="labs-imp-val" id="detail-attempt-count">0</span>
+            </div>
+          </div>
+
+          <div id="detail-improvement-banner" class="labs-delta-banner hidden"></div>
+
+          <div class="labs-detail-actions">
+            <button type="button" id="btn-detail-try-again" class="labs-btn labs-btn-emerald labs-btn-lg labs-flex-main">TRY AGAIN</button>
+            <button type="button" id="btn-detail-play" class="labs-btn labs-btn-blue labs-btn-lg">▶ Play</button>
+          </div>
+
+          <div class="labs-detail-sec-actions">
+            <button type="button" id="btn-detail-fartnalysis" class="labs-btn-ghost labs-btn-sm">VIEW FARTNALYSIS</button>
+            <button type="button" id="btn-detail-rename" class="labs-btn-ghost labs-btn-sm">RENAME SAMPLE</button>
+            <button type="button" id="btn-detail-delete" class="labs-btn-danger labs-btn-sm">DELETE SAMPLE</button>
+          </div>
+        </section>
+
+        <section class="labs-attempts-section">
+          <div class="labs-section-head">
+            <div>
+              <div class="labs-eyebrow">HISTORICAL BENCHMARKS</div>
+              <h3 class="labs-section-heading">Challenge Log</h3>
+            </div>
+          </div>
+          <div id="detail-attempts-list" class="labs-attempts-list"></div>
+        </section>
+      </section>
+
+      <!-- ==================== VIEW 3: CHALLENGE ==================== -->
+      <section id="labs-view-challenge" class="labs-view">
+        <div class="labs-subview-bar">
+          <div>
+            <div class="labs-eyebrow">ACTIVE TEST PROTOCOL</div>
+            <h2 class="labs-section-heading">Acoustic Mimicry Challenge</h2>
+          </div>
+          <button type="button" id="btn-ch-new-specimen" class="labs-btn-ghost labs-btn-sm">＋ New Sample</button>
+        </div>
+
+        <!-- Always-accessible Vault Switcher Strip on Challenge Screen -->
+        <div class="labs-vault-strip-wrap">
+          <div class="labs-strip-label">VAULT SPECIMENS (TAP TO LOAD &amp; REPLAY)</div>
+          <div id="challenge-vault-strip" class="labs-vault-strip"></div>
+        </div>
+
+        <!-- LOADED SAMPLE PANEL -->
+        <section class="labs-glass-card labs-challenge-card" id="ch-target-card">
+          <div id="ch-loaded-sample-pane">
+            <div class="labs-ch-card-head">
+              <div>
+                <div class="labs-eyebrow">LOADED SAMPLE · REFERENCE TARGET</div>
+                <h3 class="labs-ch-title" id="ch-target-name">No Sample Selected</h3>
+                <div class="labs-ch-meta" id="ch-target-meta">Record a new fart or select one from the Vault above.</div>
+              </div>
+              <span class="labs-chip labs-chip-green" id="ch-target-dur">0.00s</span>
+            </div>
+
+            <div class="labs-waveform-box labs-wave-compact">
+              <canvas id="ch-target-wave" class="labs-wave-canvas"></canvas>
+            </div>
+
+            <div class="labs-ch-sample-btns">
+              <button type="button" id="btn-ch-play-sample" class="labs-btn labs-btn-blue labs-btn-sm">▶ Play Sample</button>
+              <button type="button" id="btn-ch-replay-sample" class="labs-btn-ghost labs-btn-sm">↺ Replay Sample</button>
+              <button type="button" id="btn-ch-open-detail" class="labs-btn-ghost labs-btn-sm">Sample Dossier</button>
+              <button type="button" id="btn-ch-replace-sample" class="labs-btn-ghost labs-btn-sm">🎙️ Record Different Fart</button>
+            </div>
+
+            <div class="labs-ch-mini-stats" id="ch-target-bench"></div>
+          </div>
+
+          <div id="ch-record-specimen-pane" class="hidden">
+            <div class="labs-ch-card-head">
+              <div>
+                <div class="labs-eyebrow">NEW REFERENCE ACQUISITION</div>
+                <h3 class="labs-ch-title">Record Reference Fart</h3>
+                <div class="labs-ch-meta" id="ch-specimen-status">Capture a clean sample. Auto-trim isolates the acoustic event.</div>
+              </div>
+              <button type="button" id="btn-ch-cancel-specimen" class="labs-btn-ghost labs-btn-sm hidden">Cancel</button>
+            </div>
+
+            <div class="labs-mic-stage">
+              <button type="button" id="btn-ch-rec-specimen" class="labs-mic-ring-btn labs-mic-emerald">
+                <span class="labs-mic-ring-inner">
+                  <span class="labs-mic-glyph" id="ch-spec-icon">🎙️</span>
+                  <span class="labs-mic-btn-text" id="ch-spec-label">Record Sample</span>
+                </span>
+              </button>
+            </div>
+
+            <canvas id="ch-specimen-live-wave" class="labs-live-wave hidden"></canvas>
+          </div>
+        </section>
+
+        <!-- YOUR ATTEMPT PANEL -->
+        <section class="labs-glass-card labs-challenge-card" id="ch-attempt-card">
+          <div class="labs-ch-card-head">
+            <div>
+              <div class="labs-eyebrow">CHALLENGER ACQUISITION</div>
+              <h3 class="labs-ch-title">YOUR ATTEMPT</h3>
+              <div class="labs-ch-meta" id="ch-attempt-status">Ready to record challenger audio against loaded sample.</div>
+            </div>
+            <span class="labs-chip labs-chip-orange" id="ch-attempt-dur">Standby</span>
+          </div>
+
+          <div class="labs-mic-stage">
+            <button type="button" id="btn-ch-rec-attempt" class="labs-mic-ring-btn labs-mic-coral">
+              <span class="labs-mic-ring-inner">
+                <span class="labs-mic-glyph" id="ch-att-icon">🎤</span>
+                <span class="labs-mic-btn-text" id="ch-att-label">Record Attempt</span>
+              </span>
+            </button>
+          </div>
+
+          <canvas id="ch-attempt-live-wave" class="labs-live-wave hidden"></canvas>
+
+          <div id="ch-preview-panel" class="labs-preview-panel hidden">
+            <div class="labs-preview-head">
+              <span class="labs-eyebrow">WAVEFORM COMPARISON PREVIEW</span>
+              <span class="labs-chip" id="ch-preview-ratio">—</span>
+            </div>
+            <canvas id="ch-compare-preview-canvas" class="labs-wave-compare-canvas"></canvas>
+            <div class="labs-preview-controls">
+              <button type="button" id="btn-ch-prev-target" class="labs-btn-ghost labs-btn-sm">▶ Sample</button>
+              <button type="button" id="btn-ch-prev-attempt" class="labs-btn-ghost labs-btn-sm">▶ Attempt</button>
+              <button type="button" id="btn-ch-prev-ab" class="labs-btn-ghost labs-btn-sm">⚡ A → B</button>
+              <button type="button" id="btn-ch-redo-attempt" class="labs-btn-ghost labs-btn-sm">↺ Re-Record</button>
+            </div>
+            <button type="button" id="btn-ch-analyze" class="labs-analyze-cta">
+              ANALYZE MATCH
+            </button>
+          </div>
+        </section>
+      </section>
+
+      <!-- ==================== VIEW 4: MATCH RESULT ==================== -->
+      <section id="labs-view-result" class="labs-view">
+        <div class="labs-result-stage">
+          <div class="labs-eyebrow" id="res-sample-context">POST-ANALYSIS TELEMETRY REPORT</div>
+
+          <div id="res-pb-pill" class="labs-pb-banner hidden">NEW PERSONAL BEST</div>
+
+          <div class="labs-score-hero-wrap">
+            <svg class="labs-score-ring-svg" viewBox="0 0 220 220" aria-hidden="true">
+              <defs>
+                <linearGradient id="labsScoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#22C55E" />
+                  <stop offset="55%" stop-color="#60A5FA" />
+                  <stop offset="100%" stop-color="#8B5CF6" />
+                </linearGradient>
+              </defs>
+              <circle class="labs-score-ring-track" cx="110" cy="110" r="90"></circle>
+              <circle id="res-ring-fg" class="labs-score-ring-fg" cx="110" cy="110" r="90" stroke="url(#labsScoreGrad)"></circle>
+            </svg>
+            <div class="labs-score-ring-center">
+              <div class="labs-score-big" id="res-score-value">0.0%</div>
+              <div class="labs-score-lbl">MATCH QUALITY</div>
+            </div>
+          </div>
+
+          <div class="labs-rank-block">
+            <div class="labs-rank-pill" id="res-rank-badge">Skilled</div>
+            <div class="labs-rank-desc" id="res-rank-desc"></div>
+          </div>
+
+          <!-- Star & Bell Sequential Reward Stage -->
+          <div class="labs-glass-card labs-reward-card" id="res-reward-stage">
+            <div id="res-stars-row" class="labs-stars-row" aria-label="Reward Stars"></div>
+            <div id="res-bell-label" class="labs-bell-label">Calculating tier...</div>
+            <div id="res-legendary-title" class="labs-legendary-title hidden"></div>
+          </div>
+
+          <!-- Best / Previous / Current Progress Strip -->
+          <div class="labs-glass-card labs-res-progress-card">
+            <div class="labs-improvement-strip">
+              <div class="labs-imp-cell">
+                <span class="labs-imp-lbl">BEST SCORE</span>
+                <span class="labs-imp-val labs-num-green" id="res-best-score">0.0%</span>
+              </div>
+              <div class="labs-imp-cell">
+                <span class="labs-imp-lbl">PREVIOUS SCORE</span>
+                <span class="labs-imp-val" id="res-prev-score">—</span>
+              </div>
+              <div class="labs-imp-cell">
+                <span class="labs-imp-lbl">CURRENT SCORE</span>
+                <span class="labs-imp-val labs-num-blue" id="res-current-score">0.0%</span>
+              </div>
+            </div>
+            <div id="res-delta-note" class="labs-delta-banner hidden"></div>
+          </div>
+
+          <!-- Scientific Verdict -->
+          <div class="labs-glass-card labs-verdict-card">
+            <div class="labs-eyebrow">SCIENTIFIC VERDICT · FORENSIC AUDIO DIVISION</div>
+            <p class="labs-verdict-text" id="res-verdict-text"></p>
+          </div>
+
+          <div class="labs-result-actions">
+            <button type="button" id="btn-res-fartnalysis" class="labs-btn labs-btn-purple labs-btn-lg">VIEW FARTNALYSIS</button>
+            <button type="button" id="btn-res-try-again" class="labs-btn labs-btn-emerald labs-btn-lg">TRY AGAIN</button>
+          </div>
+
+          <div class="labs-result-sec-actions">
+            <button type="button" id="btn-res-replay" class="labs-btn-ghost labs-btn-sm">▶ Replay A → B</button>
+            <button type="button" id="btn-res-share" class="labs-btn-ghost labs-btn-sm">📤 Share Lab Report</button>
+            <button type="button" id="btn-res-home" class="labs-btn-ghost labs-btn-sm">🏠 Vault</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 5: FARTNALYSIS ==================== -->
+      <section id="labs-view-fartnalysis" class="labs-view">
+        <div class="labs-subview-bar">
+          <div>
+            <div class="labs-eyebrow">EXECUTIVE TELEMETRY DASHBOARD</div>
+            <h2 class="labs-section-heading">Fartnalysis Lab</h2>
+          </div>
+          <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Challenge</button>
+        </div>
+
+        <div id="fn-attempt-switcher" class="labs-fn-switcher hidden">
+          <div class="labs-strip-label" id="fn-switcher-label">ATTEMPTS AGAINST SPECIMEN</div>
+          <div id="fn-attempt-pills" class="labs-vault-strip"></div>
+        </div>
+
+        <div id="fn-empty-state" class="labs-glass-card labs-empty-card hidden">
+          <h3>No Analysis Pair Active</h3>
+          <p>Select any saved specimen and complete a mimic attempt to populate the 12 circular telemetry gauges, FFT charts, and 3D spectrograms.</p>
+          <button type="button" id="btn-fn-go-challenge" class="labs-btn labs-btn-emerald labs-btn-lg">Open Challenge Protocol</button>
+        </div>
+
+        <div id="fn-dashboard-mount"></div>
+      </section>
+    </main>
+
+    <!-- Persistent Bottom Tab Bar (iOS 18 Dock Style) -->
+    <nav class="labs-bottom-nav" aria-label="Labs Navigation">
+      <button type="button" class="labs-nav-btn active" data-view="home">
+        <span class="labs-nav-icon">🏠</span>
+        <span class="labs-nav-lbl">Home</span>
+      </button>
+      <button type="button" class="labs-nav-btn" data-view="challenge">
+        <span class="labs-nav-icon">🎯</span>
+        <span class="labs-nav-lbl">Challenge</span>
+      </button>
+      <button type="button" class="labs-nav-btn" data-view="fartnalysis">
+        <span class="labs-nav-icon">🧪</span>
+        <span class="labs-nav-lbl">Fartnalysis</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Rename Specimen Modal -->
+  <div id="labs-rename-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-rename-heading">
+    <div class="labs-glass-card labs-modal-card">
+      <div class="labs-eyebrow">SPECIMEN DESIGNATION</div>
+      <h3 id="labs-rename-heading">Rename Sample</h3>
+      <input type="text" id="labs-rename-input" class="labs-text-input" maxlength="48" placeholder="Enter specimen name..." />
+      <div class="labs-modal-actions">
+        <button type="button" id="btn-labs-rename-cancel" class="labs-btn-ghost labs-btn-sm">Cancel</button>
+        <button type="button" id="btn-labs-rename-save" class="labs-btn labs-btn-emerald labs-btn-sm">Save Name</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div id="labs-delete-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-delete-heading">
+    <div class="labs-glass-card labs-modal-card">
+      <div class="labs-eyebrow">ARCHIVE PURGE PROTOCOL</div>
+      <h3 id="labs-delete-heading">Delete Sample?</h3>
+      <p class="labs-modal-copy" id="labs-delete-copy">This permanently removes the specimen and all recorded challenge attempts from this device.</p>
+      <div class="labs-modal-actions">
+        <button type="button" id="btn-labs-delete-cancel" class="labs-btn-ghost labs-btn-sm">Cancel</button>
+        <button type="button" id="btn-labs-delete-confirm" class="labs-btn-danger labs-btn-sm">Confirm Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="labs-toast" class="labs-toast hidden" role="status" aria-live="polite"></div>
+</body>
+</html>
