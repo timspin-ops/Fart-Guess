@@ -190,8 +190,15 @@
     showToast('Saved ' + pdfRes.pageCount + '-page PDF "' + pdfRes.filename + '"');
   }
 
-  function emailAnalysisReport(subject, reportText, pdfOpts, audioSound) {
+  function shareOrEmailBundle(bundleOpts) {
+    bundleOpts = bundleOpts || {};
+    var channel = bundleOpts.channel === 'email' ? 'email' : 'share';
+    var subject = bundleOpts.subject || 'Toot Match Labs Analysis';
+    var reportText = bundleOpts.reportText || '';
+    var pdfOpts = bundleOpts.pdfOpts || null;
+    var audioSound = bundleOpts.audioSound || null;
     var Audio = root.TootApp && root.TootApp.Audio;
+
     var pdfRes = pdfOpts ? buildPdfFromOpts(pdfOpts) : null;
     var audioBlob = null;
     var audioName = null;
@@ -215,6 +222,48 @@
       } catch (e) {}
     }
 
+    function runFallback() {
+      var body = reportText;
+      var attachNames = [];
+      if (pdfRes && pdfRes.blob) {
+        triggerBlobDownload(pdfRes.blob, pdfRes.filename);
+        attachNames.push(pdfRes.filename);
+      }
+      if (audioBlob && audioName) {
+        if (pdfRes && pdfRes.blob) {
+          var delayedBlob = audioBlob;
+          var delayedName = audioName;
+          setTimeout(function () {
+            triggerBlobDownload(delayedBlob, delayedName);
+          }, 180);
+        } else {
+          triggerBlobDownload(audioBlob, audioName);
+        }
+        attachNames.push(audioName);
+      }
+
+      if (attachNames.length > 0) {
+        body = body + '\n\n(Attach downloaded files to send: ' + attachNames.join(' + ') + ')';
+      }
+
+      copyTextQuiet(reportText || subject).then(function () {
+        if (channel === 'email') {
+          openMailDraft(subject, body);
+          showToast(
+            attachNames.length > 0
+              ? 'Browser mailto: cannot auto-attach files — saved ' + attachNames.join(' + ') + ' & opened email draft'
+              : 'Opened email draft & copied report to clipboard'
+          );
+        } else {
+          showToast(
+            attachNames.length > 0
+              ? 'Browser blocked combined file share — saved ' + attachNames.join(' + ') + ' & copied report for manual attach'
+              : 'Copied report to clipboard'
+          );
+        }
+      });
+    }
+
     if (shareFiles.length > 0 && navigator.share && typeof navigator.canShare === 'function') {
       try {
         if (navigator.canShare({ files: shareFiles })) {
@@ -224,65 +273,35 @@
               text: reportText || subject,
               files: shareFiles
             })
-            .catch(function () {});
+            .catch(function (err) {
+              if (err && err.name === 'AbortError') return;
+              runFallback();
+            });
           return;
         }
       } catch (e) {}
     }
 
-    var body = reportText || '';
-    var attachNames = [];
-    if (pdfRes && pdfRes.blob) {
-      triggerBlobDownload(pdfRes.blob, pdfRes.filename);
-      attachNames.push(pdfRes.filename);
-    }
-    if (audioBlob && audioName) {
-      if (pdfRes && pdfRes.blob) {
-        var delayedBlob = audioBlob;
-        var delayedName = audioName;
-        setTimeout(function () {
-          triggerBlobDownload(delayedBlob, delayedName);
-        }, 180);
-      } else {
-        triggerBlobDownload(audioBlob, audioName);
-      }
-      attachNames.push(audioName);
-    }
+    runFallback();
+  }
 
-    if (attachNames.length > 0) {
-      body = body + '\n\n(Attach downloaded files to send: ' + attachNames.join(' + ') + ')';
-    }
-
-    copyTextQuiet(reportText || subject).then(function () {
-      openMailDraft(subject, body);
-      showToast(
-        attachNames.length > 0
-          ? 'Prepared ' + attachNames.join(' + ') + ' & opened email draft!'
-          : 'Opened email draft & copied report to clipboard'
-      );
+  function emailAnalysisReport(subject, reportText, pdfOpts, audioSound) {
+    shareOrEmailBundle({
+      channel: 'email',
+      subject: subject,
+      reportText: reportText,
+      pdfOpts: pdfOpts,
+      audioSound: audioSound
     });
   }
 
-  function shareTextOrAudio(title, text, sound) {
-    var Audio = root.TootApp && root.TootApp.Audio;
-    if (sound && sound.samples && Audio && typeof Audio.encodeWavBlob === 'function' && typeof File === 'function' && navigator.share && typeof navigator.canShare === 'function') {
-      try {
-        var wavBlob = Audio.encodeWavBlob(sound.samples, sound.sampleRate || 44100);
-        var file = new File([wavBlob], slugFilename(getSampleName(sound)) + '.wav', { type: 'audio/wav' });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ title: title, text: text, files: [file] }).catch(function () {});
-          return;
-        }
-      } catch (e) {}
-    }
-
-    if (navigator.share) {
-      navigator.share({ title: title, text: text }).catch(function () {});
-      return;
-    }
-
-    copyTextQuiet(text).then(function (ok) {
-      showToast(ok ? 'Report copied to clipboard' : 'Unable to access clipboard', !ok);
+  function shareTextOrAudio(title, text, sound, pdfOpts) {
+    shareOrEmailBundle({
+      channel: 'share',
+      subject: title,
+      reportText: text,
+      pdfOpts: pdfOpts,
+      audioSound: sound
     });
   }
 
@@ -1575,8 +1594,13 @@
           state.groupSortDir = nextSortDir === 'desc' ? 'desc' : 'asc';
           renderFartnalysisView();
         },
-        onShare: function (g) {
-          shareTextOrAudio('Multi-Fart Megamix Analysis', TootLabs.Store.buildGroupAnalysisReportText(g), g);
+        onShare: function (g, specCanvases) {
+          shareTextOrAudio(
+            'Multi-Fart Megamix Analysis',
+            TootLabs.Store.buildGroupAnalysisReportText(g),
+            g,
+            { mode: 'group', groupObj: g, specCanvases: specCanvases }
+          );
         },
         onDownloadPdf: function (g, specCanvases) {
           downloadAnalysisPdf({ mode: 'group', groupObj: g, specCanvases: specCanvases });
@@ -1612,8 +1636,13 @@
         onPrimaryAction: function (s) {
           openGuessMode(s.id);
         },
-        onShare: function (s) {
-          shareTextOrAudio('Fartnalysis: ' + getSampleName(s), TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'), s);
+        onShare: function (s, specCanvases) {
+          shareTextOrAudio(
+            'Fartnalysis: ' + getSampleName(s),
+            TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'),
+            s,
+            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases }
+          );
         },
         onDownloadPdf: function (s, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases });
@@ -1650,8 +1679,13 @@
         onPrimaryAction: function () {
           openFartnalysis('comparison', sample.id, attempt.id);
         },
-        onShare: function (g) {
-          shareTextOrAudio('Guess Analysis: ' + g.name, TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'), g);
+        onShare: function (g, specCanvases) {
+          shareTextOrAudio(
+            'Guess Analysis: ' + g.name,
+            TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'),
+            g,
+            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases }
+          );
         },
         onDownloadPdf: function (g, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases });
@@ -1676,11 +1710,12 @@
       labelA: getSampleName(sample),
       labelB: attempt.name,
       result: attempt.result || null,
-      onShare: function (sA, sB, r, exact) {
+      onShare: function (sA, sB, r, exact, specCanvases) {
         shareTextOrAudio(
           'Toot Match Comparison: ' + exact.toFixed(1) + '%',
           TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
-          stitchComparisonAudio(sA, sB)
+          stitchComparisonAudio(sA, sB),
+          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases }
         );
       },
       onDownloadPdf: function (sA, sB, r, exact, specCanvases) {
@@ -1857,7 +1892,12 @@
     $('btn-detail-share').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
       if (sample) {
-        shareTextOrAudio('Toot Match — ' + getSampleName(sample), TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'), sample);
+        shareTextOrAudio(
+          'Toot Match — ' + getSampleName(sample),
+          TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'),
+          sample,
+          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
+        );
       }
     });
     $('btn-detail-email-analysis').addEventListener('click', function () {
@@ -1973,7 +2013,8 @@
       shareTextOrAudio(
         'Toot Match Result: ' + o.exactScore.toFixed(1) + '%',
         TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore),
-        o.attempt
+        stitchComparisonAudio(o.targetSound, o.attempt),
+        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result }
       );
     });
 

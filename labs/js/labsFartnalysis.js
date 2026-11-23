@@ -745,7 +745,7 @@
     var cmpShareBtn = mountEl.querySelector('.labs-cmp-share');
     if (cmpShareBtn && opts.onShare) {
       cmpShareBtn.addEventListener('click', function () {
-        opts.onShare(soundA, soundB, result, exactScore);
+        opts.onShare(soundA, soundB, result, exactScore, [canvasA, canvasB]);
       });
     }
     var cmpPdfBtn = mountEl.querySelector('.labs-cmp-pdf');
@@ -3113,7 +3113,7 @@
     var shareBtn = mountEl.querySelector('.labs-s-share');
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
-        if (opts.onShare) opts.onShare(sound);
+        if (opts.onShare) opts.onShare(sound, [specCanvas]);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-s-pdf');
@@ -3596,7 +3596,7 @@
     var shareGrpBtn = mountEl.querySelector('.labs-g-share');
     if (shareGrpBtn) {
       shareGrpBtn.addEventListener('click', function () {
-        if (opts.onShare) opts.onShare(g);
+        if (opts.onShare) opts.onShare(g, [specCanvas]);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-g-pdf');
