@@ -1699,6 +1699,37 @@ select {
   display: none;
 }
 
+.labs-row-accordion .labs-forensics-mount .forensics-header-banner {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.labs-row-accordion .labs-forensics-mount .forensics-title,
+.labs-row-accordion .labs-forensics-mount .forensics-score-pill {
+  display: none;
+}
+
+.labs-row-accordion .labs-forensics-mount .btn-close-forensics {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(31, 41, 55, 0.92);
+  color: var(--text-sec);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 11px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.labs-row-accordion .labs-forensics-mount .btn-close-forensics:hover {
+  color: var(--text);
+  border-color: rgba(96, 165, 250, 0.6);
+}
+
 .labs-forensics-mount .forensics-commentary {
   background: rgba(15, 23, 42, 0.88);
   border-left: 3px solid var(--primary);
@@ -2781,6 +2812,86 @@ select {
   background: var(--highlight);
   border-color: var(--highlight);
   color: #FFFFFF;
+}
+
+/* Official Referee Verdict Banner, Bonus Humor Strip & Row Quips */
+.labs-verdict-banner {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.11), rgba(96, 165, 250, 0.08));
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-verdict-banner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.labs-verdict-grade {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--primary);
+  color: #86EFAC;
+}
+
+.labs-verdict-tips {
+  margin: 2px 0 0 18px;
+  color: var(--text-sec);
+  font-size: 0.84rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labs-humor-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.labs-humor-tile {
+  background: #0B1222;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.labs-humor-tile-head {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.labs-humor-tile-stat {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--info);
+}
+
+.labs-humor-tile-body {
+  font-size: 0.8rem;
+  color: var(--text-sec);
+  line-height: 1.45;
+}
+
+.labs-metric-quip {
+  font-size: 0.78rem;
+  color: #CBD5E1;
+  margin-top: 4px;
+  line-height: 1.38;
 }
 
 @media (max-width: 560px) {

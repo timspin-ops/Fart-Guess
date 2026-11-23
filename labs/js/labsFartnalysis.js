@@ -117,102 +117,151 @@
     var moistureScore = bonus ? Math.round(clamp(safeNum(bonus.wetness.matchScore, 50), 0, 100)) : Math.round(safeNum(res.timbreScore, 50));
     var neighborScore = bonus ? Math.round(clamp(safeNum(bonus.social.matchScore, 50), 0, 100)) : Math.round(safeNum(res.envelopeScore, 50));
 
+    var deltaMs = Math.round((safeNum(fB.duration, 0) - safeNum(fA.duration, 0)) * 1000);
+    var bpmA = Math.round(safeNum(fA.modRateHz, 0) * 60);
+    var bpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
+    var oppSlope = pBd.oppCent || pBd.oppPitch || safeNum(pBd.polarityMul, 1) < 1;
+    var refFreq = formatHzLabel(fA);
+    var guessFreq = formatHzLabel(fB);
+    var lagBins = (bd.envelope && bd.envelope.lagProfile && bd.envelope.lagProfile.bestLag) || 0;
+    var centA = safeNum(fA.spectralCentroidHz, 220);
+    var centB = safeNum(fB.spectralCentroidHz, 220);
+
+    var pitchQuip = oppSlope
+      ? 'Question-Mark vs Sad-Trombone Collision! One rises nervously while the other deflates (×0.28 sweep penalty).'
+      : pBd.refUnvoiced !== pBd.userUnvoiced
+      ? 'Stealth vs Brass mismatch: one stayed silent-but-breezy while the other blasted a full horn note.'
+      : safeNum(res.pitchScore, 0) >= 82
+      ? 'Eerily in tune! Practically harmonizing in the same porcelain brass choir.'
+      : 'Musical detuning logged between ' + refFreq + ' and ' + guessFreq + ' on the Fart Piano.';
+
+    var durQuip =
+      Math.abs(deltaMs) < 35
+        ? 'Uncanny stopwatch valve discipline — both pinched off within ±' + Math.abs(deltaMs) + 'ms.'
+        : deltaMs > 0
+        ? 'Guess kept honking for +' + deltaMs + 'ms of pure bonus awkwardness.'
+        : 'Stage fright! Guess pinched off ' + Math.abs(deltaMs) + 'ms too early.';
+
+    var envQuip =
+      lagBins === 0
+        ? 'Detonation peaks arrived phase-locked without needing lag compensation.'
+        : 'Shifted Guess by ' + (lagBins > 0 ? '+' : '') + lagBins + ' time bins so late Record taps stay fair.';
+
+    var timbreQuip =
+      centB < centA * 0.72
+        ? 'Guess sounds muffled through thick winter jeans compared to open-air Reference.'
+        : centB > centA * 1.35
+        ? 'Guess packs extra bright brassy sizzle — less cushion damping than Reference.'
+        : 'Astonishingly close upholstery damping and cheek resonance coloring.';
+
     var rawList = [
       {
         id: 'tone',
-        title: 'Tone Match',
+        title: '🎵 Pitch & Fart Piano Match',
         score: Math.round(clamp(safeNum(res.pitchScore, 0), 0, 100)),
-        sub: formatHzLabel(fA) + ' vs ' + formatHzLabel(fB),
+        sub: refFreq + ' vs ' + guessFreq,
+        quip: pitchQuip,
         forensicsKey: 'pitch',
-        note: 'Tracks fundamental pitch contour, zero-crossing rate, and logarithmic sweep slope invariance.'
+        note: 'Tracks your toot like an opera singer (45–650 Hz), locks it to a Fart Piano key, and catches rising vs deflating bends.'
       },
       {
         id: 'duration',
-        title: 'Duration Match',
+        title: '⏱️ Chrono-Expulsion (Duration)',
         score: Math.round(clamp(safeNum(res.durationScore, 0), 0, 100)),
         sub: safeNum(fA.duration, 0).toFixed(2) + 's vs ' + safeNum(fB.duration, 0).toFixed(2) + 's',
+        quip: durQuip,
         forensicsKey: 'duration',
-        note: 'Evaluates auto-trimmed airflow event span using asymmetric exponential decay penalties.'
+        note: 'Quantifies absolute emission length, T50 half-gas burn point, and lingering awkward seconds.'
       },
       {
         id: 'pressure',
-        title: 'Pressure Signature',
+        title: '📈 Blast Shockwave & Pressure',
         score: Math.round(clamp(safeNum(res.envelopeScore, 0), 0, 100)),
         sub: 'Peak ' + Math.round(safeNum(fA.crestFactorDb, 0)) + ' vs ' + Math.round(safeNum(fB.crestFactorDb, 0)) + ' dB',
+        quip: envQuip,
         forensicsKey: 'envelope',
-        note: 'Measures cross-correlated blast RMS amplitude curve invariant to micro-onset shifts.'
+        note: 'Slides shockwave curves across ±6 bins so late Record presses never ruin an honest impression.'
       },
       {
         id: 'resonance',
-        title: 'Resonance Similarity',
+        title: '🎨 Upholstery Resonance & MFCC',
         score: Math.round(clamp(safeNum(res.timbreScore, 0), 0, 100)),
-        sub: Math.round(safeNum(fA.spectralCentroidHz, 0)) + ' vs ' + Math.round(safeNum(fB.spectralCentroidHz, 0)) + ' Hz',
+        sub: Math.round(centA) + ' vs ' + Math.round(centB) + ' Hz',
+        quip: timbreQuip,
         forensicsKey: 'timbre',
-        note: 'Computes 13-band MFCC acoustic vector proximity and spectral surface topology.'
+        note: 'Computes 13-band MFCC vocal-tract fingerprints to catch muffled denim vs bright open brass.'
       },
       {
         id: 'thunder',
-        title: 'Thunder Quotient',
+        title: '⚡ Sub-Bass Thunder Quotient',
         score: thunderScore,
         sub: Math.round(safeNum(bpA[0], 0) * 100) + '% vs ' + Math.round(safeNum(bpB[0], 0) * 100) + '% sub-bass',
+        quip: safeNum(bpA[0], 0) + safeNum(bpB[0], 0) >= 0.7 ? 'Dual window-rattling chamber boom — hollow drywall stands no chance.' : 'Lighter mid-horn punch without seismic bass thump.',
         forensicsKey: 'overall',
-        note: 'Quantifies 45–150 Hz low-end chamber rumble ratio combined with transient crest slam.'
+        note: 'Quantifies 45–150 Hz room-shaking rumble combined with explosive crest slam.'
       },
       {
         id: 'turbulence',
-        title: 'Turbulence Index',
+        title: '🫧 Cheek-Flutter BPM & Turbulence',
         score: Math.round(clamp(safeNum(res.modulationScore, 0), 0, 100)),
-        sub: Math.round(safeNum(fA.modRateHz, 0)) + ' Hz vs ' + Math.round(safeNum(fB.modRateHz, 0)) + ' Hz flutter',
+        sub: bpmA + ' vs ' + bpmB + ' flaps/min (' + Math.round(safeNum(fA.modRateHz, 0)) + '/' + Math.round(safeNum(fB.modRateHz, 0)) + ' Hz)',
+        quip: 'Measured exact gluteal oscillation at ' + bpmA + ' vs ' + bpmB + ' cheek flaps/min (yes, seriously).',
         forensicsKey: 'modulation',
-        note: 'Analyzes 4–45 Hz modulation FFT spectrum across cheek stutter, flutter, and fast rattle bands.'
+        note: 'Analyzes 4–45 Hz modulation FFT spectrum across Slow Stutter, Classic Cheek Flutter, and Fast Bee-Buzz.'
       },
       {
         id: 'acoustic_conf',
-        title: 'Acoustic Confidence',
+        title: '🧪 Master Eigen-Score Confidence',
         score: acousticConf,
-        sub: 'Grade ' + (res.grade || 'B') + ' synthesis',
+        sub: 'Grade ' + (res.grade || 'B') + ' · ' + (res.title || 'Solid Attempt'),
+        quip: oBd.coreCapApplied ? 'Anti-flattery cap intervened to stop generous pitch/timbre drift.' : 'No anti-inflation caps triggered — genuinely well-rounded cheek work!',
         forensicsKey: 'overall',
-        note: 'Geometric penalty-aware consensus combining all five weighted telemetry channels.'
+        note: 'Over-engineers a fart score by fusing 5 weighted pillars (60% arithmetic + 40% geometric) with anti-flattery caps.'
       },
       {
         id: 'ml_conf',
-        title: 'Machine Learning Confidence',
+        title: '🤖 ML Archetype Convergence',
         score: mlConfidence,
         sub: 'MFCC ' + Math.round(safeNum(tBd.mfccMeanScore, 0) * 100) + '% · Grid ' + Math.round(safeNum(tBd.gridCorr, 0) * 100) + '%',
+        quip: 'Cross-checked 13 cepstral dimensions locally — zero cloud servers bothered.',
         forensicsKey: 'timbre',
-        note: 'Multi-dimensional cepstral feature classifier measuring temporal macro-dynamics and spectrogram alignment.'
+        note: 'Deterministic cepstral feature engine comparing 3-act spectral evolution and STFT surface similarity.'
       },
       {
         id: 'rhythmic',
-        title: 'Rhythmic Stability',
+        title: '🥁 Sputter Cadence & Bursts',
         score: rhythmicScore,
         sub: (fA.burstCount || 1) + ' vs ' + (fB.burstCount || 1) + ' burst(s)',
+        quip: (fA.burstCount || 1) === (fB.burstCount || 1) ? 'Synchronized burst phrasing — identical impulse choreography.' : 'Cadence diverged: ' + (fA.burstCount || 1) + ' sputter(s) vs ' + (fB.burstCount || 1) + '.',
         forensicsKey: 'modulation',
-        note: 'Assesses burst segmentation cadence and modulation-band energy distribution parity.'
+        note: 'Counts discrete bursts clearing the 0.35 envelope gate like a sputtering 2-stroke engine.'
       },
       {
         id: 'harmonic',
-        title: 'Harmonic Similarity',
+        title: '🎼 Tonal Purity vs Stealth Air',
         score: harmonicScore,
         sub: 'Flatness ' + safeNum(fA.spectralFlatness, 0).toFixed(2) + ' vs ' + safeNum(fB.spectralFlatness, 0).toFixed(2),
+        quip: safeNum(fA.spectralFlatness, 0) > 0.45 && safeNum(fB.spectralFlatness, 0) > 0.45 ? 'Matched stealth air vents — maximum plausible office deniability.' : 'Balances pure brass cheek reed vs turbulent hiss scatter.',
         forensicsKey: 'pitch',
-        note: 'Balances tonal periodicity vs turbulent air dispersion across voiced frames.'
+        note: 'Separates proud musical honks from silent-but-breezy office distractions.'
       },
       {
         id: 'moisture',
-        title: 'Moisture Probability',
+        title: '💦 Squelch Index & Laundry Risk',
         score: moistureScore,
-        sub: bonus ? bonus.wetness.wetA + '% vs ' + bonus.wetness.wetB + '%' : 'Squelch parity',
+        sub: bonus ? bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ') vs ' + bonus.wetness.wetB + '%' : 'Squelch parity',
+        quip: bonus ? (bonus.wetness.wetA >= 65 || bonus.wetness.wetB >= 65 ? 'Laundry Advisory: Heavy turbulent bubble-flux detected!' : 'Viscosity match: "' + bonus.wetness.labelA + '" vs "' + bonus.wetness.labelB + '".') : 'Evaluates spectral flux splat volatility.',
         forensicsKey: 'wetness',
-        note: 'Evaluates spectral flux acceleration and mid-frequency squelch resonance convergence.'
+        note: 'Measures frame-to-frame micro-gurgling flux and advises whether laundry inspection is warranted.'
       },
       {
         id: 'neighbor',
-        title: 'Neighbor Disturbance Forecast',
+        title: '🛋️ Elevator Alibi & Blast Radius',
         score: neighborScore,
         sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm blast' : 'Propagation zone',
+        quip: bonus ? 'Best Excuse (B): ' + bonus.social.b.verdict : 'Models confined-space elevator panic radius.',
         forensicsKey: 'social',
-        note: 'Models confined-space detectability radius and plausible deniability deflection profiles.'
+        note: 'Calculates audible awkwardness perimeter and ranks Dog-Blame, Sneaker Scuff, and Vinyl Chair excuses.'
       }
     ];
 
@@ -255,18 +304,60 @@
     if (bonus && bonus.acoustics) {
       var twinScore = Math.round(clamp(safeNum(bonus.acoustics.matchScore, 0), 0, 100));
       var twinSt = gaugeStatus(twinScore);
+      var sameTwin = bonus.acoustics.twinA.name === bonus.acoustics.twinB.name;
       rowItems.push({
         id: 'acoustics',
-        title: 'Cheek Resonance & Sound Twin',
+        title: '🎺 Cheek Resonance & Sound Twin',
         score: twinScore,
-        sub: bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.short,
+        sub: bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.short,
+        quip: sameTwin
+          ? 'Unbelievable convergence — both mapped to a "' + bonus.acoustics.twinA.name + '"!'
+          : 'Identity crisis: A channels a "' + bonus.acoustics.twinA.name + '" while B sounds like a "' + bonus.acoustics.twinB.name + '".',
         forensicsKey: 'acoustics',
-        note: 'Multi-archetype acoustic twin matching comparing pitch, flatness, and modulation dynamics.',
+        note: 'Compares pitch, noisiness, and flutter affinity against 8 scientifically calibrated non-human noisemakers.',
         status: twinSt.label,
         color: twinSt.color,
         tone: twinSt.tone
       });
     }
+
+    var cmpVerdict = root.TootLabs.Store
+      ? root.TootLabs.Store.buildScientificVerdict(soundA, soundB, result, exactScore)
+      : result.summaryLine || 'Acoustic parity calculated.';
+    var cmpTipsHtml =
+      result.tips && result.tips.length > 0
+        ? '<ul class="labs-verdict-tips">' +
+          result.tips
+            .map(function (tp) {
+              return '<li>' + esc(tp) + '</li>';
+            })
+            .join('') +
+          '</ul>'
+        : '';
+
+    var wetRep = bonus && Forensics && typeof Forensics.buildCriterionReport === 'function' ? Forensics.buildCriterionReport('wetness', soundA, soundB, result) : null;
+    var twinRep = bonus && Forensics && typeof Forensics.buildCriterionReport === 'function' ? Forensics.buildCriterionReport('acoustics', soundA, soundB, result) : null;
+    var socRep = bonus && Forensics && typeof Forensics.buildCriterionReport === 'function' ? Forensics.buildCriterionReport('social', soundA, soundB, result) : null;
+
+    var humorStripHtml = bonus
+      ? '<div class="labs-humor-strip">' +
+        '  <div class="labs-humor-tile">' +
+        '    <div class="labs-humor-tile-head">💦 Laundry Advisory</div>' +
+        '    <div class="labs-humor-tile-stat">' + esc(bonus.wetness.wetA + '% ' + bonus.wetness.labelA + ' vs ' + bonus.wetness.wetB + '% ' + bonus.wetness.labelB) + '</div>' +
+        '    <div class="labs-humor-tile-body">' + esc(wetRep ? wetRep.commentary : '') + '</div>' +
+        '  </div>' +
+        '  <div class="labs-humor-tile">' +
+        '    <div class="labs-humor-tile-head">🎺 Acoustic Doppelgänger</div>' +
+        '    <div class="labs-humor-tile-stat">' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.name) + '</div>' +
+        '    <div class="labs-humor-tile-body">' + esc(twinRep ? twinRep.commentary : '') + '</div>' +
+        '  </div>' +
+        '  <div class="labs-humor-tile">' +
+        '    <div class="labs-humor-tile-head">🛋️ Elevator Alibi &amp; Blast Zone</div>' +
+        '    <div class="labs-humor-tile-stat">' + esc(bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm audible radius') + '</div>' +
+        '    <div class="labs-humor-tile-body">' + esc(socRep ? socRep.commentary : '') + '</div>' +
+        '  </div>' +
+        '</div>'
+      : '';
 
     var uid = 'lf_' + (++gaugeUid) + '_';
     var chanA = uid + 'A';
@@ -300,18 +391,6 @@
       '  <button type="button" class="labs-mini-chip" data-preset="side">Side</button>' +
       '  <button type="button" class="labs-mini-chip" data-preset="spin">Spin</button>' +
       '</div>';
-
-    var criteriaTabsHtml = Forensics
-      ? Forensics.CRITERIA_META.map(function (c) {
-          return (
-            '<button type="button" class="labs-dossier-pill" data-dossier-key="' +
-            esc(c.key) +
-            '">' +
-            esc(c.label) +
-            '</button>'
-          );
-        }).join('')
-      : '';
 
     var headerBtnsHtml =
       (opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
@@ -398,6 +477,15 @@
       '      </div>' +
       '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Telemetry Suites</span>' +
       '    </div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">OFFICIAL REFEREE VERDICT</span>' +
+      '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Solid Attempt')) + '</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(cmpVerdict) + '</p>' +
+      cmpTipsHtml +
+      '    </div>' +
+      humorStripHtml +
       '    <div class="labs-hint-text">Tap any row below to expand complete FFT charts, side-by-side statistics &amp; equations inline.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
@@ -455,37 +543,10 @@
       if (rowBtn) rowBtn.setAttribute('aria-expanded', 'true');
       slotEl.classList.remove('hidden');
 
-      var headerText = matched
-        ? matched.title + ' — ' + matched.sub + ' (' + matched.score + '%)'
-        : 'Forensic Dossier Breakdown';
-      var noteText = matched && matched.note ? matched.note : 'Side-by-side acoustic instrumentation breakdown.';
-
-      slotEl.innerHTML =
-        '<div class="labs-acc-head">' +
-        '  <div>' +
-        '    <div class="labs-eyebrow">INLINE INSTRUMENTATION · ' + esc(headerText) + '</div>' +
-        '    <p class="labs-expanded-note">' + esc(noteText) + '</p>' +
-        '  </div>' +
-        '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
-        '</div>' +
-        '<div class="labs-dossier-strip">' +
-        criteriaTabsHtml +
-        '</div>' +
-        '<div class="labs-forensics-mount"></div>';
+      slotEl.innerHTML = '<div class="labs-forensics-mount"></div>';
 
       var fMountEl = slotEl.querySelector('.labs-forensics-mount');
       activeMountEl = fMountEl;
-
-      var pills = slotEl.querySelectorAll('.labs-dossier-pill');
-      for (var p = 0; p < pills.length; p++) {
-        pills[p].classList.toggle('active', pills[p].getAttribute('data-dossier-key') === targetFKey);
-        pills[p].addEventListener('click', function () {
-          openInlineRow(resolvedId, this.getAttribute('data-dossier-key'));
-        });
-      }
-
-      var closeBtn = slotEl.querySelector('.labs-acc-close');
-      if (closeBtn) closeBtn.addEventListener('click', closeActiveRow);
 
       var drawNow = function () {
         if (!fMountEl) return;
@@ -757,6 +818,7 @@
       '<div class="labs-metric-main">' +
       '  <div class="labs-metric-title">' + esc(g.title) + '</div>' +
       '  <div class="labs-metric-sub">' + esc(g.sub) + '</div>' +
+      (g.quip ? '  <div class="labs-metric-quip">' + esc(g.quip) + '</div>' : '') +
       '</div>' +
       '<div class="labs-metric-right">' +
       '  <div class="labs-metric-bar-track" aria-hidden="true">' +
@@ -1518,6 +1580,44 @@
   }
 
   /* ==================== 1 & 2: INDIVIDUAL 12-DIAL FARTNALYSIS ==================== */
+  function buildSingleFieldVerdict(sound, featArg, bonusArg, mlArg, noteArg) {
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var feat = featArg || (sound && (sound.features || (DSP && DSP.extractFeatures(sound.samples, sound.sampleRate)))) || {};
+    var bonus = bonusArg || (Forensics && feat.bandProfile ? Forensics.computeBonusMetrics(feat, feat) : null);
+    var ml = mlArg || classifyAcousticProfile(feat, bonus);
+    var noteStr =
+      noteArg ||
+      (Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? Forensics.hzToNoteName(feat.medianPitchHz)
+        : 'Unvoiced Airband');
+
+    var dur = safeNum(feat.duration, 0).toFixed(2) + 's';
+    var bpmMod = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var bursts = feat.burstCount || 1;
+    var crest = safeNum(feat.crestFactorDb, 0).toFixed(1);
+    var isVoiced = feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0;
+
+    var opening = isVoiced
+      ? 'This ' + dur + ' emission committed proudly to a musical ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz), flapping at ' + bpmMod + ' cheek flaps/min across ' + bursts + ' burst' + (bursts === 1 ? '' : 's') + '.'
+      : 'This ' + dur + ' specimen operated as a sneaky ' + bpmMod + ' flaps/min unvoiced breeze (' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center), slipping past pitches like an office chair phantom.';
+
+    var mlLine =
+      ' Our 22-dimension offline ML classifier diagnosed it as "' + ml.topClass.emoji + ' ' + ml.topClass.name + '" (' + ml.confidence + '% confidence) at ' + crest + ' dB impulse snap — thankfully processed 100% locally so no cloud server ever has to explain this in a standup.';
+
+    var wetLine = bonus
+      ? ' Laundry Advisory: ' + bonus.wetness.wetA + '% ("' + bonus.wetness.labelA + '").'
+      : '';
+    var twinLine = bonus
+      ? ' Blind-lineup Doppelgänger: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name + ' (' + bonus.acoustics.topScoreA + '% match).'
+      : '';
+    var alibiLine = bonus
+      ? ' Elevator Survival Protocol: ' + bonus.social.a.radiusM.toFixed(1) + 'm blast zone — ' + bonus.social.a.verdict
+      : '';
+
+    return opening + mlLine + wetLine + twinLine + alibiLine;
+  }
+
   function buildSingleGauges(sound) {
     var DSP = root.TootApp && root.TootApp.DSP;
     var Forensics = root.TootApp && root.TootApp.Forensics;
@@ -1526,7 +1626,8 @@
     var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
     var ml = classifyAcousticProfile(feat, bonus);
 
-    var crestScore = Math.round(clamp((safeNum(feat.crestFactorDb, 8) / 17.5) * 100, 15, 99));
+    var crestDb = safeNum(feat.crestFactorDb, 8);
+    var crestScore = Math.round(clamp((crestDb / 17.5) * 100, 15, 99));
     var lowShare = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25) : 0.5;
     var resScore = Math.round(clamp(lowShare * 86 + (1 - safeNum(feat.spectralFlatness, 0.3)) * 22, 14, 99));
     var toneScore = Math.round(
@@ -1535,7 +1636,8 @@
         : clamp(45 - safeNum(feat.spectralFlatness, 0.4) * 28, 12, 70)
     );
     var turbScore = Math.round(clamp(safeNum(feat.modDepth, 0.25) * 92 + ((feat.burstCount || 1) > 1 ? 15 : 0), 10, 99));
-    var burstScore = Math.round(clamp(28 + (feat.burstCount || 1) * 16 + safeNum(feat.modDepth, 0.2) * 24, 18, 99));
+    var bursts = feat.burstCount || 1;
+    var burstScore = Math.round(clamp(28 + bursts * 16 + safeNum(feat.modDepth, 0.2) * 24, 18, 99));
     var timbreScore = Math.round(clamp(55 + (1 - clamp(safeNum(feat.spectralFlatness, 0.3), 0, 1)) * 42, 18, 99));
     var moistScore = bonus ? bonus.wetness.wetA : 30;
     var twinScore = bonus ? bonus.acoustics.topScoreA : 60;
@@ -1546,20 +1648,97 @@
     var velocityScore = Math.round(clamp(96 - (atkMs / durMs) * 75, 22, 99));
     var subRatio = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) : 0.25;
     var neighborScore = Math.round(clamp(subRatio * 82 + panicScore * 0.52, 15, 99));
+    var bpmSingle = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var noteTag =
+      Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? Forensics.hzToNoteName(feat.medianPitchHz)
+        : 'Stealth Airband';
 
     var list = [
-      { id: 's_crest', title: 'Crest Intensity', score: crestScore, sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak' },
-      { id: 's_resonance', title: 'Resonance Depth', score: resScore, sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center' },
-      { id: 's_tone', title: 'Fundamental Tone', score: toneScore, sub: formatHzLabel(feat) },
-      { id: 's_turbulence', title: 'Flutter Turbulence', score: turbScore, sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz flutter' },
-      { id: 's_burst', title: 'Rhythmic Burst Profile', score: burstScore, sub: (feat.burstCount || 1) + ' distinct burst(s)' },
-      { id: 's_timbre', title: 'Timbre & MFCC', score: timbreScore, sub: 'Flatness ' + safeNum(feat.spectralFlatness, 0).toFixed(2) },
-      { id: 's_moisture', title: 'Moisture Probability', score: moistScore, sub: bonus ? bonus.wetness.labelA : 'Surface flux' },
-      { id: 's_twin', title: 'Acoustic Twin', score: twinScore, sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short : 'Archetype' },
-      { id: 's_panic', title: 'Elevator Panic Risk', score: panicScore, sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm blast zone' : 'Radius' },
-      { id: 's_ml', title: 'ML Classification', score: mlScore, sub: ml.topClass.emoji + ' ' + ml.topClass.name },
-      { id: 's_velocity', title: 'Airflow Velocity', score: velocityScore, sub: Math.round(atkMs) + 'ms onset' },
-      { id: 's_neighbor', title: 'Neighbor Disturbance', score: neighborScore, sub: Math.round(subRatio * 100) + '% wall-bass' }
+      {
+        id: 's_crest',
+        title: '💥 Shockwave Crest Intensity',
+        score: crestScore,
+        sub: crestDb.toFixed(1) + ' dB peak punch',
+        quip: crestDb >= 12 ? 'Explosive onset — nearby glassware definitely registered the shockwave.' : 'Polite hydraulic ramp without extreme pop clipping.'
+      },
+      {
+        id: 's_resonance',
+        title: '🎨 Upholstery & Chamber Depth',
+        score: resScore,
+        sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center',
+        quip: subRatio >= 0.35 ? 'Subwoofer-grade ' + Math.round(subRatio * 100) + '% bass rumble built to vibrate leather chairs.' : 'Crisp mid-horn harmonics dominate over bass boom.'
+      },
+      {
+        id: 's_tone',
+        title: '🎵 Fart Piano Note & Pitch',
+        score: toneScore,
+        sub: formatHzLabel(feat) + ' · ' + noteTag,
+        quip: feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? 'Locks onto ' + noteTag + ' — technically ready for a porcelain brass choir.' : 'Operates like a stealth air valve rather than a brass horn.'
+      },
+      {
+        id: 's_turbulence',
+        title: '🫧 Cheek-Flutter BPM',
+        score: turbScore,
+        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' flaps/min)',
+        quip: bpmSingle >= 1000 ? 'High-RPM valve chatter at ' + bpmSingle + ' flaps/min (yes, seriously).' : 'Smooth aerodynamic oscillation at ' + bpmSingle + ' flaps/min.'
+      },
+      {
+        id: 's_burst',
+        title: '🥁 Sputter & Burst Cadence',
+        score: burstScore,
+        sub: bursts + ' distinct burst(s)',
+        quip: bursts >= 3 ? 'Machine-gun staccato sputtering — rhythmic phrasing nobody can predict.' : bursts === 2 ? 'Clean double-tap cadence; deliberate or unavoidable.' : 'Unified single-stream aerodynamic release.'
+      },
+      {
+        id: 's_timbre',
+        title: '🧪 13-Band MFCC & Reed Rasp',
+        score: timbreScore,
+        sub: 'Flatness ' + safeNum(feat.spectralFlatness, 0).toFixed(2),
+        quip: safeNum(feat.spectralFlatness, 0) > 0.45 ? 'Airy/stealth profile muffled as if filtered through thick winter jeans.' : 'Rich harmonic cheek-reed buzz with bold overtones.'
+      },
+      {
+        id: 's_moisture',
+        title: '💦 Squelch Index & Laundry Risk',
+        score: moistScore,
+        sub: bonus ? bonus.wetness.labelA : 'Surface flux',
+        quip: bonus && bonus.wetness.wetA >= 65 ? 'Laundry Advisory: Hazardous bubble turbulence — inspect trousers immediately.' : 'Dry aerodynamic exit confirmed — carry on with plausible swagger.'
+      },
+      {
+        id: 's_twin',
+        title: '🎺 Acoustic Doppelgänger Twin',
+        score: twinScore,
+        sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Archetype',
+        quip: bonus ? 'In a blind lineup, sounds startlingly like a ' + bonus.acoustics.twinA.name + '.' : 'Matched against non-human brass archetypes.'
+      },
+      {
+        id: 's_panic',
+        title: '🛋️ Elevator Panic & Alibi Odds',
+        score: panicScore,
+        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm blast radius' : 'Radius',
+        quip: bonus ? 'Alibi: ' + bonus.social.a.verdict : 'Modeling confined-space social survivability.'
+      },
+      {
+        id: 's_ml',
+        title: '🤖 On-Device ML Archetype Fit',
+        score: mlScore,
+        sub: ml.topClass.emoji + ' ' + ml.topClass.name + ' (Zero Cloud)',
+        quip: 'Classified by 22 local features so no cloud server ever sees what you recorded.'
+      },
+      {
+        id: 's_velocity',
+        title: '🚀 Detonation Velocity & Onset',
+        score: velocityScore,
+        sub: Math.round(atkMs) + 'ms blast attack',
+        quip: atkMs <= 70 ? 'Hair-trigger transient snap — zero warning shots were fired.' : 'Gradual crescendo buildup before full aerodynamic release.'
+      },
+      {
+        id: 's_neighbor',
+        title: '🧱 Drywall & Neighbor Penetration',
+        score: neighborScore,
+        sub: Math.round(subRatio * 100) + '% wall-piercing bass',
+        quip: subRatio >= 0.35 ? 'Low frequencies punch straight through hollow drywall — blame the subwoofer.' : 'Higher hiss decays quickly before crossing apartment walls.'
+      }
     ];
 
     return list.map(function (g) {
@@ -1581,7 +1760,8 @@
     var dur = safeNum(feat.duration, 0);
     var atkMs = Math.round(safeNum(feat.attackSec, 0) * 1000);
     var decMs = Math.round(safeNum(feat.decaySec, 0) * 1000);
-    var noteStr = Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? Forensics.hzToNoteName(feat.medianPitchHz) : 'Unpitched Air';
+    var bpmSingle = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var noteStr = Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? Forensics.hzToNoteName(feat.medianPitchHz) : 'Unpitched Stealth Air';
 
     if (g.id === 's_ml') {
       return {
@@ -1592,7 +1772,7 @@
         score: g.score,
         color: g.color,
         commentary:
-          'How our ML analysis actually works: before any guessing begins, the engine extracts 22 acoustic descriptors (13 MFCCs, fundamental pitch, spectral flatness, modulation depth, crest dynamics, sub-bass ratio, and flux) and runs a calibrated softmax distance classifier across 6 trained archetype profiles. Confidence is ' +
+          'How our ML engine works (with alarming sincerity): it extracts 22 acoustic descriptors (13 MFCCs, fundamental pitch, spectral flatness, modulation depth, crest shockwave, sub-bass share, and flux) and runs a softmax distance classifier against 6 calibrated archetypes. Confidence sits at ' +
           ml.confidence +
           '% for "' +
           ml.topClass.name +
@@ -1600,7 +1780,7 @@
           ml.runnerUp.name +
           '" at ' +
           ml.runnerUp.prob +
-          '%). Your neural-free feature model remained disturbingly serious throughout.',
+          '%) — computed 100% locally so no tech billionaire owns a model trained on your butts.',
         charts: [
           { title: '6-Class Softmax Probability Distribution', sub: 'Nearest acoustic archetype fit', drawType: 's_ml_probs' },
           { title: '13-Band MFCC Input Tensor', sub: 'Primary cepstral classification features', drawType: 's_mfcc13' }
@@ -1618,11 +1798,11 @@
     var map = {
       s_crest: {
         badgeCode: 'DOC-01 // TRANSIENT CREST TELEMETRY',
-        title: 'Crest Intensity & Impulse Force',
-        subtitle: 'Peak-to-RMS pressure shockwave ratio across ' + dur.toFixed(2) + 's.',
+        title: 'Shockwave Crest Intensity & Impulse Force',
+        subtitle: 'Peak-to-RMS acoustic punch across ' + dur.toFixed(2) + 's.',
         commentary:
-          'Measured ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB of peak-to-average pressure punch. ' +
-          (safeNum(feat.crestFactorDb, 0) >= 12 ? 'Noticeably explosive onset — nearby glassware probably noticed.' : 'Controlled acoustic release without extreme pressure clipping.'),
+          'Shockwave Forensics clocked ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB of peak-to-average punchiness. ' +
+          (safeNum(feat.crestFactorDb, 0) >= 12 ? 'Noticeably explosive snapping onset — nearby wine glasses and innocent bystanders definitely flinched.' : 'Surprisingly composed aerodynamic release without embarrassing pressure clipping.'),
         charts: [
           { title: 'Blast Pressure Envelope', sub: 'RMS contour vs time', drawType: 's_envelope' },
           { title: 'Cumulative Energy Integral', sub: 'T10 / T50 / T90 energy milestones', drawType: 's_energy_cum' }
@@ -1631,133 +1811,133 @@
           { label: 'Crest Factor', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Peak / RMS ratio' },
           { label: 'Peak Timing', value: Math.round(safeNum(feat.peakTimeRatio, 0.5) * 100) + '%', sub: 'Point of max pressure' },
           { label: 'Total Span', value: dur.toFixed(2) + 's', sub: 'Auto-trimmed active window' },
-          { label: 'Half-Energy T50', value: Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', sub: '50% acoustic output reached' }
+          { label: 'Half-Energy T50', value: Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', sub: 'Where half the gas left the room' }
         ],
         formula: 'Crest_dB = 20 * log10(max(|x|) / RMS(x))'
       },
       s_resonance: {
-        badgeCode: 'DOC-02 // FORMANT CHAMBER RESONANCE',
-        title: 'Resonance Depth & Spectral Energy',
-        subtitle: '40-band STFT distribution and sub-bass rumble balance.',
+        badgeCode: 'DOC-02 // UPHOLSTERY & FORMANT RESONANCE',
+        title: 'Upholstery Damping & Chamber Resonance',
+        subtitle: '40-band STFT distribution across winter-jeans bass vs bright brassy sizzle.',
         commentary:
           'Spectral center of mass sits at ' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz with ' +
           Math.round(safeNum(bp[0], 0) * 100) + '% of acoustic power below 150 Hz. ' +
-          (bp[0] >= 0.35 ? 'Substantial subwoofer-grade chamber depth confirmed.' : 'Upper cheek harmonics dominate over sub-bass rumble.'),
+          (bp[0] >= 0.35 ? 'Substantial subwoofer-grade chamber depth confirmed — wooden dining chairs act as pure amplifiers.' : 'Brighter upper cheek harmonics dominate; minimal winter-denim muffling detected.'),
         charts: [
           { title: '40-Band FFT Energy Spectrum', sub: '45 Hz to 4.2 kHz logarithmic surface', drawType: 's_spectrum' },
-          { title: '4-Band Energy Breakdown', sub: 'Sub-bass vs rumble vs rasp vs air', drawType: 's_4band' }
+          { title: '4-Band Energy Breakdown', sub: 'Sub-Tuba vs Body Buzz vs Nasal Honk vs Air', drawType: 's_4band' }
         ],
         stats: [
           { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Spectral center of mass' },
-          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Room-shaking band' },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Chair-rattling band' },
           { label: 'Mid Buzz', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz reed band' },
-          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Hiss / turbulence band' }
+          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Brassy sizzle / air band' }
         ],
         formula: 'Centroid = SUM(f_k * E_k) / SUM(E_k)'
       },
       s_tone: {
-        badgeCode: 'DOC-03 // FUNDAMENTAL F0 TELEMETRY',
-        title: 'Fundamental Pitch & Sweep Track',
-        subtitle: 'Autocorrelation voiced pitch stability and intonation.',
+        badgeCode: 'DOC-03 // FUNDAMENTAL F0 & FART PIANO AUDIT',
+        title: 'Fundamental Musical Note & Sweep Track',
+        subtitle: 'Locks the toot to an exact piano key (yes, really) and tracks pitch bends.',
         commentary:
           (feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
-            ? 'Clean tonal core locked near ' + Math.round(feat.medianPitchHz) + ' Hz (' + noteStr + ') across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Theoretically harmonious enough for a brass quintet.'
-            : 'Mostly unvoiced broadband air noise (voiced ratio ' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%). Operates like a stealth valve rather than a brass horn.'),
+            ? 'Clean tonal core locked onto ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz) across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Harmonious enough to audition for a porcelain brass quintet.'
+            : 'Stealth Broadband Emission (' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% voiced frames). Operates like a secret office-chair air leak rather than a concert horn.'),
         charts: [
           { title: '32-Frame Pitch Sweep (Hz)', sub: 'Fundamental frequency over time', drawType: 's_pitch' },
           { title: 'Spectral Brightness Drift', sub: 'Log2 centroid trajectory across frames', drawType: 's_centroid_contour' }
         ],
         stats: [
-          { label: 'Median Pitch', value: formatHzLabel(feat), sub: noteStr },
-          { label: 'Pitch Span', value: safeNum(feat.pitchRangeSemitones, 0).toFixed(1) + ' st', sub: 'Semitone bend range' },
+          { label: 'Fart Piano Key', value: formatHzLabel(feat), sub: noteStr },
+          { label: 'Glissando Bend', value: safeNum(feat.pitchRangeSemitones, 0).toFixed(1) + ' st', sub: 'Semitone wobble span' },
           { label: 'Voiced Ratio', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Tonal frame share' },
-          { label: 'Sweep Slope', value: (safeNum(feat.pitchTrend, 0) >= 0 ? 'Rising ' : 'Falling ') + Math.abs(safeNum(feat.pitchTrend, 0)).toFixed(2), sub: 'Octave delta' }
+          { label: 'Sweep Direction', value: (safeNum(feat.pitchTrend, 0) >= 0 ? 'Question-Mark Rise +' : 'Sad-Trombone Drop ') + Math.abs(safeNum(feat.pitchTrend, 0)).toFixed(2), sub: 'Octave delta' }
         ],
         formula: 'F0(frame) via Normalized Lag Autocorrelation; MIDI = 69 + 12 * log2(Hz / 440)'
       },
       s_turbulence: {
-        badgeCode: 'DOC-04 // CHEEK FLUTTER SPECTROSCOPY',
-        title: 'Turbulence & Modulation Spectrum',
-        subtitle: '4–45 Hz cheek valve oscillation analysis.',
+        badgeCode: 'DOC-04 // CHEEK-FLUTTER BPM SPECTROSCOPY',
+        title: 'Cheek-Flutter BPM & Valve Oscillation',
+        subtitle: 'Measures gluteal oscillation speed in Beats-Per-Minute (yes, seriously).',
         commentary:
-          'Envelope modulation oscillates at ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz with ' + Math.round(safeNum(feat.modDepth, 0) * 100) + '% flutter depth. ' +
-          (feat.modRateHz >= 18 ? 'High-RPM valve chatter detected.' : 'Smooth low-frequency aerodynamic ripple.'),
+          'Biomechanics Memo: cheek oscillation clocked ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' flaps/min) at ' + Math.round(safeNum(feat.modDepth, 0) * 100) + '% wobble depth. ' +
+          (feat.modRateHz >= 18 ? 'Running like a 2-stroke Vespa — high-RPM cheek flutter confirmed.' : 'Cruising at a relaxed trombone ripple cadence.'),
         charts: [
-          { title: 'Modulation FFT (4–45 Hz)', sub: 'Stutter, flutter, and fast rattle peaks', drawType: 's_mod' },
-          { title: '3-Band Turbulence Split', sub: 'Stutter vs Flutter vs Fast Rattle', drawType: 's_mod3band' }
+          { title: 'Modulation FFT (4–45 Hz)', sub: 'Stutter, cheek flutter, and fast bee-buzz peaks', drawType: 's_mod' },
+          { title: '3-Band Turbulence Split', sub: 'Slow Stutter vs Cheek Flutter vs Fast Rattle', drawType: 's_mod3band' }
         ],
         stats: [
-          { label: 'Peak Rate', value: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz', sub: 'Primary flutter speed' },
-          { label: 'Flutter Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Coefficient of modulation' },
-          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame volatility' },
-          { label: 'ZCR', value: safeNum(feat.zcr, 0).toFixed(3), sub: 'Zero-crossing turbulence' }
+          { label: 'Flap Speed', value: bpmSingle + ' BPM', sub: Math.round(safeNum(feat.modRateHz, 0)) + ' cheek flaps/sec' },
+          { label: 'Wobble Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Amplitude flutter depth' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Texture mutation chaos' },
+          { label: 'ZCR', value: safeNum(feat.zcr, 0).toFixed(3), sub: 'Zero-crossing hiss' }
         ],
-        formula: 'ModDepth = std(Env) / mean(Env); FFT(Hann(Env - mean)) over [4Hz..45Hz]'
+        formula: 'ModDepth = std(Env) / mean(Env); BPM = 60 * argmax(FFT_mod[4Hz..45Hz])'
       },
       s_burst: {
-        badgeCode: 'DOC-05 // PULSE SEGMENTATION TELEMETRY',
-        title: 'Rhythmic Burst & Cadence Profile',
+        badgeCode: 'DOC-05 // SPUTTER PULSE SEGMENTATION',
+        title: 'Sputter Gate & Rhythmic Burst Audit',
         subtitle: 'Discrete pressure impulse segmentation across ' + dur.toFixed(2) + 's.',
         commentary:
-          'Segmented ' + (feat.burstCount || 1) + ' distinct emission burst(s) above the 0.35 envelope gate. ' +
-          ((feat.burstCount || 1) >= 3 ? 'Classic machine-gun sputtering cadence — unpredictable rhythmic phrasing.' : feat.burstCount === 2 ? 'Clean double-tap timing; deliberate or unavoidable.' : 'Unified single-stream release.'),
+          'Segmented ' + (feat.burstCount || 1) + ' distinct emission burst(s) clearing the 0.35 envelope gate. ' +
+          ((feat.burstCount || 1) >= 3 ? 'Classic staccato motorcycle cadence — chaotic rhythmic phrasing that catches bystanders off-guard.' : feat.burstCount === 2 ? 'Textbook double-tap timing — impossible to pretend that was just your sneaker.' : 'Unified single-stream release — clean start, no sequel.'),
         charts: [
           { title: 'Envelope vs 0.35 Gate Threshold', sub: 'Burst detection hysteresis peaks', drawType: 's_burst_gate' },
           { title: 'Attack / Sustain / Decay Ratio', sub: 'Temporal anatomy percentages', drawType: 's_attack_decay' }
         ],
         stats: [
-          { label: 'Bursts Detected', value: String(feat.burstCount || 1), sub: 'Gate > 0.35 / reset < 0.18' },
-          { label: 'Attack Time', value: atkMs + ' ms', sub: 'Rise to peak' },
-          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Release duration' },
-          { label: 'Duration', value: dur.toFixed(2) + 's', sub: 'Total event' }
+          { label: 'Bursts Detected', value: String(feat.burstCount || 1), sub: 'Gate > 0.35 / re-arm < 0.18' },
+          { label: 'Attack Time', value: atkMs + ' ms', sub: 'Rise to max pressure' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Lingering trailing sputter' },
+          { label: 'Total Length', value: dur.toFixed(2) + 's', sub: 'Auto-trimmed span' }
         ],
-        formula: 'BurstCount = peaks(SmoothEnv > 0.35 separated by < 0.18)'
+        formula: 'BurstCount = peaks(SmoothEnv > 0.35 separated by valleys < 0.18)'
       },
       s_timbre: {
         badgeCode: 'DOC-06 // 13-BAND CEPSTRAL FINGERPRINT',
-        title: 'Timbre & MFCC Vocal-Tract Texture',
-        subtitle: 'Harmonic tonal purity vs noisy broadband rasp.',
+        title: 'Timbre, MFCC & Upholstery Coloring',
+        subtitle: 'Quantifies pure cheek reed buzz vs muffled winter-jeans air noise.',
         commentary:
-          'Wiener Spectral Flatness is ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'windy/breathy stealth character' : 'rich harmonic reed buzz') + '). Every acoustic fingerprint here stays 100% locally computed.',
+          'Wiener Spectral Flatness reads ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'breezy stealth character — plausibly mistaken for an AC vent' : 'bold harmonic brass reed buzz — nobody thinks that was the chair') + '). Every acoustic fingerprint stays 100% locally computed.',
         charts: [
           { title: '13-Band MFCC Signature', sub: 'Spectral envelope shape vector', drawType: 's_mfcc13' },
           { title: '40-Band FFT Energy Spectrum', sub: 'Formant resonances & overtones', drawType: 's_spectrum' }
         ],
         stats: [
-          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = pure tone, 1 = air noise' },
-          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Timbral brightness' },
-          { label: 'ML Top Fit', value: ml.topClass.name, sub: ml.confidence + '% match' },
+          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = brass reed, 1 = pure air' },
+          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Upholstery brightness' },
+          { label: 'ML Top Fit', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
           { label: 'Voice Share', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Harmonic frames' }
         ],
         formula: 'Flatness = geomMean(|X|) / arithMean(|X|); MFCC = DCT(log(MelEnergy))'
       },
       s_moisture: {
-        badgeCode: 'DOC-07 // SPECTRAL FLUX & SQUELCH LAB',
-        title: 'Moisture Probability & Wetness Telemetry',
+        badgeCode: 'DOC-07 // HYDRO-ACOUSTIC LAUNDRY ADVISORY',
+        title: 'Squelch Index & Moisture Probability',
         subtitle: 'Quantifying suspicious mid-band micro-gurgling dynamics.',
         commentary:
           bonus
-            ? 'Classified as "' + bonus.wetness.labelA + '" (' + bonus.wetness.wetA + '%). ' + (bonus.wetness.wetA >= 65 ? 'Consult emergency laundry protocols immediately.' : 'Dry aerodynamic exit confirmed — carry on with confidence.')
+            ? 'Laundry Advisory: Classified as "' + bonus.wetness.labelA + '" (' + bonus.wetness.wetA + '%). ' + (bonus.wetness.wetA >= 65 ? 'Heavy turbulent bubble-flux detected — consult emergency laundry protocols immediately.' : 'Dry aerodynamic exit confirmed — trousers remain structurally uncompromised.')
             : 'Surface moisture metrics computed from modulation flux.',
         charts: [
           { title: 'Instantaneous Spectral Flux', sub: 'Micro-texture volatility across event', drawType: 's_flux' },
           { title: 'Moisture Index Components', sub: 'Flutter + Flux + Squelch Band weightings', drawType: 's_squelch_mix' }
         ],
         stats: [
-          { label: 'Wetness Score', value: (bonus ? bonus.wetness.wetA : 25) + '%', sub: bonus ? bonus.wetness.labelA : '' },
-          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame spectral shift' },
+          { label: 'Squelch Score', value: (bonus ? bonus.wetness.wetA : 25) + '%', sub: bonus ? bonus.wetness.labelA : '' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame splat chaos' },
           { label: 'Mod Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Flutter contributor' },
-          { label: 'Bursts', value: String(feat.burstCount || 1), sub: 'Interrupt count' }
+          { label: 'Bursts', value: String(feat.burstCount || 1), sub: 'Bubble interrupt count' }
         ],
         formula: 'Wetness = 22*norm(Mod) + 46*norm(Flux) + 22*SquelchBand + BurstBonus'
       },
       s_twin: {
-        badgeCode: 'DOC-08 // ACOUSTIC DOPPELGANGER MATCHER',
+        badgeCode: 'DOC-08 // ACOUSTIC DOPPELGÄNGER MATCHER',
         title: 'Acoustic Twin: ' + (bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference'),
         subtitle: 'Cross-referenced against 8 calibrated non-human noisemakers.',
         commentary:
           bonus
-            ? 'In a blind acoustic lineup, this specimen matches a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Try playing that comparison card at dinner parties.'
+            ? 'Zoological & Brass Match: In a blind acoustic lineup, this specimen impersonates a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Mention that scientific fact loudly if accused at dinner.'
             : 'Matched against calibrated noisemaker archetypes.',
         charts: [
           { title: '8-Archetype Affinity Breakdown', sub: 'Tuba, Foghorn, Bullfrog, Vespa, Goose, Duck...', drawType: 's_twin_bars' },
@@ -1767,25 +1947,25 @@
           { label: 'Top Twin', value: bonus ? bonus.acoustics.twinA.short : '—', sub: bonus ? bonus.acoustics.topScoreA + '% similarity' : '' },
           { label: 'Effective Tone', value: formatHzLabel(feat), sub: 'Comparison frequency' },
           { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Buzz vs airiness axis' },
-          { label: 'Orchestral Seat', value: (feat.medianPitchHz || 200) < 130 ? 'Tuba / Foghorn' : 'Woodwind / Brass', sub: 'Register' }
+          { label: 'Orchestral Seat', value: (feat.medianPitchHz || 200) < 130 ? 'Tuba / Foghorn' : 'Woodwind / Brass', sub: 'Register assignment' }
         ],
         formula: 'Affinity = 100 * exp(-(|deltaOct|/1.15 + |deltaFlat|*1.4 + |deltaMod|*0.75))'
       },
       s_panic: {
         badgeCode: 'DOC-09 // CONFINED-SPACE ALIBI PROTOCOL',
-        title: 'Elevator Panic & Deflection Odds',
-        subtitle: 'Social survivability and plausible deniability modeling.',
+        title: 'Elevator Panic, Dog-Blame & Blast Radius',
+        subtitle: 'Calculates optimal social excuses and audible awkwardness perimeter.',
         commentary:
           bonus
-            ? 'Predicted Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm (Panic Risk ' + bonus.social.a.panicPct + '%). Official Laboratory Recommendation: "' + bonus.social.a.verdict + '"'
+            ? 'Plausible Deniability Briefing: Audible blast perimeter reaches ' + bonus.social.a.radiusM.toFixed(1) + 'm (' + bonus.social.a.panicPct + '% cabin panic). Recommended Cover Story: "' + bonus.social.a.verdict + '"'
             : 'Social blast telemetry.',
         charts: [
           { title: 'Elevator Cabin Blast Radius', sub: 'Event perimeter vs 2.2m cabin box', drawType: 's_blast_map' },
           { title: 'Alibi Deflection Success Odds', sub: 'Dog vs Shoe vs Leather Office Chair', drawType: 's_alibi_bars' }
         ],
         stats: [
-          { label: 'Blast Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + ' m' : '—', sub: 'Detectable perimeter' },
-          { label: 'Panic Level', value: (bonus ? bonus.social.a.panicPct : 40) + '%', sub: 'Social urgency' },
+          { label: 'Blast Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + ' m' : '—', sub: 'Audible awkwardness zone' },
+          { label: 'Panic Level', value: (bonus ? bonus.social.a.panicPct : 40) + '%', sub: 'Elevator intimidation' },
           { label: 'Best Alibi', value: bonus ? bonus.social.a.verdict.split('(')[0].trim().slice(0, 22) : 'Dog', sub: 'Highest cover probability' },
           { label: 'Duration Factor', value: dur.toFixed(2) + 's', sub: 'Exposure window' }
         ],
@@ -1793,37 +1973,37 @@
       },
       s_velocity: {
         badgeCode: 'DOC-11 // ONSET VELOCITY & IMPULSE RISE',
-        title: 'Airflow Velocity & Attack Speed',
-        subtitle: 'How violently the acoustic pressure ramped from zero to peak.',
+        title: 'Detonation Velocity & Attack Speed',
+        subtitle: 'How violently pressure ramped from dead silence to peak decibels.',
         commentary:
-          'Peak amplitude arrived in just ' + atkMs + 'ms (' + Math.round((atkMs / Math.max(40, dur * 1000)) * 100) + '% into the recording). ' +
-          (atkMs <= 70 ? 'Hair-trigger transient snap — zero warning shots were fired.' : 'Gradual crescendo buildup followed by ' + decMs + 'ms dissipation.'),
+          'Peak amplitude detonated in just ' + atkMs + 'ms (' + Math.round((atkMs / Math.max(40, dur * 1000)) * 100) + '% into the emission). ' +
+          (atkMs <= 70 ? 'Hair-trigger ambush transient — zero warning shots were fired before impact.' : 'Dramatic slow-burn crescendo followed by ' + decMs + 'ms lingering fade-out.'),
         charts: [
           { title: 'Initial Attack Surge Zoom', sub: 'First 50% normalized onset envelope', drawType: 's_onset_zoom' },
           { title: 'Cumulative Energy T10/T50/T90', sub: 'Cumulative acoustic power milestones', drawType: 's_energy_cum' }
         ],
         stats: [
           { label: 'Attack Rise', value: atkMs + ' ms', sub: 'Time to peak RMS' },
-          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Release duration' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Post-peak sputter fade' },
           { label: 'T10 / T90', value: Math.round(safeNum(feat.t10Ratio, 0.1) * 100) + '% / ' + Math.round(safeNum(feat.t90Ratio, 0.9) * 100) + '%', sub: 'Energy bounds' },
-          { label: 'Crest Impulse', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Sharpness' }
+          { label: 'Crest Impulse', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Shockwave sharpness' }
         ],
         formula: 'AttackVelocity = PeakRMS / max(0.01, AttackSec)'
       },
       s_neighbor: {
-        badgeCode: 'DOC-12 // STRUCTURAL WALL ATTENUATION FORECAST',
+        badgeCode: 'DOC-12 // STRUCTURAL DRYWALL PENETRATION FORECAST',
         title: 'Neighbor & Drywall Penetration Risk',
-        subtitle: 'Estimating low-frequency structural transmission beyond the room.',
+        subtitle: 'Modeling whether low frequencies cross apartment walls.',
         commentary:
-          'Sub-150 Hz waves punch straight through hollow-core doors and standard drywall while high hiss decays quickly. With ' +
-          Math.round(safeNum(bp[0], 0) * 100) + '% sub-bass content, wall penetration probability stands at ' + g.score + '%.',
+          'Structural Acoustics Audit: Sub-150 Hz waves punch straight through hollow-core bedroom doors while high hiss fizzles in the carpet. With ' +
+          Math.round(safeNum(bp[0], 0) * 100) + '% sub-bass fuel, through-wall awkwardness stands at ' + g.score + '% — keep a heavy cough queued just in case.',
         charts: [
           { title: 'Structural Transmission Forecast', sub: 'Audibility across walls & floors', drawType: 's_wall_atten' },
           { title: '4-Band Frequency Attenuation', sub: 'Low frequencies travel farthest', drawType: 's_4band' }
         ],
         stats: [
           { label: 'Wall Risk', value: g.score + '%', sub: g.status },
-          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Primary wall-piercing band' },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Wall-piercing bass' },
           { label: 'Blast Reach', value: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm' : '4.0m', sub: 'Open-air propagation' },
           { label: 'ML Profile', value: ml.topClass.short || ml.topClass.name, sub: ml.confidence + '% fit' }
         ],
@@ -1857,6 +2037,7 @@
       Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
         ? Forensics.hzToNoteName(feat.medianPitchHz)
         : 'Unvoiced Airband';
+    var fieldVerdict = buildSingleFieldVerdict(sound, feat, bonus, ml, noteStr);
 
     var uid = 'lfs_' + (++gaugeUid) + '_';
     var chan = uid + 'S';
@@ -1921,11 +2102,19 @@
       '      </div>' +
       '      <span class="labs-chip labs-chip-purple">🤖 ' + esc(ml.topClass.name) + '</span>' +
       '    </div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">OFFICIAL GASTRO-ACOUSTIC FIELD REPORT</span>' +
+      '        <span class="labs-verdict-grade">' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' · ' + Math.round(safeNum(feat.modRateHz, 0) * 60) + ' flaps/min') + '</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
+      '    </div>' +
       '    <div class="labs-single-facts-grid">' +
       '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
-      '      <div class="labs-fact-box"><span>Musical Note</span><strong>' + esc(noteStr) + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>Fart Piano Key</span><strong>' + esc(noteStr) + '</strong></div>' +
       (bonus
-        ? '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
+        ? '<div class="labs-fact-box"><span>Squelch / Laundry Risk</span><strong>' + esc(bonus.wetness.wetA + '% · ' + bonus.wetness.labelA) + '</strong></div>' +
+          '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
           '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
         : '') +
       '    </div>' +
@@ -2166,14 +2355,54 @@
     var turbScore = Math.round(clamp(safeNum(feat.modDepth, 0.35) * 90, 12, 99));
     var spanScore = Math.round(clamp(safeNum(m.pitchSpanOctaves, 1) * 32 + 25, 18, 98));
     var blastScore = Math.round(clamp((safeNum(m.combinedBlastRadiusM, 6) / 20) * 100, 15, 99));
+    var cohScore = Math.round(clamp(safeNum(m.coherenceScore, 50), 0, 100));
+    var wetPct = Math.round(clamp(safeNum(m.aggregateMoisturePct, 30), 0, 100));
+    var bpmGroup = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var blastRad = safeNum(m.combinedBlastRadiusM, 4);
 
     var raw = [
-      { id: 'g_coh', title: 'Ensemble Coherence', score: Math.round(clamp(safeNum(m.coherenceScore, 50), 0, 100)), sub: (m.count || 0) + ' Vault movements' },
-      { id: 'g_span', title: 'Octave Coverage', score: spanScore, sub: safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves span' },
-      { id: 'g_turb', title: 'Collective Turbulence', score: turbScore, sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz mod peak' },
-      { id: 'g_wet', title: 'Aggregate Moisture', score: Math.round(clamp(safeNum(m.aggregateMoisturePct, 30), 0, 100)), sub: 'Combined Squelch Index' },
-      { id: 'g_blast', title: 'Combined Blast Risk', score: blastScore, sub: safeNum(m.combinedBlastRadiusM, 4).toFixed(1) + 'm cumulative zone' },
-      { id: 'g_dyn', title: 'Ensemble Dynamic Range', score: dynScore, sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak ratio' }
+      {
+        id: 'g_coh',
+        title: 'Symphonic Coherence',
+        score: cohScore,
+        sub: (m.count || 0) + ' Vault movements',
+        quip: cohScore >= 70 ? 'Disturbingly musical phrasing — sounds almost rehearsed.' : 'Wild tonal mood swings across movements, like an avant-garde brass rehearsal.'
+      },
+      {
+        id: 'g_span',
+        title: 'Vocal Range Span',
+        score: spanScore,
+        sub: safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves span',
+        quip: 'Covers ' + safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves around ' + Math.round(safeNum(m.meanPitchHz, 140)) + ' Hz average core.'
+      },
+      {
+        id: 'g_turb',
+        title: 'Collective Flutter BPM',
+        score: turbScore,
+        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmGroup + ' flaps/min)',
+        quip: bpmGroup >= 900 ? 'High-RPM collective cheek chatter across the ensemble.' : 'Steady low-frequency chamber rumble.'
+      },
+      {
+        id: 'g_wet',
+        title: 'Laundry Risk (Group Wetness)',
+        score: wetPct,
+        sub: 'Combined Squelch Index',
+        quip: wetPct >= 62 ? 'Hazmat mop warning! Check floorboards after listening.' : 'Mostly dry aerodynamic emissions — laundry remains safe.'
+      },
+      {
+        id: 'g_blast',
+        title: 'Cumulative Blast Zone',
+        score: blastScore,
+        sub: blastRad.toFixed(1) + 'm evacuation zone',
+        quip: blastRad >= 10 ? 'Zero elevator survival odds — evacuate a ' + blastRad.toFixed(1) + 'm perimeter.' : 'Containable within a medium conference room.'
+      },
+      {
+        id: 'g_dyn',
+        title: 'Dynamic Blast Shockwave',
+        score: dynScore,
+        sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak ratio',
+        quip: safeNum(feat.crestFactorDb, 0) >= 11 ? 'Explosive transient pops punctuate the medley.' : 'Mastered at smooth 44.1 kHz studio dynamics.'
+      }
     ];
 
     return raw.map(function (g) {
@@ -2413,7 +2642,13 @@
       '      <span class="labs-chip labs-chip-blue">' + esc(sortLabel) + '</span>' +
       '    </div>' +
       '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
-      '    <div class="forensics-commentary labs-single-commentary">' + esc(g.metrics.groupVerdict) + '</div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">CONDUCTOR\'S GASTRO-ACOUSTIC FIELD NOTES</span>' +
+      '        <span class="labs-verdict-grade">Studio Mastered · 44.1 kHz</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
+      '    </div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
@@ -2546,6 +2781,7 @@
   TootLabs.Fartnalysis = {
     gaugeStatus: gaugeStatus,
     classifyAcousticProfile: classifyAcousticProfile,
+    buildSingleFieldVerdict: buildSingleFieldVerdict,
     buildExecutiveGauges: buildExecutiveGauges,
     buildSingleGauges: buildSingleGauges,
     buildSingleDialReport: buildSingleDialReport,

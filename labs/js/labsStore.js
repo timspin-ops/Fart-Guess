@@ -193,7 +193,7 @@
         title: 'Unclassified',
         tier: 0,
         color: '#9CA3AF',
-        desc: 'Signal variance exceeds classification tolerance. Re-calibration advised.'
+        desc: 'Acoustic signature bears no legal resemblance to the crime scene. Did you even try?'
       };
     }
     if (s < 40) {
@@ -201,7 +201,7 @@
         title: 'Novice',
         tier: 1,
         color: '#FB7185',
-        desc: 'Rudimentary harmonic alignment detected. Fundamental airflow diverges.'
+        desc: 'Courageous cheek effort, wildly wrong frequency band. Back to the wind tunnel.'
       };
     }
     if (s < 60) {
@@ -209,7 +209,7 @@
         title: 'Capable',
         tier: 2,
         color: '#F97316',
-        desc: 'Recognizable envelope contour with moderate tonal or burst drift.'
+        desc: 'Recognizable blast silhouette, though your mid-toot wobble wandered off-script.'
       };
     }
     if (s < 80) {
@@ -217,7 +217,7 @@
         title: 'Skilled',
         tier: 3,
         color: '#60A5FA',
-        desc: 'Competent acoustic reconstruction across primary resonance bands.'
+        desc: 'Respectable vocal-tract forgery — close enough to fool a distracted bystander.'
       };
     }
     if (s < 90) {
@@ -225,7 +225,7 @@
         title: 'Expert',
         tier: 4,
         color: '#22C55E',
-        desc: 'High-precision vocal tract resonance modeling and flutter locking.'
+        desc: 'Uncanny cheek-flutter discipline and brass resonance. FBI audio labs are taking notes.'
       };
     }
     if (s < 95) {
@@ -233,14 +233,14 @@
         title: 'Elite',
         tier: 5,
         color: '#8B5CF6',
-        desc: 'Laboratory-grade spectral contour and pressure decay fidelity.'
+        desc: 'Alarmingly faithful bio-acoustic forgery. Almost indistinguishable in a blind elevator test.'
       };
     }
     return {
       title: 'Legendary',
       tier: 6,
       color: '#FACC15',
-      desc: 'Reference-grade biomechanical acoustic parity achieved.'
+      desc: 'Reference-grade porcelain virtuosity. You have achieved peak human wind-instrument parity.'
     };
   }
 
@@ -261,6 +261,11 @@
   function buildScientificVerdict(soundA, soundB, result, exactScore) {
     var fA = (soundA && soundA.features) || {};
     var fB = (soundB && soundB.features) || {};
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var bonus =
+      Forensics && typeof Forensics.computeBonusMetrics === 'function' && fA.bandProfile && fB.bandProfile
+        ? Forensics.computeBonusMetrics(fA, fB)
+        : null;
     var score = typeof exactScore === 'number' ? exactScore : computeExactScore(result);
     var pitchA = fA.voicedRatio >= 0.25 && fA.medianPitchHz > 0 ? Math.round(fA.medianPitchHz) + ' Hz' : Math.round(safeNum(fA.spectralCentroidHz, 220)) + ' Hz centroid';
     var pitchB = fB.voicedRatio >= 0.25 && fB.medianPitchHz > 0 ? Math.round(fB.medianPitchHz) + ' Hz' : Math.round(safeNum(fB.spectralCentroidHz, 220)) + ' Hz centroid';
@@ -269,71 +274,62 @@
     var envScore = safeNum(result && result.envelopeScore, 0);
     var timScore = safeNum(result && result.timbreScore, 0);
     var modScore = safeNum(result && result.modulationScore, 0);
+    var resTitle = (result && result.title) || 'Acoustic Event';
+    var grade = (result && result.grade) || 'B';
+    var mrA = Math.round(safeNum(fA.modRateHz, 0));
+    var bpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
+    var firstTip = result && result.tips && result.tips.length > 0 ? result.tips[0] : '';
+    var twinLine = bonus
+      ? ' Acoustic doppelgängers mapped to ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.short + '.'
+      : '';
+    var alibiLine = bonus
+      ? ' Confined-room radar calls this a ' + bonus.social.b.radiusM.toFixed(1) + 'm blast ("' + bonus.wetness.labelB + '").'
+      : '';
 
     if (score >= 95) {
       return (
-        'Match confidence is exceptionally high (' +
-        score.toFixed(1) +
-        '%). Acoustic signatures are nearly indistinguishable across fundamental resonance (' +
-        pitchB +
-        ' vs ' +
-        pitchA +
-        ') and ' +
-        durB +
-        ' blast topology.'
+        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Eerily forensic vocal-tract cloning! ' +
+        'Your ' + durB + ' mimicry nailed the ' + pitchA + ' brass core (logging ' + pitchB + ' at ' + bpmB + ' cheek flaps/min) and matched the tail sputter well enough to fail a courtroom alibi.' +
+        twinLine + alibiLine
       );
     }
     if (score >= 85) {
       var weakness =
         envScore <= timScore && envScore <= modScore
-          ? 'terminal airflow release decay'
+          ? 'terminal pressure decay ("trailing sputter discipline")'
           : modScore <= timScore
-          ? 'micro-flutter cadence'
-          : 'upper harmonic overtones';
+          ? 'cheek-flutter RPM (' + bpmB + ' flaps/min vs ' + (mrA * 60) + ' target)'
+          : 'upholstery resonance & upper overtones';
       return (
-        'The challenger successfully recreated the primary resonance event (' +
-        pitchB +
-        ' against ' +
-        pitchA +
-        ' reference). Minor deviations detected during ' +
-        weakness +
-        '.'
+        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Impressive acoustic impersonation! ' +
+        'You locked onto the ' + pitchA + ' target with ' + pitchB + ' across ' + durB + ', losing only trace telemetry points during ' + weakness + '.' +
+        twinLine + alibiLine
       );
     }
     if (score >= 70) {
       return (
-        'The laboratory observed strong tonal alignment and above-average pressure similarity across ' +
-        durB +
-        ' vs ' +
-        durA +
-        ' duration windows. Refinement of timbre (' +
-        timScore +
-        '%) could elevate classification tier.'
+        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Respectable room-fooling effort (' +
+        pitchB + ' over ' + durB + ' vs ' + pitchA + ' / ' + durA + ').' +
+        (firstTip ? ' Forensic note: ' + firstTip : '') +
+        ' Tighten embouchure curvature to bump timbre (' + timScore + '%) into Master Blaster territory.' +
+        twinLine
       );
     }
     if (score >= 50) {
       return (
-        'Moderate structural correlation logged: primary centroid tracked ' +
-        pitchB +
-        ' against the ' +
-        pitchA +
-        ' baseline, while envelope dynamics (' +
-        envScore +
-        '%) and flutter modulation (' +
-        modScore +
-        '%) diverged mid-event.'
+        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Partial witness confusion achieved: your ' +
+        pitchB + ' pass fluttered at ' + bpmB + ' flaps/min against the ' + pitchA + ' evidence, while pressure dynamics (' +
+        envScore + '%) and wobble cadence (' + modScore + '%) wandered.' +
+        (firstTip ? ' Primary divergence: ' + firstTip : '') +
+        alibiLine
       );
     }
     return (
-      'Forensic telemetry indicates substantial acoustic divergence between challenger emission (' +
-      pitchB +
-      ', ' +
-      durB +
-      ') and stored reference (' +
-      pitchA +
-      ', ' +
-      durA +
-      '). Recommend recalibrating embouchure tightness and airflow duration.'
+      'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Total gastro-acoustic alibi failure! Your ' +
+      durB + ' submission (' + pitchB + ', ' + bpmB + ' flaps/min) belongs to a completely different wind instrument than the ' +
+      durA + ' (' + pitchA + ') exhibit.' +
+      (firstTip ? ' Lab diagnosis: ' + firstTip : '') +
+      twinLine
     );
   }
 
@@ -832,24 +828,33 @@
     var totalDurationSec = combined.length / targetSr;
     var trackTitle = 'Vault Megamix — Opus in ' + count + ' Movement' + (count === 1 ? '' : 's');
 
+    var moistureNote =
+      aggregateMoisturePct >= 62
+        ? 'Hazmat Laundry Alert: collective moisture sits at ' + aggregateMoisturePct + '% — advise opening windows before pressing Play.'
+        : aggregateMoisturePct >= 38
+        ? 'Moderate ' + aggregateMoisturePct + '% squelch turbulence keeps the medley richly organic without triggering floor-mop protocols.'
+        : 'Remarkably desert-dry ensemble (' + aggregateMoisturePct + '% moisture) suitable for polite concert halls.';
+
     var groupVerdict =
-      'Synthesized ' +
+      'Conducted ' +
       count +
-      ' vault recordings into a continuous ' +
+      ' Vault specimens into a ' +
       totalDurationSec.toFixed(2) +
-      's coherent acoustic progression (' +
-      Math.round(meanPitchHz) +
-      ' Hz mean tone, ' +
-      pitchSpanOctaves.toFixed(2) +
-      ' octave range). Combined confined-room evacuation radius measured at ' +
-      combinedBlastRadiusM.toFixed(1) +
-      'm with ' +
-      coherenceScore +
-      '% ensemble coherence. Arranged by ' +
+      's continuous brass anthology, painstakingly arranged by ' +
       sortMeta.label +
       ' (' +
       (sortDir === 'desc' ? 'descending' : 'ascending') +
-      ').';
+      ') as though Carnegie Hall had requested it. ' +
+      'Ensemble spans ' +
+      pitchSpanOctaves.toFixed(2) +
+      ' octaves around a ' +
+      Math.round(meanPitchHz) +
+      ' Hz mean core (' +
+      coherenceScore +
+      '% symphonic coherence), commanding a cumulative ' +
+      combinedBlastRadiusM.toFixed(1) +
+      'm elevator evacuation zone. ' +
+      moistureNote;
 
     return {
       id: 'megamix_' + Date.now(),
@@ -889,12 +894,20 @@
         ? ' [' + Forensics.hzToNoteName(feat.medianPitchHz) + ']'
         : '';
 
+    var bpmMod = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var labNote =
+      bonus && bonus.wetness.wetA >= 65
+        ? 'Laundry Advisory: Hazardous bubble-flux turbulence detected — consider standing near an open window.'
+        : bonus && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? 'Institute Ruling: Harmonically committed enough to earn a seat near the back of a brass section.'
+        : 'Institute Ruling: Pure aerodynamic stealth turbulence — plausible office deniability remains intact.';
+
     var lines = [
       'TOOT MATCH — ' + (roleLabel || 'FORENSIC AUDIO DOSSIER'),
       'Specimen: ' + (sound.displayName || sound.name || 'Recording'),
       'Duration: ' + prof.durationLabel + ' | Profile: ' + (prof.profileTag || 'Acoustic Event'),
       'Primary Tone: ' + prof.pitchLabel + noteStr,
-      'Texture & Flutter: ' + prof.textureLabel + ' (Spectral Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz)',
+      'Texture & Flutter: ' + prof.textureLabel + ' (' + bpmMod + ' cheek flaps/min | Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz)',
       'Crest Dynamics: ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB | Attack ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms'
     ];
     if (bonus) {
@@ -902,6 +915,7 @@
       lines.push('Acoustic Twin: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name);
       lines.push('Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm | Alibi: ' + bonus.social.a.verdict);
     }
+    lines.push(labNote);
     return lines.join('\n');
   }
 

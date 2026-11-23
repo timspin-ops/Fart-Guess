@@ -459,6 +459,7 @@
         1360
       );
 
+      var bonusCmp = Forensics && typeof Forensics.computeBonusMetrics === 'function' ? Forensics.computeBonusMetrics(fA, fB) : null;
       drawRoundedCard(p1.ctx, 44, 1410, PAGE_W - 88, 280, 20, '#1F2937', '#374151');
       p1.ctx.fillStyle = '#F97316';
       p1.ctx.font = '700 18px monospace';
@@ -467,10 +468,15 @@
       p1.ctx.font = '600 19px sans-serif';
       drawWrappedText(
         p1.ctx,
-        'Measured Duration: ' + fA.duration.toFixed(2) + 's vs ' + fB.duration.toFixed(2) + 's. ' +
-        'Pitch Core: ' + Math.round(fA.medianPitchHz || fA.spectralCentroidHz) + ' Hz vs ' + Math.round(fB.medianPitchHz || fB.spectralCentroidHz) + ' Hz. ' +
-        'Crest Impact: ' + fA.crestFactorDb.toFixed(1) + ' dB vs ' + fB.crestFactorDb.toFixed(1) + ' dB. ' +
-        (exact >= 85 ? 'Both emissions belong to practically the same biomechanical acoustic family.' : 'Noticeable divergence logged — challenger needs tighter valve control.'),
+        'Rating: Grade ' + (res.grade || 'B') + ' (' + (res.title || 'Acoustic Event') + '). ' +
+        'Measured Duration: ' + fA.duration.toFixed(2) + 's vs ' + fB.duration.toFixed(2) + 's | ' +
+        'Pitch Core: ' + Math.round(fA.medianPitchHz || fA.spectralCentroidHz) + ' Hz vs ' + Math.round(fB.medianPitchHz || fB.spectralCentroidHz) + ' Hz | ' +
+        'Cheek Flutter: ' + Math.round(safeNum(fA.modRateHz, 0) * 60) + ' vs ' + Math.round(safeNum(fB.modRateHz, 0) * 60) + ' flaps/min. ' +
+        (bonusCmp
+          ? 'Laundry Advisory: ' + bonusCmp.wetness.wetA + '% (' + bonusCmp.wetness.labelA + ') vs ' + bonusCmp.wetness.wetB + '% (' + bonusCmp.wetness.labelB + '). ' +
+            'Sound Twins: ' + bonusCmp.acoustics.twinA.name + ' vs ' + bonusCmp.acoustics.twinB.name + '. ' +
+            'Guess Elevator Alibi: ' + bonusCmp.social.b.verdict
+          : exact >= 85 ? 'Both emissions belong to practically the same biomechanical acoustic family.' : 'Noticeable divergence logged — challenger needs tighter valve control.'),
         72,
         1490,
         PAGE_W - 144,
@@ -550,7 +556,7 @@
       p3.ctx.font = '600 19px sans-serif';
       drawWrappedText(
         p3.ctx,
-        'Toot Match runs a 100% private, offline 22-feature acoustic ML classifier directly in JavaScript with zero server uploads. First, STFT spectrograms, 13-band Mel-Frequency Cepstral Coefficients (MFCCs), Wiener flatness, modulation FFT, and blast crest ratio are extracted. Then temperature-scaled softmax distance scoring maps the vector onto 6 acoustic archetypes and checks MFCC + macro-contour alignment between Original and Guess.',
+        'Toot Match runs a 100% private, offline 22-feature acoustic ML classifier directly in JavaScript with zero server uploads. First, STFT spectrograms, 13-band Mel-Frequency Cepstral Coefficients (MFCCs), Wiener flatness, modulation FFT, and blast crest ratio are extracted. Then temperature-scaled softmax distance scoring maps the vector onto 6 acoustic archetypes and checks MFCC + macro-contour alignment between Original and Guess — all computed 100% locally so no cloud server has to explain this to its boss.',
         74,
         832,
         PAGE_W - 148,
@@ -634,7 +640,7 @@
       gp2.ctx.font = '600 19px sans-serif';
       drawWrappedText(
         gp2.ctx,
-        'Every saved Vault recording is resampled cleanly to 44.1 kHz, micro-faded at 8ms boundaries, and stitched with 0.18s silent pauses. Coherence scores measure octave continuity across movements, RMS crest dynamic range, and cumulative blast spread.',
+        'Every saved Vault recording is resampled cleanly to 44.1 kHz, micro-faded at 8ms boundaries, and stitched with 0.18s silent pauses. Coherence scores measure octave continuity across movements, RMS crest dynamic range, and cumulative blast spread — giving a medley of farts the studio mastering dignity Carnegie Hall never asked for.',
         72,
         1314,
         PAGE_W - 144,
@@ -693,20 +699,25 @@
       5
     );
 
+    var singleFieldSummary =
+      typeof Fn.buildSingleFieldVerdict === 'function'
+        ? Fn.buildSingleFieldVerdict(s, feat, bonus, ml)
+        : 'Wetness telemetry clocked ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + '). Peak crest hit ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB in ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms across ' + (feat.burstCount || 1) + ' burst(s). ' + ml.topClass.description;
+
     drawRoundedCard(sp1.ctx, 44, 1410, PAGE_W - 88, 280, 20, '#1F2937', '#374151');
     sp1.ctx.fillStyle = '#60A5FA';
     sp1.ctx.font = '700 18px monospace';
-    sp1.ctx.fillText('PLAIN-ENGLISH ACOUSTIC & HUMOROUS SUMMARY', 72, 1450);
+    sp1.ctx.fillText('OFFICIAL GASTRO-ACOUSTIC FIELD REPORT', 72, 1450);
     sp1.ctx.fillStyle = '#D1D5DB';
     sp1.ctx.font = '600 19px sans-serif';
     drawWrappedText(
       sp1.ctx,
-      'Wetness telemetry clocked ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + '). Peak crest hit ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB in ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms across ' + (feat.burstCount || 1) + ' burst(s). ' + ml.topClass.description,
+      singleFieldSummary,
       72,
       1492,
       PAGE_W - 144,
       29,
-      5
+      6
     );
     drawPdfFooter(sp1.ctx);
     pushPageCanvas(sp1);
@@ -754,7 +765,7 @@
     sp3.ctx.font = '600 19px sans-serif';
     drawWrappedText(
       sp3.ctx,
-      ml.methodologyNote + ' Measured Input Vector -> Pitch/Centroid: ' + ml.featureVector.pitchHz + ' Hz, Sub-Bass: ' + ml.featureVector.subBandPct + '%, Flatness: ' + ml.featureVector.flatnessPct + '%, Flutter: ' + ml.featureVector.modDepthPct + '%, Bursts: ' + ml.featureVector.bursts + ', Crest: ' + ml.featureVector.crestDb + ' dB, Wetness: ' + ml.featureVector.wetnessPct + '%.',
+      ml.methodologyNote + ' Measured Input Vector -> Pitch/Centroid: ' + ml.featureVector.pitchHz + ' Hz, Sub-Bass: ' + ml.featureVector.subBandPct + '%, Flatness: ' + ml.featureVector.flatnessPct + '%, Flutter: ' + ml.featureVector.modDepthPct + '%, Bursts: ' + ml.featureVector.bursts + ', Crest: ' + ml.featureVector.crestDb + ' dB, Wetness: ' + ml.featureVector.wetnessPct + '%. Computed 100% locally so no cloud server ever has to explain this to its boss.',
       74,
       910,
       PAGE_W - 148,
