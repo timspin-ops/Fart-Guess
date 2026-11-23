@@ -2100,3 +2100,424 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ==================== GUESS-CENTRIC WORKFLOW ADDITIONS ==================== */
+.labs-wrap-bar {
+  flex-wrap: wrap;
+}
+
+/* Instant Top-Bar Quick Record Button & Capture Drawer */
+.labs-quick-rec-btn {
+  border: 1px solid rgba(134, 239, 172, 0.5);
+  background: var(--primary);
+  color: #052E16;
+  border-radius: 10px;
+  padding: 7px 13px;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(34, 197, 94, 0.32);
+  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.labs-quick-rec-btn:hover:not(:disabled) {
+  background: #4ADE80;
+}
+
+.labs-quick-rec-btn.recording {
+  background: var(--danger);
+  border-color: #FDA4AF;
+  color: #FFFFFF;
+  box-shadow: 0 0 18px rgba(251, 113, 133, 0.5);
+  animation: recRingPulse 0.9s infinite alternate;
+}
+
+.labs-quick-bar {
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border-color: rgba(34, 197, 94, 0.45);
+  animation: panelReveal 0.2s ease;
+}
+
+.labs-quick-capture-row,
+.labs-quick-saved-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.labs-quick-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.labs-quick-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 10px var(--danger);
+}
+
+.labs-quick-timer {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.labs-quick-wave {
+  flex: 1;
+  min-width: 160px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--bg-sec);
+  border: 1px solid var(--border);
+}
+
+.labs-quick-saved-title {
+  font-size: 0.92rem;
+  color: var(--text-sec);
+}
+
+.labs-quick-saved-title strong {
+  color: var(--primary);
+}
+
+.labs-quick-saved-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Home 3 Primary Action Cards */
+.labs-action-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (min-width: 720px) {
+  .labs-action-cards-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+.labs-action-card {
+  position: relative;
+  text-align: left;
+  background: var(--card-glass);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px 18px;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  transition: transform 0.14s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.labs-action-card:hover {
+  transform: translateY(-2px);
+}
+
+.labs-action-card:active {
+  transform: scale(0.985);
+}
+
+.labs-ac-emerald {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: linear-gradient(155deg, rgba(34, 197, 94, 0.18), rgba(31, 41, 55, 0.85));
+}
+
+.labs-ac-orange {
+  border-color: rgba(249, 115, 22, 0.55);
+  background: linear-gradient(155deg, rgba(249, 115, 22, 0.18), rgba(31, 41, 55, 0.85));
+}
+
+.labs-ac-blue {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: linear-gradient(155deg, rgba(96, 165, 250, 0.18), rgba(31, 41, 55, 0.85));
+}
+
+.labs-ac-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.labs-ac-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.labs-ac-desc {
+  font-size: 0.84rem;
+  color: var(--text-sec);
+  line-height: 1.4;
+}
+
+/* Vault Controls & 6-Action Grid */
+.labs-vault-top-btns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-vc-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.labs-vc-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-sec);
+  color: var(--text-sec);
+  border-radius: 10px;
+  padding: 7px 6px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.labs-vc-btn:hover {
+  border-color: var(--info);
+  color: var(--text);
+  background: var(--card);
+}
+
+.labs-vc-btn.vc-play {
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #BFDBFE;
+}
+
+.labs-vc-btn.vc-guess {
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #FED7AA;
+}
+
+.labs-vc-btn.vc-analyze {
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #DDD6FE;
+}
+
+/* Guess Mode Name Input & Multi-Player Leaderboard */
+.labs-guesser-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.labs-guesser-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-sec);
+}
+
+.labs-guesser-input {
+  flex: 1;
+  min-width: 170px;
+}
+
+.labs-leaderboard-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.labs-winner-banner {
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.18), rgba(34, 197, 94, 0.14));
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  color: #FEF08A;
+  font-weight: 800;
+  font-size: 0.96rem;
+}
+
+.labs-rank-medal {
+  font-size: 1.35rem;
+  min-width: 28px;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* Fartnalysis 4-Mode Switcher & Pickers */
+.labs-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+@media (min-width: 720px) {
+  .labs-mode-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.labs-mode-tab {
+  border: 1px solid var(--border);
+  background: var(--bg-sec);
+  color: var(--text-sec);
+  border-radius: 12px;
+  padding: 10px 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.labs-mode-tab.active {
+  background: var(--highlight);
+  border-color: var(--highlight);
+  color: #FFFFFF;
+  box-shadow: 0 6px 18px rgba(139, 92, 246, 0.3);
+}
+
+.labs-fn-pickers {
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.labs-fn-right-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.labs-fn-header-btns,
+.labs-fn-single-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Single & Group Forensic Charts */
+.labs-single-dossier {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.labs-single-facts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.labs-fact-box {
+  background: var(--bg-sec);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labs-fact-box span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.labs-fact-box strong {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.labs-single-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.labs-chart-box {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.labs-chart-box-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-chart-box-head span {
+  font-weight: 800;
+  font-size: 0.94rem;
+}
+
+.labs-chart-box-head small {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.labs-2d-canvas {
+  width: 100%;
+  height: 195px;
+  border-radius: 12px;
+  display: block;
+}
+
+.labs-single-spec-canvas {
+  height: 280px;
+}
+
+/* Multi-Fart Megamix Movement Pills */
+.labs-seg-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-seg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-sec);
+  font-size: 0.76rem;
+  color: var(--text);
+}
+
+.labs-seg-pill small {
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
+
+.labs-seg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}

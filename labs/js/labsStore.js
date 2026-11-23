@@ -576,7 +576,8 @@
     });
   }
 
-  function recordChallengeResult(soundA, attemptSound, result) {
+  function recordChallengeResult(soundA, attemptSound, result, opts) {
+    opts = opts || {};
     var storage = root.TootApp && root.TootApp.Storage;
     var meta = loadMeta();
     var sampleMeta = ensureSampleMeta(soundA);
@@ -589,6 +590,8 @@
     var verdict = buildScientificVerdict(soundA, attemptSound, result, exactScore);
     var isPersonalBest = exactScore > prevBest;
     var nextAttemptNum = (sampleMeta.attemptCount || 0) + 1;
+    var customGuesser = String(opts.guesserName || '').trim();
+    var guesserLabel = customGuesser || 'Guesser ' + nextAttemptNum;
 
     sampleMeta.previousScore = prevLatest;
     sampleMeta.latestScore = exactScore;
@@ -609,7 +612,7 @@
     var attemptObj = {
       id: attemptSound.id || ('att_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
       sampleId: soundA.id,
-      name: 'Attempt #' + nextAttemptNum,
+      name: guesserLabel,
       emoji: '🎤',
       attemptNum: nextAttemptNum,
       createdAt: Date.now(),
@@ -643,6 +646,242 @@
         sampleStats: getSampleStats(soundA.id)
       };
     });
+  }
+
+  function renameAttempt(attemptObj, nextName) {
+    var clean = String(nextName || '').trim();
+    if (!attemptObj || !clean) return Promise.resolve(attemptObj);
+    attemptObj.name = clean;
+    return saveAttemptRecord(attemptObj);
+  }
+
+  /* ==================== MULTI-FART COHERENT MEGAMIX & REPORTS ==================== */
+  var SEGMENT_COLORS = ['#22C55E', '#60A5FA', '#F97316', '#8B5CF6', '#FACC15', '#FB7185', '#34D399', '#38BDF8'];
+
+  function composeMultiFartTrack(samplesList) {
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var valid = (samplesList || []).filter(function (s) {
+      return s && s.samples && s.samples.length > 0;
+    });
+    if (valid.length === 0) return null;
+
+    var targetSr = 44100;
+    var gapSamples = Math.round(targetSr * 0.18);
+    var fadeSamples = Math.round(targetSr * 0.008);
+    var prepared = [];
+    var totalLen = 0;
+
+    for (var i = 0; i < valid.length; i++) {
+      var s = valid[i];
+      var srcSr = s.sampleRate || targetSr;
+      var buf;
+      if (srcSr !== targetSr && DSP && typeof DSP.resampleAudio === 'function') {
+        buf = DSP.resampleAudio(s.samples, srcSr / targetSr, targetSr);
+      } else {
+        buf = new Float32Array(s.samples);
+      }
+
+      // Micro-fade edges (8ms) to avoid clicks between combined farts
+      var fLen = Math.min(fadeSamples, Math.floor(buf.length * 0.25));
+      for (var fi = 0; fi < fLen; fi++) {
+        var w = fi / Math.max(1, fLen);
+        buf[fi] *= w;
+        buf[buf.length - 1 - fi] *= w;
+      }
+
+      var feat = s.features || (DSP ? DSP.extractFeatures(s.samples, srcSr) : null);
+      if (!s.features && feat) s.features = feat;
+      var bonus = Forensics && feat ? Forensics.computeBonusMetrics(feat, feat) : null;
+
+      prepared.push({
+        sound: s,
+        name: ensureNickname(s),
+        buf: buf,
+        feat: feat || {},
+        wetnessPct: bonus ? bonus.wetness.wetA : 20,
+        radiusM: bonus ? bonus.social.a.radiusM : 4.0,
+        twin: bonus ? bonus.acoustics.twinA : { short: 'Anomaly', emoji: '🔊' }
+      });
+
+      totalLen += buf.length;
+      if (i < valid.length - 1) totalLen += gapSamples;
+    }
+
+    var combined = new Float32Array(Math.max(1, totalLen));
+    var segments = [];
+    var cursor = 0;
+    var peak = 0;
+
+    for (var j = 0; j < prepared.length; j++) {
+      var item = prepared[j];
+      var startSec = cursor / targetSr;
+      for (var k = 0; k < item.buf.length; k++) {
+        var val = item.buf[k];
+        combined[cursor + k] = val;
+        var a = Math.abs(val);
+        if (a > peak) peak = a;
+      }
+      cursor += item.buf.length;
+      var endSec = cursor / targetSr;
+
+      var effHz =
+        item.feat.voicedRatio >= 0.25 && item.feat.medianPitchHz > 0
+          ? item.feat.medianPitchHz
+          : safeNum(item.feat.spectralCentroidHz, 220);
+
+      segments.push({
+        id: item.sound.id,
+        name: item.name,
+        startSec: startSec,
+        endSec: endSec,
+        durationSec: endSec - startSec,
+        color: SEGMENT_COLORS[j % SEGMENT_COLORS.length],
+        pitchHz: effHz,
+        flatness: safeNum(item.feat.spectralFlatness, 0.3),
+        modRateHz: safeNum(item.feat.modRateHz, 10),
+        wetnessPct: item.wetnessPct,
+        radiusM: item.radiusM,
+        twin: item.twin
+      });
+
+      if (j < prepared.length - 1) cursor += gapSamples;
+    }
+
+    if (peak > 1e-5) {
+      var scale = 0.9 / peak;
+      for (var n = 0; n < combined.length; n++) {
+        combined[n] *= scale;
+      }
+    }
+
+    var compFeatures = DSP ? DSP.extractFeatures(combined, targetSr) : null;
+    var minHz = Infinity;
+    var maxHz = 0;
+    var sumHz = 0;
+    var sumWet = 0;
+    var maxRad = 0;
+    var sumRadSq = 0;
+
+    for (var m = 0; m < segments.length; m++) {
+      var seg = segments[m];
+      if (seg.pitchHz > 0 && seg.pitchHz < minHz) minHz = seg.pitchHz;
+      if (seg.pitchHz > maxHz) maxHz = seg.pitchHz;
+      sumHz += seg.pitchHz;
+      sumWet += seg.wetnessPct;
+      if (seg.radiusM > maxRad) maxRad = seg.radiusM;
+      sumRadSq += seg.radiusM * seg.radiusM;
+    }
+
+    var count = segments.length;
+    var meanPitchHz = sumHz / Math.max(1, count);
+    var pitchSpanOctaves = minHz > 0 && maxHz > minHz ? Math.log2(maxHz / minHz) : 0;
+    var aggregateMoisturePct = Math.round(sumWet / Math.max(1, count));
+    var combinedBlastRadiusM = Number(Math.min(28, Math.sqrt(sumRadSq) * 0.85 + maxRad * 0.25).toFixed(1));
+    var coherenceScore = Math.round(
+      clamp(92 - pitchSpanOctaves * 18 - Math.abs(aggregateMoisturePct - 45) * 0.22, 18, 99)
+    );
+    var totalDurationSec = combined.length / targetSr;
+    var trackTitle = 'Vault Megamix — Opus in ' + count + ' Movement' + (count === 1 ? '' : 's');
+
+    var groupVerdict =
+      'Synthesized ' +
+      count +
+      ' vault recordings into a continuous ' +
+      totalDurationSec.toFixed(2) +
+      's coherent acoustic progression (' +
+      Math.round(meanPitchHz) +
+      ' Hz mean tone, ' +
+      pitchSpanOctaves.toFixed(2) +
+      ' octave range). Combined confined-room evacuation radius measured at ' +
+      combinedBlastRadiusM.toFixed(1) +
+      'm with ' +
+      coherenceScore +
+      '% ensemble coherence.';
+
+    return {
+      id: 'megamix_' + Date.now(),
+      name: trackTitle,
+      displayName: trackTitle,
+      createdAt: Date.now(),
+      sampleRate: targetSr,
+      samples: combined,
+      features: compFeatures,
+      segments: segments,
+      metrics: {
+        count: count,
+        totalDurationSec: totalDurationSec,
+        meanPitchHz: meanPitchHz,
+        pitchSpanOctaves: pitchSpanOctaves,
+        aggregateMoisturePct: aggregateMoisturePct,
+        combinedBlastRadiusM: combinedBlastRadiusM,
+        coherenceScore: coherenceScore,
+        groupVerdict: groupVerdict
+      }
+    };
+  }
+
+  function buildSingleAnalysisReportText(sound, roleLabel) {
+    if (!sound) return '';
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var feat = sound.features || (DSP ? DSP.extractFeatures(sound.samples, sound.sampleRate) : {});
+    if (!sound.features) sound.features = feat;
+    var prof = DSP ? DSP.describeSoundProfile(feat) : { durationLabel: '—', pitchLabel: '—', textureLabel: '—' };
+    var bonus = Forensics ? Forensics.computeBonusMetrics(feat, feat) : null;
+    var noteStr =
+      Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+        ? ' [' + Forensics.hzToNoteName(feat.medianPitchHz) + ']'
+        : '';
+
+    var lines = [
+      'TOOT MATCH — ' + (roleLabel || 'FORENSIC AUDIO DOSSIER'),
+      'Specimen: ' + (sound.displayName || sound.name || 'Recording'),
+      'Duration: ' + prof.durationLabel + ' | Profile: ' + (prof.profileTag || 'Acoustic Event'),
+      'Primary Tone: ' + prof.pitchLabel + noteStr,
+      'Texture & Flutter: ' + prof.textureLabel + ' (Spectral Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz)',
+      'Crest Dynamics: ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB | Attack ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms'
+    ];
+    if (bonus) {
+      lines.push('Moisture / Squelch Index: ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ')');
+      lines.push('Acoustic Twin: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name);
+      lines.push('Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm | Alibi: ' + bonus.social.a.verdict);
+    }
+    return lines.join('\n');
+  }
+
+  function buildComparisonReportText(soundA, soundB, result, exactScore) {
+    if (!soundA || !soundB || !result) return '';
+    var exact = typeof exactScore === 'number' ? exactScore : computeExactScore(result);
+    var rank = getRankForScore(exact);
+    var reward = getRewardTier(exact);
+    var verdict = buildScientificVerdict(soundA, soundB, result, exact);
+    return [
+      'TOOT MATCH — GUESS COMPARISON REPORT',
+      'Original Fart: ' + (soundA.displayName || soundA.name || 'Original'),
+      'Guesser: ' + (soundB.name || 'Guesser'),
+      'Match Quality: ' + exact.toFixed(1) + '% | Rank: ' + rank.title + ' (' + reward.bells + '/5 Stars)',
+      'Metrics: Duration ' + result.durationScore + '% | Tone ' + result.pitchScore + '% | Flutter ' + result.modulationScore + '% | Resonance ' + result.timbreScore + '% | Pressure ' + result.envelopeScore + '%',
+      'Scientific Verdict: ' + verdict
+    ].join('\n');
+  }
+
+  function buildGroupAnalysisReportText(groupObj) {
+    if (!groupObj || !groupObj.metrics) return '';
+    var m = groupObj.metrics;
+    var tracks = (groupObj.segments || [])
+      .map(function (seg, idx) {
+        return '  ' + (idx + 1) + '. ' + seg.name + ' (' + seg.startSec.toFixed(2) + 's–' + seg.endSec.toFixed(2) + 's, ~' + Math.round(seg.pitchHz) + ' Hz, Wetness ' + seg.wetnessPct + '%)';
+      })
+      .join('\n');
+    return [
+      'TOOT MATCH — MULTI-FART COHERENT MEGAMIX REPORT',
+      'Track: ' + groupObj.name,
+      'Movements: ' + m.count + ' | Total Duration: ' + m.totalDurationSec.toFixed(2) + 's | Coherence Score: ' + m.coherenceScore + '%',
+      'Aggregate Moisture: ' + m.aggregateMoisturePct + '% | Combined Blast Radius: ' + m.combinedBlastRadiusM.toFixed(1) + 'm',
+      'Tracklist:\n' + tracks,
+      'Verdict: ' + m.groupVerdict
+    ].join('\n');
   }
 
   function getSampleStats(sampleId) {
@@ -708,6 +947,11 @@
     renameSample: renameSample,
     deleteSample: deleteSample,
     recordChallengeResult: recordChallengeResult,
+    renameAttempt: renameAttempt,
+    composeMultiFartTrack: composeMultiFartTrack,
+    buildSingleAnalysisReportText: buildSingleAnalysisReportText,
+    buildComparisonReportText: buildComparisonReportText,
+    buildGroupAnalysisReportText: buildGroupAnalysisReportText,
     loadAttemptsForSample: loadAttemptsForSample,
     getSampleStats: getSampleStats,
     getSummaryStats: getSummaryStats
