@@ -410,9 +410,9 @@
           '" data-sticker-id="' +
           esc(s.id) +
           '">' +
-          '  <button type="button" class="rail-fart-main" data-fart-id="' +
+          '<button type="button" class="rail-fart-main" data-fart-id="' +
           esc(s.id) +
-          '" title="Tap to load • Double-tap to play">' +
+          '" title="Tap to load &amp; play">' +
           esc(s.name) +
           '</button>' +
           '  <button type="button" class="rail-fart-del" data-del-id="' +
@@ -431,25 +431,20 @@
         });
         if (!found) return;
 
-        var now = Date.now();
-        var isDoubleTap = g.lastRailTapId === id && now - g.lastRailTapAt < 380;
+        loadActualFart(found);
+        TootApp.Audio.playSound(found.samples, found.sampleRate, { channel: 'rail_preview' });
 
-        if (isDoubleTap) {
-          g.lastRailTapId = null;
-          g.lastRailTapAt = 0;
-          TootApp.Audio.playSound(found.samples, found.sampleRate, { channel: 'rail_preview' });
-          var itemEl = this.parentElement;
-          if (itemEl) {
-            itemEl.classList.add('playing-flash');
-            setTimeout(function () {
-              itemEl.classList.remove('playing-flash');
-            }, 650);
+        var freshItems = listEl.querySelectorAll('.rail-fart-item');
+        for (var i = 0; i < freshItems.length; i++) {
+          if (freshItems[i].getAttribute('data-sticker-id') === found.id) {
+            (function (el) {
+              el.classList.add('playing-flash');
+              setTimeout(function () {
+                el.classList.remove('playing-flash');
+              }, 650);
+            })(freshItems[i]);
+            break;
           }
-          showToast('Playing "' + found.name + '"');
-        } else {
-          g.lastRailTapId = id;
-          g.lastRailTapAt = now;
-          loadActualFart(found);
         }
       });
     });
