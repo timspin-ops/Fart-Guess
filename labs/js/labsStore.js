@@ -658,7 +658,40 @@
   /* ==================== MULTI-FART COHERENT MEGAMIX & REPORTS ==================== */
   var SEGMENT_COLORS = ['#22C55E', '#60A5FA', '#F97316', '#8B5CF6', '#FACC15', '#FB7185', '#34D399', '#38BDF8'];
 
-  function composeMultiFartTrack(samplesList) {
+  var GROUP_SORT_OPTIONS = [
+    { key: 'pitch', label: 'Pitch (Hz)', unit: 'Hz' },
+    { key: 'wetness', label: 'Wetness / Squelch (%)', unit: '%' },
+    { key: 'duration', label: 'Duration (s)', unit: 's' },
+    { key: 'crest', label: 'Loudness / Crest (dB)', unit: 'dB' },
+    { key: 'radius', label: 'Blast Radius (m)', unit: 'm' },
+    { key: 'flutter', label: 'Flutter Rate (Hz)', unit: 'Hz' },
+    { key: 'date', label: 'Date Recorded', unit: '' }
+  ];
+
+  function getGroupSortMeta(sortKey) {
+    for (var i = 0; i < GROUP_SORT_OPTIONS.length; i++) {
+      if (GROUP_SORT_OPTIONS[i].key === sortKey) return GROUP_SORT_OPTIONS[i];
+    }
+    return GROUP_SORT_OPTIONS[0];
+  }
+
+  function getPreparedSortValue(item, key) {
+    if (key === 'wetness') return item.wetnessPct;
+    if (key === 'duration') return item.durationSec;
+    if (key === 'crest') return item.crestDb;
+    if (key === 'radius') return item.radiusM;
+    if (key === 'flutter') return item.modRateHz;
+    if (key === 'date') return item.createdAt;
+    return item.pitchHz;
+  }
+
+  function composeMultiFartTrack(samplesList, opts) {
+    opts = opts || {};
+    var sortMeta = getGroupSortMeta(opts.sortBy);
+    var sortBy = sortMeta.key;
+    var sortDir = opts.sortDir === 'desc' ? 'desc' : 'asc';
+    var sortLabel = sortMeta.label + ' · ' + (sortDir === 'desc' ? 'Descending' : 'Ascending');
+
     var DSP = root.TootApp && root.TootApp.DSP;
     var Forensics = root.TootApp && root.TootApp.Forensics;
     var valid = (samplesList || []).filter(function (s) {
@@ -693,20 +726,38 @@
       var feat = s.features || (DSP ? DSP.extractFeatures(s.samples, srcSr) : null);
       if (!s.features && feat) s.features = feat;
       var bonus = Forensics && feat ? Forensics.computeBonusMetrics(feat, feat) : null;
+      var effHz =
+        feat && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
+          ? feat.medianPitchHz
+          : safeNum(feat && feat.spectralCentroidHz, 220);
 
       prepared.push({
         sound: s,
         name: ensureNickname(s),
         buf: buf,
         feat: feat || {},
+        pitchHz: effHz,
+        durationSec: buf.length / targetSr,
         wetnessPct: bonus ? bonus.wetness.wetA : 20,
+        crestDb: safeNum(feat && feat.crestFactorDb, 0),
         radiusM: bonus ? bonus.social.a.radiusM : 4.0,
+        modRateHz: safeNum(feat && feat.modRateHz, 0),
+        createdAt: safeNum(s.createdAt, i),
+        origIndex: i,
         twin: bonus ? bonus.acoustics.twinA : { short: 'Anomaly', emoji: '🔊' }
       });
 
       totalLen += buf.length;
       if (i < valid.length - 1) totalLen += gapSamples;
     }
+
+    var dirMult = sortDir === 'desc' ? -1 : 1;
+    prepared.sort(function (a, b) {
+      var va = getPreparedSortValue(a, sortBy);
+      var vb = getPreparedSortValue(b, sortBy);
+      if (va !== vb) return (va - vb) * dirMult;
+      return a.origIndex - b.origIndex;
+    });
 
     var combined = new Float32Array(Math.max(1, totalLen));
     var segments = [];
@@ -725,11 +776,6 @@
       cursor += item.buf.length;
       var endSec = cursor / targetSr;
 
-      var effHz =
-        item.feat.voicedRatio >= 0.25 && item.feat.medianPitchHz > 0
-          ? item.feat.medianPitchHz
-          : safeNum(item.feat.spectralCentroidHz, 220);
-
       segments.push({
         id: item.sound.id,
         name: item.name,
@@ -737,11 +783,13 @@
         endSec: endSec,
         durationSec: endSec - startSec,
         color: SEGMENT_COLORS[j % SEGMENT_COLORS.length],
-        pitchHz: effHz,
+        pitchHz: item.pitchHz,
         flatness: safeNum(item.feat.spectralFlatness, 0.3),
-        modRateHz: safeNum(item.feat.modRateHz, 10),
+        modRateHz: item.modRateHz,
         wetnessPct: item.wetnessPct,
+        crestDb: item.crestDb,
         radiusM: item.radiusM,
+        createdAt: item.createdAt,
         twin: item.twin
       });
 
@@ -797,7 +845,11 @@
       combinedBlastRadiusM.toFixed(1) +
       'm with ' +
       coherenceScore +
-      '% ensemble coherence.';
+      '% ensemble coherence. Arranged by ' +
+      sortMeta.label +
+      ' (' +
+      (sortDir === 'desc' ? 'descending' : 'ascending') +
+      ').';
 
     return {
       id: 'megamix_' + Date.now(),
@@ -816,6 +868,9 @@
         aggregateMoisturePct: aggregateMoisturePct,
         combinedBlastRadiusM: combinedBlastRadiusM,
         coherenceScore: coherenceScore,
+        sortBy: sortBy,
+        sortDir: sortDir,
+        sortLabel: sortLabel,
         groupVerdict: groupVerdict
       }
     };
@@ -877,6 +932,7 @@
     return [
       'TOOT MATCH — MULTI-FART COHERENT MEGAMIX REPORT',
       'Track: ' + groupObj.name,
+      'Arrangement: ' + (m.sortLabel || 'Default'),
       'Movements: ' + m.count + ' | Total Duration: ' + m.totalDurationSec.toFixed(2) + 's | Coherence Score: ' + m.coherenceScore + '%',
       'Aggregate Moisture: ' + m.aggregateMoisturePct + '% | Combined Blast Radius: ' + m.combinedBlastRadiusM.toFixed(1) + 'm',
       'Tracklist:\n' + tracks,
@@ -936,6 +992,7 @@
   TootLabs.Store = {
     SPECIMEN_NICKNAMES: SPECIMEN_NICKNAMES,
     LEGENDARY_TITLES: LEGENDARY_TITLES,
+    GROUP_SORT_OPTIONS: GROUP_SORT_OPTIONS,
     ensureNickname: ensureNickname,
     computeExactScore: computeExactScore,
     getRankForScore: getRankForScore,

@@ -2554,3 +2554,245 @@ select {
   height: 8px;
   border-radius: 50%;
 }
+
+/* Unified Fartnalysis Card, Expandable Telemetry Rows & Combined Sorting */
+.labs-analysis-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.labs-analysis-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.labs-analysis-divider {
+  border: none;
+  border-top: 1px solid rgba(55, 65, 81, 0.7);
+  margin: 4px 0;
+}
+
+.labs-metric-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-metric-item {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.labs-metric-item.open {
+  border-color: var(--info);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.labs-metric-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.labs-metric-row:hover {
+  background: rgba(96, 165, 250, 0.08);
+}
+
+.labs-metric-row.labs-metric-row-static {
+  cursor: default;
+}
+
+.labs-metric-row.labs-metric-row-static:hover {
+  background: transparent;
+}
+
+.labs-metric-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.labs-metric-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.labs-metric-sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-sec);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.labs-metric-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.labs-metric-bar-track {
+  width: 84px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(55, 65, 81, 0.85);
+  overflow: hidden;
+}
+
+.labs-metric-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.labs-metric-score {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 800;
+  min-width: 38px;
+  text-align: right;
+}
+
+.labs-metric-chevron {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.labs-metric-item.open .labs-metric-chevron {
+  transform: rotate(90deg);
+  color: var(--info);
+}
+
+.labs-row-accordion {
+  padding: 14px;
+  border-top: 1px solid rgba(55, 65, 81, 0.75);
+  background: rgba(11, 18, 34, 0.72);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: panelReveal 0.2s ease;
+}
+
+.labs-acc-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.labs-chart-box-inner {
+  background: #0B1222;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-group-wave-wrap {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(55, 65, 81, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-sort-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(55, 65, 81, 0.55);
+}
+
+.labs-sort-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 190px;
+}
+
+.labs-sort-field span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.labs-g-sort-by {
+  background: var(--bg-sec);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.labs-dir-group {
+  display: flex;
+  gap: 6px;
+}
+
+.labs-dir-btn {
+  border: 1px solid var(--border);
+  background: var(--bg-sec);
+  color: var(--text-sec);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.labs-dir-btn.active {
+  background: var(--highlight);
+  border-color: var(--highlight);
+  color: #FFFFFF;
+}
+
+@media (max-width: 560px) {
+  .labs-metric-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .labs-metric-right {
+    width: 100%;
+  }
+  .labs-metric-bar-track {
+    flex: 1;
+    min-width: 60px;
+  }
+}

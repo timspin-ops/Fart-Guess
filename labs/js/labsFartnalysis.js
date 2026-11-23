@@ -251,54 +251,35 @@
     var labelB = opts.labelB || soundB.displayName || soundB.name || 'Attempt';
     var exactScore = root.TootLabs.Store ? root.TootLabs.Store.computeExactScore(result) : result.overall;
 
+    var rowItems = gauges.slice();
+    if (bonus && bonus.acoustics) {
+      var twinScore = Math.round(clamp(safeNum(bonus.acoustics.matchScore, 0), 0, 100));
+      var twinSt = gaugeStatus(twinScore);
+      rowItems.push({
+        id: 'acoustics',
+        title: 'Cheek Resonance & Sound Twin',
+        score: twinScore,
+        sub: bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.short,
+        forensicsKey: 'acoustics',
+        note: 'Multi-archetype acoustic twin matching comparing pitch, flatness, and modulation dynamics.',
+        status: twinSt.label,
+        color: twinSt.color,
+        tone: twinSt.tone
+      });
+    }
+
     var uid = 'lf_' + (++gaugeUid) + '_';
     var chanA = uid + 'A';
     var chanB = uid + 'B';
     var sync3d = true;
     var colormap = opts.colormap || 'plasma';
-    var activeGaugeId = opts.initialGaugeId || null;
+    var activeRowId = opts.initialGaugeId || null;
     var activeForensicsKey = null;
+    var activeMountEl = null;
     var specA = null;
     var specB = null;
 
-    var rGauge = 34;
-    var cGauge = 2 * Math.PI * rGauge;
-
-    var gaugesHtml = gauges
-      .map(function (g) {
-        var offset = cGauge * (1 - g.score / 100);
-        return (
-          '<button type="button" class="labs-gauge-card" data-gauge-id="' +
-          esc(g.id) +
-          '" data-fkey="' +
-          esc(g.forensicsKey) +
-          '">' +
-          '  <div class="labs-gauge-ring-wrap">' +
-          '    <svg class="labs-gauge-svg" viewBox="0 0 84 84" aria-hidden="true">' +
-          '      <circle class="labs-gauge-track" cx="42" cy="42" r="' + rGauge + '"></circle>' +
-          '      <circle class="labs-gauge-fill" data-target-offset="' +
-          offset.toFixed(2) +
-          '" cx="42" cy="42" r="' +
-          rGauge +
-          '" stroke="' +
-          g.color +
-          '" stroke-dasharray="' +
-          cGauge.toFixed(2) +
-          '" stroke-dashoffset="' +
-          cGauge.toFixed(2) +
-          '"></circle>' +
-          '    </svg>' +
-          '    <div class="labs-gauge-center">' +
-          '      <span class="labs-gauge-num" style="color:' + g.color + '">' + g.score + '%</span>' +
-          '    </div>' +
-          '  </div>' +
-          '  <div class="labs-gauge-title">' + esc(g.title) + '</div>' +
-          '  <div class="labs-gauge-sub">' + esc(g.sub) + '</div>' +
-          '  <span class="labs-status-pill labs-tone-' + esc(g.tone) + '">' + esc(g.status) + '</span>' +
-          '</button>'
-        );
-      })
-      .join('');
+    var rowsHtml = renderMetricRowsHtml(rowItems, { expandable: true, includeFkey: true });
 
     var twinBadgeHtml = bonus
       ? '<button type="button" class="labs-twin-pill" data-open-fkey="acoustics" title="Inspect Acoustic Twins &amp; Cheek Resonance">' +
@@ -359,25 +340,8 @@
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       twinBadgeHtml +
-      '      <span class="labs-hint-text">Tap any circular gauge below to expand scientific instrumentation &amp; FFT charts</span>' +
+      '      <span class="labs-hint-text">3D spectrograms above · Expandable comparison breakdown below</span>' +
       '    </div>' +
-      '  </section>' +
-      '  <section class="labs-gauges-grid">' +
-      gaugesHtml +
-      '  </section>' +
-      '  <section class="labs-expanded-panel hidden" id="' + uid + 'expanded">' +
-      '    <div class="labs-expanded-top">' +
-      '      <div>' +
-      '        <div class="labs-eyebrow" id="' + uid + 'exp-eyebrow">METRIC DEEP DIVE</div>' +
-      '        <h3 class="labs-expanded-title" id="' + uid + 'exp-title"></h3>' +
-      '        <p class="labs-expanded-note" id="' + uid + 'exp-note"></p>' +
-      '      </div>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm" id="' + uid + 'exp-close">✕ Collapse</button>' +
-      '    </div>' +
-      '    <div class="labs-dossier-strip">' +
-      criteriaTabsHtml +
-      '    </div>' +
-      '    <div class="labs-forensics-mount" id="' + uid + 'fmount"></div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
       '    <div class="labs-spec-bay-head">' +
@@ -426,18 +390,20 @@
       '      </div>' +
       '    </div>' +
       '  </section>' +
+      '  <section class="labs-glass-card labs-analysis-card">' +
+      '    <div class="labs-analysis-head">' +
+      '      <div>' +
+      '        <div class="labs-eyebrow">COMPLETE COMPARISON ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Head-to-Head Forensic Breakdown</h3>' +
+      '      </div>' +
+      '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Telemetry Suites</span>' +
+      '    </div>' +
+      '    <div class="labs-hint-text">Tap any row below to expand complete FFT charts, side-by-side statistics &amp; equations inline.</div>' +
+      '    <div class="labs-metric-list">' +
+      rowsHtml +
+      '    </div>' +
+      '  </section>' +
       '</div>';
-
-    // Animate gauge rings smoothly after first frame
-    if (typeof root.requestAnimationFrame === 'function') {
-      root.requestAnimationFrame(function () {
-        var fills = mountEl.querySelectorAll('.labs-gauge-fill');
-        for (var i = 0; i < fills.length; i++) {
-          var target = fills[i].getAttribute('data-target-offset');
-          if (target != null) fills[i].style.strokeDashoffset = target;
-        }
-      });
-    }
 
     // Initialize 3D Spectrograms
     var canvasA = mountEl.querySelector('.labs-fn-canvas-a');
@@ -448,50 +414,81 @@
       specA.linkPartner(specB);
     }
 
-    var expandedEl = mountEl.querySelector('#' + uid + 'expanded');
-    var expEyebrowEl = mountEl.querySelector('#' + uid + 'exp-eyebrow');
-    var expTitleEl = mountEl.querySelector('#' + uid + 'exp-title');
-    var expNoteEl = mountEl.querySelector('#' + uid + 'exp-note');
-    var fMountEl = mountEl.querySelector('#' + uid + 'fmount');
-
-    function updateExpandedHeader(gaugeObj, fKey) {
-      if (gaugeObj) {
-        expEyebrowEl.textContent = 'GAUGE INSTRUMENTATION · ' + gaugeObj.score + '% (' + gaugeObj.status.toUpperCase() + ')';
-        expTitleEl.textContent = gaugeObj.title + ' — ' + gaugeObj.sub;
-        expNoteEl.textContent = gaugeObj.note;
-      } else {
-        expEyebrowEl.textContent = 'FORENSIC DOSSIER · ACOUSTIC TWIN ANALYSIS';
-        expTitleEl.textContent = 'Cheek Resonance & Acoustic Archetypes';
-        expNoteEl.textContent = 'Multi-archetype reference mapping comparing pitch, flatness, and modulation dynamics.';
-      }
-      var pills = mountEl.querySelectorAll('.labs-dossier-pill');
-      for (var i = 0; i < pills.length; i++) {
-        pills[i].classList.toggle('active', pills[i].getAttribute('data-dossier-key') === fKey);
+    function closeActiveRow() {
+      activeRowId = null;
+      activeForensicsKey = null;
+      activeMountEl = null;
+      var items = mountEl.querySelectorAll('.labs-metric-item');
+      for (var i = 0; i < items.length; i++) items[i].classList.remove('open');
+      var rowBtns = mountEl.querySelectorAll('.labs-metric-row[aria-expanded]');
+      for (var r = 0; r < rowBtns.length; r++) rowBtns[r].setAttribute('aria-expanded', 'false');
+      var slots = mountEl.querySelectorAll('.labs-row-accordion');
+      for (var s = 0; s < slots.length; s++) {
+        slots[s].classList.add('hidden');
+        slots[s].innerHTML = '';
       }
     }
 
-    function openForensicsPanel(gaugeId, fKey) {
-      if (!Forensics || !expandedEl || !fMountEl) return;
-      var matchedGauge = null;
-      for (var i = 0; i < gauges.length; i++) {
-        if (gauges[i].id === gaugeId) {
-          matchedGauge = gauges[i];
+    function openInlineRow(rowId, fKey) {
+      if (!Forensics) return;
+      var matched = null;
+      for (var i = 0; i < rowItems.length; i++) {
+        if (rowItems[i].id === rowId) {
+          matched = rowItems[i];
           break;
         }
       }
-      var targetFKey = fKey || (matchedGauge ? matchedGauge.forensicsKey : 'overall');
-      activeGaugeId = matchedGauge ? matchedGauge.id : null;
-      activeForensicsKey = targetFKey;
+      if (!matched && rowItems.length > 0) matched = rowItems[0];
+      var resolvedId = matched ? matched.id : rowId;
+      var targetFKey = fKey || (matched ? matched.forensicsKey : 'overall');
 
-      var cards = mountEl.querySelectorAll('.labs-gauge-card');
-      for (var c = 0; c < cards.length; c++) {
-        cards[c].classList.toggle('selected', cards[c].getAttribute('data-gauge-id') === activeGaugeId);
+      closeActiveRow();
+
+      var itemEl = mountEl.querySelector('.labs-metric-item[data-item-id="' + resolvedId + '"]');
+      var rowBtn = mountEl.querySelector('.labs-metric-row[data-row-id="' + resolvedId + '"]');
+      var slotEl = mountEl.querySelector('.labs-row-accordion[data-slot-id="' + resolvedId + '"]');
+      if (!slotEl) return;
+
+      activeRowId = resolvedId;
+      activeForensicsKey = targetFKey;
+      if (itemEl) itemEl.classList.add('open');
+      if (rowBtn) rowBtn.setAttribute('aria-expanded', 'true');
+      slotEl.classList.remove('hidden');
+
+      var headerText = matched
+        ? matched.title + ' — ' + matched.sub + ' (' + matched.score + '%)'
+        : 'Forensic Dossier Breakdown';
+      var noteText = matched && matched.note ? matched.note : 'Side-by-side acoustic instrumentation breakdown.';
+
+      slotEl.innerHTML =
+        '<div class="labs-acc-head">' +
+        '  <div>' +
+        '    <div class="labs-eyebrow">INLINE INSTRUMENTATION · ' + esc(headerText) + '</div>' +
+        '    <p class="labs-expanded-note">' + esc(noteText) + '</p>' +
+        '  </div>' +
+        '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
+        '</div>' +
+        '<div class="labs-dossier-strip">' +
+        criteriaTabsHtml +
+        '</div>' +
+        '<div class="labs-forensics-mount"></div>';
+
+      var fMountEl = slotEl.querySelector('.labs-forensics-mount');
+      activeMountEl = fMountEl;
+
+      var pills = slotEl.querySelectorAll('.labs-dossier-pill');
+      for (var p = 0; p < pills.length; p++) {
+        pills[p].classList.toggle('active', pills[p].getAttribute('data-dossier-key') === targetFKey);
+        pills[p].addEventListener('click', function () {
+          openInlineRow(resolvedId, this.getAttribute('data-dossier-key'));
+        });
       }
 
-      updateExpandedHeader(matchedGauge, targetFKey);
-      expandedEl.classList.remove('hidden');
+      var closeBtn = slotEl.querySelector('.labs-acc-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeActiveRow);
 
       var drawNow = function () {
+        if (!fMountEl) return;
         Forensics.renderForensicsDrawer(
           fMountEl,
           targetFKey,
@@ -499,14 +496,12 @@
           soundB,
           result,
           null,
-          function () {
-            closeExpandedPanel();
-          },
+          closeActiveRow,
           { inlineAccordion: true }
         );
-        if (typeof expandedEl.scrollIntoView === 'function') {
+        if (itemEl && typeof itemEl.scrollIntoView === 'function') {
           try {
-            expandedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           } catch (e) {}
         }
       };
@@ -518,25 +513,15 @@
       }
     }
 
-    function closeExpandedPanel() {
-      activeGaugeId = null;
-      activeForensicsKey = null;
-      if (expandedEl) expandedEl.classList.add('hidden');
-      if (fMountEl) fMountEl.innerHTML = '';
-      var cards = mountEl.querySelectorAll('.labs-gauge-card');
-      for (var c = 0; c < cards.length; c++) cards[c].classList.remove('selected');
-    }
-
-    // Bind Gauge clicks
-    var gCards = mountEl.querySelectorAll('.labs-gauge-card');
-    for (var gi = 0; gi < gCards.length; gi++) {
-      gCards[gi].addEventListener('click', function () {
-        var gid = this.getAttribute('data-gauge-id');
+    var rowButtons = mountEl.querySelectorAll('.labs-metric-row[data-row-id]');
+    for (var ri = 0; ri < rowButtons.length; ri++) {
+      rowButtons[ri].addEventListener('click', function () {
+        var rid = this.getAttribute('data-row-id');
         var fk = this.getAttribute('data-fkey');
-        if (activeGaugeId === gid && !expandedEl.classList.contains('hidden')) {
-          closeExpandedPanel();
+        if (activeRowId === rid) {
+          closeActiveRow();
         } else {
-          openForensicsPanel(gid, fk);
+          openInlineRow(rid, fk);
         }
       });
     }
@@ -544,45 +529,64 @@
     var twinBtn = mountEl.querySelector('.labs-twin-pill');
     if (twinBtn) {
       twinBtn.addEventListener('click', function () {
-        openForensicsPanel(null, 'acoustics');
+        openInlineRow('acoustics', 'acoustics');
       });
-    }
-
-    var dossierBtns = mountEl.querySelectorAll('.labs-dossier-pill');
-    for (var di = 0; di < dossierBtns.length; di++) {
-      dossierBtns[di].addEventListener('click', function () {
-        var nextKey = this.getAttribute('data-dossier-key');
-        openForensicsPanel(activeGaugeId, nextKey);
-      });
-    }
-
-    var expCloseBtn = mountEl.querySelector('#' + uid + 'exp-close');
-    if (expCloseBtn) {
-      expCloseBtn.addEventListener('click', closeExpandedPanel);
     }
 
     // Bind Playback & 3D controls
-    mountEl.querySelector('.labs-fn-play-a').addEventListener('click', function () {
-      Audio.playSound(soundA.samples, soundA.sampleRate, {
-        playbackRate: 1.0,
-        channel: chanA,
-        onProgress: function (p) { if (specA) specA.setPlayhead(p); },
-        onEnded: function () { if (specA) specA.setPlayhead(null); }
+    var playABtn = mountEl.querySelector('.labs-fn-play-a');
+    if (playABtn) {
+      playABtn.addEventListener('click', function () {
+        Audio.playSound(soundA.samples, soundA.sampleRate, {
+          playbackRate: 1.0,
+          channel: chanA,
+          onProgress: function (p) { if (specA) specA.setPlayhead(p); },
+          onEnded: function () { if (specA) specA.setPlayhead(null); }
+        });
       });
-    });
+    }
 
-    mountEl.querySelector('.labs-fn-play-b').addEventListener('click', function () {
-      Audio.playSound(soundB.samples, soundB.sampleRate, {
-        playbackRate: 1.0,
-        channel: chanB,
-        onProgress: function (p) { if (specB) specB.setPlayhead(p); },
-        onEnded: function () { if (specB) specB.setPlayhead(null); }
+    var playBBtn = mountEl.querySelector('.labs-fn-play-b');
+    if (playBBtn) {
+      playBBtn.addEventListener('click', function () {
+        Audio.playSound(soundB.samples, soundB.sampleRate, {
+          playbackRate: 1.0,
+          channel: chanB,
+          onProgress: function (p) { if (specB) specB.setPlayhead(p); },
+          onEnded: function () { if (specB) specB.setPlayhead(null); }
+        });
       });
-    });
+    }
 
-    mountEl.querySelector('.labs-fn-b2b').addEventListener('click', function () {
-      Audio.playSequence(
-        [
+    var b2bBtn = mountEl.querySelector('.labs-fn-b2b');
+    if (b2bBtn) {
+      b2bBtn.addEventListener('click', function () {
+        Audio.playSequence(
+          [
+            {
+              samples: soundA.samples,
+              sampleRate: soundA.sampleRate,
+              channel: chanA,
+              onProgress: function (p) { if (specA) specA.setPlayhead(p); },
+              onEnded: function () { if (specA) specA.setPlayhead(null); }
+            },
+            {
+              samples: soundB.samples,
+              sampleRate: soundB.sampleRate,
+              channel: chanB,
+              onProgress: function (p) { if (specB) specB.setPlayhead(p); },
+              onEnded: function () { if (specB) specB.setPlayhead(null); }
+            }
+          ],
+          220
+        );
+      });
+    }
+
+    var overlayBtn = mountEl.querySelector('.labs-fn-overlay');
+    if (overlayBtn) {
+      overlayBtn.addEventListener('click', function () {
+        Audio.playSimultaneous([
           {
             samples: soundA.samples,
             sampleRate: soundA.sampleRate,
@@ -597,47 +601,36 @@
             onProgress: function (p) { if (specB) specB.setPlayhead(p); },
             onEnded: function () { if (specB) specB.setPlayhead(null); }
           }
-        ],
-        220
-      );
-    });
+        ]);
+      });
+    }
 
-    mountEl.querySelector('.labs-fn-overlay').addEventListener('click', function () {
-      Audio.playSimultaneous([
-        {
-          samples: soundA.samples,
-          sampleRate: soundA.sampleRate,
-          channel: chanA,
-          onProgress: function (p) { if (specA) specA.setPlayhead(p); },
-          onEnded: function () { if (specA) specA.setPlayhead(null); }
-        },
-        {
-          samples: soundB.samples,
-          sampleRate: soundB.sampleRate,
-          channel: chanB,
-          onProgress: function (p) { if (specB) specB.setPlayhead(p); },
-          onEnded: function () { if (specB) specB.setPlayhead(null); }
-        }
-      ]);
-    });
+    var stopBtn = mountEl.querySelector('.labs-fn-stop');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', function () {
+        Audio.stopAll();
+        if (specA) specA.setPlayhead(null);
+        if (specB) specB.setPlayhead(null);
+      });
+    }
 
-    mountEl.querySelector('.labs-fn-stop').addEventListener('click', function () {
-      Audio.stopAll();
-      if (specA) specA.setPlayhead(null);
-      if (specB) specB.setPlayhead(null);
-    });
+    var syncEl = mountEl.querySelector('.labs-fn-sync');
+    if (syncEl) {
+      syncEl.addEventListener('change', function (e) {
+        sync3d = e.target.checked;
+        if (specA) specA.setSyncEnabled(sync3d);
+        if (specB) specB.setSyncEnabled(sync3d);
+      });
+    }
 
-    mountEl.querySelector('.labs-fn-sync').addEventListener('change', function (e) {
-      sync3d = e.target.checked;
-      if (specA) specA.setSyncEnabled(sync3d);
-      if (specB) specB.setSyncEnabled(sync3d);
-    });
-
-    mountEl.querySelector('.labs-fn-colormap').addEventListener('change', function (e) {
-      colormap = e.target.value;
-      if (specA) specA.setColormap(colormap);
-      if (specB) specB.setColormap(colormap);
-    });
+    var cmapEl = mountEl.querySelector('.labs-fn-colormap');
+    if (cmapEl) {
+      cmapEl.addEventListener('change', function (e) {
+        colormap = e.target.value;
+        if (specA) specA.setColormap(colormap);
+        if (specB) specB.setColormap(colormap);
+      });
+    }
 
     function bindSidePresets(sideAttr, getSpec) {
       var btns = mountEl.querySelectorAll('.labs-spec-card[data-side="' + sideAttr + '"] [data-preset]');
@@ -682,16 +675,16 @@
       });
     }
 
-    if (activeGaugeId) {
-      openForensicsPanel(activeGaugeId);
+    if (activeRowId) {
+      openInlineRow(activeRowId);
     }
 
     return {
       resize: function () {
         if (specA) specA.resize();
         if (specB) specB.resize();
-        if (Forensics && fMountEl && activeForensicsKey) {
-          Forensics.redrawDrawer(fMountEl);
+        if (Forensics && activeMountEl && activeForensicsKey) {
+          Forensics.redrawDrawer(activeMountEl);
         }
       },
       destroy: function () {
@@ -699,6 +692,7 @@
         if (specB) specB.destroy();
         specA = null;
         specB = null;
+        activeMountEl = null;
         if (mountEl) mountEl.innerHTML = '';
       }
     };
@@ -755,84 +749,51 @@
     }
   }
 
-  function renderGaugeCardsHtml(gauges, clickableAttr) {
-    var rGauge = 34;
-    var cGauge = 2 * Math.PI * rGauge;
-    return gauges
-      .map(function (g) {
-        var offset = cGauge * (1 - clamp(safeNum(g.score, 0), 0, 100) / 100);
-        if (clickableAttr) {
-          return (
-            '<button type="button" class="labs-gauge-card" ' +
-            clickableAttr +
-            '="' +
-            esc(g.id) +
-            '">' +
-            '  <div class="labs-gauge-ring-wrap">' +
-            '    <svg class="labs-gauge-svg" viewBox="0 0 84 84" aria-hidden="true">' +
-            '      <circle class="labs-gauge-track" cx="42" cy="42" r="' + rGauge + '"></circle>' +
-            '      <circle class="labs-gauge-fill" data-target-offset="' +
-            offset.toFixed(2) +
-            '" cx="42" cy="42" r="' +
-            rGauge +
-            '" stroke="' +
-            g.color +
-            '" stroke-dasharray="' +
-            cGauge.toFixed(2) +
-            '" stroke-dashoffset="' +
-            cGauge.toFixed(2) +
-            '"></circle>' +
-            '    </svg>' +
-            '    <div class="labs-gauge-center">' +
-            '      <span class="labs-gauge-num" style="color:' + g.color + '">' + g.score + '%</span>' +
-            '    </div>' +
-            '  </div>' +
-            '  <div class="labs-gauge-title">' + esc(g.title) + '</div>' +
-            '  <div class="labs-gauge-sub">' + esc(g.sub) + '</div>' +
-            '  <span class="labs-status-pill labs-tone-' + esc(g.tone) + '">' + esc(g.status) + '</span>' +
-            '</button>'
-          );
-        }
-        return (
-          '<div class="labs-gauge-card labs-gauge-static">' +
-          '  <div class="labs-gauge-ring-wrap">' +
-          '    <svg class="labs-gauge-svg" viewBox="0 0 84 84" aria-hidden="true">' +
-          '      <circle class="labs-gauge-track" cx="42" cy="42" r="' + rGauge + '"></circle>' +
-          '      <circle class="labs-gauge-fill" data-target-offset="' +
-          offset.toFixed(2) +
-          '" cx="42" cy="42" r="' +
-          rGauge +
-          '" stroke="' +
-          g.color +
-          '" stroke-dasharray="' +
-          cGauge.toFixed(2) +
-          '" stroke-dashoffset="' +
-          cGauge.toFixed(2) +
-          '"></circle>' +
-          '    </svg>' +
-          '    <div class="labs-gauge-center">' +
-          '      <span class="labs-gauge-num" style="color:' + g.color + '">' + g.score + '%</span>' +
-          '    </div>' +
-          '  </div>' +
-          '  <div class="labs-gauge-title">' + esc(g.title) + '</div>' +
-          '  <div class="labs-gauge-sub">' + esc(g.sub) + '</div>' +
-          '  <span class="labs-status-pill labs-tone-' + esc(g.tone) + '">' + esc(g.status) + '</span>' +
-          '</div>'
-        );
-      })
-      .join('');
+  function buildSingleRowHtml(g, opts) {
+    var scorePct = clamp(safeNum(g.score, 0), 0, 100);
+    var idEsc = esc(g.id);
+    var fkeyAttr = opts.includeFkey && g.forensicsKey ? ' data-fkey="' + esc(g.forensicsKey) + '"' : '';
+    var inner =
+      '<div class="labs-metric-main">' +
+      '  <div class="labs-metric-title">' + esc(g.title) + '</div>' +
+      '  <div class="labs-metric-sub">' + esc(g.sub) + '</div>' +
+      '</div>' +
+      '<div class="labs-metric-right">' +
+      '  <div class="labs-metric-bar-track" aria-hidden="true">' +
+      '    <div class="labs-metric-bar-fill" style="width:' + scorePct.toFixed(1) + '%;background:' + g.color + '"></div>' +
+      '  </div>' +
+      '  <span class="labs-metric-score" style="color:' + g.color + '">' + g.score + '%</span>' +
+      '  <span class="labs-status-pill labs-tone-' + esc(g.tone) + '">' + esc(g.status) + '</span>' +
+      (opts.expandable ? '  <span class="labs-metric-chevron" aria-hidden="true">›</span>' : '') +
+      '</div>';
+
+    if (opts.expandable) {
+      return (
+        '<div class="labs-metric-item" data-item-id="' + idEsc + '">' +
+        '  <button type="button" class="labs-metric-row" data-row-id="' + idEsc + '"' + fkeyAttr + ' aria-expanded="false">' +
+        inner +
+        '  </button>' +
+        '  <div class="labs-row-accordion hidden" data-slot-id="' + idEsc + '"></div>' +
+        '</div>'
+      );
+    }
+
+    return (
+      '<div class="labs-metric-item" data-item-id="' + idEsc + '">' +
+      '  <div class="labs-metric-row labs-metric-row-static">' +
+      inner +
+      '  </div>' +
+      '</div>'
+    );
   }
 
-  function animateGaugeRings(mountEl) {
-    if (typeof root.requestAnimationFrame === 'function') {
-      root.requestAnimationFrame(function () {
-        var fills = mountEl.querySelectorAll('.labs-gauge-fill');
-        for (var i = 0; i < fills.length; i++) {
-          var target = fills[i].getAttribute('data-target-offset');
-          if (target != null) fills[i].style.strokeDashoffset = target;
-        }
-      });
-    }
+  function renderMetricRowsHtml(items, opts) {
+    var cfg = opts || {};
+    return (items || [])
+      .map(function (item) {
+        return buildSingleRowHtml(item, cfg);
+      })
+      .join('');
   }
 
   /* ==================== ON-DEVICE ML CLASSIFIER ==================== */
@@ -1901,16 +1862,13 @@
     var chan = uid + 'S';
     var spec = null;
     var activeDialId = null;
+    var activeSlotEl = null;
 
     var compareBtnHtml = opts.onPrimaryAction
       ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🎯 Guess This Fart') + '</button>'
       : '';
 
-    var dialPillsHtml = gauges
-      .map(function (g) {
-        return '<button type="button" class="labs-dossier-pill" data-sdial-pill="' + esc(g.id) + '">' + esc(g.title) + '</button>';
-      })
-      .join('');
+    var rowsHtml = renderMetricRowsHtml(gauges, { expandable: true });
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -1932,58 +1890,8 @@
       '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-email-report">📧 Email Analysis</button>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
-      '      <span class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</span>' +
-      '      <span class="labs-hint-text">Tap any of the 12 circular dials below to expand complete instrumentation &amp; plots</span>' +
-      '    </div>' +
-      '  </section>' +
-      '  <section class="labs-gauges-grid">' +
-      renderGaugeCardsHtml(gauges, 'data-sdial-id') +
-      '  </section>' +
-      '  <section class="labs-expanded-panel hidden" id="' + uid + 'sexpanded">' +
-      '    <div class="labs-expanded-top">' +
-      '      <div>' +
-      '        <div class="labs-eyebrow" id="' + uid + 'sexp-code">FORENSIC DIAL</div>' +
-      '        <h3 class="labs-expanded-title" id="' + uid + 'sexp-title"></h3>' +
-      '        <p class="labs-expanded-note" id="' + uid + 'sexp-sub"></p>' +
-      '      </div>' +
-      '      <div class="labs-fn-right-cluster">' +
-      '        <span class="labs-fn-score-val" id="' + uid + 'sexp-score" style="font-size:1.2rem">0%</span>' +
-      '        <button type="button" class="labs-btn-ghost labs-btn-sm" id="' + uid + 'sexp-close">✕ Collapse</button>' +
-      '      </div>' +
-      '    </div>' +
-      '    <div class="labs-dossier-strip">' + dialPillsHtml + '</div>' +
-      '    <div class="forensics-commentary labs-single-commentary" id="' + uid + 'sexp-comm"></div>' +
-      '    <div class="labs-single-charts-grid" id="' + uid + 'sexp-charts"></div>' +
-      '    <div class="labs-single-facts-grid" id="' + uid + 'sexp-stats"></div>' +
-      '    <div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code id="' + uid + 'sexp-formula"></code></div>' +
-      '  </section>' +
-      '  <section class="labs-glass-card labs-single-dossier">' +
-      '    <div class="labs-eyebrow">COMPLETE ACOUSTIC DOSSIER SUMMARY</div>' +
-      '    <div class="labs-single-facts-grid">' +
-      '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
-      '      <div class="labs-fact-box"><span>Musical Note</span><strong>' + esc(noteStr) + '</strong></div>' +
-      (bonus
-        ? '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
-        : '') +
-      '    </div>' +
-      '  </section>' +
-      '  <section class="labs-single-charts-grid">' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>40-Band FFT Energy Spectrum</span><small>Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
-      '    </div>' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>Pitch &amp; Frequency Sweep</span><small>32-frame F0 tracker</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_pitch"></canvas>' +
-      '    </div>' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>Modulation &amp; Flutter FFT (4–45 Hz)</span><small>Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_mod"></canvas>' +
-      '    </div>' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>Blast Pressure Envelope</span><small>Attack / T50 / Decay</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_env"></canvas>' +
+      '      <button type="button" class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</button>' +
+      '      <span class="labs-hint-text">3D spectrogram above · Complete expandable analysis below</span>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
@@ -2005,53 +1913,90 @@
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
       '  </section>' +
+      '  <section class="labs-glass-card labs-analysis-card">' +
+      '    <div class="labs-analysis-head">' +
+      '      <div>' +
+      '        <div class="labs-eyebrow">COMPLETE ACOUSTIC ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Acoustic Summary &amp; Expandable Telemetry</h3>' +
+      '      </div>' +
+      '      <span class="labs-chip labs-chip-purple">🤖 ' + esc(ml.topClass.name) + '</span>' +
+      '    </div>' +
+      '    <div class="labs-single-facts-grid">' +
+      '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>Musical Note</span><strong>' + esc(noteStr) + '</strong></div>' +
+      (bonus
+        ? '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
+          '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
+        : '') +
+      '    </div>' +
+      '    <div class="labs-hint-text">Tap any of the 12 metrics below to expand charts, scientific commentary, stats &amp; equation inline.</div>' +
+      '    <div class="labs-metric-list">' +
+      rowsHtml +
+      '    </div>' +
+      '    <hr class="labs-analysis-divider" />' +
+      '    <div class="labs-eyebrow">CORE SPECTRAL &amp; TEMPORAL PLOTS</div>' +
+      '    <div class="labs-single-charts-grid">' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>40-Band FFT Energy Spectrum</span><small>Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '      </div>' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>Pitch &amp; Frequency Sweep</span><small>32-frame F0 tracker</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_pitch"></canvas>' +
+      '      </div>' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>Modulation &amp; Flutter FFT (4–45 Hz)</span><small>Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_mod"></canvas>' +
+      '      </div>' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>Blast Pressure Envelope</span><small>Attack / T50 / Decay</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_env"></canvas>' +
+      '      </div>' +
+      '    </div>' +
+      '  </section>' +
       '</div>';
 
-    animateGaugeRings(mountEl);
-
-    var expandedEl = mountEl.querySelector('#' + uid + 'sexpanded');
-    var expCode = mountEl.querySelector('#' + uid + 'sexp-code');
-    var expTitle = mountEl.querySelector('#' + uid + 'sexp-title');
-    var expSub = mountEl.querySelector('#' + uid + 'sexp-sub');
-    var expScore = mountEl.querySelector('#' + uid + 'sexp-score');
-    var expComm = mountEl.querySelector('#' + uid + 'sexp-comm');
-    var expCharts = mountEl.querySelector('#' + uid + 'sexp-charts');
-    var expStats = mountEl.querySelector('#' + uid + 'sexp-stats');
-    var expFormula = mountEl.querySelector('#' + uid + 'sexp-formula');
-
     function redrawExpandedSingle() {
-      if (!activeDialId || !expCharts) return;
-      var canvases = expCharts.querySelectorAll('canvas[data-schart]');
+      if (!activeDialId || !activeSlotEl) return;
+      var canvases = activeSlotEl.querySelectorAll('canvas[data-schart]');
       for (var i = 0; i < canvases.length; i++) {
         drawSingleChartType(canvases[i], canvases[i].getAttribute('data-schart'), sound, feat, bonus, ml);
       }
     }
 
-    function openSingleDial(dialId) {
+    function closeSingleRow() {
+      activeDialId = null;
+      activeSlotEl = null;
+      var items = mountEl.querySelectorAll('.labs-metric-item');
+      for (var i = 0; i < items.length; i++) items[i].classList.remove('open');
+      var rowBtns = mountEl.querySelectorAll('.labs-metric-row[aria-expanded]');
+      for (var r = 0; r < rowBtns.length; r++) rowBtns[r].setAttribute('aria-expanded', 'false');
+      var slots = mountEl.querySelectorAll('.labs-row-accordion');
+      for (var s = 0; s < slots.length; s++) {
+        slots[s].classList.add('hidden');
+        slots[s].innerHTML = '';
+      }
+    }
+
+    function openSingleRow(dialId) {
       var rep = buildSingleDialReport(dialId, sound);
+      closeSingleRow();
+
+      var itemEl = mountEl.querySelector('.labs-metric-item[data-item-id="' + rep.id + '"]');
+      var rowBtn = mountEl.querySelector('.labs-metric-row[data-row-id="' + rep.id + '"]');
+      var slotEl = mountEl.querySelector('.labs-row-accordion[data-slot-id="' + rep.id + '"]');
+      if (!slotEl) return;
+
       activeDialId = rep.id;
+      activeSlotEl = slotEl;
+      if (itemEl) itemEl.classList.add('open');
+      if (rowBtn) rowBtn.setAttribute('aria-expanded', 'true');
+      slotEl.classList.remove('hidden');
 
-      var cards = mountEl.querySelectorAll('[data-sdial-id]');
-      for (var c = 0; c < cards.length; c++) {
-        cards[c].classList.toggle('selected', cards[c].getAttribute('data-sdial-id') === activeDialId);
-      }
-      var pills = mountEl.querySelectorAll('[data-sdial-pill]');
-      for (var pIdx = 0; pIdx < pills.length; pIdx++) {
-        pills[pIdx].classList.toggle('active', pills[pIdx].getAttribute('data-sdial-pill') === activeDialId);
-      }
-
-      expCode.textContent = rep.badgeCode;
-      expTitle.textContent = rep.title;
-      expSub.textContent = rep.subtitle;
-      expScore.textContent = rep.score + '%';
-      expScore.style.color = rep.color;
-      expComm.textContent = rep.commentary;
-      expFormula.textContent = rep.formula;
-
-      expCharts.innerHTML = rep.charts
+      var chartsHtml = rep.charts
         .map(function (ch) {
           return (
-            '<div class="labs-glass-card labs-chart-box">' +
+            '<div class="labs-chart-box-inner">' +
             '  <div class="labs-chart-box-head"><span>' + esc(ch.title) + '</span><small>' + esc(ch.sub) + '</small></div>' +
             '  <canvas class="labs-2d-canvas" data-schart="' + esc(ch.drawType) + '"></canvas>' +
             '</div>'
@@ -2059,7 +2004,7 @@
         })
         .join('');
 
-      expStats.innerHTML = rep.stats
+      var statsHtml = rep.stats
         .map(function (st) {
           return (
             '<div class="labs-fact-box"><span>' + esc(st.label) + '</span><strong>' + esc(st.value) + '</strong><small class="labs-fact-sub">' + esc(st.sub) + '</small></div>'
@@ -2067,12 +2012,27 @@
         })
         .join('');
 
-      expandedEl.classList.remove('hidden');
+      slotEl.innerHTML =
+        '<div class="labs-acc-head">' +
+        '  <div>' +
+        '    <div class="labs-eyebrow">' + esc(rep.badgeCode) + '</div>' +
+        '    <div class="labs-expanded-note">' + esc(rep.subtitle) + '</div>' +
+        '  </div>' +
+        '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
+        '</div>' +
+        '<div class="forensics-commentary labs-single-commentary">' + esc(rep.commentary) + '</div>' +
+        '<div class="labs-single-charts-grid">' + chartsHtml + '</div>' +
+        '<div class="labs-single-facts-grid">' + statsHtml + '</div>' +
+        '<div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code>' + esc(rep.formula) + '</code></div>';
+
+      var closeBtn = slotEl.querySelector('.labs-acc-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeSingleRow);
+
       if (typeof root.requestAnimationFrame === 'function') {
         root.requestAnimationFrame(function () {
           redrawExpandedSingle();
-          if (typeof expandedEl.scrollIntoView === 'function') {
-            try { expandedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+          if (itemEl && typeof itemEl.scrollIntoView === 'function') {
+            try { itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
           }
         });
       } else {
@@ -2080,38 +2040,22 @@
       }
     }
 
-    function closeSingleDial() {
-      activeDialId = null;
-      expandedEl.classList.add('hidden');
-      var cards = mountEl.querySelectorAll('[data-sdial-id]');
-      for (var c = 0; c < cards.length; c++) cards[c].classList.remove('selected');
-    }
-
-    var dialCards = mountEl.querySelectorAll('[data-sdial-id]');
-    for (var dc = 0; dc < dialCards.length; dc++) {
-      dialCards[dc].addEventListener('click', function () {
-        var did = this.getAttribute('data-sdial-id');
-        if (activeDialId === did && !expandedEl.classList.contains('hidden')) {
-          closeSingleDial();
+    var rowButtons = mountEl.querySelectorAll('.labs-metric-row[data-row-id]');
+    for (var rb = 0; rb < rowButtons.length; rb++) {
+      rowButtons[rb].addEventListener('click', function () {
+        var did = this.getAttribute('data-row-id');
+        if (activeDialId === did) {
+          closeSingleRow();
         } else {
-          openSingleDial(did);
+          openSingleRow(did);
         }
       });
     }
 
-    var dialPills = mountEl.querySelectorAll('[data-sdial-pill]');
-    for (var dp = 0; dp < dialPills.length; dp++) {
-      dialPills[dp].addEventListener('click', function () {
-        openSingleDial(this.getAttribute('data-sdial-pill'));
-      });
-    }
-
-    mountEl.querySelector('#' + uid + 'sexp-close').addEventListener('click', closeSingleDial);
     var mlCue = mountEl.querySelector('.labs-s-ml-cue');
     if (mlCue) {
-      mlCue.style.cursor = 'pointer';
       mlCue.addEventListener('click', function () {
-        openSingleDial('s_ml');
+        openSingleRow('s_ml');
       });
     }
 
@@ -2142,29 +2086,46 @@
       });
     }
 
-    mountEl.querySelector('.labs-s-play').addEventListener('click', playSingle);
-    mountEl.querySelector('.labs-s-play2').addEventListener('click', playSingle);
-    mountEl.querySelector('.labs-s-stop').addEventListener('click', function () {
-      Audio.stopAll();
-      if (spec) spec.setPlayhead(null);
-    });
+    var sPlay1 = mountEl.querySelector('.labs-s-play');
+    if (sPlay1) sPlay1.addEventListener('click', playSingle);
+    var sPlay2 = mountEl.querySelector('.labs-s-play2');
+    if (sPlay2) sPlay2.addEventListener('click', playSingle);
+    var sStop = mountEl.querySelector('.labs-s-stop');
+    if (sStop) {
+      sStop.addEventListener('click', function () {
+        Audio.stopAll();
+        if (spec) spec.setPlayhead(null);
+      });
+    }
 
     var primBtn = mountEl.querySelector('.labs-single-primary');
     if (primBtn && opts.onPrimaryAction) {
       primBtn.addEventListener('click', function () { opts.onPrimaryAction(sound); });
     }
-    mountEl.querySelector('.labs-s-share').addEventListener('click', function () {
-      if (opts.onShare) opts.onShare(sound);
-    });
-    mountEl.querySelector('.labs-s-email-audio').addEventListener('click', function () {
-      if (opts.onEmailAudio) opts.onEmailAudio(sound);
-    });
-    mountEl.querySelector('.labs-s-pdf').addEventListener('click', function () {
-      if (opts.onDownloadPdf) opts.onDownloadPdf(sound, [specCanvas]);
-    });
-    mountEl.querySelector('.labs-s-email-report').addEventListener('click', function () {
-      if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
-    });
+    var shareBtn = mountEl.querySelector('.labs-s-share');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        if (opts.onShare) opts.onShare(sound);
+      });
+    }
+    var emailAudioBtn = mountEl.querySelector('.labs-s-email-audio');
+    if (emailAudioBtn) {
+      emailAudioBtn.addEventListener('click', function () {
+        if (opts.onEmailAudio) opts.onEmailAudio(sound);
+      });
+    }
+    var pdfBtn = mountEl.querySelector('.labs-s-pdf');
+    if (pdfBtn) {
+      pdfBtn.addEventListener('click', function () {
+        if (opts.onDownloadPdf) opts.onDownloadPdf(sound, [specCanvas]);
+      });
+    }
+    var emailRepBtn = mountEl.querySelector('.labs-s-email-report');
+    if (emailRepBtn) {
+      emailRepBtn.addEventListener('click', function () {
+        if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
+      });
+    }
 
     var pBtns = mountEl.querySelectorAll('[data-spreset]');
     for (var pi = 0; pi < pBtns.length; pi++) {
@@ -2191,6 +2152,7 @@
       destroy: function () {
         if (spec) spec.destroy();
         spec = null;
+        activeSlotEl = null;
         if (mountEl) mountEl.innerHTML = '';
       }
     };
@@ -2218,6 +2180,23 @@
       var st = gaugeStatus(g.score);
       return Object.assign({}, g, { status: st.label, color: st.color, tone: st.tone });
     });
+  }
+
+  function formatSegSortTag(seg, sortBy) {
+    if (sortBy === 'wetness') return Math.round(safeNum(seg.wetnessPct, 0)) + '% wet';
+    if (sortBy === 'duration') return Math.round(safeNum(seg.pitchHz, 0)) + ' Hz';
+    if (sortBy === 'crest') return safeNum(seg.crestDb, 0).toFixed(1) + ' dB';
+    if (sortBy === 'radius') return safeNum(seg.radiusM, 0).toFixed(1) + 'm reach';
+    if (sortBy === 'flutter') return Math.round(safeNum(seg.modRateHz, 0)) + ' Hz flutter';
+    if (sortBy === 'date') {
+      try {
+        if (seg.createdAt && seg.createdAt > 1e11) {
+          return new Date(seg.createdAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        }
+      } catch (e) {}
+      return Math.round(safeNum(seg.pitchHz, 0)) + ' Hz';
+    }
+    return Math.round(safeNum(seg.pitchHz, 0)) + ' Hz';
   }
 
   function drawSegmentedWaveform(canvas, groupObj, progress) {
@@ -2345,17 +2324,38 @@
     var spec = null;
     var lastProg = null;
 
+    var sortBy = opts.sortBy || (g.metrics && g.metrics.sortBy) || 'pitch';
+    var sortDir = opts.sortDir || (g.metrics && g.metrics.sortDir) || 'asc';
+    var sortOptions = (root.TootLabs.Store && root.TootLabs.Store.GROUP_SORT_OPTIONS) || [
+      { key: 'pitch', label: 'Pitch (Hz)', unit: 'Hz' },
+      { key: 'wetness', label: 'Wetness / Squelch (%)', unit: '%' },
+      { key: 'duration', label: 'Duration (s)', unit: 's' },
+      { key: 'crest', label: 'Loudness / Crest (dB)', unit: 'dB' },
+      { key: 'radius', label: 'Blast Radius (m)', unit: 'm' },
+      { key: 'flutter', label: 'Flutter Rate (Hz)', unit: 'Hz' },
+      { key: 'date', label: 'Date Recorded', unit: '' }
+    ];
+
+    var sortOptionsHtml = sortOptions
+      .map(function (opt) {
+        return '<option value="' + esc(opt.key) + '"' + (opt.key === sortBy ? ' selected' : '') + '>' + esc(opt.label) + '</option>';
+      })
+      .join('');
+
     var trackListHtml = (g.segments || [])
       .map(function (seg, idx) {
         return (
           '<span class="labs-seg-pill" style="border-color:' + seg.color + '">' +
           '  <i class="labs-seg-dot" style="background:' + seg.color + '"></i>' +
           '  <strong>' + (idx + 1) + '. ' + esc(seg.name) + '</strong> ' +
-          '  <small>' + seg.durationSec.toFixed(2) + 's · ' + Math.round(seg.pitchHz) + 'Hz</small>' +
+          '  <small>' + seg.durationSec.toFixed(2) + 's · ' + esc(formatSegSortTag(seg, sortBy)) + '</small>' +
           '</span>'
         );
       })
       .join('');
+
+    var sortLabel = (g.metrics && g.metrics.sortLabel) || 'Pitch (Hz) · Ascending';
+    var rowsHtml = renderMetricRowsHtml(gauges, { expandable: false });
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -2374,27 +2374,15 @@
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
       '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email Analysis</button>' +
       '    </div>' +
-      '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
-      '  </section>' +
-      '  <section class="labs-glass-card labs-chart-box">' +
-      '    <div class="labs-chart-box-head"><span>Composite Symphony Waveform</span><small>Color-coded Vault Movements</small></div>' +
-      '    <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
-      '  </section>' +
-      '  <section class="labs-gauges-grid">' +
-      renderGaugeCardsHtml(gauges) +
-      '  </section>' +
-      '  <section class="labs-glass-card labs-verdict-card">' +
-      '    <div class="labs-eyebrow">GROUP COHERENCE TELEMETRY SUMMARY</div>' +
-      '    <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
-      '  </section>' +
-      '  <section class="labs-single-charts-grid">' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>Vault Specimen Map (Pitch × Moisture)</span><small>Spatial acoustic spread</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
-      '    </div>' +
-      '    <div class="labs-glass-card labs-chart-box">' +
-      '      <div class="labs-chart-box-head"><span>Combined 40-Band FFT Spectrum</span><small>Aggregate frequency energy</small></div>' +
-      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '    <div class="labs-sort-bar">' +
+      '      <label class="labs-sort-field" for="' + uid + 'sortby">' +
+      '        <span>Arrange Farts By</span>' +
+      '        <select id="' + uid + 'sortby" class="labs-g-sort-by">' + sortOptionsHtml + '</select>' +
+      '      </label>' +
+      '      <div class="labs-dir-group" role="group" aria-label="Sort Direction">' +
+      '        <button type="button" class="labs-dir-btn' + (sortDir !== 'desc' ? ' active' : '') + '" data-gdir="asc">↑ Ascending</button>' +
+      '        <button type="button" class="labs-dir-btn' + (sortDir === 'desc' ? ' active' : '') + '" data-gdir="desc">↓ Descending</button>' +
+      '      </div>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
@@ -2411,10 +2399,37 @@
       '      </div>' +
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
+      '    <div class="labs-group-wave-wrap">' +
+      '      <div class="labs-chart-box-head"><span>Composite Symphony Waveform</span><small>Color-coded Vault Movements in Active Order</small></div>' +
+      '      <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
+      '    </div>' +
+      '  </section>' +
+      '  <section class="labs-glass-card labs-analysis-card">' +
+      '    <div class="labs-analysis-head">' +
+      '      <div>' +
+      '        <div class="labs-eyebrow">COMBINED GROUP ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Ensemble Telemetry &amp; Movement Order</h3>' +
+      '      </div>' +
+      '      <span class="labs-chip labs-chip-blue">' + esc(sortLabel) + '</span>' +
+      '    </div>' +
+      '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
+      '    <div class="forensics-commentary labs-single-commentary">' + esc(g.metrics.groupVerdict) + '</div>' +
+      '    <div class="labs-metric-list">' +
+      rowsHtml +
+      '    </div>' +
+      '    <hr class="labs-analysis-divider" />' +
+      '    <div class="labs-single-charts-grid">' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>Vault Specimen Map (Pitch × Moisture)</span><small>Spatial acoustic spread</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
+      '      </div>' +
+      '      <div class="labs-chart-box-inner">' +
+      '        <div class="labs-chart-box-head"><span>Combined 40-Band FFT Spectrum</span><small>Aggregate frequency energy</small></div>' +
+      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '      </div>' +
+      '    </div>' +
       '  </section>' +
       '</div>';
-
-    animateGaugeRings(mountEl);
 
     function drawGroupVisuals() {
       drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, lastProg);
@@ -2433,38 +2448,70 @@
       drawGroupVisuals();
     }
 
-    mountEl.querySelector('.labs-g-play').addEventListener('click', function () {
-      Audio.playSound(g.samples, g.sampleRate, {
-        channel: chan,
-        onProgress: function (pr) {
-          lastProg = pr;
-          drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, pr);
-          if (spec) spec.setPlayhead(pr);
-        },
-        onEnded: function () {
-          lastProg = null;
-          drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
-          if (spec) spec.setPlayhead(null);
+    var sortSel = mountEl.querySelector('.labs-g-sort-by');
+    if (sortSel && opts.onSortChange) {
+      sortSel.addEventListener('change', function () {
+        opts.onSortChange(sortSel.value, sortDir);
+      });
+    }
+
+    var dirBtns = mountEl.querySelectorAll('[data-gdir]');
+    for (var di = 0; di < dirBtns.length; di++) {
+      dirBtns[di].addEventListener('click', function () {
+        var nextDir = this.getAttribute('data-gdir') === 'desc' ? 'desc' : 'asc';
+        if (opts.onSortChange) {
+          opts.onSortChange(sortSel ? sortSel.value : sortBy, nextDir);
         }
       });
-    });
+    }
 
-    mountEl.querySelector('.labs-g-stop').addEventListener('click', function () {
-      Audio.stopAll();
-      lastProg = null;
-      drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
-      if (spec) spec.setPlayhead(null);
-    });
+    var playBtn = mountEl.querySelector('.labs-g-play');
+    if (playBtn) {
+      playBtn.addEventListener('click', function () {
+        Audio.playSound(g.samples, g.sampleRate, {
+          channel: chan,
+          onProgress: function (pr) {
+            lastProg = pr;
+            drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, pr);
+            if (spec) spec.setPlayhead(pr);
+          },
+          onEnded: function () {
+            lastProg = null;
+            drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
+            if (spec) spec.setPlayhead(null);
+          }
+        });
+      });
+    }
 
-    mountEl.querySelector('.labs-g-email-audio').addEventListener('click', function () {
-      if (opts.onEmailAudio) opts.onEmailAudio(g);
-    });
-    mountEl.querySelector('.labs-g-pdf').addEventListener('click', function () {
-      if (opts.onDownloadPdf) opts.onDownloadPdf(g, [specCanvas]);
-    });
-    mountEl.querySelector('.labs-g-email-report').addEventListener('click', function () {
-      if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
-    });
+    var stopBtn = mountEl.querySelector('.labs-g-stop');
+    if (stopBtn) {
+      stopBtn.addEventListener('click', function () {
+        Audio.stopAll();
+        lastProg = null;
+        drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
+        if (spec) spec.setPlayhead(null);
+      });
+    }
+
+    var emailAudioBtn = mountEl.querySelector('.labs-g-email-audio');
+    if (emailAudioBtn) {
+      emailAudioBtn.addEventListener('click', function () {
+        if (opts.onEmailAudio) opts.onEmailAudio(g);
+      });
+    }
+    var pdfBtn = mountEl.querySelector('.labs-g-pdf');
+    if (pdfBtn) {
+      pdfBtn.addEventListener('click', function () {
+        if (opts.onDownloadPdf) opts.onDownloadPdf(g, [specCanvas]);
+      });
+    }
+    var emailRepBtn = mountEl.querySelector('.labs-g-email-report');
+    if (emailRepBtn) {
+      emailRepBtn.addEventListener('click', function () {
+        if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
+      });
+    }
 
     var gBtns = mountEl.querySelectorAll('[data-gpreset]');
     for (var gi = 0; gi < gBtns.length; gi++) {

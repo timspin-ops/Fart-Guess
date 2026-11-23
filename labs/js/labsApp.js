@@ -61,6 +61,8 @@
     fnAttempts: [],
     fnAttemptId: null,
     fnController: null,
+    groupSortBy: 'pitch',
+    groupSortDir: 'asc',
     renameTarget: null,
     activeRecStopper: null,
     recordingKind: null,
@@ -1485,10 +1487,21 @@
         mountEl.innerHTML = '';
         return;
       }
-      var groupObj = TootLabs.Store.composeMultiFartTrack(state.samples);
+      var groupObj = TootLabs.Store.composeMultiFartTrack(state.samples, {
+        sortBy: state.groupSortBy,
+        sortDir: state.groupSortDir
+      });
       emptyEl.classList.add('hidden');
       state.fnController = TootLabs.Fartnalysis.renderGroupDashboard(mountEl, {
         groupObj: groupObj,
+        sortBy: state.groupSortBy,
+        sortDir: state.groupSortDir,
+        onSortChange: function (nextSortBy, nextSortDir) {
+          if (root.TootApp && root.TootApp.Audio) root.TootApp.Audio.stopAll();
+          state.groupSortBy = nextSortBy || state.groupSortBy;
+          state.groupSortDir = nextSortDir === 'desc' ? 'desc' : 'asc';
+          renderFartnalysisView();
+        },
         onEmailAudio: function (g) {
           emailAudioSound(g, 'MULTI-FART MEGAMIX');
         },
