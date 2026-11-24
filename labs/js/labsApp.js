@@ -1253,7 +1253,10 @@
           } else {
             var bTxt = info ? info.bufferedSec.toFixed(1) : '0.0';
             timerEl.textContent = 'Buffer ' + bTxt + ' / 5.0s';
-            if (autoBufEl) autoBufEl.textContent = 'Buffer: ' + bTxt + 's / 5.0s';
+            if (autoBufEl) {
+              autoBufEl.textContent =
+                'Buffer: ' + bTxt + 's / 5.0s' + (info && info.inSpeechContext ? ' · Filtering TV/speech' : '');
+            }
           }
           drawLiveWaveform(waveEl, timeData, rms);
         },

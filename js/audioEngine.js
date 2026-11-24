@@ -908,10 +908,58 @@
     var lpB2a = 0;
     var lpB2b = 0;
 
+    // Rolling 1.5s Speech-Context Tracker (60 x 25 ms sub-frames) to block ongoing TV/conversation
+    var ctxCap = 60;
+    var spcFlag = new Uint8Array(ctxCap);
+    var sibFlag = new Uint8Array(ctxCap);
+    var spcRmsHist = new Float32Array(ctxCap);
+    var ctxIdx = 0;
+    var ctxCount = 0;
+    var framesSinceSpc = 999;
+
+    function pushSpeechContext(isSpc, isSibActive, rmsVal) {
+      spcFlag[ctxIdx] = isSpc ? 1 : 0;
+      sibFlag[ctxIdx] = isSibActive ? 1 : 0;
+      spcRmsHist[ctxIdx] = isSpc ? rmsVal : 0;
+      ctxIdx = (ctxIdx + 1) % ctxCap;
+      if (ctxCount < ctxCap) ctxCount++;
+      if (isSpc) framesSinceSpc = 0;
+      else framesSinceSpc++;
+    }
+
+    function getSpeechContext() {
+      var speechCount = 0;
+      var sibilantCount = 0;
+      var rmsList = [];
+      for (var ci = 0; ci < ctxCount; ci++) {
+        speechCount += spcFlag[ci];
+        sibilantCount += sibFlag[ci];
+        if (spcRmsHist[ci] > 0) rmsList.push(spcRmsHist[ci]);
+      }
+      var activeSpeechRms = 0;
+      if (rmsList.length > 0) {
+        rmsList.sort(function (a, b) { return a - b; });
+        activeSpeechRms = rmsList[Math.min(rmsList.length - 1, Math.floor(rmsList.length * 0.75))];
+      }
+      return {
+        speechCount: speechCount,
+        sibilantCount: sibilantCount,
+        activeSpeechRms: activeSpeechRms,
+        inSpeech: speechCount >= 3 || sibilantCount >= 1 || framesSinceSpc <= 14
+      };
+    }
+
     var preSnapshot = null;
     var postChunks = [];
     var postSamples = 0;
     var silentSamples = 0;
+    var trigAct = 0;
+    var trigSpc = 0;
+    var trigSib = 0;
+    var trigLow = 0;
+    var trigFartCore = 0;
+    var trigPeakRms = 0;
+    var trigEntrySpcRms = 0;
     var finalizedResult = null;
 
     function writeToRing(chunk) {
@@ -971,7 +1019,16 @@
     function analyzeSliceBands(slice) {
       var sl = slice ? slice.length : 0;
       if (sl === 0) {
-        return { sub55Ratio: 0, b1Ratio: 0, b2Ratio: 0, b3Ratio: 0 };
+        return {
+          sub55Ratio: 0,
+          b1Ratio: 0,
+          b2Ratio: 0,
+          b3Ratio: 0,
+          activeSubFrames: 0,
+          speechSubFrames: 0,
+          sibilantSubFrames: 0,
+          lowVoicedSubFrames: 0
+        };
       }
       var sHpPrevX1 = 0;
       var sHpY1 = 0;
@@ -985,23 +1042,76 @@
       var hpPow = 0;
       var lp1Pow = 0;
       var lp2Pow = 0;
-      for (var i = 0; i < sl; i++) {
-        var s = slice[i];
-        rawPow += s * s;
-        sHpY1 = hpAlpha * (sHpY1 + s - sHpPrevX1);
-        sHpPrevX1 = s;
-        sHpY2 = hpAlpha * (sHpY2 + sHpY1 - sHpPrevX2);
-        sHpPrevX2 = sHpY1;
-        var sHp = sHpY2;
-        hpPow += sHp * sHp;
+      var peakSubRms = 0;
+      var subInfos = [];
 
-        sLpB1a += alphaB1 * (sHp - sLpB1a);
-        sLpB1b += alphaB1 * (sLpB1a - sLpB1b);
-        sLpB2a += alphaB2 * (sHp - sLpB2a);
-        sLpB2b += alphaB2 * (sLpB2a - sLpB2b);
-        lp1Pow += sLpB1b * sLpB1b;
-        lp2Pow += sLpB2b * sLpB2b;
+      for (var o = 0; o < sl; o += subFrameSamples) {
+        var e = Math.min(sl, o + subFrameSamples);
+        var flen = e - o;
+        if (flen <= 0) break;
+        var frPow = 0;
+        var fhPow = 0;
+        var flp1Pow = 0;
+        var flp2Pow = 0;
+        var fZc = 0;
+        var fPrevHp = 0;
+        for (var i = o; i < e; i++) {
+          var s = slice[i];
+          frPow += s * s;
+          sHpY1 = hpAlpha * (sHpY1 + s - sHpPrevX1);
+          sHpPrevX1 = s;
+          sHpY2 = hpAlpha * (sHpY2 + sHpY1 - sHpPrevX2);
+          sHpPrevX2 = sHpY1;
+          var sHp = sHpY2;
+          fhPow += sHp * sHp;
+          if (i > o && ((sHp >= 0 && fPrevHp < 0) || (sHp < 0 && fPrevHp >= 0))) fZc++;
+          fPrevHp = sHp;
+
+          sLpB1a += alphaB1 * (sHp - sLpB1a);
+          sLpB1b += alphaB1 * (sLpB1a - sLpB1b);
+          sLpB2a += alphaB2 * (sHp - sLpB2a);
+          sLpB2b += alphaB2 * (sLpB2a - sLpB2b);
+          flp1Pow += sLpB1b * sLpB1b;
+          flp2Pow += sLpB2b * sLpB2b;
+        }
+        rawPow += frPow;
+        hpPow += fhPow;
+        lp1Pow += flp1Pow;
+        lp2Pow += flp2Pow;
+
+        var fRms = Math.sqrt(fhPow / flen);
+        if (fRms > peakSubRms) peakSubRms = fRms;
+        var fZcr = (fZc * 0.5 * sr) / flen;
+        var fp1 = Math.min(fhPow, flp1Pow);
+        var fp2 = Math.min(fhPow, Math.max(fp1, flp2Pow));
+        var ftot = fhPow + 1e-12;
+        subInfos.push({
+          rms: fRms,
+          zcr: fZcr,
+          b1: fp1 / ftot,
+          b2: (fp2 - fp1) / ftot,
+          b3: (fhPow - fp2) / ftot
+        });
       }
+
+      var actGate = Math.max(0.015, peakSubRms * 0.24);
+      var activeSubFrames = 0;
+      var speechSubFrames = 0;
+      var sibilantSubFrames = 0;
+      var lowVoicedSubFrames = 0;
+      for (var si = 0; si < subInfos.length; si++) {
+        var sf = subInfos[si];
+        if (sf.rms >= actGate) {
+          activeSubFrames++;
+          var isSib = (sf.b3 >= 0.32 && sf.b1 < 0.28) || sf.zcr >= 2300;
+          var isSpc = isSib || (sf.b2 + sf.b3 >= 0.48) || sf.b3 >= 0.22 || sf.zcr >= 1450;
+          var isLow = sf.b1 >= 0.55 && sf.b3 < 0.14 && sf.zcr < 1000;
+          if (isSib) sibilantSubFrames++;
+          if (isSpc) speechSubFrames++;
+          if (isLow) lowVoicedSubFrames++;
+        }
+      }
+
       var sub55Ratio = clampVal(1 - hpPow / (rawPow + 1e-12), 0, 1);
       var p1 = Math.min(hpPow, lp1Pow);
       var p2 = Math.min(hpPow, Math.max(p1, lp2Pow));
@@ -1010,7 +1120,11 @@
         sub55Ratio: sub55Ratio,
         b1Ratio: p1 / totHp,
         b2Ratio: (p2 - p1) / totHp,
-        b3Ratio: (hpPow - p2) / totHp
+        b3Ratio: (hpPow - p2) / totHp,
+        activeSubFrames: activeSubFrames,
+        speechSubFrames: speechSubFrames,
+        sibilantSubFrames: sibilantSubFrames,
+        lowVoicedSubFrames: lowVoicedSubFrames
       };
     }
 
@@ -1083,14 +1197,28 @@
       if (DSP && typeof DSP.extractFeatures === 'function') {
         var feat = DSP.extractFeatures(clipped, sampleSr);
         var roll85 = typeof feat.spectralRolloff85Hz === 'number' ? feat.spectralRolloff85Hz : feat.spectralCentroidHz;
-        if (
+        var isVowelPlusSibilant =
+          bands.sibilantSubFrames >= 2 && bands.lowVoicedSubFrames >= 2 && feat.voicedRatio >= 0.25;
+        var isBroadbandSpeech =
+          feat.voicedRatio >= 0.32 &&
+          (bands.b2Ratio + bands.b3Ratio) >= 0.46 &&
+          (roll85 > 1350 || feat.above2kPowerShare >= 0.12 || feat.zcr >= 950);
+        var isSyllabicCadence =
+          feat.voicedRatio >= 0.40 &&
+          feat.modRateHz >= 2.5 &&
+          feat.modRateHz <= 7.0 &&
+          feat.modBands &&
+          feat.modBands[0] >= 0.38 &&
+          feat.burstCount >= 3 &&
+          (roll85 > 1100 || feat.zcr > 800 || feat.spectralFlatness > 0.42);
+        var isMidSpeech =
           (feat.voicedRatio >= 0.32 && bands.b2Ratio >= 0.44 && bands.b1Ratio < 0.44 && roll85 > 900) ||
-          (bands.b2Ratio >= 0.50 && bands.b1Ratio < 0.36 && roll85 > 1100)
-        ) {
+          (bands.b2Ratio >= 0.50 && bands.b1Ratio < 0.36 && roll85 > 1100);
+        if (isVowelPlusSibilant || isBroadbandSpeech || isSyllabicCadence || isMidSpeech) {
           return {
             valid: false,
             reason: 'speech',
-            message: 'Filtered speech / vocal chatter — Sentry re-armed',
+            message: 'Filtered speech / TV chatter — Sentry re-armed',
             stats: stats
           };
         }
@@ -1208,6 +1336,10 @@
       var rearmReason = null;
       var rearmMessage = null;
 
+      var isSibSub = (b3Share >= 0.32 && b1Share < 0.28) || hpZcrHz >= 2300;
+      var spcMinRms = Math.max(0.015, noiseFloorRms * 2.2);
+      var isSpcSub = hpRms >= spcMinRms && (isSibSub || (b2Share + b3Share >= 0.48) || b3Share >= 0.22 || hpZcrHz >= 1450);
+
       if (phase === 'listening') {
         calSamples += n;
         var elapsedSec = calSamples / sr;
@@ -1216,35 +1348,50 @@
           // Ignore initial arming beep window so it never inflates noiseFloorRms or self-triggers
         } else if (elapsedSec <= calibrationSec) {
           pushNoiseFloorSample(hpRms, 0.035);
+          pushSpeechContext(isSpcSub, isSibSub && hpRms >= 0.015, hpRms);
           writeToRing(subSlice);
         } else {
           var thresh = Math.max(0.020, noiseFloorRms * 3.2);
+          var spcCtx = getSpeechContext();
           var isThump = subShare > 0.62;
           var isSpeechCough = b1Share < 0.36 || b2Share > 0.48 || b3Share > 0.26 || hpZcrHz >= 2600;
           var isClickSpike = subCrest > 7.0 && b3Share > 0.14;
 
-          var qualifies =
-            !isThump &&
-            !isSpeechCough &&
-            !isClickSpike &&
-            (
-              (hpRms >= thresh * 1.75 && b1Share >= 0.42 && subShare <= 0.55) ||
-              (hpRms >= thresh && b1Share >= 0.38) ||
-              (hpPeak >= Math.max(0.11, noiseFloorRms * 6.0) && b1Share >= 0.44)
-            );
+          var qualifies = false;
+          if (!isThump && !isSpeechCough && !isClickSpike) {
+            if (spcCtx.inSpeech) {
+              // Ongoing TV/speech guard: require unmistakable high-b1 fart core above speech volume
+              var spThresh = Math.max(thresh * 1.4, spcCtx.activeSpeechRms * 1.35);
+              qualifies = hpRms >= spThresh && b1Share >= 0.72 && b3Share < 0.09 && hpZcrHz < 800;
+            } else {
+              qualifies =
+                (hpRms >= thresh * 1.75 && b1Share >= 0.42 && subShare <= 0.55) ||
+                (hpRms >= thresh && b1Share >= 0.38) ||
+                (hpPeak >= Math.max(0.11, noiseFloorRms * 6.0) && b1Share >= 0.44);
+            }
+          }
 
+          var needHits = spcCtx.inSpeech ? 3 : 2;
           if (qualifies) {
             consecutiveHits++;
           } else {
             consecutiveHits = 0;
             pushNoiseFloorSample(hpRms, 0.040);
           }
+          pushSpeechContext(isSpcSub, isSibSub && hpRms >= 0.015, hpRms);
 
-          if (consecutiveHits >= 2) {
+          if (consecutiveHits >= needHits) {
             preSnapshot = readRecentRing(Math.round(sr * preEventSec));
             postChunks = [new Float32Array(subSlice)];
             postSamples = n;
             silentSamples = 0;
+            trigAct = 1;
+            trigSpc = 0;
+            trigSib = 0;
+            trigLow = 1;
+            trigFartCore = (b1Share >= 0.65 && b3Share < 0.12 && hpZcrHz < 850) ? 1 : 0;
+            trigPeakRms = hpRms;
+            trigEntrySpcRms = spcCtx.activeSpeechRms;
             phase = 'triggered';
             triggeredNow = true;
           } else {
@@ -1254,17 +1401,53 @@
       } else if (phase === 'triggered') {
         postChunks.push(new Float32Array(subSlice));
         postSamples += n;
+        if (hpRms > trigPeakRms) trigPeakRms = hpRms;
 
-        var silThresh = Math.max(0.014, Math.min(0.032, noiseFloorRms * 2.1));
+        var bgSilFloor = trigEntrySpcRms > 0.015 ? Math.min(0.08, Math.max(trigEntrySpcRms * 1.15, trigPeakRms * 0.18)) : 0;
+        var silThresh = Math.max(0.014, Math.min(0.032, noiseFloorRms * 2.1), bgSilFloor);
         if (hpRms <= silThresh) {
           silentSamples += n;
         } else {
           silentSamples = 0;
         }
 
+        // Peak-gated live speech monitoring (ignores low-level TV bleed behind a loud captured fart)
+        var eventGate = Math.max(spcMinRms, trigPeakRms * 0.24);
+        if (hpRms >= eventGate) {
+          trigAct++;
+          if (isSibSub) trigSib++;
+          if (isSpcSub) trigSpc++;
+          if (b1Share >= 0.58 && b3Share < 0.14 && hpZcrHz < 1000) trigLow++;
+          if (b1Share >= 0.65 && b3Share < 0.12 && hpZcrHz < 850) trigFartCore++;
+        }
+        pushSpeechContext(isSpcSub, isSibSub && hpRms >= 0.015, hpRms);
+
+        var lockedStrongFart = trigFartCore >= 12 && trigPeakRms >= Math.max(0.10, trigEntrySpcRms * 1.4);
         var postSec = postSamples / sr;
         var silentSec = silentSamples / sr;
-        if ((postSec >= minPostEventSec && silentSec >= postSilenceSec) || postSec >= maxPostEventSec) {
+
+        if (!lockedStrongFart && ((trigAct >= 10 && trigSib >= 2 && trigLow >= 1) || (trigAct >= 12 && (trigSpc / trigAct) >= 0.50))) {
+          for (var li = 0; li < postChunks.length; li++) {
+            writeToRing(postChunks[li]);
+          }
+          preSnapshot = null;
+          postChunks = [];
+          postSamples = 0;
+          silentSamples = 0;
+          consecutiveHits = 0;
+          trigAct = 0;
+          trigSpc = 0;
+          trigSib = 0;
+          trigLow = 0;
+          trigFartCore = 0;
+          trigPeakRms = 0;
+          trigEntrySpcRms = 0;
+          phase = 'listening';
+          rearmCount++;
+          rearmedNow = true;
+          rearmReason = 'speech';
+          rearmMessage = 'Filtered speech / TV chatter — Sentry re-armed';
+        } else if ((postSec >= minPostEventSec && silentSec >= postSilenceSec) || postSec >= maxPostEventSec) {
           var built = assembleRawSamples();
           var DSP = root.TootApp && root.TootApp.DSP;
           var clipInfo =
@@ -1282,6 +1465,13 @@
             postSamples = 0;
             silentSamples = 0;
             consecutiveHits = 0;
+            trigAct = 0;
+            trigSpc = 0;
+            trigSib = 0;
+            trigLow = 0;
+            trigFartCore = 0;
+            trigPeakRms = 0;
+            trigEntrySpcRms = 0;
             phase = 'listening';
             rearmCount++;
             rearmedNow = true;
@@ -1326,6 +1516,7 @@
           b3Share: 0,
           noiseFloorRms: noiseFloorRms,
           rearmCount: rearmCount,
+          inSpeechContext: getSpeechContext().inSpeech,
           bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
           triggeredNow: false,
           completedNow: false,
@@ -1385,6 +1576,7 @@
         b3Share: lastB3Share,
         noiseFloorRms: noiseFloorRms,
         rearmCount: rearmCount,
+        inSpeechContext: getSpeechContext().inSpeech,
         bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
         triggeredNow: triggeredNow,
         completedNow: completedNow,
@@ -1399,6 +1591,7 @@
       pushChunk: pushChunk,
       finalize: finalize,
       validateCapturedEvent: validateCapturedEvent,
+      getSpeechContext: getSpeechContext,
       getPhase: function () { return phase; },
       getNoiseFloor: function () { return noiseFloorRms; },
       getRearmCount: function () { return rearmCount; },
@@ -1476,6 +1669,7 @@
             lastBufferedSec: 0,
             noiseFloorRms: engine.getNoiseFloor(),
             rearmCount: 0,
+            inSpeechContext: false,
             rafId: null,
             stopPromise: null
           };
@@ -1514,6 +1708,7 @@
               state.lastBufferedSec = info.bufferedSec;
               state.noiseFloorRms = info.noiseFloorRms;
               state.rearmCount = info.rearmCount;
+              state.inSpeechContext = Boolean(info.inSpeechContext);
               if (info.triggeredNow && onDetected) {
                 try { onDetected(info); } catch (e) {}
               }
@@ -1545,6 +1740,7 @@
               state.lastBufferedSec = info.bufferedSec;
               state.noiseFloorRms = info.noiseFloorRms;
               state.rearmCount = info.rearmCount;
+              state.inSpeechContext = Boolean(info.inSpeechContext);
               if (info.triggeredNow && onDetected) onDetected(info);
               if (info.rearmedNow && onRearmed) onRearmed(info);
               if (info.completedNow) {
@@ -1559,7 +1755,8 @@
                 bufferedSec: state.lastBufferedSec,
                 elapsedSec: elapsed,
                 noiseFloorRms: state.noiseFloorRms,
-                rearmCount: state.rearmCount
+                rearmCount: state.rearmCount,
+                inSpeechContext: state.inSpeechContext
               });
             }
             state.rafId = requestAnimationFrame(pumpLevel);
