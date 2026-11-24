@@ -68,90 +68,101 @@
   ];
 
   var RESEARCH_FOOTNOTES = [
-    'Findings validated three times.',
-    'Additional scientific review recommended.',
-    'Research team remains intrigued.',
-    'Statistical confidence remains favourable.',
-    'Archive data continues to expand.',
-    'Additional funding has not yet been approved.',
-    'Coffee consumption increased during analysis.',
-    'Peer review remains ongoing.',
-    'Archive comparison yielded unexpected results.'
+    'Findings validated three times; nobody volunteered for a fourth listening session.',
+    'No leather office chairs were falsely accused during the preparation of this report.',
+    'Confidence intervals widen noticeably whenever someone in the room insists it was their shoe.',
+    'All microphones were sanitized acoustically and spiritually following specimen capture.',
+    'Additional grant funding has been denied by the Ethics Committee for the fourth consecutive quarter.',
+    'Coffee consumption spiked 340% during spectral classification.',
+    'Blaming the family dog remains statistically unsupported by our harmonic telemetry.',
+    'Elevator occupancy risk estimates assume poor ventilation and zero eye contact.',
+    'Peer review remains heated; two fellows are no longer speaking over a disagreement in the 120 Hz band.',
+    'Archive comparison yielded results our interns are still trying to process.',
+    'Recorded strictly in the interest of gastrointestinal truth, not personal pride.'
   ];
 
   var SCIENTIST_COMMENT_POOLS = {
     bottomsworth: [
-      'Remarkably stable turbulence.',
-      'This profile warrants further study.',
-      'I have rarely encountered resonance of this character.',
-      'The science appears unusually cooperative today.',
-      'This may become archive worthy.',
-      'An impressive example of acoustic determination.',
-      'Further funding should be considered.',
-      'The laboratory remains cautiously optimistic.'
+      'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.',
+      'I have devoted thirty years to acoustic physics, and frankly this specimen just made a mockery of half my textbook.',
+      'Do not apologize for this recording. Frame the spectrogram and hang it above the fireplace.',
+      'The sheer audacity in the lower octaves tells me dinner involved bold decisions.',
+      'If Beethoven had composed with lower-pressure brass, it would have sounded suspiciously like this.',
+      'An astonishing display of aerodynamic commitment. My monocle fogged up twice.',
+      'This profile warrants urgent Senate testimony, or at least a very serious apology to the couch cushions.',
+      'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.',
+      'The laboratory remains cautiously optimistic, though everyone has cracked a window just in case.'
     ],
     turbulence: [
-      'Pressure release dynamics are unusually clean.',
-      'Strong air-flow organization detected.',
-      'Turbulence behaviour exceeds expectations.',
-      'This event developed exactly as the models predicted.',
-      'This sample deserves additional study.'
+      'Pressure release dynamics are cleaner than a jet afterburner, which honestly concerns me for your upholstery.',
+      'That transient attack velocity hit the microphone like an unannounced press release.',
+      'Textbook turbulent vortex shedding — the kind usually seen behind SpaceX boosters, not dining room chairs.',
+      'Strong air-flow organization detected. Whatever structural valve held that back deserves a congressional medal.',
+      'The Reynolds number on this emission suggests either athletic focus or questionable late-night tacos.',
+      'Peak pressure sustained for far longer than polite society generally budgets for.',
+      'Smooth laminar onset followed by chaotic flutter — nature truly refuses to compromise.'
     ],
     wobble: [
-      'The frequency structure is surprisingly elegant.',
-      'I would like additional time with this spectrogram.',
-      'Several harmonics have attracted my attention.',
-      'The resonance profile appears unusually disciplined.',
-      'An unusually coherent resonance profile.'
+      'The harmonic structure is so disciplined I briefly tried to tune a cello to it.',
+      'Several overtones just formed a polite major triad. Honestly, I am intimidated and a little proud.',
+      'I zoomed in on the spectrogram for twenty minutes and forgot to eat lunch.',
+      'If this specimen enters the local choir, at least two baritones are losing their solo.',
+      'A dazzling tremor in the 14 Hz register — pure organic vibrato you simply cannot teach at Juilliard.',
+      'That resonance curve bends like a question mark, as if even the producer was surprised halfway through.',
+      'Unusually coherent formant structure. Someone clearly practiced breathing through their diaphragm.'
     ],
     flatley: [
-      'The machine learning models are highly confident.',
-      'Our clustering algorithms are behaving enthusiastically.',
-      'Computational curiosity levels remain elevated.',
-      'This sample sits far from the archive average.',
-      'The similarity engine appears highly confident.'
+      'My neural clustering model looked at this waveform, paused for three seconds, and asked for hazard pay.',
+      'The similarity algorithms are unusually excited, which is the closest our software gets to smiling.',
+      'This recording sits four standard deviations from normal human politeness — right where my dataset loves it.',
+      'Even after running 10,000 Monte Carlo simulations, the computer still mutters "good grief" under its breath.',
+      'Computational confidence just hit 99%. Either this is acoustic art or the laptop needs fresh air.',
+      'Statistically speaking, this sample occupies the exotic corner of our database reserved for campfire legends.',
+      'The algorithm cannot stop replaying the peak transient. Frankly, I need to revoke its headphone privileges.'
     ],
     pufferton: [
-      'The archive contains few comparable examples.',
-      'A noteworthy addition to the collection.',
-      'This will be filed under Acoustically Significant.',
-      'A valuable addition to the archive.'
+      'The Vault has stored four thousand specimens, and none arrived with quite this much diplomatic immunity.',
+      'I am filing this under "Historical Treasures Not Suitable For Thanksgiving Dinner."',
+      'Cataloged between a tuba solo and a mildly startled goose. Truly rare curatorial company.',
+      'Handle with cotton gloves: future anthropologists will study this recording to understand 21st-century confidence.',
+      'I nearly dropped my clipboard indexing this one. Pure museum-grade acoustics.',
+      'A priceless addition to the permanent archive — preferably stored behind triple-paned airtight glass.'
     ]
   };
 
   var SCIENTIST_COMMENTS = [
-    { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'Remarkably stable turbulence.' },
-    { scientistId: 'wobble', label: 'Research Note', quote: 'An unusually coherent resonance profile.' },
-    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'The similarity engine appears highly confident.' },
-    { scientistId: 'turbulence', label: 'Peer Review Note', quote: 'Pressure release dynamics are unusually clean.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'A noteworthy addition to the collection.' },
-    { scientistId: 'bottomsworth', label: 'Scientific Recommendation', quote: 'The laboratory remains cautiously optimistic.' },
-    { scientistId: 'turbulence', label: 'Field Observation', quote: 'Strong air-flow organization detected.' },
-    { scientistId: 'wobble', label: 'Research Note', quote: 'The frequency structure is surprisingly elegant.' },
-    { scientistId: 'flatley', label: 'Computational Note', quote: 'The machine learning models are highly confident.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'This will be filed under Acoustically Significant.' }
+    { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.' },
+    { scientistId: 'wobble', label: 'Research Note', quote: 'Several overtones just formed a polite major triad. Honestly, I am intimidated and a little proud.' },
+    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'My neural clustering model looked at this waveform, paused for three seconds, and asked for hazard pay.' },
+    { scientistId: 'turbulence', label: 'Peer Review Note', quote: 'Pressure release dynamics are cleaner than a jet afterburner, which honestly concerns me for your upholstery.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'I am filing this under "Historical Treasures Not Suitable For Thanksgiving Dinner."' },
+    { scientistId: 'bottomsworth', label: 'Scientific Recommendation', quote: 'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.' },
+    { scientistId: 'turbulence', label: 'Field Observation', quote: 'The Reynolds number on this emission suggests either athletic focus or questionable late-night tacos.' },
+    { scientistId: 'wobble', label: 'Research Note', quote: 'The harmonic structure is so disciplined I briefly tried to tune a cello to it.' },
+    { scientistId: 'flatley', label: 'Computational Note', quote: 'Computational confidence just hit 99%. Either this is acoustic art or the laptop needs fresh air.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'A priceless addition to the permanent archive — preferably stored behind triple-paned airtight glass.' }
   ];
 
   var RARE_COMMENTS = [
-    'Laboratory disagreement detected.',
-    'Peer review is becoming animated.',
-    'This sample has generated debate.',
-    'Several scientists have requested a second look.',
-    'Additional coffee has been authorized.',
-    'Archive retrieval taking longer than expected.',
-    'This recording has attracted unusual scientific interest.'
+    'Laboratory dispute erupted: Dr. Wobble hears F-sharp; Professor Bottomsworth insists it is clearly "Defiant B-flat."',
+    'Emergency decaf revoked — entire peer-review panel switched to double espresso for this recording.',
+    'Building maintenance just called asking why all five acoustic sensors blushed simultaneously.',
+    'Several senior fellows requested a second listen and immediately checked the room ventilation.',
+    'Additional grant funding formally requested strictly to figure out how this chord happened.',
+    'Vault indexing delayed: Dr. Pufferton is wiping tears of academic pride off his glasses.',
+    'Unanimous committee memo: this recording has officially crossed from comedy into constitutional history.'
   ];
 
   var SHAREABLE_VERDICTS = [
-    'Archive Worthy.',
-    'Scientifically Remarkable.',
-    'Professor Bottomsworth Requested A Second Opinion.',
-    'Unexpectedly Elegant.',
-    'Turbulence Excellence Achieved.',
-    'A Strong Contribution To Flatulence Science.',
-    'Acoustically Ambitious.',
-    'Certified Research Material.',
-    'Suitable For Peer Review.'
+    'Archive Worthy. Honestly, Put It In The Louvre.',
+    'Scientifically Remarkable (Yet Socially Unforgivable).',
+    'Professor Bottomsworth Requested A Standing Ovation.',
+    'Unexpectedly Elegant. Blame The Tuba Section.',
+    'Aerodynamic Excellence Achieved Without A Permit.',
+    'A Bold Contribution To Modern Gastronomy & Physics.',
+    'Acoustically Ambitious. Windows Open Recommended.',
+    'Certified Research Material — Keep Away From Elevators.',
+    'Passed Peer Review (Barely Kept A Straight Face).'
   ];
 
   var DIAL_SCIENTIST_MAP = {
@@ -211,8 +222,8 @@
 
   function pickRareComment(seedStr) {
     var h = hashSeed((seedStr || '') + '|rare');
-    if (h % 5 !== 0) return null; // ~20% low-frequency institutional dispatch
-    return RARE_COMMENTS[Math.floor(h / 5) % RARE_COMMENTS.length];
+    if (h % 3 !== 0) return null; // ~33% institutional dispatch frequency
+    return RARE_COMMENTS[Math.floor(h / 3) % RARE_COMMENTS.length];
   }
 
   function pickShareableVerdict(seedStr) {
@@ -1645,7 +1656,7 @@
         tag: specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster',
         title: (specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster') + ' @ ' + peakSpecHz + ' Hz',
         telemetry: peakSpecHz + ' Hz · ' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% Peak Energy (' + ordinalPct(specPct) + ' pct)',
-        story: 'A concentrated resonance cluster emerged around ' + peakSpecHz + ' Hz. Dr. Wobble identified unusual harmonic behaviour in this surrounding frequency band.',
+        story: 'A stubborn wall of sound parked itself at ' + peakSpecHz + ' Hz and refused to apologize. Dr. Wobble zoomed in twice just to admire the nerve of it.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', peakSpecHz + 'spec', 0).quote
       },
@@ -1657,7 +1668,7 @@
         tag: 'Thunder Concentration',
         title: 'Thunder Concentration @ ' + subPeakHz + ' Hz',
         telemetry: 'Sub-165 Hz Core · ' + Math.round(clamp(subPeakVal, 0, 1) * 100) + '% Low-End Energy',
-        story: 'Low-frequency acoustic pressure concentrates around ' + subPeakHz + ' Hz. Dr. Turbulence noted structurally significant bass propagation across this band.',
+        story: 'Heavy tectonic pressure anchored around ' + subPeakHz + ' Hz. Dr. Turbulence noted enough sub-bass propagation to rattle silverware in an adjacent postal code.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', subPeakHz + 'thunder', 1).quote
       },
@@ -1669,7 +1680,7 @@
         tag: 'Archive Outlier',
         title: 'Archive Outlier @ ' + outlierHz + ' Hz',
         telemetry: outlierHz + ' Hz · +' + Math.round(maxArchDiffVal * 100) + '% above Institute baseline',
-        story: 'Compared against historic Archive baselines, energy at ' + outlierHz + ' Hz diverges sharply from average specimens. Dr. Flatley flagged this band as acoustically distinctive.',
+        story: 'At ' + outlierHz + ' Hz, energy drifts miles off normal human etiquette baselines. Dr. Flatley flagged this band as "spectrally unrepentant."',
         scientistId: 'flatley',
         scientistQuote: pickScientistComment('flatley', outlierHz + 'outlier', 2).quote
       }
@@ -1685,8 +1696,8 @@
         title: voicedPts.length ? 'Harmonic Event @ ' + Math.round(maxPitch) + ' Hz' : 'Harmonic Stealth Window',
         telemetry: voicedPts.length ? 'Peak F0 ' + Math.round(maxPitch) + ' Hz · Frame ' + (maxPitchFrame + 1) + ' (±' + pitchCi + ' Hz CI)' : 'Unvoiced Aerodynamic Band',
         story: voicedPts.length
-          ? 'Peak fundamental locking reached ' + Math.round(maxPitch) + ' Hz with minimal micro-jitter. Dr. Wobble highlighted unusually disciplined harmonic structure here.'
-          : 'The emission maintained an unvoiced broadband character, keeping pitch detectors stealth-evasive while preserving steady timbre.',
+          ? 'Pitch locked cleanly onto ' + Math.round(maxPitch) + ' Hz with such brassy poise that Dr. Wobble briefly checked whether a French horn had snuck into the booth.'
+          : 'Zero tonal pitching detected — pure whisper-stealth aerodynamics engineered for slipping quietly out of a crowded checkout line.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', Math.round(maxPitch) + 'pitch', 1).quote
       },
@@ -1698,7 +1709,7 @@
         tag: 'Statistical Curiosity',
         title: 'Pitch Inflection Shift (' + pitchSpanSt.toFixed(1) + ' st span)',
         telemetry: 'Sweep Span ' + pitchSpanSt.toFixed(1) + ' semitones · ' + ordinalPct(pitchPct) + ' pct',
-        story: 'A rapid frequency excursion shifted across ' + pitchSpanSt.toFixed(1) + ' semitones. Professor Bottomsworth noted this contour as worthy of longitudinal peer review.',
+        story: 'Frequency swerved abruptly across ' + pitchSpanSt.toFixed(1) + ' semitones like it noticed someone walking into the hallway. Professor Bottomsworth saluted the dramatic plot twist.',
         scientistId: 'bottomsworth',
         scientistQuote: pickScientistComment('bottomsworth', pitchSpanSt + 'sweep', 2).quote
       },
@@ -1710,7 +1721,7 @@
         tag: 'Archive Outlier',
         title: 'Register Floor vs 90–240 Hz Corridor',
         telemetry: 'Floor ' + (minPitch < 9000 ? Math.round(minPitch) + ' Hz' : 'Broadband') + ' · Mean ' + Math.round(meanPitch || centHz) + ' Hz',
-        story: 'Comparing the trajectory against the shaded 90–240 Hz Institute corridor places this recording at the ' + ordinalPct(pitchPct) + ' archive percentile.',
+        story: 'Anchored against our shaded 90–240 Hz baseline corridor (' + ordinalPct(pitchPct) + ' archive percentile), earning an appreciative nod from Dr. Pufferton.',
         scientistId: 'pufferton',
         scientistQuote: pickScientistComment('pufferton', Math.round(meanPitch) + 'floor', 0).quote
       }
@@ -1725,7 +1736,7 @@
         tag: 'Peak Turbulence Event',
         title: 'Peak Turbulence Event @ ' + Math.round(modRate) + ' Hz',
         telemetry: Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' flaps/min) · Depth ' + modDepthPct + '%',
-        story: 'Oscillation locks squarely onto ' + Math.round(modRate * 60) + ' flaps/min (' + modDepthPct + '% depth). Dr. Turbulence observed strong air-flow organization exceeding archive expectations.',
+        story: 'Sustaining ' + Math.round(modRate * 60) + ' cheek flaps/min (' + modDepthPct + '% depth). Dr. Turbulence considers this speed proof that human aerodynamics deserve a wind-tunnel budget.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', modDepthPct + 'turb', 0).quote
       },
@@ -1737,7 +1748,7 @@
         tag: 'Harmonic Event',
         title: 'Classic Cheek-Flutter Band (8–20 Hz)',
         telemetry: Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% Modulation Share',
-        story: 'Between 8 Hz and 20 Hz lies classic cheek-flap flutter biomechanics. This specimen allocates ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of its ripple energy directly inside this region.',
+        story: 'The prized 8–20 Hz concert flutter sweet-spot captures ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of ripple power — pure percussive textbook form.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', modRate + 'band', 2).quote
       },
@@ -1749,7 +1760,7 @@
         tag: 'Statistical Curiosity',
         title: 'Fast Turbulence Rattle (20–45 Hz)',
         telemetry: Math.round(safeNum(f.modBands && f.modBands[2], 0.3) * 100) + '% High-Rattle Share (' + ordinalPct(modPct) + ' pct)',
-        story: 'High-frequency flutter above 20 Hz indicates vigorous aerodynamic shear. Dr. Flatley logged elevated computational curiosity across this fast-rattle zone.',
+        story: 'Rapid oscillation above 20 Hz sounds suspiciously like a miniature scooter idling inside a tuxedo pocket. Dr. Flatley cannot stop graphing it.',
         scientistId: 'flatley',
         scientistQuote: pickScientistComment('flatley', modPct + 'rattle', 1).quote
       }
@@ -1764,7 +1775,7 @@
         tag: 'Pressure Instability Zone',
         title: 'Peak Shockwave @ ' + Math.round(envPeakNorm * durSec * 1000) + ' ms',
         telemetry: 'Attack ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB (' + ordinalPct(envPct) + ' pct)',
-        story: 'Maximum acoustic impulse peaked within ' + atkMs + ' ms at ' + crestDb.toFixed(1) + ' dB crest sharpness. Professor Bottomsworth noted remarkable pressure determination.',
+        story: 'Full ' + crestDb.toFixed(1) + ' dB sonic impact landed in just ' + atkMs + ' ms — faster than anyone nearby could invent an alibi. Professor Bottomsworth is deeply moved.',
         scientistId: 'bottomsworth',
         scientistQuote: pickScientistComment('bottomsworth', crestDb + 'crest', 3).quote
       },
@@ -1776,7 +1787,7 @@
         tag: 'Statistical Curiosity',
         title: 'Mid-Energy T50 Threshold (' + Math.round(t50Norm * 100) + '%)',
         telemetry: 'Half-Energy Expended @ ' + Math.round(t50Norm * durSec * 1000) + 'ms · ±18ms CI',
-        story: '50% of cumulative sound power discharges before ' + Math.round(t50Norm * 100) + '% of elapsed duration, outpacing typical symmetric archive release curves.',
+        story: '50% of total kinetic energy fired off before ' + Math.round(t50Norm * 100) + '% duration — front-loaded boldness with zero interest in tiptoeing out slowly.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', Math.round(t50Norm * 100) + 't50', 2).quote
       },
@@ -1789,8 +1800,8 @@
         title: bursts > 1 ? bursts + '-Burst Release Tail' : 'Clean Valve Decay Tail',
         telemetry: bursts + ' Hysteresis Burst(s) · ' + durSec.toFixed(2) + 's Total',
         story: bursts > 1
-          ? 'The tail segments ' + bursts + ' separate pressure pulses across hysteresis gates, earning priority indexing from Dr. Pufferton.'
-          : 'Smooth trailing pressure attenuation with clean termination — filed cleanly inside the Institute archive.',
+          ? 'Punctuated across ' + bursts + ' distinct dramatic acts, like a sitcom with unexpected post-credits scenes. Dr. Pufferton gave it VIP archive shelving.'
+          : 'One clean, dignified release with zero sloppy aftershocks — filed proudly in the Gentlemanly Acoustics Wing.',
         scientistId: 'pufferton',
         scientistQuote: pickScientistComment('pufferton', bursts + 'tail', 2).quote
       }
@@ -5107,12 +5118,12 @@
       '      <div class="labs-chart-box-inner">' +
       '        <div class="labs-chart-box-head"><span>Vault Specimen Map (Pitch × Moisture)</span><small>Spatial acoustic spread</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Classification:</strong> Spatial distribution spans ' + (g.segments || []).length + ' cataloged Vault movements. <em>(Dr. Pufferton)</em></span></div>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Classification:</strong> Constellation spans ' + (g.segments || []).length + ' cataloged Vault movements — Dr. Pufferton had to open a second wing just to shelve it cleanly. <em>(Dr. Pufferton)</em></span></div>' +
       '      </div>' +
       '      <div class="labs-chart-box-inner">' +
       '        <div class="labs-chart-box-head"><span>Combined 40-Band FFT Spectrum</span><small>Aggregate frequency energy</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid measured against Institute baseline. <em>(Dr. Wobble)</em></span></div>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid achieved such unexpected symphonic richness that Dr. Wobble requested Carnegie Hall pricing. <em>(Dr. Wobble)</em></span></div>' +
       '      </div>' +
       '    </div>' +
       '  </section>' +
