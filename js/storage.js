@@ -54,7 +54,22 @@
       ? record.rawSamples
       : new Float32Array(record.rawSamples || samples);
     var sr = record.sampleRate || 44100;
+    var trimStartSec = typeof record.trimStartSec === 'number' ? record.trimStartSec : 0;
+    var trimEndSec = typeof record.trimEndSec === 'number' ? record.trimEndSec : samples.length / sr;
+    var preOnsetBreath = record.preOnsetBreath || null;
+    if (
+      !preOnsetBreath &&
+      TootApp.DSP &&
+      typeof TootApp.DSP.measurePreOnsetBreath === 'function' &&
+      rawSamples.length > samples.length &&
+      trimStartSec >= 0.09
+    ) {
+      preOnsetBreath = TootApp.DSP.measurePreOnsetBreath(rawSamples, sr, Math.round(trimStartSec * sr));
+    }
     var features = TootApp.DSP ? TootApp.DSP.extractFeatures(samples, sr) : null;
+    if (features && preOnsetBreath) {
+      features.preOnsetBreath = preOnsetBreath;
+    }
     return {
       id: record.id,
       name: record.name || 'Custom Toot',
@@ -64,8 +79,9 @@
       createdAt: record.createdAt || Date.now(),
       sampleRate: sr,
       rawSamples: rawSamples,
-      trimStartSec: typeof record.trimStartSec === 'number' ? record.trimStartSec : 0,
-      trimEndSec: typeof record.trimEndSec === 'number' ? record.trimEndSec : samples.length / sr,
+      trimStartSec: trimStartSec,
+      trimEndSec: trimEndSec,
+      preOnsetBreath: preOnsetBreath,
       samples: samples,
       features: features
     };
@@ -82,6 +98,11 @@
       rawSamples: sound.rawSamples ? new Float32Array(sound.rawSamples) : new Float32Array(sound.samples || []),
       trimStartSec: typeof sound.trimStartSec === 'number' ? sound.trimStartSec : 0,
       trimEndSec: typeof sound.trimEndSec === 'number' ? sound.trimEndSec : 0,
+      preOnsetBreath:
+        sound.preOnsetBreath ||
+        (sound.clipInfo && sound.clipInfo.preOnsetBreath) ||
+        (sound.features && sound.features.preOnsetBreath) ||
+        null,
       samples: new Float32Array(sound.samples || [])
     };
   }

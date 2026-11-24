@@ -3521,6 +3521,7 @@
         confidenceLevel: 'Low',
         confidenceScore: 15,
         verdict: 'Evidence is inconclusive due to insufficient acoustic telemetry. Further investigation recommended.',
+        v2Telemetry: null,
         breakdown: [
           { key: 'pitch_stability', name: 'Pitch Stability', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.12, explanation: 'Insufficient voiced frames to isolate vocal pitch locking.' },
           { key: 'harmonic_regularity', name: 'Harmonic Regularity', score: 50, status: 'Moderate', statusColor: '#FBBF24', polarity: 'suspicious', weight: 0.13, explanation: 'Overtone periodicity could not be conclusively resolved.' },
@@ -3557,6 +3558,41 @@
     var modBands = feat.modBands && feat.modBands.length >= 3 ? feat.modBands : [0.3, 0.4, 0.3];
     var burstCount = Math.max(1, Math.round(safeNum(feat.burstCount, 1)));
     var zcr = clamp(safeNum(feat.zcr, 200), 0, 8000);
+
+    // Authenticity v2 Telemetry (Lip-trill 22-42 Hz, 85% roll-off clothing damping, pre-onset breath)
+    var preOnsetBreath =
+      (soundOrFeat && soundOrFeat.preOnsetBreath) ||
+      (soundOrFeat && soundOrFeat.clipInfo && soundOrFeat.clipInfo.preOnsetBreath) ||
+      (feat && feat.preOnsetBreath) ||
+      null;
+    if (
+      !preOnsetBreath &&
+      DSP &&
+      typeof DSP.measurePreOnsetBreath === 'function' &&
+      soundOrFeat &&
+      soundOrFeat.rawSamples &&
+      soundOrFeat.rawSamples.length > 0 &&
+      typeof soundOrFeat.trimStartSec === 'number' &&
+      soundOrFeat.trimStartSec >= 0.09
+    ) {
+      var rawSr = soundOrFeat.sampleRate || 44100;
+      preOnsetBreath = DSP.measurePreOnsetBreath(soundOrFeat.rawSamples, rawSr, Math.round(soundOrFeat.trimStartSec * rawSr));
+    }
+
+    var lipTrillScore = clamp(safeNum(feat.lipTrillScore, 0), 0, 1);
+    var lipTrillPeakHz = clamp(safeNum(feat.lipTrillPeakHz, 0), 0, 60);
+    var spectralRolloff85Hz = clamp(safeNum(feat.spectralRolloff85Hz, centroidHz * 1.9), 80, 8000);
+    var above2kPowerShare = clamp(safeNum(feat.above2kPowerShare, highAirShare * 0.5), 0, 1);
+    var clothingDampingScore = typeof feat.clothingDampingScore === 'number'
+      ? clamp(feat.clothingDampingScore, 0, 1)
+      : clamp(
+          0.65 * clamp(1 - (spectralRolloff85Hz - 950) / 2250, 0, 1) +
+          0.35 * clamp(1 - (above2kPowerShare - 0.03) / 0.25, 0, 1),
+          0,
+          1
+        );
+    var preBreathAvail = Boolean(preOnsetBreath && preOnsetBreath.available);
+    var preBreathScore = preBreathAvail ? clamp(safeNum(preOnsetBreath.score, 0), 0, 1) : 0;
 
     // Inspect 40-band spectrum & 32-frame grid for formants, harmonics & boundary breathiness
     var avgSpec = feat.avgSpectrum && feat.avgSpectrum.length ? feat.avgSpectrum : [];
@@ -3674,60 +3710,7 @@
       if (bTot > 1e-4) boundaryHighRatio = clamp(bHi / bTot, 0, 1);
     }
 
-    // 1. PITCH STABILITY (0-100; high = steady vocal pitch control -> suspicious)
-    var steadiness = stepCnt > 0 ? clamp(1 - meanPitchStep / 3.4, 0, 1) : clamp(1 - centroidStd / 0.55, 0, 1);
-    var narrowness = stepCnt > 0 ? clamp(1 - pitchRangeSt / 8.5, 0, 1) : clamp(1 - Math.abs(safeNum(feat.centroidTrend, 0)) / 0.7, 0, 1);
-    var pitchZoneRisk = medianPitchHz >= 120 && medianPitchHz <= 290 ? 1.0 : (medianPitchHz > 290 ? 0.78 : 0.28);
-    var subBassDamp = lowChamberShare > 0.78 && upperMidShare < 0.16 ? 0.65 : 1.0;
-    var stabilityRaw = voicedRatio >= 0.22
-      ? (0.34 * voicedRatio + 0.28 * steadiness + 0.18 * narrowness + 0.20 * pitchZoneRisk) * subBassDamp
-      : 0.18 * steadiness + 0.14 * narrowness + 0.08 * voicedRatio;
-    var pitchStabilityScore = Math.round(clamp(stabilityRaw * 100, 4, 96));
-
-    // 2. HARMONIC REGULARITY (0-100; high = clean mid-band vocal harmonics -> suspicious)
-    var harmonicOrder = clamp(1 - spectralFlatness * 2.1, 0, 1);
-    var lowChaosBonus = clamp(1 - spectralFlux / 0.12, 0, 1);
-    var singleBurstOrder = clamp(1 - (burstCount - 1) / 3, 0, 1);
-    var vocalBandFocus = clamp((upperMidShare - 0.08) / 0.36, 0, 1);
-    var harmonicRaw = 0.28 * voicedRatio * (0.45 + 0.55 * vocalBandFocus) + 0.24 * harmonicOrder * (0.4 + 0.6 * vocalBandFocus) + 0.22 * lowChaosBonus + 0.16 * vocalBandFocus + 0.10 * singleBurstOrder;
-    if (subShare > 0.35 && upperMidShare < 0.18) harmonicRaw *= 0.62;
-    var harmonicRegularityScore = Math.round(clamp(harmonicRaw * 100, 5, 95));
-
-    // 3. SPECTRAL COMPLEXITY (0-100; high = rich entropy + dynamic flux -> authentic)
-    var fluxRichness = clamp(spectralFlux / 0.095, 0, 1);
-    var centroidDynamics = clamp(centroidStd / 0.45, 0, 1);
-    var pitchSweepDiversity = clamp(pitchRangeSt / 7.5, 0, 1);
-    var hissDamp = highAirShare > 0.32 ? clamp(1 - (highAirShare - 0.32) * 1.45, 0.25, 1) : 1.0;
-    var complexityRaw = (0.46 * specEntropy + 0.28 * fluxRichness + 0.16 * centroidDynamics + 0.10 * pitchSweepDiversity) * hissDamp;
-    var spectralComplexityScore = Math.round(clamp(complexityRaw * 100, 8, 97));
-
-    // 4. AIRFLOW TURBULENCE (0-100; high = explosive attack + cheek flutter + burst irregularity -> authentic)
-    var attackSharpness = clamp(1 - (attackSec - 0.015) / 0.21, 0, 1);
-    var crestPunch = clamp((crestDb - 4.0) / 13.5, 0, 1);
-    var flutterIndex = clamp(modDepth / 0.85, 0, 1);
-    var flutterBandFit = clamp((safeNum(modBands[1], 0) + safeNum(modBands[2], 0)) / 0.72, 0, 1);
-    var burstTurbulence = clamp(envJitter / 0.12, 0, 1);
-    var rateAffinity = modRateHz >= 6 && modRateHz <= 34 ? 1.0 : 0.42;
-    var turbulenceRaw =
-      0.26 * attackSharpness +
-      0.22 * crestPunch +
-      0.24 * (0.65 * flutterIndex + 0.35 * rateAffinity) +
-      0.16 * flutterBandFit +
-      0.12 * burstTurbulence;
-    var airflowTurbulenceScore = Math.round(clamp(turbulenceRaw * 100, 6, 98));
-
-    // 5. RESONANCE PATTERN (0-100; high = authentic pelvic low-mid chamber dominance + pressure drop -> authentic)
-    var chamberDominance = clamp((lowChamberShare - 0.30) / 0.62, 0, 1);
-    var centroidFit =
-      centroidHz <= 320
-        ? clamp(1 - Math.max(0, 75 - centroidHz) / 120, 0.72, 1)
-        : clamp(1 - (centroidHz - 320) / 520, 0.04, 1);
-    var pressureDecayDrop = (pitchTrend < -0.4 || safeNum(feat.centroidTrend, 0) < -0.03) ? 0.96 : 0.44;
-    var subVsMouthRatio = clamp(lowChamberShare / (upperMidShare * 1.4 + highAirShare * 1.6 + 0.12), 0, 2.2) / 2.2;
-    var resonanceRaw = 0.42 * chamberDominance + 0.30 * centroidFit + 0.18 * subVsMouthRatio + 0.10 * pressureDecayDrop;
-    var resonancePatternScore = Math.round(clamp(resonanceRaw * 100, 5, 98));
-
-    // 6. FORMANT PRESENCE (0-100; high = strong speech F1/F2 or bilabial lip signatures -> suspicious)
+    // Formant & Pre-Onset baseline signals used by Voiced-Squeaker vs. Voiced-Raspberry separation
     var subAvg = subBandCount > 0 ? subBandSum / subBandCount : 0.25;
     var f1Avg = f1Count > 0 ? f1Sum / f1Count : 0;
     var f2Avg = f2Count > 0 ? f2Sum / f2Count : 0;
@@ -3740,17 +3723,132 @@
     var mfccSlopeCue = feat.mfccMean && feat.mfccMean.length >= 3
       ? clamp((safeNum(feat.mfccMean[1], 0) < 12 ? (12 - safeNum(feat.mfccMean[1], 0)) / 22 : 0.15), 0, 1)
       : 0.25;
-    var formantRaw = 0.28 * f1Ratio + 0.28 * f2Ratio + 0.24 * midTractEnergy + 0.14 * lipSpitCue + 0.06 * mfccSlopeCue;
+    var upperAirCue = clamp((highAirShare - 0.03) / 0.24, 0, 1);
+
+    // Authenticity v2: Voiced-Squeaker vs. Voiced-Raspberry Separation
+    var openMouthRadiation = clamp(1 - clothingDampingScore, 0, 1);
+    var squeakerPitchFit = voicedRatio >= 0.35 && medianPitchHz >= 245 ? clamp((medianPitchHz - 235) / 110, 0, 1) : 0;
+    var squeakerCleanliness =
+      clamp(1 - Math.max(0, spectralFlatness - 0.15) / 0.22, 0, 1) *
+      clamp(1 - above2kPowerShare / 0.12, 0, 1) *
+      clamp(1 - lipTrillScore / 0.32, 0, 1);
+    var squeakerRollGuard = spectralRolloff85Hz < Math.max(1650, medianPitchHz * 3.6) ? 1.0 : 0.3;
+    var squeakerBreathGuard = (!preBreathAvail || preBreathScore < 0.32) ? 1.0 : 0.25;
+    var squeakerGlideBonus = (pitchRangeSt >= 2.5 || Math.abs(pitchTrend) >= 1.5) ? 1.0 : 0.78;
+    var squeakerScore = clamp(
+      squeakerPitchFit * squeakerCleanliness * squeakerRollGuard * squeakerBreathGuard * squeakerGlideBonus,
+      0,
+      1
+    );
+    var vocalF0Match = medianPitchHz >= 85 && medianPitchHz <= 285 ? 1.0 : (medianPitchHz > 285 ? 0.35 : 0.45);
+    var voicedRaspberryScore = clamp(
+      0.38 * lipTrillScore +
+      0.26 * (voicedRatio * vocalF0Match * (0.45 + 0.55 * openMouthRadiation)) +
+      0.20 * (0.5 * f1Ratio + 0.5 * f2Ratio) * openMouthRadiation +
+      0.16 * (preBreathAvail ? preBreathScore : upperAirCue),
+      0,
+      1
+    );
+    var archetype =
+      squeakerScore >= 0.45
+        ? 'Clothed High Squeaker'
+        : voicedRaspberryScore >= 0.45
+          ? 'Voiced Bilabial Raspberry'
+          : lipTrillScore >= 0.35
+            ? 'Bilabial Trill (22–42 Hz)'
+            : clothingDampingScore >= 0.65
+              ? 'Damped Cavity Resonance'
+              : 'Unclassified Acoustic Blend';
+
+    // 1. PITCH STABILITY (0-100; high = steady vocal pitch control -> suspicious, with squeaker forgiveness)
+    var steadiness = stepCnt > 0 ? clamp(1 - meanPitchStep / 3.4, 0, 1) : clamp(1 - centroidStd / 0.55, 0, 1);
+    var narrowness = stepCnt > 0 ? clamp(1 - pitchRangeSt / 8.5, 0, 1) : clamp(1 - Math.abs(safeNum(feat.centroidTrend, 0)) / 0.7, 0, 1);
+    var pitchZoneRisk = medianPitchHz >= 120 && medianPitchHz <= 290 ? 1.0 : (medianPitchHz > 290 ? 0.78 : 0.28);
+    var subBassDamp = lowChamberShare > 0.78 && upperMidShare < 0.16 ? 0.65 : 1.0;
+    var stabilityRaw = voicedRatio >= 0.22
+      ? (0.34 * voicedRatio + 0.28 * steadiness + 0.18 * narrowness + 0.20 * pitchZoneRisk) * subBassDamp
+      : 0.18 * steadiness + 0.14 * narrowness + 0.08 * voicedRatio;
+    stabilityRaw = stabilityRaw * (1 - 0.52 * squeakerScore) + 0.14 * voicedRaspberryScore;
+    var pitchStabilityScore = Math.round(clamp(stabilityRaw * 100, 4, 96));
+
+    // 2. HARMONIC REGULARITY (0-100; high = clean mid-band vocal harmonics or bilabial lip trill -> suspicious)
+    var harmonicOrder = clamp(1 - spectralFlatness * 2.1, 0, 1);
+    var lowChaosBonus = clamp(1 - spectralFlux / 0.12, 0, 1);
+    var singleBurstOrder = clamp(1 - (burstCount - 1) / 3, 0, 1);
+    var vocalBandFocus = clamp((upperMidShare - 0.08) / 0.36, 0, 1);
+    var harmonicRaw = 0.28 * voicedRatio * (0.45 + 0.55 * vocalBandFocus) + 0.24 * harmonicOrder * (0.4 + 0.6 * vocalBandFocus) + 0.22 * lowChaosBonus + 0.16 * vocalBandFocus + 0.10 * singleBurstOrder;
+    if (subShare > 0.35 && upperMidShare < 0.18) harmonicRaw *= 0.62;
+    harmonicRaw += 0.24 * lipTrillScore;
+    if (above2kPowerShare < 0.08) harmonicRaw *= (1 - 0.45 * squeakerScore);
+    var harmonicRegularityScore = Math.round(clamp(harmonicRaw * 100, 5, 95));
+
+    // 3. SPECTRAL COMPLEXITY (0-100; high = rich entropy + dynamic flux -> authentic)
+    var fluxRichness = clamp(spectralFlux / 0.095, 0, 1);
+    var centroidDynamics = clamp(centroidStd / 0.45, 0, 1);
+    var pitchSweepDiversity = clamp(pitchRangeSt / 7.5, 0, 1);
+    var hissDamp = highAirShare > 0.32 ? clamp(1 - (highAirShare - 0.32) * 1.45, 0.25, 1) : 1.0;
+    var complexityRaw = (0.46 * specEntropy + 0.28 * fluxRichness + 0.16 * centroidDynamics + 0.10 * pitchSweepDiversity) * hissDamp;
+    complexityRaw = complexityRaw * (1 - 0.22 * openMouthRadiation * lipTrillScore) + 0.16 * squeakerScore * clamp(pitchRangeSt / 6, 0.35, 1);
+    var spectralComplexityScore = Math.round(clamp(complexityRaw * 100, 8, 97));
+
+    // 4. AIRFLOW TURBULENCE (0-100; high = explosive attack + 6-20 Hz cheek flutter, penalized on 22-42 Hz lip trill -> authentic)
+    var attackSharpness = clamp(1 - (attackSec - 0.015) / 0.21, 0, 1);
+    var crestPunch = clamp((crestDb - 4.0) / 13.5, 0, 1);
+    var flutterIndex = clamp(modDepth / 0.85, 0, 1);
+    var cheekBandFit = clamp((safeNum(modBands[1], 0) + 0.5 * safeNum(modBands[0], 0)) / 0.65, 0, 1);
+    var burstTurbulence = clamp(envJitter / 0.12, 0, 1);
+    var rateAffinity = (modRateHz >= 6 && modRateHz <= 21)
+      ? 1.0
+      : (modRateHz >= 22 && modRateHz <= 42 && lipTrillScore > 0.30 ? 0.22 : 0.45);
+    var turbulenceRaw = (
+      0.26 * attackSharpness +
+      0.22 * crestPunch +
+      0.24 * (0.65 * flutterIndex + 0.35 * rateAffinity) +
+      0.16 * cheekBandFit +
+      0.12 * burstTurbulence
+    ) * (1 - 0.50 * lipTrillScore);
+    var airflowTurbulenceScore = Math.round(clamp(turbulenceRaw * 100, 6, 98));
+
+    // 5. RESONANCE PATTERN (0-100; incorporates 85% spectral roll-off clothing damping -> authentic)
+    var chamberDominance = clamp((lowChamberShare - 0.30) / 0.62, 0, 1);
+    var centroidFit =
+      centroidHz <= 320
+        ? clamp(1 - Math.max(0, 75 - centroidHz) / 120, 0.72, 1)
+        : clamp(1 - (centroidHz - 320) / 520, 0.04, 1);
+    var pressureDecayDrop = (pitchTrend < -0.4 || safeNum(feat.centroidTrend, 0) < -0.03) ? 0.96 : 0.44;
+    var subVsMouthRatio = clamp(lowChamberShare / (upperMidShare * 1.4 + highAirShare * 1.6 + 0.12), 0, 2.2) / 2.2;
+    var resonanceRaw =
+      0.32 * chamberDominance +
+      0.22 * centroidFit +
+      0.26 * clothingDampingScore +
+      0.12 * subVsMouthRatio +
+      0.08 * pressureDecayDrop +
+      0.26 * squeakerScore * clothingDampingScore;
+    var resonancePatternScore = Math.round(clamp(resonanceRaw * 100, 5, 98));
+
+    // 6. FORMANT PRESENCE (0-100; speech F1/F2 + 22-42 Hz lip trill + voiced raspberry -> suspicious)
+    var formantRaw =
+      (0.22 * f1Ratio + 0.22 * f2Ratio + 0.24 * lipTrillScore + 0.16 * voicedRaspberryScore + 0.10 * midTractEnergy + 0.06 * mfccSlopeCue) *
+      (1 - 0.35 * squeakerScore);
     var formantPresenceScore = Math.round(clamp(formantRaw * 100, 4, 96));
 
-    // 7. BREATH CONTAMINATION (0-100; high = upper-band respiratory hiss & boundary exhalation bleed -> suspicious)
-    var upperAirCue = clamp((highAirShare - 0.03) / 0.24, 0, 1);
+    // 7. BREATH CONTAMINATION (0-100; uses pre-onset breath SNR/dur before clipping when available -> suspicious)
     var boundaryCue = clamp((boundaryHighRatio - 0.06) / 0.28, 0, 1);
     var zcrBreathCue = clamp((zcr - 220) / 1100, 0, 1);
     var slowRampBreath = clamp((attackSec - 0.035) / 0.20, 0, 1) * clamp(highAirShare / 0.14, 0, 1);
     var hiAvgSpec = hiAirSpecCount > 0 ? hiAirSpecSum / hiAirSpecCount : 0;
     var hissPresence = clamp(hiAvgSpec / 0.30, 0, 1);
-    var breathRaw = 0.30 * upperAirCue + 0.28 * boundaryCue + 0.18 * zcrBreathCue + 0.14 * hissPresence + 0.10 * slowRampBreath;
+    var breathRaw;
+    if (preBreathAvail) {
+      breathRaw = 0.36 * preBreathScore + 0.22 * upperAirCue + 0.18 * boundaryCue + 0.12 * zcrBreathCue + 0.12 * hissPresence;
+      if (preBreathScore >= 0.48) {
+        breathRaw = Math.max(breathRaw, 0.56 + 0.34 * preBreathScore);
+      } else if (preBreathScore < 0.12) {
+        breathRaw *= 0.85;
+      }
+    } else {
+      breathRaw = 0.30 * upperAirCue + 0.28 * boundaryCue + 0.18 * zcrBreathCue + 0.14 * hissPresence + 0.10 * slowRampBreath;
+    }
     var breathContaminationScore = Math.round(clamp(breathRaw * 100, 3, 97));
 
     // Weighted contribution toward Overall Authenticity Score (weights sum to 1.00)
@@ -3815,32 +3913,42 @@
           : 'Narrow, overly uniform frequency contour typical of simplified tonal imitation.';
 
     var turbulenceExplain =
-      airflowTurbulenceScore >= 70
-        ? 'Strong turbulence signatures, explosive attack (' + (attackSec * 1000).toFixed(0) + ' ms), and ' + Math.round(modRateHz) + ' Hz flutter support authenticity.'
-        : airflowTurbulenceScore >= 45
-          ? 'Moderate airflow irregularity and impulse modulation detected.'
-          : 'Smooth ramp-up and muted turbulence suggest controlled oral or gentle steady air release.';
+      lipTrillScore >= 0.38
+        ? 'Detected concentrated 22–42 Hz bilabial lip-trill periodic modulation (' + Math.round(lipTrillPeakHz || modRateHz) + ' Hz peak) — stronger oral embouchure signature than 6–20 Hz cheek flutter.'
+        : airflowTurbulenceScore >= 70
+          ? 'Strong turbulence signatures, explosive attack (' + (attackSec * 1000).toFixed(0) + ' ms), and ' + Math.round(modRateHz) + ' Hz cheek flutter support authenticity.'
+          : airflowTurbulenceScore >= 45
+            ? 'Moderate airflow irregularity and impulse modulation detected.'
+            : 'Smooth ramp-up and muted turbulence suggest controlled oral or gentle steady air release.';
 
     var resonanceExplain =
       resonancePatternScore >= 70
-        ? 'Dominant sub-450 Hz resonance (' + Math.round(lowChamberShare * 100) + '% energy) matches lower acoustic chamber geometry.'
+        ? '85% spectral roll-off sits at ' + Math.round(spectralRolloff85Hz) + ' Hz with ' + Math.round(clothingDampingScore * 100) + '% clothing/cavity low-pass damping and ' + Math.round(lowChamberShare * 100) + '% sub-450 Hz weight.'
         : resonancePatternScore >= 45
-          ? 'Intermediate cavity weighting; resonance distribution partially straddles lower and upper chambers.'
-          : 'Underpowered sub-450 Hz foundation; acoustic energy sits suspiciously high for pelvic cavity resonance.';
+          ? 'Intermediate cavity weighting (85% roll-off ' + Math.round(spectralRolloff85Hz) + ' Hz); partially damped lower-chamber profile.'
+          : 'Broadband open-air radiation (85% roll-off ' + Math.round(spectralRolloff85Hz) + ' Hz; ' + (above2kPowerShare * 100).toFixed(1) + '% >2 kHz) indicates unmuffled oral/open aperture projection.';
 
     var formantExplain =
       formantPresenceScore >= 70
-        ? 'Speech-like resonance patterns and elevated F1/F2 lip-activity signatures detected.'
-        : formantPresenceScore >= 45
-          ? 'Mild mid-band formant peaks detected; possible lip-cushion shaping or upholstery coloration.'
-          : 'Negligible speech formant clustering; frequency profile bypasses human vowel corridors.';
+        ? (lipTrillScore >= 0.38 || voicedRaspberryScore >= 0.45
+            ? 'Elevated 22–42 Hz bilabial lip-trill and voiced F1/F2 vocal-tract clustering strongly suggest oral raspberry mimicry.'
+            : 'Speech-like resonance patterns and elevated F1/F2 lip-activity signatures detected.')
+        : squeakerScore >= 0.45
+          ? 'High harmonic squeak stayed clothing-damped with negligible 22–42 Hz lip trill or oral formant radiation.'
+          : formantPresenceScore >= 45
+            ? 'Mild mid-band formant peaks detected; possible lip-cushion shaping or upholstery coloration.'
+            : 'Negligible speech formant clustering; frequency profile bypasses human vowel corridors.';
 
     var breathExplain =
-      breathContaminationScore >= 70
-        ? 'Elevated upper-band air hiss (' + Math.round(highAirShare * 100) + '% >1.2 kHz) suggests probable respiratory exhalation bleed.'
-        : breathContaminationScore >= 45
-          ? 'Moderate high-frequency air turbulence present near transient boundaries.'
-          : 'Minimal respiratory air contamination detected before onset or after decay.';
+      preBreathAvail && preBreathScore >= 0.40
+        ? 'Pre-clip raw lead-in detected +' + preOnsetBreath.breathSnrDb + ' dB respiratory inhalation (' + preOnsetBreath.breathDurMs + ' ms >1 kHz) right before onset, plus ' + Math.round(highAirShare * 100) + '% >1.2 kHz bleed.'
+        : breathContaminationScore >= 70
+          ? 'Elevated upper-band air hiss (' + Math.round(highAirShare * 100) + '% >1.2 kHz) suggests probable respiratory exhalation bleed.'
+          : preBreathAvail && preBreathScore < 0.12
+            ? 'Verified quiet pre-onset window before clipping (' + preOnsetBreath.preWindowSec.toFixed(2) + 's scanned); minimal respiratory contamination.'
+            : breathContaminationScore >= 45
+              ? 'Moderate high-frequency air turbulence present near transient boundaries.'
+              : 'Minimal respiratory air contamination detected before onset or after decay.';
 
     // Humorous, strictly probabilistic laboratory verdict (NEVER uses "REAL FART" / "FAKE FART")
     var verdict;
@@ -3960,6 +4068,17 @@
       confidenceLevel: confidenceLevel,
       confidenceScore: confidenceScore,
       verdict: verdict,
+      v2Telemetry: {
+        lipTrillScore: Number(lipTrillScore.toFixed(3)),
+        lipTrillPeakHz: Number(lipTrillPeakHz.toFixed(1)),
+        spectralRolloff85Hz: Math.round(spectralRolloff85Hz),
+        clothingDampingScore: Number(clothingDampingScore.toFixed(3)),
+        above2kPowerShare: Number(above2kPowerShare.toFixed(4)),
+        preOnsetBreath: preOnsetBreath,
+        squeakerScore: Number(squeakerScore.toFixed(3)),
+        voicedRaspberryScore: Number(voicedRaspberryScore.toFixed(3)),
+        archetype: archetype
+      },
       breakdown: breakdown
     };
   }
@@ -4087,6 +4206,34 @@
     var r = 42;
     var c = 2 * Math.PI * r;
     var dashOffset = c * (1 - score / 100);
+    var v2 = auth.v2Telemetry;
+    var v2Html = '';
+    if (v2) {
+      var pb = v2.preOnsetBreath;
+      var rollSub =
+        v2.clothingDampingScore >= 0.65
+          ? 'Clothing-damped'
+          : v2.clothingDampingScore >= 0.35
+            ? 'Moderate damping'
+            : 'Open-air bright';
+      var lipSub = v2.lipTrillScore >= 0.15 && v2.lipTrillPeakHz > 0
+        ? Math.round(v2.lipTrillPeakHz) + ' Hz peak'
+        : 'None detected';
+      var pbVal = pb && pb.available ? (pb.score >= 0.40 ? '+' + pb.breathSnrDb + ' dB' : 'Quiet') : 'Trimmed';
+      var pbSub =
+        pb && pb.available
+          ? pb.score >= 0.40
+            ? pb.breathDurMs + ' ms pre-inhale'
+            : 'No inhale bleed'
+          : 'Raw pre-onset N/A';
+      v2Html =
+        '<div class="labs-auth-v2-strip">' +
+        '  <div class="labs-auth-v2-chip"><span>85% Roll-Off</span><strong>' + Math.round(v2.spectralRolloff85Hz) + ' Hz</strong><small>' + esc(rollSub) + '</small></div>' +
+        '  <div class="labs-auth-v2-chip"><span>Lip-Trill (22–42 Hz)</span><strong>' + Math.round(v2.lipTrillScore * 100) + '%</strong><small>' + esc(lipSub) + '</small></div>' +
+        '  <div class="labs-auth-v2-chip"><span>Pre-Onset Breath</span><strong>' + esc(pbVal) + '</strong><small>' + esc(pbSub) + '</small></div>' +
+        '  <div class="labs-auth-v2-chip"><span>Voiced Separation</span><strong>' + esc(v2.archetype) + '</strong><small>Sq ' + Math.round(v2.squeakerScore * 100) + '% / Rasp ' + Math.round(v2.voicedRaspberryScore * 100) + '%</small></div>' +
+        '</div>';
+    }
     return (
       '<div class="labs-auth-summary">' +
       '  <div class="labs-auth-ring-wrap">' +
@@ -4107,6 +4254,7 @@
       '      <div class="labs-fact-box"><span>Mouth-Fart Suspicion Level</span><strong>' + auth.mouthSuspicion + '%</strong><small class="labs-fact-sub">Oral mimicry likelihood</small></div>' +
       '      <div class="labs-fact-box"><span>Analysis Confidence</span><strong>' + esc(auth.confidenceLevel) + '</strong><small class="labs-fact-sub">Signal certainty (' + auth.confidenceScore + '%)</small></div>' +
       '    </div>' +
+      v2Html +
       '    <div class="labs-auth-verdict-box">' +
       '      <div class="labs-eyebrow">LABORATORY VERDICT</div>' +
       '      <p class="labs-auth-verdict-text">' + esc(auth.verdict) + '</p>' +

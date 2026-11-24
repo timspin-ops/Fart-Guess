@@ -3,250 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Toot Match — Fart Guess &amp; Fartnalysis</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <script defer src="js/dsp.js"></script>
-  <script defer src="js/audioEngine.js"></script>
-  <script defer src="js/synth.js"></script>
-  <script defer src="js/storage.js"></script>
-  <script defer src="js/spectrogram3d.js"></script>
-  <script defer src="js/forensicsCharts.js"></script>
-  <script defer src="js/comparePanel.js"></script>
-  <script defer src="js/app.js"></script>
+  <title>Toot Match Labs</title>
+  <meta http-equiv="refresh" content="0; url=labs/" />
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #070a10;
+      color: #e8edf5;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    a {
+      color: #34d399;
+    }
+  </style>
+  <script>
+    window.location.replace('labs/' + window.location.search + window.location.hash);
+  </script>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="top-header masthead">
-      <div class="brand-block">
-        <div class="brand-logo" aria-hidden="true">💨</div>
-        <div>
-          <h1 class="brand-title">Toot Match</h1>
-          <p class="brand-sub">Guess &amp; Fartnalysis</p>
-        </div>
-      </div>
-
-      <div class="header-right">
-        <a href="labs/" class="btn btn-cyan btn-sm" style="text-decoration:none" title="Try the redesigned Toot Match Labs v2">🧪 Labs v2</a>
-        <button type="button" id="btn-toggle-mic-bar" class="btn btn-ghost btn-sm" title="Microphone settings &amp; live test">🎙️ Mic</button>
-        <button type="button" id="btn-global-stop" class="btn btn-ghost btn-sm" title="Stop all playing audio">⏹ Stop</button>
-      </div>
-    </header>
-
-    <div id="file-protocol-banner" class="file-banner hidden">
-      <span>⚠️ Opened as a local <code>file://</code> page — browsers block the mic here. Run <strong>Launch Toot Match.bat</strong> (or <code>node server.js</code>) and open <strong>http://localhost:3000/</strong>.</span>
-    </div>
-
-    <div id="mic-drawer" class="hidden">
-      <div class="mic-bar mic-strip">
-        <div class="mic-bar-group">
-          <label class="mic-field" for="mic-device-select">
-            <span>🎙️ Mic:</span>
-            <select id="mic-device-select">
-              <option value="">System Default Microphone</option>
-            </select>
-          </label>
-          <label class="mic-field" for="mic-boost-select">
-            <span>Gain:</span>
-            <select id="mic-boost-select">
-              <option value="1">1x Normal</option>
-              <option value="2">2x Boost</option>
-              <option value="4">4x Loud</option>
-            </select>
-          </label>
-        </div>
-        <div class="mic-test-group">
-          <button type="button" id="btn-mic-test" class="btn btn-ghost btn-sm">🔊 Test Mic</button>
-          <div class="mic-meter-track" title="Live Microphone Input Level">
-            <div id="mic-test-meter" class="mic-meter-fill"></div>
-          </div>
-          <span id="mic-test-status" class="muted small">Ready</span>
-          <button type="button" id="btn-mic-release" class="btn btn-ghost btn-sm" title="Release active microphone connection">🔇 Release Mic</button>
-        </div>
-      </div>
-    </div>
-
-    <nav class="main-nav" aria-label="App Views">
-      <button type="button" class="nav-tab active" data-tab="guess">💨 Play</button>
-      <button type="button" class="nav-tab" data-tab="compare">🧪 Fartnalysis</button>
-      <button type="button" class="nav-tab" data-tab="karaoke">🎤 Mimic Lab</button>
-    </nav>
-
-    <div id="app-toast" class="toast hidden" role="status" aria-live="polite"></div>
-
-    <main class="views-container">
-      <!-- ==================== TAB 1: PLAY ==================== -->
-      <section id="view-guess" class="tab-view active">
-        <div class="play-layout">
-          <!-- Left Saved Farts Column -->
-          <aside class="saved-farts-rail" aria-label="Saved Farts">
-            <div class="rail-title">Saved</div>
-            <button type="button" id="btn-rail-new-round" class="rail-new-btn active">＋ New</button>
-            <div id="past-farts-list" class="past-farts-list"></div>
-          </aside>
-
-          <!-- Open Center Stage: Stacked Buttons + Compact Results -->
-          <div class="play-open-stage">
-            <div class="play-top-status">
-              <span id="play-status-pill" class="status-text">Tap Record or Guess to start</span>
-              <button type="button" id="btn-play-actual" class="btn-subtle-inline hidden">▶ Play Fart</button>
-              <button type="button" id="btn-clear-round" class="btn-subtle-inline hidden">Reset</button>
-            </div>
-
-            <div class="stacked-round-buttons">
-              <button type="button" id="btn-round-record" class="round-arcade-btn btn-fart-emerald">
-                <span id="rec-btn-icon" class="round-btn-icon">💨</span>
-                <span id="rec-btn-label" class="round-btn-label">Record Fart</span>
-              </button>
-
-              <button type="button" id="btn-round-guess" class="round-arcade-btn btn-guess-coral">
-                <span id="guess-btn-icon" class="round-btn-icon">🎤</span>
-                <span id="guess-btn-label" class="round-btn-label">Guess Fart</span>
-              </button>
-            </div>
-
-            <div id="play-main-status" class="play-status-line">Tap a button to start</div>
-            <canvas id="play-wave-canvas" class="wave-canvas mini hidden"></canvas>
-
-            <div id="play-live-feed-wrap" class="live-feed-wrap hidden">
-              <div class="live-feed-head">
-                <span id="play-feed-title" class="live-feed-title">Results</span>
-                <button type="button" id="btn-feed-clear" class="btn-subtle-inline">Clear</button>
-              </div>
-              <div id="play-live-feed" class="live-feed-list"></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== TAB 2: FARTNALYSIS ==================== -->
-      <section id="view-compare" class="tab-view">
-        <div class="section-header-row">
-          <div>
-            <h2>🧪 Fartnalysis</h2>
-            <p id="fartnalysis-subtitle" class="muted">Compare your guess against the actual fart.</p>
-          </div>
-          <button type="button" id="btn-fartnalysis-back" class="btn btn-ghost btn-sm">← Back to Play</button>
-        </div>
-
-        <div id="fartnalysis-guess-strip" class="fartnalysis-guess-strip hidden"></div>
-
-        <div id="fartnalysis-empty" class="card-glass fartnalysis-empty">
-          <p>Record a fart and at least one guess on <strong>Play</strong>, then tap its score circle to inspect Fartnalysis.</p>
-          <button type="button" id="btn-fartnalysis-go-play" class="btn btn-cyan">Go to Play</button>
-        </div>
-
-        <div id="lab-compare-mount"></div>
-      </section>
-
-      <!-- ==================== TAB 3: MIMIC LAB ==================== -->
-      <section id="view-karaoke" class="tab-view">
-        <div class="section-header-row">
-          <div>
-            <h2>🎤 Mimic Lab</h2>
-            <p class="muted">Practice imitating sounds, animals, or speech with Slow-Mo &rarr; Speed-Up playback.</p>
-          </div>
-          <div class="action-btn-group">
-            <button type="button" id="btn-karaoke-random" class="btn btn-cyan">🎲 Random</button>
-          </div>
-        </div>
-
-        <div id="karaoke-sound-list" class="sound-strip"></div>
-
-        <div class="karaoke-stage-grid">
-          <div class="card-glass stage-card">
-            <div class="stage-card-head">
-              <div>
-                <span class="badge badge-cyan">Target Sound</span>
-                <h3 id="karaoke-target-name" class="stage-title">Loading sounds…</h3>
-                <p id="karaoke-target-desc" class="muted small"></p>
-              </div>
-              <span id="karaoke-target-dur" class="badge badge-dur">0.00s</span>
-            </div>
-
-            <div class="control-row">
-              <button type="button" id="btn-karaoke-play" class="btn btn-cyan">▶ Play Target</button>
-              <div class="speed-box compact">
-                <div class="speed-label-row">
-                  <span>Target Speed</span>
-                  <strong id="karaoke-speed-val">1.00x</strong>
-                </div>
-                <input type="range" id="karaoke-speed-slider" min="0.25" max="2.5" step="0.05" value="1" />
-                <div class="speed-pills-row">
-                  <button type="button" class="chip-btn karaoke-speed-pill" data-rate="0.35">0.35x Slow</button>
-                  <button type="button" class="chip-btn karaoke-speed-pill" data-rate="0.5">0.5x</button>
-                  <button type="button" class="chip-btn karaoke-speed-pill" data-rate="0.75">0.75x</button>
-                  <button type="button" class="chip-btn karaoke-speed-pill active" data-rate="1">1x</button>
-                  <button type="button" class="chip-btn karaoke-speed-pill" data-rate="1.5">1.5x</button>
-                  <button type="button" class="chip-btn karaoke-speed-pill" data-rate="2">2x</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="slowmo-box">
-              <label class="toggle-chip">
-                <input type="checkbox" id="chk-karaoke-speedmatch" checked />
-                🚀 Speed-Up Mimic to Match Original (when Target Speed &lt; 1x)
-              </label>
-              <div id="karaoke-slowmo-hint" class="muted small">
-                Speed (1.00x): your recording is scored directly as recorded.
-              </div>
-            </div>
-
-            <div class="spec-viewport-wrap">
-              <div class="spec-viewport-header">
-                <span>Target 3D Spectrogram</span>
-                <div class="spec-toolbar">
-                  <select id="karaoke-colormap" class="mini-select" aria-label="Target 3D Spectrogram Color Palette">
-                    <option value="plasma">Plasma</option>
-                    <option value="toxic">Toxic</option>
-                    <option value="magma">Magma</option>
-                  </select>
-                  <button type="button" class="chip-btn active" data-karaoke-preset="3d">3D</button>
-                  <button type="button" class="chip-btn" data-karaoke-preset="top">2D Top</button>
-                  <button type="button" class="chip-btn" data-karaoke-preset="side">Side</button>
-                  <button type="button" class="chip-btn" data-karaoke-preset="spin">Spin</button>
-                </div>
-              </div>
-              <canvas id="karaoke-target-canvas" class="spec-canvas"></canvas>
-            </div>
-          </div>
-
-          <div class="card-glass stage-card record-card">
-            <span class="badge badge-magenta">Your Take</span>
-            <h3 class="stage-title">Mimic &amp; Auto-Clip</h3>
-            <p class="muted small">Automatically trims silence around your take.</p>
-
-            <div class="record-cta-wrap">
-              <button type="button" id="btn-karaoke-record" class="btn btn-record btn-lg">🎙️ Record My Mimic</button>
-              <div id="karaoke-rec-status" class="rec-status">Ready to record (up to 12s for slow-mo)</div>
-            </div>
-
-            <canvas id="karaoke-wave-canvas" class="wave-canvas"></canvas>
-
-            <label class="toggle-chip">
-              <input type="checkbox" id="chk-karaoke-autoreplay" checked />
-              🔊 Auto-Replay Result After Recording
-            </label>
-          </div>
-        </div>
-
-        <div id="karaoke-result-wrap" class="result-section hidden">
-          <div class="result-action-bar card-glass">
-            <h3 class="result-heading">🧪 Fartnalysis Breakdown &amp; 3D Comparison</h3>
-            <div class="action-btn-group">
-              <button type="button" id="btn-karaoke-play-raw" class="btn btn-ghost hidden">🐢 Play Raw Slow Recording</button>
-              <button type="button" id="btn-karaoke-retry" class="btn btn-magenta">🔁 Try Again</button>
-              <button type="button" id="btn-karaoke-next" class="btn btn-cyan">🎲 Next Sound</button>
-              <button type="button" id="btn-karaoke-save-mimic" class="btn btn-lime">💾 Save Mimic</button>
-            </div>
-          </div>
-          <div id="karaoke-compare-mount"></div>
-        </div>
-      </section>
-    </main>
-  </div>
+  <noscript>
+    <p>Redirecting to <a href="labs/">Open Toot Match Labs</a>...</p>
+  </noscript>
+  <p>Opening <a href="labs/">Toot Match Labs</a>...</p>
 </body>
 </html>

@@ -640,11 +640,11 @@
       scientist: false
     });
 
-    // Target ~3.5s to ~5.6s across stages (plus consensus beat + fade)
-    var targetTotalMs = 3500 + Math.random() * 1950;
+    // Target ~7.8s to ~10.2s across stages so every status line & joke is readable
+    var targetTotalMs = 7800 + Math.random() * 2400;
     var weights = stages.map(function (st, idx) {
       if (idx === stages.length - 1) return 1.15;
-      return (st.scientist || st.rare ? 1.25 : 0.85) + Math.random() * 0.45;
+      return (st.scientist || st.rare ? 1.45 : 0.90) + Math.random() * 0.40;
     });
     var sumW = weights.reduce(function (a, b) { return a + b; }, 0) || stages.length;
 
@@ -653,7 +653,7 @@
         text: st.text,
         rare: st.rare,
         scientist: st.scientist,
-        durationMs: Math.max(300, Math.round((weights[idx] / sumW) * targetTotalMs))
+        durationMs: Math.max(850, Math.round((weights[idx] / sumW) * targetTotalMs))
       };
     });
   }
@@ -716,7 +716,7 @@
           if (typeof onComplete === 'function') onComplete();
         }, 310);
         state.analysisTimers.push(endTimer);
-      }, 620);
+      }, 1050);
       state.analysisTimers.push(fadeTimer);
     }
 
@@ -772,7 +772,7 @@
           if (index === stages.length - 1) {
             var pauseTimer = setTimeout(function () {
               finishNow(false);
-            }, 180);
+            }, 360);
             state.analysisTimers.push(pauseTimer);
           }
         }, elapsed);
@@ -1269,6 +1269,22 @@
           if (autoMsgEl) autoMsgEl.textContent = 'Capturing sample...';
           if (autoBufEl) autoBufEl.textContent = 'EVENT LOCKED';
         },
+        onRearmed: function (info) {
+          stopBtn.textContent = '⏹ Disarm Auto';
+          if (autoBadge) autoBadge.classList.remove('triggered');
+          if (autoTitleEl) autoTitleEl.textContent = 'LISTENING FOR EVENT';
+          if (autoMsgEl) {
+            autoMsgEl.textContent = (info && info.rearmMessage) || 'Filtered non-fart sound — Sentry re-armed';
+          }
+          if (!state.autoDetectMsgTimer) {
+            state.autoDetectMsgTimer = setInterval(function () {
+              autoWaitIdx = (autoWaitIdx + 1) % AUTO_DETECT_WAIT_MESSAGES.length;
+              if (autoMsgEl) {
+                autoMsgEl.textContent = 'Acoustic sensors armed — ' + AUTO_DETECT_WAIT_MESSAGES[autoWaitIdx];
+              }
+            }, 2200);
+          }
+        },
         onAutoStop: function (res) {
           // Mic is already stopped & disconnected inside audioEngine before onAutoStop runs
           if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
@@ -1388,12 +1404,17 @@
 
       var sr = res.sampleRate || 44100;
       var samples = res.clippedSamples;
+      var preBreath = (res.clipInfo && res.clipInfo.preOnsetBreath) || null;
+      var guessFeat = TootApp.DSP.extractFeatures(samples, sr);
+      if (guessFeat && preBreath) guessFeat.preOnsetBreath = preBreath;
       state.pendingGuess = {
         id: 'att_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         sampleRate: sr,
         samples: samples,
+        rawSamples: res.rawSamples || samples,
         clipInfo: res.clipInfo,
-        features: TootApp.DSP.extractFeatures(samples, sr)
+        preOnsetBreath: preBreath,
+        features: guessFeat
       };
 
       var defaultNum = state.sessionGuesses.length + 1;
@@ -2175,13 +2196,18 @@
       var sr = res.sampleRate || 44100;
       var defName = 'Guesser ' + (state.blindGuesses.length + 1);
       var nm = (nameInput && nameInput.value ? nameInput.value.trim() : '') || defName;
+      var preBreathB = (res.clipInfo && res.clipInfo.preOnsetBreath) || null;
+      var blindFeat = TootApp.DSP.extractFeatures(res.clippedSamples, sr);
+      if (blindFeat && preBreathB) blindFeat.preOnsetBreath = preBreathB;
       state.blindGuesses.push({
         id: 'blind_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
         name: nm,
         sampleRate: sr,
         samples: res.clippedSamples,
+        rawSamples: res.rawSamples || res.clippedSamples,
         clipInfo: res.clipInfo,
-        features: TootApp.DSP.extractFeatures(res.clippedSamples, sr)
+        preOnsetBreath: preBreathB,
+        features: blindFeat
       });
       if (nameInput) nameInput.value = '';
       if (statusEl) statusEl.textContent = nm + ' recorded! Record another guess or capture Original Fart below.';
@@ -2244,6 +2270,11 @@
         settleSec: 0.24,
         onStarted: function () {
           if (TootLabs.AudioFx) TootLabs.AudioFx.playAutoDetectStartBeep();
+        },
+        onRearmed: function (info) {
+          if (statusEl) {
+            statusEl.textContent = (info && info.rearmMessage) || 'Filtered non-fart sound — Sentry re-armed';
+          }
         },
         onAutoStop: function (res) {
           if (TootLabs.AudioFx) TootLabs.AudioFx.playAutoDetectStopBeep();

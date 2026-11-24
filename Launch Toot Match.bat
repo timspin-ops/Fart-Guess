@@ -6,4 +6,4 @@ if errorlevel 1 (
   start "Toot Match Server" /min cmd /c "node server.js"
   timeout /t 1 /nobreak >nul
 )
-start "" "http://localhost:3000/"
+start "" "http://localhost:3000/labs/"

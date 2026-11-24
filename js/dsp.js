@@ -108,6 +108,141 @@
   }
 
   /**
+   * Authenticity v2: Measure respiratory pre-onset inhalation hiss (-450ms..-15ms before clip onset)
+   * on the raw pre-clipped audio buffer using a stateful >1 kHz HPF against quiet ambient baseline.
+   */
+  function measurePreOnsetBreath(samples, sampleRate, onsetSample, noiseFloorRms, eventPeakRms) {
+    var sr = sampleRate || 44100;
+    var onset = Math.max(0, Math.round(safeNumber(onsetSample, 0)));
+    var winStart = Math.max(0, onset - Math.round(0.450 * sr));
+    var winEnd = Math.max(0, onset - Math.round(0.015 * sr));
+    var winLen = Math.max(0, winEnd - winStart);
+
+    if (!samples || samples.length === 0 || onset <= 0 || winLen < Math.round(0.080 * sr)) {
+      return {
+        available: false,
+        score: 0,
+        breathSnrDb: 0,
+        breathDurMs: 0,
+        highFreqShare: 0,
+        preWindowSec: Number((winLen / sr).toFixed(3))
+      };
+    }
+
+    var alphaHi = 1 - Math.exp((-2 * Math.PI * 1000) / sr);
+    var frameLen = Math.max(32, Math.round(0.020 * sr));
+    var hopLen = Math.max(16, Math.round(0.010 * sr));
+
+    // Estimate ambient >1 kHz RMS from [onset-1.6s .. winStart] when >= 150ms exists
+    var ambStart = Math.max(0, onset - Math.round(1.600 * sr));
+    var ambLen = winStart - ambStart;
+    var ambientHiRms = Math.max(0.001, (safeNumber(noiseFloorRms, 0) || 0.002) * 0.65);
+
+    if (ambLen >= Math.round(0.150 * sr)) {
+      var ambHi = new Float32Array(ambLen);
+      var lpAmb = 0;
+      for (var ai = 0; ai < ambLen; ai++) {
+        var av = samples[ambStart + ai];
+        lpAmb += alphaHi * (av - lpAmb);
+        ambHi[ai] = av - lpAmb;
+      }
+      var ambFrames = [];
+      for (var af = 0; af + frameLen <= ambLen; af += hopLen) {
+        var aSum = 0;
+        for (var ak = af; ak < af + frameLen; ak++) {
+          aSum += ambHi[ak] * ambHi[ak];
+        }
+        ambFrames.push(Math.sqrt(aSum / frameLen));
+      }
+      if (ambFrames.length > 0) {
+        ambFrames.sort(function (a, b) { return a - b; });
+        var p25 = ambFrames[Math.min(ambFrames.length - 1, Math.floor(ambFrames.length * 0.25))];
+        ambientHiRms = Math.max(0.001, p25);
+      }
+    }
+
+    // Warm >1 kHz HPF slightly before winStart so frame 0 has no transient step
+    var warmStart = Math.max(0, winStart - frameLen);
+    var lpPre = 0;
+    for (var wi = warmStart; wi < winStart; wi++) {
+      lpPre += alphaHi * (samples[wi] - lpPre);
+    }
+
+    var preHi = new Float32Array(winLen);
+    for (var pi = 0; pi < winLen; pi++) {
+      var sv = samples[winStart + pi];
+      lpPre += alphaHi * (sv - lpPre);
+      preHi[pi] = sv - lpPre;
+    }
+
+    var qualifyingFrames = 0;
+    var qualMaxHiRms = 0;
+    var qualHiShareSum = 0;
+    var maxHiRms = 0;
+    var peakGuard = Math.max(0.55 * (safeNumber(eventPeakRms, 0) || 1), 0.35);
+
+    for (var fStart = 0; fStart < winLen; fStart += hopLen) {
+      var fEnd = Math.min(winLen, fStart + frameLen);
+      var fCnt = fEnd - fStart;
+      if (fCnt < Math.max(16, hopLen >> 1)) break;
+
+      var totPow = 0;
+      var hiPow = 0;
+      var zc = 0;
+      var prevRaw = samples[winStart + fStart];
+      for (var j = 0; j < fCnt; j++) {
+        var rv = samples[winStart + fStart + j];
+        var hv = preHi[fStart + j];
+        totPow += rv * rv;
+        hiPow += hv * hv;
+        if (j > 0 && ((rv >= 0 && prevRaw < 0) || (rv < 0 && prevRaw >= 0))) zc++;
+        prevRaw = rv;
+      }
+      totPow /= fCnt;
+      hiPow /= fCnt;
+      var totRms = Math.sqrt(totPow);
+      var hiRms = Math.sqrt(hiPow);
+      var hiShare = hiPow / (totPow + 1e-12);
+      var zcrHz = (zc * 0.5 * sr) / Math.max(1, fCnt);
+
+      if (hiRms > maxHiRms) maxHiRms = hiRms;
+
+      if (
+        hiShare >= 0.30 &&
+        zcrHz >= 1050 &&
+        hiRms >= Math.max(0.0025, ambientHiRms * 1.6) &&
+        totRms <= peakGuard
+      ) {
+        qualifyingFrames++;
+        qualHiShareSum += hiShare;
+        if (hiRms > qualMaxHiRms) qualMaxHiRms = hiRms;
+      }
+    }
+
+    var peakBreathHiRms = qualifyingFrames > 0 ? qualMaxHiRms : maxHiRms;
+    var meanBreathHiShare = qualifyingFrames > 0 ? qualHiShareSum / qualifyingFrames : 0;
+    var breathSnrDb = 20 * Math.log10((peakBreathHiRms + 1e-7) / (ambientHiRms + 1e-7));
+    var breathDurMs = qualifyingFrames * 10;
+
+    var levelGate = clamp((peakBreathHiRms - 0.0025) / 0.012, 0, 1);
+    var snrCue = clamp((breathSnrDb - 3.5) / 14.0, 0, 1);
+    var durCue = clamp((breathDurMs - 30) / 140, 0, 1);
+    var hiCue = clamp((meanBreathHiShare - 0.26) / 0.44, 0, 1);
+    var score = qualifyingFrames > 0
+      ? clamp(levelGate * (0.45 * snrCue + 0.30 * durCue + 0.25 * hiCue), 0, 1)
+      : 0;
+
+    return {
+      available: true,
+      score: Number(score.toFixed(3)),
+      breathSnrDb: Number(breathSnrDb.toFixed(1)),
+      breathDurMs: Math.round(breathDurMs),
+      highFreqShare: Number(meanBreathHiShare.toFixed(3)),
+      preWindowSec: Number((winLen / sr).toFixed(3))
+    };
+  }
+
+  /**
    * Automatically detect active sound boundaries and strip leading/trailing silence
    * and isolated transient clicks.
    */
@@ -307,6 +442,16 @@
       }
     }
 
+    // Measure pre-onset breath metadata on rawSamples BEFORE slicing/normalizing
+    var onsetSample = bestCluster.startFrame * hopLen;
+    var preBreath = measurePreOnsetBreath(samples, sr, onsetSample, noiseFloor, maxRMS);
+    if (mainSeg && mainSeg.startFrame > bestCluster.startFrame && (((mainSeg.startFrame - bestCluster.startFrame) * hopLen) / sr) >= 0.06) {
+      var preBreathMain = measurePreOnsetBreath(samples, sr, mainSeg.startFrame * hopLen, noiseFloor, maxRMS);
+      if (preBreathMain && preBreathMain.available && (!preBreath.available || preBreathMain.score > preBreath.score)) {
+        preBreath = preBreathMain;
+      }
+    }
+
     var rawSlice = samples.subarray(startSample, endSample);
     var clipped = fadeAndNormalize(rawSlice, sr, 8, 0.92);
 
@@ -319,6 +464,8 @@
       endSec: endSample / sr,
       originalDuration: originalDuration,
       clippedDuration: clipped.length / sr,
+      activeDurationMs: Number((bestCluster.durMs || 0).toFixed(1)),
+      preOnsetBreath: preBreath,
       clipped: clipped
     };
   }
@@ -859,8 +1006,14 @@
     }
 
     // 3-Band Modulation Profile (2-8 Hz Slow Stutter, 8-20 Hz Cheek Flutter, 20-45 Hz Fast Rattle)
+    // plus 22-42 Hz Bilabial Lip-Trill Signature for Authenticity v2
     var modBands = new Float32Array(3);
     var modBandSum = 0;
+    var cheekBandPow = 0;
+    var lipBandPow = 0;
+    var lipBandPeak = 0;
+    var lipBandPeakHz = 0;
+    var lipBandBins = 0;
     var halfModFft = modFftSize >> 1;
     for (var mk = 1; mk < halfModFft; mk++) {
       var hzM = mk * modBinHz;
@@ -870,6 +1023,16 @@
       else if (hzM < 20) modBands[1] += mMag;
       else modBands[2] += mMag;
       modBandSum += mMag;
+
+      if (hzM >= 6 && hzM <= 20) cheekBandPow += mMag;
+      if (hzM >= 22 && hzM <= 42) {
+        lipBandPow += mMag;
+        lipBandBins++;
+        if (mMag > lipBandPeak) {
+          lipBandPeak = mMag;
+          lipBandPeakHz = hzM;
+        }
+      }
     }
     if (modBandSum > 1e-9) {
       modBands[0] /= modBandSum;
@@ -880,6 +1043,20 @@
       modBands[1] = 0.33;
       modBands[2] = 0.33;
     }
+    var lipTrillBandShare = modBandSum > 1e-9 ? lipBandPow / modBandSum : 0;
+    var lipTrillRatio = (cheekBandPow + lipBandPow) > 1e-9 ? lipBandPow / (cheekBandPow + lipBandPow) : 0;
+    var lipTrillPeakSharpness = (lipBandBins > 0 && lipBandPow > 1e-9)
+      ? clamp((lipBandPeak / (lipBandPow / lipBandBins) - 1) / 3.2, 0, 1)
+      : 0;
+    var lipShareGate = clamp((lipTrillBandShare - 0.22) / 0.36, 0, 1);
+    var lipPeakProm = modPeakMag > 1e-9 ? clamp((lipBandPeak / modPeakMag - 0.25) / 0.55, 0, 1) : 0;
+    var lipRatioCue = clamp((lipTrillRatio - 0.42) / 0.42, 0, 1);
+    var lipDepthGate = clamp((modDepth - 0.14) / 0.34, 0, 1);
+    var lipTrillScore = clamp(
+      lipDepthGate * lipShareGate * (0.45 * lipPeakProm + 0.30 * lipRatioCue + 0.25 * lipTrillPeakSharpness),
+      0,
+      1
+    );
 
     // Burst count on smoothed 64-point envelope (peaks > 0.35 separated by valleys < 0.18)
     var smoothEnv = new Float32Array(envLen);
@@ -991,6 +1168,66 @@
 
     var mfcc = computeMFCCs(spec);
 
+    // 5. Authenticity v2: Direct linear-power STFT 85% Spectral Roll-Off (45 Hz..8 kHz)
+    var rollFftSize = 1024;
+    var halfRollBins = rollFftSize >> 1;
+    var rollBinHz = sr / rollFftSize;
+    var rollMinBin = Math.max(1, Math.ceil(45 / rollBinHz));
+    var rollMaxBin = Math.min(halfRollBins, Math.floor(Math.min(8000, sr * 0.48) / rollBinHz));
+    var spectralRolloff85Hz = 800;
+    var above2kPowerShare = 0;
+    if (n > 0 && rollMaxBin >= rollMinBin) {
+      var hannR = new Float32Array(rollFftSize);
+      for (var hr = 0; hr < rollFftSize; hr++) {
+        hannR[hr] = 0.5 * (1 - Math.cos((2 * Math.PI * hr) / (rollFftSize - 1)));
+      }
+      var reR = new Float32Array(rollFftSize);
+      var imR = new Float32Array(rollFftSize);
+      var accumPowR = new Float32Array(halfRollBins + 1);
+      var frameCountR = n <= rollFftSize ? 1 : Math.min(8, Math.max(2, Math.floor(n / 512)));
+      for (var fr = 0; fr < frameCountR; fr++) {
+        var rCenter = frameCountR === 1 ? Math.floor(n / 2) : Math.round(((fr + 0.5) / frameCountR) * (n - 1));
+        var rStart = rCenter - (rollFftSize >> 1);
+        for (var rw = 0; rw < rollFftSize; rw++) {
+          var sIdxR = rStart + rw;
+          reR[rw] = sIdxR >= 0 && sIdxR < n ? samples[sIdxR] * hannR[rw] : 0;
+          imR[rw] = 0;
+        }
+        fft(reR, imR);
+        for (var kbR = rollMinBin; kbR <= rollMaxBin; kbR++) {
+          accumPowR[kbR] += reR[kbR] * reR[kbR] + imR[kbR] * imR[kbR];
+        }
+      }
+      var totalLinPow = 0;
+      var above2kPow = 0;
+      for (var kp = rollMinBin; kp <= rollMaxBin; kp++) {
+        var pVal = accumPowR[kp];
+        totalLinPow += pVal;
+        if (kp * rollBinHz >= 2000) above2kPow += pVal;
+      }
+      if (totalLinPow > 1e-12) {
+        above2kPowerShare = clamp(above2kPow / totalLinPow, 0, 1);
+        var rollTarget = 0.85 * totalLinPow;
+        var cumPow = 0;
+        for (var kr = rollMinBin; kr <= rollMaxBin; kr++) {
+          var prevCum = cumPow;
+          var binP = accumPowR[kr];
+          cumPow += binP;
+          if (cumPow >= rollTarget) {
+            var fracBin = binP > 1e-18 ? (rollTarget - prevCum) / binP : 0;
+            spectralRolloff85Hz = clamp((kr - 1 + clamp(fracBin, 0, 1)) * rollBinHz, 45, 8000);
+            break;
+          }
+        }
+      }
+    }
+    var clothingDampingScore = clamp(
+      0.65 * clamp(1 - (spectralRolloff85Hz - 950) / 2250, 0, 1) +
+      0.35 * clamp(1 - (above2kPowerShare - 0.03) / 0.25, 0, 1),
+      0,
+      1
+    );
+
     return {
       duration: duration,
       envelope: envelope,
@@ -1014,6 +1251,12 @@
       modDepth: modDepth,
       modSpectrum: modSpectrum,
       modBands: modBands,
+      lipTrillScore: Number(lipTrillScore.toFixed(3)),
+      lipTrillBandShare: Number(lipTrillBandShare.toFixed(3)),
+      lipTrillPeakHz: Number(lipBandPeakHz.toFixed(1)),
+      spectralRolloff85Hz: Number(spectralRolloff85Hz.toFixed(1)),
+      above2kPowerShare: Number(above2kPowerShare.toFixed(4)),
+      clothingDampingScore: Number(clothingDampingScore.toFixed(3)),
       burstCount: burstCount,
       avgSpectrum: avgSpectrum,
       bandProfile: bandProfile,
@@ -1492,6 +1735,7 @@
 
   TootApp.DSP = {
     fft: fft,
+    measurePreOnsetBreath: measurePreOnsetBreath,
     autoClipAudio: autoClipAudio,
     clipRange: clipRange,
     resampleAudio: resampleAudio,

@@ -363,15 +363,20 @@
     if (!rec) return null;
     var samples = rec.samples instanceof Float32Array ? rec.samples : new Float32Array(rec.samples || []);
     var sr = rec.sampleRate || 44100;
+    var preOnsetBreath = rec.preOnsetBreath || (rec.clipInfo && rec.clipInfo.preOnsetBreath) || null;
     var features =
       rec.features && rec.features.pitchHzArr
         ? rec.features
         : root.TootApp && root.TootApp.DSP && samples.length > 0
         ? root.TootApp.DSP.extractFeatures(samples, sr)
         : null;
+    if (features && preOnsetBreath && !features.preOnsetBreath) {
+      features.preOnsetBreath = preOnsetBreath;
+    }
     return Object.assign({}, rec, {
       samples: samples,
       sampleRate: sr,
+      preOnsetBreath: preOnsetBreath,
       features: features
     });
   }
@@ -387,6 +392,11 @@
       sampleRate: att.sampleRate || 44100,
       samples: new Float32Array(att.samples || []),
       clipInfo: att.clipInfo || null,
+      preOnsetBreath:
+        att.preOnsetBreath ||
+        (att.clipInfo && att.clipInfo.preOnsetBreath) ||
+        (att.features && att.features.preOnsetBreath) ||
+        null,
       exactScore: att.exactScore,
       stars: att.stars,
       bellLabel: att.bellLabel,
@@ -513,6 +523,7 @@
       rawSamples: recResult.rawSamples || samples,
       trimStartSec: recResult.clipInfo ? recResult.clipInfo.startSec : 0,
       trimEndSec: recResult.clipInfo ? recResult.clipInfo.endSec : samples.length / sr,
+      preOnsetBreath: (recResult.clipInfo && recResult.clipInfo.preOnsetBreath) || null,
       samples: samples
     };
     return storage.saveCustomSound(toSave).then(function (saved) {
@@ -529,6 +540,10 @@
       persistMeta();
       saved.displayName = nickname;
       saved.clipInfo = recResult.clipInfo;
+      if (!saved.preOnsetBreath && toSave.preOnsetBreath) saved.preOnsetBreath = toSave.preOnsetBreath;
+      if (saved.features && saved.preOnsetBreath && !saved.features.preOnsetBreath) {
+        saved.features.preOnsetBreath = saved.preOnsetBreath;
+      }
       return saved;
     });
   }
@@ -613,6 +628,11 @@
       sampleRate: attemptSound.sampleRate || 44100,
       samples: attemptSound.samples,
       clipInfo: attemptSound.clipInfo || null,
+      preOnsetBreath:
+        attemptSound.preOnsetBreath ||
+        (attemptSound.clipInfo && attemptSound.clipInfo.preOnsetBreath) ||
+        (attemptSound.features && attemptSound.features.preOnsetBreath) ||
+        null,
       exactScore: exactScore,
       stars: reward.stars,
       bellLabel: reward.label,
@@ -627,6 +647,9 @@
 
     return saveAttemptRecord(attemptObj).then(function (savedAtt) {
       savedAtt.features = attemptSound.features || savedAtt.features;
+      if (savedAtt.preOnsetBreath && savedAtt.features && !savedAtt.features.preOnsetBreath) {
+        savedAtt.features.preOnsetBreath = savedAtt.preOnsetBreath;
+      }
       return {
         attempt: savedAtt,
         exactScore: exactScore,

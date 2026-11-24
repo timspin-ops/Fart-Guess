@@ -19,10 +19,23 @@ var MIME_TYPES = {
 };
 
 var server = http.createServer(function (req, res) {
-  var reqUrl = (req.url || '/').split('?')[0];
+  var rawUrl = req.url || '/';
+  var qIdx = rawUrl.indexOf('?');
+  var reqUrl = qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl;
+  var qs = qIdx >= 0 ? rawUrl.slice(qIdx) : '';
+
   if (reqUrl === '/__health') {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end('toot-match-ok');
+    return;
+  }
+
+  if (reqUrl === '/' || reqUrl === '/index.html') {
+    res.writeHead(302, {
+      Location: '/labs/' + qs,
+      'Cache-Control': 'no-store, no-cache, must-revalidate'
+    });
+    res.end();
     return;
   }
 
@@ -76,7 +89,7 @@ var server = http.createServer(function (req, res) {
 
 server.on('error', function (err) {
   if (err && err.code === 'EADDRINUSE') {
-    console.log('Toot Match server is already running at http://localhost:' + PORT + '/');
+    console.log('Toot Match Labs v2 server is already running at http://localhost:' + PORT + '/labs/');
     process.exit(0);
   }
   console.error('Server error:', err && err.message ? err.message : err);
@@ -84,6 +97,6 @@ server.on('error', function (err) {
 });
 
 server.listen(PORT, '127.0.0.1', function () {
-  console.log('Toot Match server running at http://localhost:' + PORT + '/');
+  console.log('Toot Match Labs v2 server running at http://localhost:' + PORT + '/labs/');
   console.log('Press Ctrl+C to stop.');
 });

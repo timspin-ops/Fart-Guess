@@ -843,9 +843,11 @@
   }
 
   /**
-   * Pure rolling-buffer state machine for Auto Detect recording mode.
-   * Maintains a fixed 5-second circular buffer, detects likely fart signatures,
-   * records through the event + trailing silence, and returns bounded clipped samples.
+   * Sentry Auto Detect v2 rolling-buffer state machine:
+   * - Maintains a fixed 5-second circular raw PCM buffer
+   * - Sidechain 2-pole 55 Hz HPF thump rejection + 3-band speech/cough filter
+   * - 25 ms sub-frame detection & rolling 20th-percentile ambient noise floor
+   * - Post-capture desk-tap/speech/cough/thump validation with automatic Sentry re-arm
    */
   function createAutoDetectEngine(sampleRate, opts) {
     opts = opts || {};
@@ -857,21 +859,54 @@
     var minPostEventSec = Math.max(1.2, Number(opts.minPostEventSec) || 1.85);
     var postSilenceSec = Math.max(0.8, Number(opts.postSilenceSec) || 1.55);
     var maxPostEventSec = Math.max(minPostEventSec + 1.0, Number(opts.maxPostEventSec) || 8.0);
+    var autoRearm = opts.autoRearm !== false;
+
+    function clampVal(v, lo, hi) {
+      return v < lo ? lo : v > hi ? hi : v;
+    }
 
     var ringCap = Math.max(1, Math.round(sr * ringSeconds));
     var ringBuf = new Float32Array(ringCap);
     var ringWrite = 0;
     var ringTotalWritten = 0;
 
+    var subFrameSamples = Math.max(128, Math.round(sr * 0.025)); // 25 ms sub-frame
+
     var phase = 'listening'; // 'listening' | 'triggered' | 'completed'
     var calSamples = 0;
-    var calRmsSum = 0;
-    var calChunks = 0;
     var noiseFloorRms = 0.004;
     var consecutiveHits = 0;
+    var rearmCount = 0;
 
-    var lpState = 0;
-    var lpAlpha = 1 - Math.exp((-2 * Math.PI * 850) / sr);
+    // Rolling 20th-percentile ambient noise floor (~2.0 s across 80 x 25 ms sub-frames)
+    var floorHistCap = 80;
+    var floorHist = new Float32Array(floorHistCap);
+    var floorHistIdx = 0;
+    var floorHistCount = 0;
+
+    function pushNoiseFloorSample(val, maxClamp) {
+      floorHist[floorHistIdx] = val;
+      floorHistIdx = (floorHistIdx + 1) % floorHistCap;
+      if (floorHistCount < floorHistCap) floorHistCount++;
+      var active = [];
+      for (var fi = 0; fi < floorHistCount; fi++) active.push(floorHist[fi]);
+      active.sort(function (a, b) { return a - b; });
+      var p20 = active[Math.min(active.length - 1, Math.floor(active.length * 0.20))];
+      noiseFloorRms = clampVal(p20, 0.002, maxClamp || 0.040);
+    }
+
+    // Persistent cascaded 2-pole -12 dB/oct 55 Hz HPF + 3-band crossover (55-750, 750-2600, >2600 Hz)
+    var hpAlpha = 1 / (1 + (2 * Math.PI * 36) / sr);
+    var hpPrevX1 = 0;
+    var hpY1 = 0;
+    var hpPrevX2 = 0;
+    var hpY2 = 0;
+    var alphaB1 = 1 - Math.exp((-2 * Math.PI * 1165) / sr);
+    var alphaB2 = 1 - Math.exp((-2 * Math.PI * 4040) / sr);
+    var lpB1a = 0;
+    var lpB1b = 0;
+    var lpB2a = 0;
+    var lpB2b = 0;
 
     var preSnapshot = null;
     var postChunks = [];
@@ -910,37 +945,186 @@
       return out;
     }
 
-    function finalize(trackLabel, trackMuted) {
-      if (finalizedResult) return finalizedResult;
-      phase = 'completed';
-
-      var rawSamples;
-      var preSecActual = 0;
-      var postSecActual = postSamples / sr;
-
+    function assembleRawSamples() {
       if (preSnapshot && postChunks.length > 0) {
-        rawSamples = new Float32Array(preSnapshot.length + postSamples);
-        rawSamples.set(preSnapshot, 0);
+        var raw = new Float32Array(preSnapshot.length + postSamples);
+        raw.set(preSnapshot, 0);
         var off = preSnapshot.length;
         for (var i = 0; i < postChunks.length; i++) {
-          rawSamples.set(postChunks[i], off);
+          raw.set(postChunks[i], off);
           off += postChunks[i].length;
         }
-        preSecActual = preSnapshot.length / sr;
-      } else {
-        rawSamples = readRecentRing(ringCap);
-        preSecActual = rawSamples.length / sr;
+        return {
+          rawSamples: raw,
+          preSecActual: preSnapshot.length / sr,
+          postSecActual: postSamples / sr
+        };
+      }
+      var fallback = readRecentRing(ringCap);
+      return {
+        rawSamples: fallback,
+        preSecActual: fallback.length / sr,
+        postSecActual: postSamples / sr
+      };
+    }
+
+    function analyzeSliceBands(slice) {
+      var sl = slice ? slice.length : 0;
+      if (sl === 0) {
+        return { sub55Ratio: 0, b1Ratio: 0, b2Ratio: 0, b3Ratio: 0 };
+      }
+      var sHpPrevX1 = 0;
+      var sHpY1 = 0;
+      var sHpPrevX2 = 0;
+      var sHpY2 = 0;
+      var sLpB1a = 0;
+      var sLpB1b = 0;
+      var sLpB2a = 0;
+      var sLpB2b = 0;
+      var rawPow = 0;
+      var hpPow = 0;
+      var lp1Pow = 0;
+      var lp2Pow = 0;
+      for (var i = 0; i < sl; i++) {
+        var s = slice[i];
+        rawPow += s * s;
+        sHpY1 = hpAlpha * (sHpY1 + s - sHpPrevX1);
+        sHpPrevX1 = s;
+        sHpY2 = hpAlpha * (sHpY2 + sHpY1 - sHpPrevX2);
+        sHpPrevX2 = sHpY1;
+        var sHp = sHpY2;
+        hpPow += sHp * sHp;
+
+        sLpB1a += alphaB1 * (sHp - sLpB1a);
+        sLpB1b += alphaB1 * (sLpB1a - sLpB1b);
+        sLpB2a += alphaB2 * (sHp - sLpB2a);
+        sLpB2b += alphaB2 * (sLpB2a - sLpB2b);
+        lp1Pow += sLpB1b * sLpB1b;
+        lp2Pow += sLpB2b * sLpB2b;
+      }
+      var sub55Ratio = clampVal(1 - hpPow / (rawPow + 1e-12), 0, 1);
+      var p1 = Math.min(hpPow, lp1Pow);
+      var p2 = Math.min(hpPow, Math.max(p1, lp2Pow));
+      var totHp = hpPow + 1e-12;
+      return {
+        sub55Ratio: sub55Ratio,
+        b1Ratio: p1 / totHp,
+        b2Ratio: (p2 - p1) / totHp,
+        b3Ratio: (hpPow - p2) / totHp
+      };
+    }
+
+    function validateCapturedEvent(rawSamples, clipInfo, rate) {
+      var sampleSr = rate || sr;
+      if (!clipInfo || !clipInfo.ok || !clipInfo.clipped || clipInfo.clipped.length === 0) {
+        return {
+          valid: false,
+          reason: 'too_quiet',
+          message: 'Too quiet — Sentry re-armed',
+          stats: null
+        };
+      }
+
+      var sIdx = Math.max(0, clipInfo.startSample || 0);
+      var eIdx = Math.min(rawSamples.length, clipInfo.endSample || rawSamples.length);
+      var activeSlice = eIdx > sIdx ? rawSamples.subarray(sIdx, eIdx) : clipInfo.clipped;
+      var bands = analyzeSliceBands(activeSlice);
+
+      var clipped = clipInfo.clipped;
+      var clLen = clipped.length;
+      var peakAbs = 0;
+      var sumSq = 0;
+      for (var i = 0; i < clLen; i++) {
+        var av = clipped[i] < 0 ? -clipped[i] : clipped[i];
+        if (av > peakAbs) peakAbs = av;
+        sumSq += clipped[i] * clipped[i];
+      }
+      var clRms = Math.sqrt(sumSq / Math.max(1, clLen));
+      var crestDb = clRms > 1e-9 ? 20 * Math.log10(Math.max(peakAbs, 1e-9) / clRms) : 0;
+      var activeDurMs = typeof clipInfo.activeDurationMs === 'number'
+        ? clipInfo.activeDurationMs
+        : (clipInfo.clippedDuration || (clLen / sampleSr)) * 1000;
+
+      var stats = {
+        sub55Ratio: Number(bands.sub55Ratio.toFixed(3)),
+        b1Ratio: Number(bands.b1Ratio.toFixed(3)),
+        b2Ratio: Number(bands.b2Ratio.toFixed(3)),
+        b3Ratio: Number(bands.b3Ratio.toFixed(3)),
+        crestDb: Number(crestDb.toFixed(1)),
+        activeDurMs: Number(activeDurMs.toFixed(1))
+      };
+
+      if (bands.sub55Ratio > 0.62) {
+        return {
+          valid: false,
+          reason: 'thump',
+          message: 'Filtered low-frequency thump — Sentry re-armed',
+          stats: stats
+        };
+      }
+      if ((activeDurMs < 32 && crestDb > 11.0) || (activeDurMs < 42 && (crestDb > 13.5 || bands.b3Ratio > 0.28 || bands.sub55Ratio > 0.45))) {
+        return {
+          valid: false,
+          reason: 'desk_tap',
+          message: 'Filtered desk tap / knock — Sentry re-armed',
+          stats: stats
+        };
+      }
+      if ((bands.b3Ratio > 0.32 && bands.b1Ratio < 0.38) || (bands.b2Ratio + bands.b3Ratio > 0.72 && crestDb > 12.0 && bands.b1Ratio < 0.30)) {
+        return {
+          valid: false,
+          reason: 'cough_or_clap',
+          message: 'Filtered cough / clap — Sentry re-armed',
+          stats: stats
+        };
       }
 
       var DSP = root.TootApp && root.TootApp.DSP;
-      var clipInfo =
+      if (DSP && typeof DSP.extractFeatures === 'function') {
+        var feat = DSP.extractFeatures(clipped, sampleSr);
+        var roll85 = typeof feat.spectralRolloff85Hz === 'number' ? feat.spectralRolloff85Hz : feat.spectralCentroidHz;
+        if (
+          (feat.voicedRatio >= 0.32 && bands.b2Ratio >= 0.44 && bands.b1Ratio < 0.44 && roll85 > 900) ||
+          (bands.b2Ratio >= 0.50 && bands.b1Ratio < 0.36 && roll85 > 1100)
+        ) {
+          return {
+            valid: false,
+            reason: 'speech',
+            message: 'Filtered speech / vocal chatter — Sentry re-armed',
+            stats: stats
+          };
+        }
+      }
+
+      return { valid: true, reason: null, message: null, stats: stats };
+    }
+
+    function finalize(trackLabel, trackMuted, preBuilt) {
+      if (finalizedResult) return finalizedResult;
+      phase = 'completed';
+
+      var built = preBuilt || assembleRawSamples();
+      var rawSamples = built.rawSamples;
+      var preSecActual = built.preSecActual;
+      var postSecActual = built.postSecActual;
+
+      var DSP = root.TootApp && root.TootApp.DSP;
+      var clipInfo = built.clipInfo || (
         DSP && typeof DSP.autoClipAudio === 'function'
           ? DSP.autoClipAudio(rawSamples, sr)
           : {
               ok: rawSamples.length > 0,
               clipped: rawSamples,
               maxRMS: 0.05
-            };
+            }
+      );
+
+      var bandStats = built.bandStats;
+      if (!bandStats && clipInfo && clipInfo.ok && rawSamples.length > 0) {
+        var sIdx = Math.max(0, clipInfo.startSample || 0);
+        var eIdx = Math.min(rawSamples.length, clipInfo.endSample || rawSamples.length);
+        bandStats = analyzeSliceBands(eIdx > sIdx ? rawSamples.subarray(sIdx, eIdx) : clipInfo.clipped);
+      }
 
       finalizedResult = {
         ok: Boolean(clipInfo.ok),
@@ -953,12 +1137,179 @@
         sampleRate: sr,
         clipInfo: clipInfo,
         autoDetectMeta: {
+          version: 2,
           preEventSec: preSecActual,
           postEventSec: postSecActual,
-          totalCaptureSec: rawSamples.length / sr
+          totalCaptureSec: rawSamples.length / sr,
+          rearmCount: rearmCount,
+          noiseFloorRms: Number(noiseFloorRms.toFixed(5)),
+          sub55Ratio: bandStats ? Number(bandStats.sub55Ratio.toFixed(3)) : 0,
+          b1Ratio: bandStats ? Number(bandStats.b1Ratio.toFixed(3)) : 0,
+          b2Ratio: bandStats ? Number(bandStats.b2Ratio.toFixed(3)) : 0,
+          b3Ratio: bandStats ? Number(bandStats.b3Ratio.toFixed(3)) : 0
         }
       };
       return finalizedResult;
+    }
+
+    function processSubFrame(subSlice, trackLabel, trackMuted) {
+      var n = subSlice.length;
+      var rawSumSq = 0;
+      var rawPeak = 0;
+      var hpPow = 0;
+      var lp1Pow = 0;
+      var lp2Pow = 0;
+      var hpPeak = 0;
+      var hpZc = 0;
+      var prevHp = 0;
+
+      for (var i = 0; i < n; i++) {
+        var s = subSlice[i];
+        var aRaw = s < 0 ? -s : s;
+        if (aRaw > rawPeak) rawPeak = aRaw;
+        rawSumSq += s * s;
+
+        hpY1 = hpAlpha * (hpY1 + s - hpPrevX1);
+        hpPrevX1 = s;
+        hpY2 = hpAlpha * (hpY2 + hpY1 - hpPrevX2);
+        hpPrevX2 = hpY1;
+        var sHp = hpY2;
+
+        hpPow += sHp * sHp;
+        var aHp = sHp < 0 ? -sHp : sHp;
+        if (aHp > hpPeak) hpPeak = aHp;
+        if (i > 0 && ((sHp >= 0 && prevHp < 0) || (sHp < 0 && prevHp >= 0))) hpZc++;
+        prevHp = sHp;
+
+        lpB1a += alphaB1 * (sHp - lpB1a);
+        lpB1b += alphaB1 * (lpB1a - lpB1b);
+        lpB2a += alphaB2 * (sHp - lpB2a);
+        lpB2b += alphaB2 * (lpB2a - lpB2b);
+        lp1Pow += lpB1b * lpB1b;
+        lp2Pow += lpB2b * lpB2b;
+      }
+
+      var rawRms = Math.sqrt(rawSumSq / n);
+      var hpRms = Math.sqrt(hpPow / n);
+      var subShare = clampVal(1 - hpPow / (rawSumSq + 1e-12), 0, 1);
+      var p1 = Math.min(hpPow, lp1Pow);
+      var p2 = Math.min(hpPow, Math.max(p1, lp2Pow));
+      var totHp = hpPow + 1e-12;
+      var b1Share = p1 / totHp;
+      var b2Share = (p2 - p1) / totHp;
+      var b3Share = (hpPow - p2) / totHp;
+      var lowRatio = hpRms > 1e-7 ? Math.sqrt(p1 / n) / hpRms : 0;
+      var hpZcrHz = (hpZc * 0.5 * sr) / Math.max(1, n);
+      var subCrest = hpRms > 1e-6 ? hpPeak / hpRms : 0;
+
+      var triggeredNow = false;
+      var completedNow = false;
+      var rearmedNow = false;
+      var rearmReason = null;
+      var rearmMessage = null;
+
+      if (phase === 'listening') {
+        calSamples += n;
+        var elapsedSec = calSamples / sr;
+
+        if (elapsedSec <= settleSec) {
+          // Ignore initial arming beep window so it never inflates noiseFloorRms or self-triggers
+        } else if (elapsedSec <= calibrationSec) {
+          pushNoiseFloorSample(hpRms, 0.035);
+          writeToRing(subSlice);
+        } else {
+          var thresh = Math.max(0.020, noiseFloorRms * 3.2);
+          var isThump = subShare > 0.62;
+          var isSpeechCough = b1Share < 0.36 || b2Share > 0.48 || b3Share > 0.26 || hpZcrHz >= 2600;
+          var isClickSpike = subCrest > 7.0 && b3Share > 0.14;
+
+          var qualifies =
+            !isThump &&
+            !isSpeechCough &&
+            !isClickSpike &&
+            (
+              (hpRms >= thresh * 1.75 && b1Share >= 0.42 && subShare <= 0.55) ||
+              (hpRms >= thresh && b1Share >= 0.38) ||
+              (hpPeak >= Math.max(0.11, noiseFloorRms * 6.0) && b1Share >= 0.44)
+            );
+
+          if (qualifies) {
+            consecutiveHits++;
+          } else {
+            consecutiveHits = 0;
+            pushNoiseFloorSample(hpRms, 0.040);
+          }
+
+          if (consecutiveHits >= 2) {
+            preSnapshot = readRecentRing(Math.round(sr * preEventSec));
+            postChunks = [new Float32Array(subSlice)];
+            postSamples = n;
+            silentSamples = 0;
+            phase = 'triggered';
+            triggeredNow = true;
+          } else {
+            writeToRing(subSlice);
+          }
+        }
+      } else if (phase === 'triggered') {
+        postChunks.push(new Float32Array(subSlice));
+        postSamples += n;
+
+        var silThresh = Math.max(0.014, Math.min(0.032, noiseFloorRms * 2.1));
+        if (hpRms <= silThresh) {
+          silentSamples += n;
+        } else {
+          silentSamples = 0;
+        }
+
+        var postSec = postSamples / sr;
+        var silentSec = silentSamples / sr;
+        if ((postSec >= minPostEventSec && silentSec >= postSilenceSec) || postSec >= maxPostEventSec) {
+          var built = assembleRawSamples();
+          var DSP = root.TootApp && root.TootApp.DSP;
+          var clipInfo =
+            DSP && typeof DSP.autoClipAudio === 'function'
+              ? DSP.autoClipAudio(built.rawSamples, sr)
+              : { ok: built.rawSamples.length > 0, clipped: built.rawSamples, maxRMS: 0.05 };
+          var verdict = autoRearm ? validateCapturedEvent(built.rawSamples, clipInfo, sr) : { valid: true, stats: null };
+
+          if (autoRearm && !verdict.valid) {
+            for (var pi = 0; pi < postChunks.length; pi++) {
+              writeToRing(postChunks[pi]);
+            }
+            preSnapshot = null;
+            postChunks = [];
+            postSamples = 0;
+            silentSamples = 0;
+            consecutiveHits = 0;
+            phase = 'listening';
+            rearmCount++;
+            rearmedNow = true;
+            rearmReason = verdict.reason;
+            rearmMessage = verdict.message;
+          } else {
+            built.clipInfo = clipInfo;
+            built.bandStats = verdict.stats;
+            finalize(trackLabel, trackMuted, built);
+            completedNow = true;
+          }
+        }
+      }
+
+      return {
+        rms: rawRms,
+        peak: rawPeak,
+        lowRatio: lowRatio,
+        subShare: subShare,
+        b1Share: b1Share,
+        b2Share: b2Share,
+        b3Share: b3Share,
+        triggeredNow: triggeredNow,
+        completedNow: completedNow,
+        rearmedNow: rearmedNow,
+        rearmReason: rearmReason,
+        rearmMessage: rearmMessage
+      };
     }
 
     function pushChunk(chunk, trackLabel, trackMuted) {
@@ -969,104 +1320,77 @@
           rms: 0,
           peak: 0,
           lowRatio: 0,
+          subShare: 0,
+          b1Share: 0,
+          b2Share: 0,
+          b3Share: 0,
+          noiseFloorRms: noiseFloorRms,
+          rearmCount: rearmCount,
           bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
           triggeredNow: false,
           completedNow: false,
+          rearmedNow: false,
+          rearmReason: null,
+          rearmMessage: null,
           result: finalizedResult
         };
       }
 
-      var sumSq = 0;
-      var lowSumSq = 0;
-      var peak = 0;
-      var zc = 0;
-      var prevS = chunk[0];
-      for (var i = 0; i < n; i++) {
-        var s = chunk[i];
-        var a = s < 0 ? -s : s;
-        if (a > peak) peak = a;
-        sumSq += s * s;
-        lpState += lpAlpha * (s - lpState);
-        lowSumSq += lpState * lpState;
-        if (i > 0 && ((s >= 0 && prevS < 0) || (s < 0 && prevS >= 0))) zc++;
-        prevS = s;
-      }
-
-      var rms = Math.sqrt(sumSq / n);
-      var lowRms = Math.sqrt(lowSumSq / n);
-      var lowRatio = rms > 1e-7 ? lowRms / rms : 0;
-      var zcrHz = (zc * 0.5 * sr) / Math.max(1, n);
-
       var triggeredNow = false;
       var completedNow = false;
+      var rearmedNow = false;
+      var rearmReason = null;
+      var rearmMessage = null;
+      var lastRms = 0;
+      var lastPeak = 0;
+      var lastLowRatio = 0;
+      var lastSubShare = 0;
+      var lastB1Share = 0;
+      var lastB2Share = 0;
+      var lastB3Share = 0;
 
-      if (phase === 'listening') {
-        calSamples += n;
-        var elapsedSec = calSamples / sr;
-
-        if (elapsedSec <= settleSec) {
-          // Ignore initial arming beep window so it never inflates noiseFloorRms or self-triggers
-        } else if (elapsedSec <= calibrationSec) {
-          calRmsSum += rms;
-          calChunks++;
-          noiseFloorRms = Math.max(0.002, Math.min(0.035, calRmsSum / Math.max(1, calChunks)));
-          writeToRing(chunk);
-        } else {
-          var thresh = Math.max(0.022, noiseFloorRms * 3.2);
-          var isStrongBurst = rms >= thresh * 1.9 && lowRatio >= 0.36;
-          var isSustainedLowMid =
-            (rms >= thresh && lowRatio >= 0.32 && zcrHz < 3400) ||
-            (peak >= Math.max(0.11, noiseFloorRms * 6.0) && lowRatio >= 0.38 && zcrHz < 3400);
-
-          if (isStrongBurst) {
-            consecutiveHits += 2;
-          } else if (isSustainedLowMid) {
-            consecutiveHits++;
-          } else {
-            consecutiveHits = 0;
-            if (rms < Math.max(0.025, noiseFloorRms * 1.8)) {
-              noiseFloorRms = Math.max(0.002, Math.min(0.04, noiseFloorRms * 0.92 + rms * 0.08));
-            }
-          }
-
-          if (consecutiveHits >= 2) {
-            preSnapshot = readRecentRing(Math.round(sr * preEventSec));
-            postChunks = [new Float32Array(chunk)];
-            postSamples = n;
-            silentSamples = 0;
-            phase = 'triggered';
-            triggeredNow = true;
-          } else {
-            writeToRing(chunk);
-          }
+      var pos = 0;
+      while (pos < n && phase !== 'completed') {
+        var end = pos + subFrameSamples;
+        if (n - end < subFrameSamples * 0.4) {
+          end = n;
         }
-      } else if (phase === 'triggered') {
-        postChunks.push(new Float32Array(chunk));
-        postSamples += n;
-
-        var silThresh = Math.max(0.014, Math.min(0.032, noiseFloorRms * 2.1));
-        if (rms <= silThresh) {
-          silentSamples += n;
-        } else {
-          silentSamples = 0;
+        var subSlice = pos === 0 && end === n ? chunk : chunk.subarray(pos, end);
+        var subRes = processSubFrame(subSlice, trackLabel, trackMuted);
+        lastRms = subRes.rms;
+        lastPeak = subRes.peak;
+        lastLowRatio = subRes.lowRatio;
+        lastSubShare = subRes.subShare;
+        lastB1Share = subRes.b1Share;
+        lastB2Share = subRes.b2Share;
+        lastB3Share = subRes.b3Share;
+        if (subRes.triggeredNow) triggeredNow = true;
+        if (subRes.completedNow) completedNow = true;
+        if (subRes.rearmedNow) {
+          rearmedNow = true;
+          rearmReason = subRes.rearmReason;
+          rearmMessage = subRes.rearmMessage;
         }
-
-        var postSec = postSamples / sr;
-        var silentSec = silentSamples / sr;
-        if ((postSec >= minPostEventSec && silentSec >= postSilenceSec) || postSec >= maxPostEventSec) {
-          finalize(trackLabel, trackMuted);
-          completedNow = true;
-        }
+        pos = end;
       }
 
       return {
         phase: phase,
-        rms: rms,
-        peak: peak,
-        lowRatio: lowRatio,
+        rms: lastRms,
+        peak: lastPeak,
+        lowRatio: lastLowRatio,
+        subShare: lastSubShare,
+        b1Share: lastB1Share,
+        b2Share: lastB2Share,
+        b3Share: lastB3Share,
+        noiseFloorRms: noiseFloorRms,
+        rearmCount: rearmCount,
         bufferedSec: Math.min(ringSeconds, ringTotalWritten / sr),
         triggeredNow: triggeredNow,
         completedNow: completedNow,
+        rearmedNow: rearmedNow,
+        rearmReason: rearmReason,
+        rearmMessage: rearmMessage,
         result: finalizedResult
       };
     }
@@ -1074,7 +1398,10 @@
     return {
       pushChunk: pushChunk,
       finalize: finalize,
+      validateCapturedEvent: validateCapturedEvent,
       getPhase: function () { return phase; },
+      getNoiseFloor: function () { return noiseFloorRms; },
+      getRearmCount: function () { return rearmCount; },
       getRingCapacitySamples: function () { return ringCap; },
       getBufferedSec: function () { return Math.min(ringSeconds, ringTotalWritten / sr); }
     };
@@ -1093,6 +1420,7 @@
     var onStarted = typeof opts.onStarted === 'function' ? opts.onStarted : null;
     var onLevel = typeof opts.onLevel === 'function' ? opts.onLevel : null;
     var onDetected = typeof opts.onDetected === 'function' ? opts.onDetected : null;
+    var onRearmed = typeof opts.onRearmed === 'function' ? opts.onRearmed : null;
     var onAutoStop = typeof opts.onAutoStop === 'function' ? opts.onAutoStop : null;
 
     return ensureContext()
@@ -1146,6 +1474,8 @@
             engine: engine,
             lastPhase: 'listening',
             lastBufferedSec: 0,
+            noiseFloorRms: engine.getNoiseFloor(),
+            rearmCount: 0,
             rafId: null,
             stopPromise: null
           };
@@ -1182,8 +1512,13 @@
               var info = engine.pushChunk(inputBuf, trackLabel, trackMuted);
               state.lastPhase = info.phase;
               state.lastBufferedSec = info.bufferedSec;
+              state.noiseFloorRms = info.noiseFloorRms;
+              state.rearmCount = info.rearmCount;
               if (info.triggeredNow && onDetected) {
                 try { onDetected(info); } catch (e) {}
+              }
+              if (info.rearmedNow && onRearmed) {
+                try { onRearmed(info); } catch (e3) {}
               }
               if (info.completedNow) {
                 disconnectAuto();
@@ -1208,7 +1543,10 @@
               var info = engine.pushChunk(timeData, trackLabel, trackMuted);
               state.lastPhase = info.phase;
               state.lastBufferedSec = info.bufferedSec;
+              state.noiseFloorRms = info.noiseFloorRms;
+              state.rearmCount = info.rearmCount;
               if (info.triggeredNow && onDetected) onDetected(info);
+              if (info.rearmedNow && onRearmed) onRearmed(info);
               if (info.completedNow) {
                 disconnectAuto();
                 if (onAutoStop) onAutoStop(info.result);
@@ -1219,7 +1557,9 @@
               onLevel(timeData, rms, {
                 phase: state.lastPhase,
                 bufferedSec: state.lastBufferedSec,
-                elapsedSec: elapsed
+                elapsedSec: elapsed,
+                noiseFloorRms: state.noiseFloorRms,
+                rearmCount: state.rearmCount
               });
             }
             state.rafId = requestAnimationFrame(pumpLevel);
