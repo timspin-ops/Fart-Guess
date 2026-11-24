@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124g" />
-  <script defer src="../js/dsp.js?v=20261124g"></script>
-  <script defer src="../js/audioEngine.js?v=20261124g"></script>
-  <script defer src="../js/storage.js?v=20261124g"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124g"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124g"></script>
-  <script defer src="js/labsStore.js?v=20261124g"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124g"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124g"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124g"></script>
-  <script defer src="js/labsApp.js?v=20261124g"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124j" />
+  <script defer src="../js/dsp.js?v=20261124j"></script>
+  <script defer src="../js/audioEngine.js?v=20261124j"></script>
+  <script defer src="../js/storage.js?v=20261124j"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124j"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124j"></script>
+  <script defer src="js/labsStore.js?v=20261124j"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124j"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124j"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124j"></script>
+  <script defer src="js/labsApp.js?v=20261124j"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -38,6 +38,7 @@
       <div class="labs-topbar-settings-wrap">
         <button type="button" id="btn-labs-settings" class="labs-gear-btn" aria-label="Settings and Info" aria-haspopup="true" aria-expanded="false" title="Settings, About &amp; Meet The Team">⚙️</button>
         <div id="labs-settings-menu" class="labs-settings-menu hidden" role="menu">
+          <button type="button" id="btn-menu-quickfire" class="labs-settings-item" role="menuitem"><span>⚡</span><span>Quick-Fire Mimic Round</span></button>
           <button type="button" id="btn-menu-blind" class="labs-settings-item" role="menuitem"><span>🔮</span><span>Blind Prediction Mode (Beta)</span></button>
           <button type="button" id="btn-menu-about" class="labs-settings-item" role="menuitem"><span>ℹ️</span><span>About Toot Match Labs</span></button>
           <button type="button" id="btn-menu-team" class="labs-settings-item" role="menuitem"><span>🏛️</span><span>Meet The Team</span></button>
@@ -388,7 +389,13 @@
                 </div>
                 <button type="button" id="btn-reveal-skip" class="labs-btn-ghost labs-btn-xs">Skip →</button>
               </div>
-              <div id="guess-reveal-text" class="labs-reveal-text">🔒 Locking acoustic exhibits…</div>
+              <div id="guess-reveal-now-bar" class="labs-reveal-now-bar">
+                <span id="guess-reveal-spinner" class="labs-reveal-spinner" aria-hidden="true"></span>
+                <div class="labs-reveal-now-copy">
+                  <div id="guess-reveal-speaker" class="labs-reveal-speaker">PREPARING EXHIBITS…</div>
+                  <div id="guess-reveal-text" class="labs-reveal-text">🔒 Locking acoustic exhibits…</div>
+                </div>
+              </div>
               <div class="labs-reveal-bar-track"><div id="guess-reveal-bar" class="labs-reveal-bar-fill"></div></div>
               <div id="guess-reveal-lineup" class="labs-reveal-lineup"></div>
               <div class="labs-reveal-spec3d-grid">
@@ -408,8 +415,8 @@
                     <canvas id="reveal-spec3d-orig" class="labs-reveal-spec3d-canvas"></canvas>
                     <div id="reveal-mystery-seal" class="labs-mystery-seal" aria-hidden="true">
                       <span class="labs-seal-ico">🔒</span>
-                      <strong>MYSTERY FART</strong>
-                      <small>Real sound plays last!</small>
+                      <strong id="reveal-seal-title">MYSTERY FART</strong>
+                      <small id="reveal-seal-sub">Real sound plays last!</small>
                     </div>
                   </div>
                 </div>
@@ -533,6 +540,7 @@
 
           <div class="labs-guess-footer-links">
             <button type="button" id="btn-guess-toggle-history" class="labs-quiet-link-btn hidden">🏆 Past Vault Standings</button>
+            <button type="button" id="btn-open-quickfire-footer" class="labs-quiet-link-btn">⚡ Quick-Fire Mimic Round →</button>
             <button type="button" id="btn-open-blind-footer" class="labs-quiet-link-btn">🔮 Blind Prediction Mode (Beta) →</button>
           </div>
 
@@ -590,6 +598,89 @@
             <button type="button" id="btn-blind-analyze" class="labs-analyze-cta" disabled>🧪 ANALYZE RESULTS &amp; DETERMINE WINNER</button>
           </section>
         </div>
+
+        <!-- Secondary Game Mode: QUICK-FIRE MIMIC ROUND -->
+        <div id="guess-quickfire-pane" class="hidden">
+          <div class="labs-subview-bar">
+            <button type="button" id="btn-qf-back" class="labs-btn-ghost labs-btn-sm">← Back to Guess The Fart</button>
+            <span class="labs-chip labs-chip-orange">⚡ Quick-Fire</span>
+          </div>
+
+          <section id="qf-setup-card" class="labs-glass-card labs-challenge-card labs-qf-card">
+            <div class="labs-ch-card-head">
+              <div>
+                <div class="labs-eyebrow">HANDS-FREE RAPID GAUNTLET</div>
+                <h3 class="labs-ch-title">QUICK-FIRE MIMIC ROUND</h3>
+                <div class="labs-ch-meta">Hear each fart → mic turns on automatically → recreate it → mic closes → next fart fires! Score all X recreations at once.</div>
+              </div>
+            </div>
+
+            <div class="labs-qf-setup-block">
+              <label class="labs-eyebrow" for="qf-count-input">HOW MANY FARTS? (OPTIONAL · DEFAULT 5)</label>
+              <div class="labs-qf-count-row">
+                <div id="qf-count-pills" class="labs-qf-count-pills" role="group" aria-label="Number of farts">
+                  <button type="button" class="labs-qf-count-pill" data-qf-count="3">3</button>
+                  <button type="button" class="labs-qf-count-pill active" data-qf-count="5">5</button>
+                  <button type="button" class="labs-qf-count-pill" data-qf-count="8">8</button>
+                  <button type="button" class="labs-qf-count-pill" data-qf-count="10">10</button>
+                </div>
+                <input type="number" id="qf-count-input" class="labs-text-input labs-qf-count-input" min="2" max="20" value="5" aria-label="Custom fart count" />
+              </div>
+            </div>
+
+            <label class="labs-mic-field" for="qf-source-select">
+              <span>Vault Fart Pool</span>
+              <select id="qf-source-select">
+                <option value="all">All Vault Farts</option>
+                <option value="defaults">Default Pack</option>
+                <option value="recorded">Recorded Farts Only</option>
+              </select>
+            </label>
+            <div id="qf-pool-note" class="labs-hint-text"></div>
+
+            <button type="button" id="btn-qf-start" class="labs-analyze-cta">⚡ Start 5-Fart Quick-Fire Round</button>
+          </section>
+
+          <section id="qf-live-card" class="labs-glass-card labs-challenge-card labs-qf-card hidden">
+            <div class="labs-qf-live-head">
+              <span id="qf-round-counter" class="labs-eyebrow">FART 1 OF 5</span>
+              <button type="button" id="btn-qf-abort" class="labs-btn-ghost labs-btn-xs">✕ Stop Round</button>
+            </div>
+            <div id="qf-progress-dots" class="labs-qf-dots" aria-label="Round Progress"></div>
+
+            <div id="qf-stage-banner" class="labs-qf-stage-banner is-listening" role="status" aria-live="polite">
+              <div id="qf-stage-badge" class="labs-qf-stage-badge">🔊 LISTEN · FART #1</div>
+              <div id="qf-fart-title" class="labs-qf-fart-title">Preparing…</div>
+              <div id="qf-stage-sub" class="labs-qf-stage-sub">Mic opens automatically right after playback</div>
+            </div>
+
+            <div class="labs-qf-bar-track"><div id="qf-timer-bar" class="labs-qf-bar-fill"></div></div>
+            <canvas id="qf-wave-canvas" class="labs-live-wave"></canvas>
+            <button type="button" id="btn-qf-done-early" class="labs-btn labs-btn-orange labs-btn-sm hidden">⏹ Done — Next Fart →</button>
+          </section>
+
+          <section id="qf-results-card" class="labs-glass-card labs-challenge-card labs-qf-card hidden">
+            <div class="labs-qf-hero">
+              <div>
+                <div class="labs-eyebrow">QUICK-FIRE GAUNTLET COMPLETE</div>
+                <div class="labs-qf-avg-line">
+                  <span id="qf-avg-score" class="labs-qf-avg-score">0%</span>
+                  <span id="qf-avg-rank" class="labs-rank-pill">Rook</span>
+                </div>
+                <div id="qf-avg-stars" class="labs-stars-row" aria-label="Quick-Fire Rating"></div>
+              </div>
+              <div id="qf-avg-summary" class="labs-qf-summary-copy">Summary ready</div>
+              <div id="qf-highlights" class="labs-qf-highlights"></div>
+            </div>
+
+            <div id="qf-results-list" class="labs-qf-results-list"></div>
+
+            <div class="labs-result-actions">
+              <button type="button" id="btn-qf-play-again" class="labs-btn labs-btn-emerald">⚡ Play Again</button>
+              <button type="button" id="btn-qf-change-setup" class="labs-btn-ghost">⚙️ Change Count</button>
+            </div>
+          </section>
+        </div>
       </section>
 
       <!-- ==================== AREA 3: FARTNALYSIS (NO GAMEPLAY LANGUAGE) ==================== -->
@@ -605,25 +696,27 @@
           </div>
         </div>
 
-        <!-- 4 Analysis Modes -->
+        <!-- 3 Analysis Modes -->
         <div id="fn-mode-tabs" class="labs-mode-tabs" role="tablist" aria-label="Analysis Modes">
-          <button type="button" class="labs-mode-tab active" data-fn-mode="original">1. Primary Specimen</button>
-          <button type="button" class="labs-mode-tab" data-fn-mode="guess">2. Secondary Recording</button>
-          <button type="button" class="labs-mode-tab" data-fn-mode="comparison">3. Comparative Analysis</button>
-          <button type="button" class="labs-mode-tab" data-fn-mode="group">4. Multi-Specimen Megamix</button>
+          <button type="button" class="labs-mode-tab active" data-fn-mode="original">1. Single Analysis</button>
+          <button type="button" class="labs-mode-tab" data-fn-mode="comparison">2. Compare</button>
+          <button type="button" class="labs-mode-tab" data-fn-mode="group">3. Megamix</button>
         </div>
 
-        <!-- Selectors for Primary Specimen & Secondary Recording -->
+        <!-- Selectors for Single Analysis & Compare -->
         <div id="fn-pickers-bar" class="labs-glass-card labs-fn-pickers hidden">
           <label class="labs-mic-field" for="fn-sample-select">
-            <span>Primary Specimen</span>
+            <span id="fn-sample-label">Recording to Analyze</span>
             <select id="fn-sample-select"></select>
           </label>
           <label class="labs-mic-field hidden" id="fn-guess-field" for="fn-guess-select">
-            <span>Comparison Recording</span>
+            <span>Comparison Guess</span>
             <select id="fn-guess-select"></select>
           </label>
         </div>
+
+        <!-- Ranked Guess Leaderboard (Compare Mode) -->
+        <div id="fn-guess-leaderboard" class="labs-glass-card labs-fn-guess-lb hidden" aria-label="Session Guess Leaderboard"></div>
 
         <!-- Megamix Source Filter (Mode 4 Only) -->
         <div id="fn-group-filter-bar" class="labs-glass-card labs-group-filter-bar hidden">

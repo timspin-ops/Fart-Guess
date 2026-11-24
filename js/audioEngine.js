@@ -172,6 +172,7 @@
 
     var channel = opts.channel || 'solo';
     var rate = Math.max(0.25, Math.min(2.5, Number(opts.playbackRate) || 1.0));
+    var requestedOffsetSec = Math.max(0, Number(opts.offsetSec) || 0);
     var onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
     var onEnded = typeof opts.onEnded === 'function' ? opts.onEnded : null;
 
@@ -190,13 +191,14 @@
       gain.connect(ctx.destination);
 
       var durationSec = audioBuf.duration;
+      var startOffset = Math.min(requestedOffsetSec, Math.max(0, durationSec - 0.01));
       var entry = {
         ctx: ctx,
         source: source,
         gain: gain,
         rate: rate,
         durationSec: durationSec,
-        playedAudioSec: 0,
+        playedAudioSec: startOffset,
         lastPerfMs: performance.now(),
         rafId: null,
         stopped: false,
@@ -231,9 +233,9 @@
         if (onEnded) onEnded(false);
       };
 
-      source.start(0);
+      source.start(0, startOffset);
       if (onProgress) {
-        onProgress(0);
+        onProgress(durationSec > 0 ? Math.min(1, startOffset / durationSec) : 0);
         entry.rafId = requestAnimationFrame(tick);
       }
     });
@@ -440,6 +442,16 @@
 
   function hasWarmMic() {
     return isStreamLive(warmStream) && warmDeviceId === (selectedDeviceId || '');
+  }
+
+  function warmMic() {
+    return ensureContext()
+      .then(function () {
+        return openMicStream(selectedDeviceId);
+      })
+      .then(function () {
+        return true;
+      });
   }
 
   function openMicStream(deviceId) {
@@ -890,12 +902,214 @@
     return Boolean(autoDetectState && autoDetectState.active);
   }
 
+  // Trained 18-D z-score 6-centroid acoustic signature model (learned from 47 real preloaded farts)
+  var FART_SIGNATURE_MODEL = {
+    version: 3,
+    trainedOnCount: 47,
+    dims: 18,
+    mean: [
+      0.25598, -0.61806, -0.03775, -0.07022, 0.05126, -0.01402, -0.00526, -0.03514,
+      0.24865, 0.32923, 0.26168, 0.16044,
+      0.69158, 16.59104, 0.80718, 0.73141, 0.40091, 0.04684
+    ],
+    std: [
+      0.56336, 0.29457, 0.23333, 0.1309, 0.12191, 0.07773, 0.07112, 0.07359,
+      0.11458, 0.07495, 0.05719, 0.07936,
+      0.13003, 3.79273, 0.15516, 0.28062, 0.17368, 0.00915
+    ],
+    centroids: [
+      [0.44511, 0.4857, -0.0098, 0.2942, -0.41408, 0.06963, -0.15029, 0.1705, 0.50897, -0.07167, -0.4146, -0.36839, 0.40169, 0.14942, -0.1537, 0.40826, -0.09084, 0.25788],
+      [0.2653, -1.47504, -1.76166, -0.80151, 1.68864, 0.14508, 1.70254, -0.77724, -0.90917, 2.92632, -0.76261, -0.9017, -1.96864, -1.36676, 0.73921, -0.48797, -1.05098, -0.96891],
+      [-2.032, -0.45109, -0.33327, 0.35034, 0.56699, -0.02466, -0.09035, -0.75436, -1.44326, -0.79939, 1.024, 2.1009, -0.56048, 0.21402, -0.006, -0.66386, -0.20755, -0.40754],
+      [-0.41982, -1.53879, 0.61668, -1.02166, -1.00413, 1.07504, -1.52672, 1.55594, -0.68301, -0.10494, 1.62403, -0.08505, -0.64775, -0.42311, 0.6385, -0.90472, 1.20395, -0.85796],
+      [-0.34272, -0.72822, 0.83565, -1.172, 0.95425, -1.07193, 0.835, 0.05083, -0.48225, -0.29878, 0.75179, 0.43673, -0.2921, -0.10418, 0.14937, -0.7875, 0.66854, -0.21485],
+      [-0.48527, -1.19043, -1.59918, 1.27268, 1.53873, 3.09769, -1.23624, -3.2566, -1.49261, 2.59577, 0.3326, -0.53633, -1.97091, -1.24356, 0.83991, -0.63058, -1.22289, -0.54095]
+    ]
+  };
+
   /**
-   * Sentry Auto Detect v2 rolling-buffer state machine:
+   * Scores a clipped audio burst against the 47-fart acoustic prototype model and physical acoustics.
+   */
+  function scoreFartSignature(clipped, sampleRate, bands, feat) {
+    var srUse = Math.max(8000, Number(sampleRate) || 44100);
+    if (!clipped || !clipped.length || clipped.length < Math.round(srUse * 0.035)) {
+      return {
+        matched: false,
+        score: 0,
+        rmsZDist: 6,
+        path: null,
+        reason: 'too_quiet',
+        message: 'Too quiet — Sentry re-armed'
+      };
+    }
+
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var f = feat || (DSP && typeof DSP.extractFeatures === 'function' ? DSP.extractFeatures(clipped, srUse) : null);
+    if (!f) {
+      return {
+        matched: true,
+        score: 0.5,
+        rmsZDist: 1.0,
+        path: 'no_dsp_fallback',
+        reason: null,
+        message: null
+      };
+    }
+
+    var mf = f.mfccMean || [];
+    var bp = f.bandProfile || [0, 0, 0, 0];
+    var bp0 = bp[0] || 0;
+    var bp1 = bp[1] || 0;
+    var bp2 = bp[2] || 0;
+    var bp3 = bp[3] || 0;
+    var flat = typeof f.spectralFlatness === 'number' ? f.spectralFlatness : 0;
+    var crestDb = typeof f.crestFactorDb === 'number' ? f.crestFactorDb : 0;
+    var vr = typeof f.voicedRatio === 'number' ? f.voicedRatio : 0;
+    var md = typeof f.modDepth === 'number' ? f.modDepth : 0;
+    var mb1 = f.modBands && typeof f.modBands[1] === 'number' ? f.modBands[1] : 0;
+    var mb2 = f.modBands && typeof f.modBands[2] === 'number' ? f.modBands[2] : 0;
+    var flux = typeof f.spectralFlux === 'number' ? f.spectralFlux : 0;
+
+    var vec = [
+      mf[0] || 0, mf[1] || 0, mf[2] || 0, mf[3] || 0,
+      mf[4] || 0, mf[5] || 0, mf[6] || 0, mf[7] || 0,
+      bp0, bp1, bp2, bp3,
+      flat, crestDb, vr, md, mb2, flux
+    ];
+
+    var mean = FART_SIGNATURE_MODEL.mean;
+    var std = FART_SIGNATURE_MODEL.std;
+    var D = FART_SIGNATURE_MODEL.dims;
+    var z = new Array(D);
+    for (var d = 0; d < D; d++) {
+      var zv = (vec[d] - mean[d]) / std[d];
+      z[d] = zv < -6 ? -6 : zv > 6 ? 6 : zv;
+    }
+
+    var minSq = Infinity;
+    var cents = FART_SIGNATURE_MODEL.centroids;
+    for (var c = 0; c < cents.length; c++) {
+      var ct = cents[c];
+      var sq = 0;
+      for (var j = 0; j < D; j++) {
+        var diff = z[j] - ct[j];
+        sq += diff * diff;
+      }
+      if (sq < minSq) minSq = sq;
+    }
+
+    var rmsZDist = Math.sqrt(minSq / D);
+    var protoAff = Math.exp(-0.55 * rmsZDist * rmsZDist);
+
+    var activeDurMs = (clipped.length / srUse) * 1000;
+    var dur = typeof f.duration === 'number' ? f.duration : (activeDurMs / 1000);
+    var f0 = typeof f.medianPitchHz === 'number' ? f.medianPitchHz : 0;
+    var a2k = typeof f.above2kPowerShare === 'number' ? f.above2kPowerShare : 0;
+    var roll85 = typeof f.spectralRolloff85Hz === 'number' ? f.spectralRolloff85Hz : (f.spectralCentroidHz || 0);
+    var zcr = typeof f.zcr === 'number' ? f.zcr : 0;
+    var t10 = typeof f.t10Ratio === 'number' ? f.t10Ratio : 0.25;
+    var t90 = typeof f.t90Ratio === 'number' ? f.t90Ratio : 0.75;
+    var pRange = typeof f.pitchRangeSemitones === 'number' ? f.pitchRangeSemitones : 0;
+    var pTrend = typeof f.pitchTrend === 'number' ? f.pitchTrend : 0;
+    var bursts = typeof f.burstCount === 'number' ? f.burstCount : 1;
+
+    var isSharpHarmonicBark =
+      dur <= 0.38 &&
+      vr >= 0.85 &&
+      f0 >= 220 &&
+      t10 <= 0.20 &&
+      t90 <= 0.46 &&
+      bp0 < 0.14 &&
+      mb2 < 0.14 &&
+      a2k < 0.03 &&
+      flat < 0.65 &&
+      protoAff < 0.56;
+
+    var matched = false;
+    var path = null;
+    if (!isSharpHarmonicBark) {
+      if (protoAff >= 0.395) {
+        matched = true;
+        path = 'signature';
+      } else if (
+        bp0 >= 0.40 &&
+        (bp0 + bp1 >= 0.78 || dur <= 0.14) &&
+        (crestDb <= 9.5 || bp0 + bp1 >= 0.85) &&
+        (bp1 >= bp2 || dur <= 0.14) &&
+        a2k < 0.06 &&
+        crestDb < 14.5 &&
+        f0 >= 45 &&
+        f0 <= 175 &&
+        (!bands || bands.sub55Ratio <= 0.55) &&
+        !(t10 <= 0.10 && t90 <= 0.45 && crestDb >= 13.0)
+      ) {
+        matched = true;
+        path = 'low_bass_toot';
+      } else if (
+        mb1 >= 0.48 &&
+        md >= 0.35 &&
+        bp0 + bp1 >= 0.45 &&
+        a2k < 0.15 &&
+        crestDb < 16.0
+      ) {
+        matched = true;
+        path = 'flutter_rasp';
+      } else if (
+        vr >= 0.85 &&
+        f0 >= 220 &&
+        a2k < 0.05 &&
+        crestDb >= 4.0 &&
+        crestDb <= 12.5 &&
+        (pRange >= 2.5 || Math.abs(pTrend) >= 3.0) &&
+        bursts <= 1
+      ) {
+        matched = true;
+        path = 'gliding_squeaker';
+      } else if (
+        flat >= 0.75 &&
+        bp0 + bp1 >= 0.46 &&
+        a2k <= 0.58 &&
+        zcr <= 7000 &&
+        crestDb >= 9.0 &&
+        crestDb <= 16.5 &&
+        activeDurMs >= 160
+      ) {
+        matched = true;
+        path = 'warm_puff';
+      }
+    }
+
+    var reason = null;
+    var message = null;
+    if (!matched) {
+      if (vr >= 0.55 && flat < 0.48 && roll85 >= 900) {
+        reason = 'speech';
+        message = 'Filtered speech / TV chatter — Sentry re-armed';
+      } else if (crestDb >= 15.5 && md >= 1.5) {
+        reason = 'desk_tap';
+        message = 'Filtered desk tap / knock — Sentry re-armed';
+      } else {
+        reason = 'non_fart';
+        message = 'Filtered non-fart sound — Sentry re-armed';
+      }
+    }
+
+    return {
+      matched: matched,
+      score: Number(protoAff.toFixed(3)),
+      rmsZDist: Number(rmsZDist.toFixed(3)),
+      path: path,
+      reason: reason,
+      message: message
+    };
+  }
+
+  /**
+   * Sentry Auto Detect v3 rolling-buffer state machine:
    * - Maintains a fixed 5-second circular raw PCM buffer
    * - Sidechain 2-pole 55 Hz HPF thump rejection + 3-band speech/cough filter
    * - 25 ms sub-frame detection & rolling 20th-percentile ambient noise floor
-   * - Post-capture desk-tap/speech/cough/thump validation with automatic Sentry re-arm
+   * - Acoustic-signature classifier trained on 47 real farts + desk-tap/speech/cough/thump validation
    */
   function createAutoDetectEngine(sampleRate, opts) {
     opts = opts || {};
@@ -1232,7 +1446,16 @@
           stats: stats
         };
       }
-      if ((bands.b3Ratio > 0.52 && bands.b1Ratio < 0.18) || (bands.b2Ratio + bands.b3Ratio > 0.85 && crestDb > 14.0 && bands.b1Ratio < 0.14 && activeDurMs < 240)) {
+      var DSP = root.TootApp && root.TootApp.DSP;
+      var feat = DSP && typeof DSP.extractFeatures === 'function' ? DSP.extractFeatures(clipped, sampleSr) : null;
+      var sig = scoreFartSignature(clipped, sampleSr, bands, feat);
+      stats.fartSignatureScore = sig.score;
+
+      if (
+        !(sig.matched && sig.score >= 0.50 && bands.b1Ratio >= 0.25) &&
+        ((bands.b3Ratio > 0.52 && bands.b1Ratio < 0.18) ||
+          (bands.b2Ratio + bands.b3Ratio > 0.85 && crestDb > 14.0 && bands.b1Ratio < 0.14 && activeDurMs < 240))
+      ) {
         return {
           valid: false,
           reason: 'cough_or_clap',
@@ -1241,9 +1464,7 @@
         };
       }
 
-      var DSP = root.TootApp && root.TootApp.DSP;
-      if (DSP && typeof DSP.extractFeatures === 'function') {
-        var feat = DSP.extractFeatures(clipped, sampleSr);
+      if (feat) {
         var roll85 = typeof feat.spectralRolloff85Hz === 'number' ? feat.spectralRolloff85Hz : feat.spectralCentroidHz;
         var isVowelPlusSibilant =
           bands.sibilantSubFrames >= 4 && bands.lowVoicedSubFrames >= 4 && feat.voicedRatio >= 0.35 && roll85 >= 1600;
@@ -1264,7 +1485,15 @@
           bands.b1Ratio < 0.32 &&
           roll85 >= 1300 &&
           feat.zcr >= 900;
-        if (isVowelPlusSibilant || isSyllabicCadence || isSustainedFormantSpeech) {
+
+        var strongRealFartSignature =
+          (sig.score >= 0.60 && feat.spectralFlatness >= 0.50) ||
+          (sig.score >= 0.50 &&
+            feat.spectralFlatness >= 0.50 &&
+            !isSyllabicCadence &&
+            !(bands.sibilantSubFrames >= 6 && bands.lowVoicedSubFrames >= 6 && feat.duration >= 1.2 && sig.score < 0.58));
+
+        if (!strongRealFartSignature && (isVowelPlusSibilant || isSyllabicCadence || isSustainedFormantSpeech)) {
           return {
             valid: false,
             reason: 'speech',
@@ -1272,6 +1501,15 @@
             stats: stats
           };
         }
+      }
+
+      if (!sig.matched) {
+        return {
+          valid: false,
+          reason: sig.reason || 'non_fart',
+          message: sig.message || 'Filtered non-fart sound — Sentry re-armed',
+          stats: stats
+        };
       }
 
       return { valid: true, reason: null, message: null, stats: stats };
@@ -1315,7 +1553,7 @@
         sampleRate: sr,
         clipInfo: clipInfo,
         autoDetectMeta: {
-          version: 2,
+          version: 3,
           preEventSec: preSecActual,
           postEventSec: postSecActual,
           totalCaptureSec: rawSamples.length / sr,
@@ -1324,7 +1562,8 @@
           sub55Ratio: bandStats ? Number(bandStats.sub55Ratio.toFixed(3)) : 0,
           b1Ratio: bandStats ? Number(bandStats.b1Ratio.toFixed(3)) : 0,
           b2Ratio: bandStats ? Number(bandStats.b2Ratio.toFixed(3)) : 0,
-          b3Ratio: bandStats ? Number(bandStats.b3Ratio.toFixed(3)) : 0
+          b3Ratio: bandStats ? Number(bandStats.b3Ratio.toFixed(3)) : 0,
+          fartSignatureScore: bandStats && typeof bandStats.fartSignatureScore === 'number' ? bandStats.fartSignatureScore : null
         }
       };
       return finalizedResult;
@@ -1404,11 +1643,10 @@
           var thresh = Math.max(0.0085, noiseFloorRms * 2.8);
           var spcCtx = getSpeechContext();
           var isThump = subShare > 0.68;
-          var isPureFormantMid = (b2Share > 0.56 && b1Share < 0.18) || (b2Share > 0.72 && b1Share < 0.12);
+          var isPureFormantMid = (b2Share > 0.54 && b1Share < 0.12) || (b2Share > 0.72 && b1Share < 0.16);
           var isSharpCoughClap =
-            (b3Share > 0.48 && b1Share < 0.16) ||
-            (hpZcrHz >= 2600 && b1Share < 0.16) ||
-            (subCrest > 7.5 && b3Share > 0.28) ||
+            (b3Share > 0.42 && b1Share < 0.12) ||
+            (hpZcrHz >= 2600 && b1Share < 0.10) ||
             isPureFormantMid;
 
           var qualifies = false;
@@ -1420,7 +1658,7 @@
             } else {
               qualifies =
                 (hpRms >= thresh && subShare <= 0.65) ||
-                (hpPeak >= Math.max(0.055, noiseFloorRms * 5.0) && b3Share < 0.45);
+                (hpPeak >= Math.max(0.055, noiseFloorRms * 5.0) && b3Share < 0.60);
             }
           }
 
@@ -1479,7 +1717,7 @@
         var postSec = postSamples / sr;
         var silentSec = silentSamples / sr;
 
-        if (!lockedStrongFart && ((trigAct >= 22 && trigSib >= 4 && (trigSpc / trigAct) >= 0.55) || (trigAct >= 24 && (trigSpc / trigAct) >= 0.68))) {
+        if (!lockedStrongFart && trigFartCore <= 2 && trigAct >= 48 && trigSib >= 6 && (trigSpc / trigAct) >= 0.65) {
           for (var li = 0; li < postChunks.length; li++) {
             writeToRing(postChunks[li]);
           }
@@ -1644,6 +1882,9 @@
       pushChunk: pushChunk,
       finalize: finalize,
       validateCapturedEvent: validateCapturedEvent,
+      scoreFartSignature: function (clipped, rate, bands, feat) {
+        return scoreFartSignature(clipped, rate || sr, bands, feat);
+      },
       getSpeechContext: getSpeechContext,
       getPhase: function () { return phase; },
       getNoiseFloor: function () { return noiseFloorRms; },
@@ -1942,6 +2183,7 @@
     setSelectedDevice: setSelectedDevice,
     getSelectedDevice: getSelectedDevice,
     hasWarmMic: hasWarmMic,
+    warmMic: warmMic,
     releaseMic: releaseMicStream,
     setMicBoost: setMicBoost,
     getMicBoost: getMicBoost,
@@ -1951,6 +2193,7 @@
     startRecording: startRecording,
     stopRecording: stopRecording,
     createAutoDetectEngine: createAutoDetectEngine,
+    scoreFartSignature: scoreFartSignature,
     startAutoDetect: startAutoDetect,
     stopAutoDetect: stopAutoDetect,
     isAutoDetecting: isAutoDetecting,

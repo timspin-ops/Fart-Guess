@@ -5385,31 +5385,77 @@
     }
 
     var playBtn = mountEl.querySelector('.labs-g-play');
+    var stopBtn = mountEl.querySelector('.labs-g-stop');
+    var isPlaying = false;
+    var pausedAtSec = 0;
+
+    function syncPlayBtn() {
+      if (!playBtn) return;
+      playBtn.classList.toggle('is-playing', isPlaying);
+      if (isPlaying) {
+        playBtn.textContent = '⏸ Pause Track';
+        playBtn.setAttribute('aria-pressed', 'true');
+      } else if (pausedAtSec > 0.02 && pausedAtSec < g.totalDur - 0.02) {
+        playBtn.textContent = '▶ Resume Track';
+        playBtn.setAttribute('aria-pressed', 'false');
+      } else {
+        playBtn.textContent = '▶ Play Combined Track';
+        playBtn.setAttribute('aria-pressed', 'false');
+      }
+    }
+
     if (playBtn) {
+      syncPlayBtn();
       playBtn.addEventListener('click', function () {
-        Audio.playSound(g.samples, g.sampleRate, {
+        if (isPlaying) {
+          var prNow = lastProg != null ? Math.max(0, Math.min(1, lastProg)) : 0;
+          pausedAtSec = prNow * g.totalDur;
+          isPlaying = false;
+          Audio.stopChannel(chan);
+          drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, prNow);
+          if (spec) spec.setPlayhead(prNow);
+          syncPlayBtn();
+          return;
+        }
+        if (pausedAtSec >= g.totalDur - 0.05) pausedAtSec = 0;
+        isPlaying = true;
+        syncPlayBtn();
+        var playP = Audio.playSound(g.samples, g.sampleRate, {
           channel: chan,
+          offsetSec: pausedAtSec,
           onProgress: function (pr) {
             lastProg = pr;
             drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, pr);
             if (spec) spec.setPlayhead(pr);
           },
-          onEnded: function () {
+          onEnded: function (stoppedManually) {
+            if (stoppedManually) return;
+            isPlaying = false;
+            pausedAtSec = 0;
             lastProg = null;
             drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
             if (spec) spec.setPlayhead(null);
+            syncPlayBtn();
           }
         });
+        if (playP && typeof playP.catch === 'function') {
+          playP.catch(function () {
+            isPlaying = false;
+            syncPlayBtn();
+          });
+        }
       });
     }
 
-    var stopBtn = mountEl.querySelector('.labs-g-stop');
     if (stopBtn) {
       stopBtn.addEventListener('click', function () {
-        Audio.stopAll();
+        isPlaying = false;
+        pausedAtSec = 0;
         lastProg = null;
+        Audio.stopAll();
         drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, null);
         if (spec) spec.setPlayhead(null);
+        syncPlayBtn();
       });
     }
 
@@ -5466,6 +5512,9 @@
         if (spec) spec.resize();
       },
       destroy: function () {
+        isPlaying = false;
+        pausedAtSec = 0;
+        if (Audio && typeof Audio.stopChannel === 'function') Audio.stopChannel(chan);
         if (spec) spec.destroy();
         spec = null;
         if (mountEl) mountEl.innerHTML = '';
