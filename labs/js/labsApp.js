@@ -72,6 +72,9 @@
     qfIndex: 0,
     qfResults: [],
     qfStopCurrentRec: null,
+    qfScoreRaf: null,
+    qfConfettiHandle: null,
+    qfScoringActive: false,
     hintLevel: 0,
     pickerOpen: false,
     historyOpen: false,
@@ -113,7 +116,8 @@
     autoDetectMsgTimer: null,
     resultCounterRaf: null,
     confettiHandle: null,
-    toastTimer: null
+    toastTimer: null,
+    shareModalActions: null
   };
 
   function ensureTargetReady(sample) {
@@ -357,6 +361,26 @@
     });
   }
 
+  function closeShareEmailModal() {
+    var modal = $('labs-share-modal');
+    if (modal) modal.classList.add('hidden');
+    state.shareModalActions = null;
+  }
+
+  function openShareEmailModal(opts) {
+    opts = opts || {};
+    var modal = $('labs-share-modal');
+    var titleEl = $('labs-share-modal-title');
+    var subEl = $('labs-share-modal-sub');
+    state.shareModalActions = {
+      onShare: typeof opts.onShare === 'function' ? opts.onShare : null,
+      onEmail: typeof opts.onEmail === 'function' ? opts.onEmail : null
+    };
+    if (titleEl) titleEl.textContent = opts.title || 'Share or Email Report';
+    if (subEl) subEl.textContent = opts.subtitle || 'Choose how to send the full A.S.S. v4.2 PDF report & WAV audio.';
+    if (modal) modal.classList.remove('hidden');
+  }
+
   /* ==================== WAVEFORM RENDERERS ==================== */
   function sizeCanvasDpr(canvas, fallbackW, fallbackH) {
     if (!canvas) return null;
@@ -572,6 +596,19 @@
     'Aligning guess & original waveforms...'
   ];
 
+  var ANALYSIS_QUICKFIRE_OPENING_POOL = [
+    'Ingesting rapid-fire gauntlet telemetry...',
+    'Synchronizing multi-round cheek captures...'
+  ];
+
+  var ANALYSIS_QUICKFIRE_CORE_POOL = [
+    'Tallying acoustic drift across all gauntlet rounds...',
+    'Measuring vocal-tract stamina & embouchure recovery...',
+    'Ranking peak thunder fidelity & squeak precision...',
+    'Dr. Turbulence grading pressure transitions under fatigue...',
+    'Isolating highest-accuracy & chaos-tier highlights...'
+  ];
+
   var ANALYSIS_RESULTS_CORE_POOL = [
     'Comparing onset timing & attack snap...',
     'Measuring pitch delta & Doppler storm shift...',
@@ -680,6 +717,28 @@
 
   function pickAnalysisStages(context, opts) {
     opts = opts || {};
+    if (context === 'quickfire') {
+      var qfOpening = ANALYSIS_QUICKFIRE_OPENING_POOL[Math.floor(Math.random() * ANALYSIS_QUICKFIRE_OPENING_POOL.length)];
+      var qfCore = shuffleArray(ANALYSIS_QUICKFIRE_CORE_POOL);
+      var qfSci = ANALYSIS_SCIENTIST_UPDATES[Math.floor(Math.random() * ANALYSIS_SCIENTIST_UPDATES.length)];
+      var qfStages = [
+        { text: qfOpening, rare: false, scientist: false },
+        { text: qfCore[0], rare: false, scientist: false },
+        { text: qfSci, rare: false, scientist: true },
+        { text: qfCore[1], rare: Math.random() < 0.35, scientist: false },
+        { text: 'Certifying Quick-Fire Gauntlet Final Score...', rare: false, scientist: false }
+      ];
+      return qfStages.map(function (st, idx) {
+        var ms = idx === qfStages.length - 1 ? 520 : Math.round(445 + Math.random() * 95);
+        return {
+          text: st.text,
+          rare: st.rare,
+          scientist: st.scientist,
+          durationMs: Math.max(440, Math.min(540, ms))
+        };
+      });
+    }
+
     var isResults = context === 'comparison';
     var openPool = isResults ? ANALYSIS_COMPARISON_OPENING_POOL : ANALYSIS_OPENING_POOL;
     var opening = openPool[Math.floor(Math.random() * openPool.length)];
@@ -765,7 +824,7 @@
     clearAnalysisSequence();
     opts = opts || {};
 
-    var isFastCmp = opts.context === 'comparison';
+    var isFastCmp = opts.context === 'comparison' || opts.context === 'quickfire';
     var overlay = $('labs-analysis-overlay');
     var titleEl = $('labs-an-title');
     var stagesEl = $('labs-an-stages');
@@ -780,7 +839,8 @@
     }
 
     if (titleEl) {
-      titleEl.textContent = opts.title || (isFastCmp ? 'ANALYZING RESULTS' : 'ANALYZING RECORDING');
+      titleEl.textContent =
+        opts.title || (opts.context === 'quickfire' ? 'SCORING QUICK-FIRE GAUNTLET' : isFastCmp ? 'ANALYZING RESULTS' : 'ANALYZING RECORDING');
     }
     if (consensusEl) consensusEl.classList.add('hidden');
 
@@ -2601,6 +2661,115 @@
       clearTimeout(state.qfTimers[i]);
     }
     state.qfTimers = [];
+    if (state.qfScoreRaf) {
+      cancelAnimationFrame(state.qfScoreRaf);
+      state.qfScoreRaf = null;
+    }
+    if (state.qfConfettiHandle && typeof state.qfConfettiHandle.stop === 'function') {
+      state.qfConfettiHandle.stop();
+      state.qfConfettiHandle = null;
+    }
+  }
+
+  function createQuickFireAutoDetector(opts) {
+    opts = opts || {};
+    var calibrateSec = typeof opts.calibrateSec === 'number' ? opts.calibrateSec : 0.16;
+    var minSoundMs = typeof opts.minSoundMs === 'number' ? opts.minSoundMs : 130;
+    var trailingSilenceMs = typeof opts.trailingSilenceMs === 'number' ? opts.trailingSilenceMs : 420;
+    var minElapsedSec = typeof opts.minElapsedSec === 'number' ? opts.minElapsedSec : 0.45;
+
+    var phase = 'calibrating';
+    var calSamples = [];
+    var ambientFloor = 0.006;
+    var onsetThresh = 0.020;
+    var releaseThresh = 0.012;
+    var onsetFrames = 0;
+    var peakRms = 0;
+    var activeMs = 0;
+    var quietStreakMs = 0;
+
+    function computeFloorFromSamples(arr, fallback) {
+      if (!arr || arr.length === 0) return fallback;
+      var sorted = arr.slice().sort(function (a, b) { return a - b; });
+      var p40Idx = Math.min(sorted.length - 1, Math.floor(sorted.length * 0.40));
+      return Math.max(0.0025, Math.min(0.055, sorted[p40Idx]));
+    }
+
+    function syncThresholds() {
+      onsetThresh = Math.max(0.014, ambientFloor * 2.6 + 0.004);
+      releaseThresh = Math.max(0.009, ambientFloor * 1.55 + 0.0025);
+    }
+
+    syncThresholds();
+
+    return {
+      feed: function (rms, elapsed, dt) {
+        var r = Math.max(0, Number(rms) || 0);
+        var el = Math.max(0, Number(elapsed) || 0);
+        var deltaMs = Math.max(0, Number(dt) || 16);
+        var detectedNow = false;
+        var shouldStop = false;
+
+        if (phase === 'calibrating') {
+          if (el >= 0.07 && r >= 0.055) {
+            ambientFloor = calSamples.length > 0 ? computeFloorFromSamples(calSamples, 0.008) : 0.008;
+            syncThresholds();
+            phase = 'capturing';
+            detectedNow = true;
+            peakRms = r;
+            activeMs = deltaMs;
+            quietStreakMs = 0;
+          } else if (el < calibrateSec) {
+            calSamples.push(r);
+          } else {
+            ambientFloor = computeFloorFromSamples(calSamples, r);
+            syncThresholds();
+            phase = 'armed';
+          }
+        }
+
+        if (phase === 'armed') {
+          if (r >= onsetThresh) {
+            onsetFrames++;
+            if (onsetFrames >= 2 || r >= onsetThresh * 1.8) {
+              phase = 'capturing';
+              detectedNow = true;
+              peakRms = r;
+              activeMs += deltaMs;
+              quietStreakMs = 0;
+            }
+          } else {
+            onsetFrames = 0;
+            ambientFloor = Math.max(0.0025, Math.min(0.055, ambientFloor * 0.92 + r * 0.08));
+            syncThresholds();
+          }
+        } else if (phase === 'capturing' && !detectedNow) {
+          if (r > peakRms) peakRms = r;
+          var dynRelease = Math.max(releaseThresh, Math.min(onsetThresh * 0.72, peakRms * 0.22));
+          if (r >= dynRelease) {
+            activeMs += deltaMs;
+            quietStreakMs = 0;
+          } else {
+            quietStreakMs += deltaMs;
+          }
+          if (activeMs >= minSoundMs && quietStreakMs >= trailingSilenceMs && el >= minElapsedSec) {
+            phase = 'stopped';
+            shouldStop = true;
+          }
+        }
+
+        return {
+          phase: phase,
+          detectedNow: detectedNow,
+          shouldStop: shouldStop,
+          ambientFloor: ambientFloor,
+          onsetThresh: onsetThresh,
+          releaseThresh: releaseThresh,
+          activeMs: activeMs,
+          quietStreakMs: quietStreakMs
+        };
+      }
+    };
   }
 
   function getQuickFirePool(srcKey) {
@@ -2693,14 +2862,27 @@
     dotsEl.innerHTML = html.join('');
   }
 
-  function renderQuickFireResults() {
+  function pickQuickFireCelebration(avg) {
+    if (avg >= 90) return { banner: '🏆 LEGENDARY GAUNTLET — HALL OF WIND!', legendary: true };
+    if (avg >= 78) return { banner: '🔥 RAPID-FIRE ACOUSTIC VIRTUOSO!', legendary: true };
+    if (avg >= 60) return { banner: '⚡ CERTIFIED CHEEK ATHLETE!', legendary: false };
+    if (avg >= 40) return { banner: '💨 BRAVE GAUNTLET SURVIVOR!', legendary: false };
+    return { banner: '🚨 CHAOTIC ACOUSTIC CARNAGE — TRY AGAIN!', legendary: false };
+  }
+
+  function renderQuickFireResults(opts) {
+    opts = opts || {};
+    var animate = Boolean(opts.animate);
     var results = state.qfResults || [];
+    var celebEl = $('qf-celebration-banner');
     var avgScoreEl = $('qf-avg-score');
     var avgRankEl = $('qf-avg-rank');
     var avgStarsEl = $('qf-avg-stars');
     var avgSummaryEl = $('qf-avg-summary');
     var hiEl = $('qf-highlights');
     var listEl = $('qf-results-list');
+
+    clearQuickFireTimers();
 
     var sum = 0;
     var valid = 0;
@@ -2716,15 +2898,15 @@
     var avg = results.length > 0 ? sum / results.length : 0;
     var avgRank = TootLabs.Store.getRankForScore(avg);
     var avgReward = TootLabs.Store.getRewardTier(avg);
+    var celeb = pickQuickFireCelebration(avg);
 
     var avgTitle = avgRank.title || avgRank.name || 'Rook';
-    if (avgScoreEl) avgScoreEl.textContent = avg.toFixed(1) + '%';
-    if (avgRankEl) avgRankEl.textContent = avgTitle;
-    if (avgStarsEl) {
-      var starsHtml = [];
-      for (var s = 0; s < avgReward.stars; s++) starsHtml.push('<span class="labs-reward-star">⭐</span>');
-      avgStarsEl.innerHTML = starsHtml.join('');
+    if (celebEl) {
+      celebEl.textContent = celeb.banner;
+      celebEl.classList.remove('hidden', 'is-legendary');
+      if (celeb.legendary) celebEl.classList.add('is-legendary');
     }
+    if (avgRankEl) avgRankEl.textContent = avgTitle;
     if (avgSummaryEl) {
       avgSummaryEl.textContent =
         'Completed ' +
@@ -2789,7 +2971,11 @@
               '">🔊 Both</button>'
             : '';
           return (
-            '<div class="labs-qf-res-row" data-qf-row="' +
+            '<div class="labs-qf-res-row' +
+            (animate ? ' is-pop' : '') +
+            '" style="' +
+            (animate ? 'animation-delay:' + idx * 65 + 'ms;' : '') +
+            '" data-qf-row="' +
             idx +
             '">' +
             '  <div class="labs-qf-res-top">' +
@@ -2849,9 +3035,86 @@
         });
       });
     }
+
+    if (!animate) {
+      if (avgScoreEl) {
+        avgScoreEl.classList.remove('is-counting', 'is-popped');
+        avgScoreEl.textContent = avg.toFixed(1) + '%';
+      }
+      if (avgStarsEl) {
+        var starsHtml = [];
+        for (var s = 0; s < avgReward.stars; s++) starsHtml.push('<span class="labs-reward-star">⭐</span>');
+        avgStarsEl.innerHTML = starsHtml.join('');
+      }
+      return;
+    }
+
+    if (avgScoreEl) {
+      avgScoreEl.textContent = '0.0%';
+      avgScoreEl.classList.remove('is-popped');
+      avgScoreEl.classList.add('is-counting');
+      var animStart = performance.now();
+      var durationMs = 920;
+      var tickAvg = function (now) {
+        if (state.view !== 'guess' || state.guessSubMode !== 'quickfire' || state.qfPhase !== 'results') {
+          state.qfScoreRaf = null;
+          return;
+        }
+        var t = Math.min(1, (now - animStart) / durationMs);
+        var eased = 1 - Math.pow(1 - t, 3);
+        avgScoreEl.textContent = (avg * eased).toFixed(1) + '%';
+        if (t < 1) {
+          state.qfScoreRaf = requestAnimationFrame(tickAvg);
+        } else {
+          avgScoreEl.textContent = avg.toFixed(1) + '%';
+          avgScoreEl.classList.remove('is-counting');
+          avgScoreEl.classList.add('is-popped');
+          state.qfScoreRaf = null;
+        }
+      };
+      state.qfScoreRaf = requestAnimationFrame(tickAvg);
+    }
+
+    if (avgStarsEl) {
+      avgStarsEl.innerHTML = '';
+      var startDelay = 380;
+      var stepMs = 250;
+      for (var sIdx = 0; sIdx < avgReward.stars; sIdx++) {
+        (function (starIndex) {
+          state.qfTimers.push(
+            setTimeout(function () {
+              if (state.view !== 'guess' || state.guessSubMode !== 'quickfire' || state.qfPhase !== 'results') return;
+              var span = document.createElement('span');
+              span.className = 'labs-reward-star';
+              span.textContent = '⭐';
+              avgStarsEl.appendChild(span);
+              if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playBell === 'function') {
+                TootLabs.AudioFx.playBell(starIndex);
+              }
+            }, startDelay + starIndex * stepMs)
+          );
+        })(sIdx);
+      }
+      if (avgReward.stars >= 4) {
+        var finaleDelay = startDelay + Math.max(0, avgReward.stars - 1) * stepMs + 260;
+        state.qfTimers.push(
+          setTimeout(function () {
+            if (state.view !== 'guess' || state.guessSubMode !== 'quickfire' || state.qfPhase !== 'results') return;
+            if (TootLabs.AudioFx) {
+              if (typeof TootLabs.AudioFx.playLegendaryFinale === 'function') TootLabs.AudioFx.playLegendaryFinale();
+              if (typeof TootLabs.AudioFx.launchConfetti === 'function') {
+                state.qfConfettiHandle = TootLabs.AudioFx.launchConfetti($('result-confetti-canvas'));
+              }
+            }
+            var starEls = avgStarsEl.querySelectorAll('.labs-reward-star');
+            for (var k = 0; k < starEls.length; k++) starEls[k].classList.add('legendary-glow');
+          }, finaleDelay)
+        );
+      }
+    }
   }
 
-  function renderQuickFirePane() {
+  function renderQuickFirePane(opts) {
     var setupCard = $('qf-setup-card');
     var liveCard = $('qf-live-card');
     var resCard = $('qf-results-card');
@@ -2860,14 +3123,18 @@
     if (liveCard) liveCard.classList.toggle('hidden', phase !== 'live');
     if (resCard) resCard.classList.toggle('hidden', phase !== 'results');
     if (phase === 'setup') renderQuickFireSetup();
-    else if (phase === 'results') renderQuickFireResults();
+    else if (phase === 'results') renderQuickFireResults(opts);
   }
 
   function abortQuickFireRound(silent) {
-    var wasLive = state.qfActive || state.qfPhase === 'live';
+    var wasLive = state.qfActive || state.qfPhase === 'live' || state.qfScoringActive;
     state.qfGen++;
     state.qfActive = false;
     clearQuickFireTimers();
+    if (state.qfScoringActive) {
+      state.qfScoringActive = false;
+      clearAnalysisSequence();
+    }
     if (wasLive && root.TootApp && root.TootApp.Audio) {
       if (typeof root.TootApp.Audio.stopAll === 'function') root.TootApp.Audio.stopAll();
     }
@@ -2931,6 +3198,7 @@
 
     var counterEl = $('qf-round-counter');
     var stageBanner = $('qf-stage-banner');
+    var phaseWordEl = $('qf-phase-word');
     var badgeEl = $('qf-stage-badge');
     var titleEl = $('qf-fart-title');
     var subEl = $('qf-stage-sub');
@@ -2939,11 +3207,14 @@
     var doneBtn = $('btn-qf-done-early');
 
     if (counterEl) counterEl.textContent = 'GET READY · ' + deck.length + ' FARTS';
-    if (stageBanner) stageBanner.classList.remove('is-recording', 'is-scoring');
-    if (stageBanner) stageBanner.classList.add('is-listening');
-    if (badgeEl) badgeEl.textContent = '⚙️ WARMING MIC & EXHIBITS';
+    if (stageBanner) {
+      stageBanner.classList.remove('is-recording', 'is-detected', 'is-scoring');
+      stageBanner.classList.add('is-listening');
+    }
+    if (phaseWordEl) phaseWordEl.textContent = '⚙️ CALIBRATING';
+    if (badgeEl) badgeEl.textContent = 'WARMING MIC & SPECIMENS';
     if (titleEl) titleEl.textContent = 'Loading ' + deck.length + ' Specimens…';
-    if (subEl) subEl.textContent = 'Unlocking microphone once for seamless back-to-back capture';
+    if (subEl) subEl.textContent = 'Hands-free sensors unlocking for automatic LISTEN → GUESS loop';
     if (timerBar && timerBar.style) timerBar.style.width = '0%';
     if (doneBtn) doneBtn.classList.add('hidden');
 
@@ -3024,12 +3295,17 @@
           }
           var sr = target.sampleRate || 44100;
           var targetDur = target.samples.length / sr;
-          var recWindowSec = Math.max(2.6, Math.min(5.5, targetDur + 1.9));
+          var recWindowSec = Math.max(4.5, Math.min(8.0, targetDur + 3.8));
+          var detector = createQuickFireAutoDetector({
+            calibrateSec: 0.16,
+            minSoundMs: 130,
+            trailingSilenceMs: 420,
+            minElapsedSec: 0.45
+          });
           return new Promise(function (resolve) {
             var settled = false;
             var stopRequested = false;
-            var heardSound = false;
-            var quietStreakMs = 0;
+            var uiDetected = false;
             var lastPerf = performance.now();
 
             function done(res) {
@@ -3039,37 +3315,44 @@
               resolve(res);
             }
 
-            function triggerStop() {
+            function triggerStop(isAutoCut) {
               if (stopRequested || settled) return;
               stopRequested = true;
               TootApp.Audio.stopRecording()
-                .then(done)
+                .then(function (res) {
+                  if (isAutoCut && !fastMode && res && res.ok && TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
+                    TootLabs.AudioFx.playAutoDetectStopBeep();
+                  }
+                  done(res);
+                })
                 .catch(function () {
                   done({ ok: false, reason: 'stop_failed' });
                 });
             }
 
-            state.qfStopCurrentRec = triggerStop;
+            state.qfStopCurrentRec = function () { triggerStop(false); };
 
             TootApp.Audio.startRecording({
               maxDurationSec: recWindowSec,
               onLevel: function (timeData, rms, elapsed) {
-                if (gen !== state.qfGen || !state.qfActive || settled) return;
+                if (gen !== state.qfGen || !state.qfActive || settled || stopRequested) return;
                 var now = performance.now();
                 var dt = Math.max(0, now - lastPerf);
                 lastPerf = now;
-                if (waveCanvas) drawLiveWave(waveCanvas, timeData, '#ef4444');
+                if (waveCanvas) drawLiveWave(waveCanvas, timeData, uiDetected ? '#4ade80' : '#ef4444');
                 if (timerBar && timerBar.style) {
                   timerBar.style.width = Math.min(100, Math.round((elapsed / recWindowSec) * 100)) + '%';
                 }
-                if (elapsed >= 0.16 && rms >= 0.022) {
-                  heardSound = true;
-                  quietStreakMs = 0;
-                } else if (heardSound) {
-                  quietStreakMs += dt;
-                  if (quietStreakMs >= 650 && elapsed >= Math.min(0.65, targetDur * 0.7)) {
-                    triggerStop();
-                  }
+                var det = detector.feed(rms, elapsed, dt);
+                if (det.detectedNow && !uiDetected) {
+                  uiDetected = true;
+                  if (stageBanner) stageBanner.classList.add('is-detected');
+                  if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
+                  if (badgeEl) badgeEl.textContent = '🟢 FART DETECTED — CAPTURING…';
+                  if (subEl) subEl.textContent = 'Keep going — mic auto-stops & advances once you finish!';
+                }
+                if (det.shouldStop) {
+                  triggerStop(true);
                 }
               },
               onAutoStop: done
@@ -3084,10 +3367,33 @@
           if (idx >= readyDeck.length) {
             state.qfActive = false;
             state.qfStopCurrentRec = null;
-            state.qfPhase = 'results';
             if (doneBtn) doneBtn.classList.add('hidden');
-            renderQuickFirePane();
-            return Promise.resolve(state.qfResults);
+            if (fastMode) {
+              state.qfPhase = 'results';
+              renderQuickFirePane({ animate: false });
+              return Promise.resolve(state.qfResults);
+            }
+            state.qfScoringActive = true;
+            return new Promise(function (resolveSeq) {
+              runAnalysisSequence(
+                {
+                  context: 'quickfire',
+                  title: 'SCORING QUICK-FIRE GAUNTLET',
+                  subtitle: 'Grading ' + state.qfResults.length + ' rapid-fire recreations via A.S.S. v4.2…',
+                  count: state.qfResults.length
+                },
+                function () {
+                  state.qfScoringActive = false;
+                  if (gen !== state.qfGen) {
+                    resolveSeq(state.qfResults);
+                    return;
+                  }
+                  state.qfPhase = 'results';
+                  renderQuickFirePane({ animate: true });
+                  resolveSeq(state.qfResults);
+                }
+              );
+            });
           }
 
           var target = readyDeck[idx];
@@ -3099,12 +3405,13 @@
           if (counterEl) counterEl.textContent = 'FART ' + (idx + 1) + ' OF ' + readyDeck.length;
           renderQuickFireDots(idx, false);
           if (stageBanner) {
-            stageBanner.classList.remove('is-recording', 'is-scoring');
+            stageBanner.classList.remove('is-recording', 'is-detected', 'is-scoring');
             stageBanner.classList.add('is-listening');
           }
-          if (badgeEl) badgeEl.textContent = '🔊 LISTEN · FART #' + (idx + 1);
+          if (phaseWordEl) phaseWordEl.textContent = '🔊 LISTEN';
+          if (badgeEl) badgeEl.textContent = 'FART #' + (idx + 1) + ' OF ' + readyDeck.length + ' · AUDIO PLAYING';
           if (titleEl) titleEl.textContent = getSampleName(target);
-          if (subEl) subEl.textContent = 'Mic turns ON right after playback finishes';
+          if (subEl) subEl.textContent = 'Hands-free: mic turns ON automatically right after playback';
           if (timerBar && timerBar.style) timerBar.style.width = '0%';
           if (doneBtn) doneBtn.classList.add('hidden');
 
@@ -3121,11 +3428,12 @@
               if (gen !== state.qfGen || !state.qfActive) return null;
               renderQuickFireDots(idx, true);
               if (stageBanner) {
-                stageBanner.classList.remove('is-listening', 'is-scoring');
+                stageBanner.classList.remove('is-listening', 'is-detected', 'is-scoring');
                 stageBanner.classList.add('is-recording');
               }
-              if (badgeEl) badgeEl.textContent = '🎤 GO! MIC IS ON — RECREATE IT!';
-              if (subEl) subEl.textContent = 'Mic shuts off automatically once you finish (or tap Done)';
+              if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
+              if (badgeEl) badgeEl.textContent = '🔴 MIC ON · AUTO-DETECT ARMED';
+              if (subEl) subEl.textContent = 'Make your fart now — mic auto-stops when done (or tap Next Fart)';
               if (timerBar && timerBar.style) timerBar.style.width = '0%';
               if (doneBtn) doneBtn.classList.remove('hidden');
               return captureMimicForRound(target, idx);
@@ -3136,7 +3444,7 @@
               state.qfStopCurrentRec = null;
 
               if (stageBanner) {
-                stageBanner.classList.remove('is-listening', 'is-recording');
+                stageBanner.classList.remove('is-listening', 'is-recording', 'is-detected');
                 stageBanner.classList.add('is-scoring');
               }
               if (timerBar && timerBar.style) timerBar.style.width = '100%';
@@ -3153,8 +3461,9 @@
                   metrics: null,
                   missed: true
                 });
-                if (badgeEl) badgeEl.textContent = '⚠️ TOO QUIET · ROUND #' + (idx + 1);
-                if (subEl) subEl.textContent = 'Logged 0% — firing next fart!';
+                if (phaseWordEl) phaseWordEl.textContent = '⚠️ MISSED';
+                if (badgeEl) badgeEl.textContent = 'TOO QUIET · ROUND #' + (idx + 1);
+                if (subEl) subEl.textContent = 'Logged 0% — firing next fart automatically!';
               } else {
                 var gSr = capRes.sampleRate || 44100;
                 var gSamples = capRes.clippedSamples;
@@ -3180,12 +3489,13 @@
                   metrics: rMetrics,
                   missed: false
                 });
-                if (badgeEl) badgeEl.textContent = '✓ ROUND #' + (idx + 1) + ' · ' + exactScore.toFixed(1) + '%';
-                if (subEl) subEl.textContent = (rRank.title || rRank.name || 'Scored') + ' — queuing next fart!';
+                if (phaseWordEl) phaseWordEl.textContent = '✓ LOCKED!';
+                if (badgeEl) badgeEl.textContent = 'ROUND #' + (idx + 1) + ' · ' + exactScore.toFixed(1) + '%';
+                if (subEl) subEl.textContent = (rRank.title || rRank.name || 'Scored') + ' — firing next fart!';
               }
 
               renderQuickFireDots(idx + 1, false);
-              return waitMs(fastMode ? 8 : 750).then(function () {
+              return waitMs(fastMode ? 8 : 550).then(function () {
                 return runRound(idx + 1);
               });
             });
@@ -5197,24 +5507,22 @@
             state.groupSortDir = nextSortDir === 'desc' ? 'desc' : 'asc';
             renderFartnalysisView();
           },
-          onShare: function (g, specCanvases) {
-            shareTextOrAudio(
-              'Multi-Specimen Megamix Fartnalysis Report',
-              TootLabs.Store.buildGroupAnalysisReportText(g),
-              g,
-              { mode: 'group', groupObj: g, specCanvases: specCanvases }
-            );
+          onShareOrEmail: function (g, specCanvases) {
+            var reportText = TootLabs.Store.buildGroupAnalysisReportText(g);
+            var pdfPayload = { mode: 'group', groupObj: g, specCanvases: specCanvases };
+            openShareEmailModal({
+              title: 'Share or Email Megamix Report',
+              subtitle: g.name + ' (' + g.segments.length + ' specimens · ' + g.metrics.totalDurationSec.toFixed(2) + 's)',
+              onShare: function () {
+                shareTextOrAudio('Multi-Specimen Megamix Fartnalysis Report', reportText, g, pdfPayload);
+              },
+              onEmail: function () {
+                emailAnalysisReport('Multi-Specimen Megamix Fartnalysis Report', reportText, pdfPayload, g);
+              }
+            });
           },
           onDownloadPdf: function (g, specCanvases) {
             downloadAnalysisPdf({ mode: 'group', groupObj: g, specCanvases: specCanvases });
-          },
-          onEmailAnalysis: function (g, specCanvases) {
-            emailAnalysisReport(
-              'Multi-Specimen Megamix Fartnalysis Report',
-              TootLabs.Store.buildGroupAnalysisReportText(g),
-              { mode: 'group', groupObj: g, specCanvases: specCanvases },
-              g
-            );
           }
         });
       }
@@ -5269,24 +5577,23 @@
         eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN · ACOUSTIC ANALYSIS',
         onOpenTeam: openTeamView,
         onCopyVerdict: handleCopyVerdict,
-        onShare: function (s, specCanvases) {
-          shareTextOrAudio(
-            'Fartnalysis Report: ' + getSampleName(s),
-            TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT'),
-            s,
-            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases }
-          );
+        onShareOrEmail: function (s, specCanvases) {
+          var sName = getSampleName(s);
+          var reportText = TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT');
+          var pdfPayload = { mode: 'single', sound: s, label: sName, eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases };
+          openShareEmailModal({
+            title: 'Share or Email Specimen Report',
+            subtitle: sName + ' — full PDF dossier + WAV audio',
+            onShare: function () {
+              shareTextOrAudio('Fartnalysis Report: ' + sName, reportText, s, pdfPayload);
+            },
+            onEmail: function () {
+              emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, s);
+            }
+          });
         },
         onDownloadPdf: function (s, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases });
-        },
-        onEmailAnalysis: function (s, specCanvases) {
-          emailAnalysisReport(
-            'Fartnalysis Report: ' + getSampleName(s),
-            TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT'),
-            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases },
-            s
-          );
         }
       });
       return;
@@ -5315,24 +5622,22 @@
         },
         onOpenTeam: openTeamView,
         onCopyVerdict: handleCopyVerdict,
-        onShare: function (g, specCanvases) {
-          shareTextOrAudio(
-            'Acoustic Analysis: ' + g.name,
-            TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS'),
-            g,
-            { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases }
-          );
+        onShareOrEmail: function (g, specCanvases) {
+          var reportText = TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS');
+          var pdfPayload = { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases };
+          openShareEmailModal({
+            title: 'Share or Email Guess Report',
+            subtitle: g.name + ' — full PDF dossier + WAV audio',
+            onShare: function () {
+              shareTextOrAudio('Acoustic Analysis: ' + g.name, reportText, g, pdfPayload);
+            },
+            onEmail: function () {
+              emailAnalysisReport('Fartnalysis Report: ' + g.name, reportText, pdfPayload, g);
+            }
+          });
         },
         onDownloadPdf: function (g, specCanvases) {
           downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases });
-        },
-        onEmailAnalysis: function (g, specCanvases) {
-          emailAnalysisReport(
-            'Fartnalysis Report: ' + g.name,
-            TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS'),
-            { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases },
-            g
-          );
         }
       });
       return;
@@ -5349,24 +5654,22 @@
       result: attempt.result || null,
       onOpenTeam: openTeamView,
       onCopyVerdict: handleCopyVerdict,
-      onShare: function (sA, sB, r, exact, specCanvases) {
-        shareTextOrAudio(
-          'Toot Match Comparative Report: ' + exact.toFixed(1) + '%',
-          TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
-          stitchComparisonAudio(sA, sB),
-          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases }
-        );
+      onShareOrEmail: function (sA, sB, r, exact, specCanvases) {
+        var reportText = TootLabs.Store.buildComparisonReportText(sA, sB, r, exact);
+        var pdfPayload = { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases };
+        openShareEmailModal({
+          title: 'Share or Email Comparison Report',
+          subtitle: sB.name + ' vs ' + getSampleName(sA) + ' (' + exact.toFixed(1) + '%)',
+          onShare: function () {
+            shareTextOrAudio('Toot Match Comparative Report: ' + exact.toFixed(1) + '%', reportText, stitchComparisonAudio(sA, sB), pdfPayload);
+          },
+          onEmail: function () {
+            emailAnalysisReport('Toot Match Comparative Analysis: ' + sB.name + ' vs ' + getSampleName(sA), reportText, pdfPayload, stitchComparisonAudio(sA, sB));
+          }
+        });
       },
       onDownloadPdf: function (sA, sB, r, exact, specCanvases) {
         downloadAnalysisPdf({ mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases });
-      },
-      onEmailAnalysis: function (sA, sB, r, exact, specCanvases) {
-        emailAnalysisReport(
-          'Toot Match Comparative Analysis: ' + sB.name + ' vs ' + getSampleName(sA),
-          TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
-          { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases },
-          stitchComparisonAudio(sA, sB)
-        );
       }
     });
   }
@@ -5488,6 +5791,31 @@
     if (aboutModal) {
       aboutModal.addEventListener('click', function (ev) {
         if (ev.target === aboutModal) closeAboutModal();
+      });
+    }
+
+    var shareModal = $('labs-share-modal');
+    var shareNativeBtn = $('btn-share-modal-native');
+    var shareEmailBtn = $('btn-share-modal-email');
+    var shareCloseBtn = $('btn-share-modal-close');
+    if (shareNativeBtn) {
+      shareNativeBtn.addEventListener('click', function () {
+        var actions = state.shareModalActions;
+        closeShareEmailModal();
+        if (actions && typeof actions.onShare === 'function') actions.onShare();
+      });
+    }
+    if (shareEmailBtn) {
+      shareEmailBtn.addEventListener('click', function () {
+        var actions = state.shareModalActions;
+        closeShareEmailModal();
+        if (actions && typeof actions.onEmail === 'function') actions.onEmail();
+      });
+    }
+    if (shareCloseBtn) shareCloseBtn.addEventListener('click', closeShareEmailModal);
+    if (shareModal) {
+      shareModal.addEventListener('click', function (ev) {
+        if (ev.target === shareModal) closeShareEmailModal();
       });
     }
 
@@ -5635,25 +5963,20 @@
     });
     $('btn-detail-share').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
-      if (sample) {
-        shareTextOrAudio(
-          'Toot Match — ' + getSampleName(sample),
-          TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'),
-          sample,
-          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' }
-        );
-      }
-    });
-    $('btn-detail-email-analysis').addEventListener('click', function () {
-      var sample = getSampleById(state.detailSampleId);
-      if (sample) {
-        emailAnalysisReport(
-          'Fartnalysis Report: ' + getSampleName(sample),
-          TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS'),
-          { mode: 'single', sound: sample, label: getSampleName(sample), eyebrow: 'ORIGINAL FART ANALYSIS' },
-          sample
-        );
-      }
+      if (!sample) return;
+      var sName = getSampleName(sample);
+      var reportText = TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS');
+      var pdfPayload = { mode: 'single', sound: sample, label: sName, eyebrow: 'ORIGINAL FART ANALYSIS' };
+      openShareEmailModal({
+        title: 'Share or Email Vault Fart',
+        subtitle: sName + ' — choose Share or Email (PDF + WAV)',
+        onShare: function () {
+          shareTextOrAudio('Toot Match — ' + sName, TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'), sample, pdfPayload);
+        },
+        onEmail: function () {
+          emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, sample);
+        }
+      });
     });
     $('btn-detail-rename').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
@@ -5891,25 +6214,23 @@
         240
       );
     });
-    $('btn-res-email').addEventListener('click', function () {
-      if (!state.lastOutcome) return;
-      var o = state.lastOutcome;
-      emailAnalysisReport(
-        'Toot Match Referee Report: ' + o.attempt.name,
-        TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore),
-        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result },
-        stitchComparisonAudio(o.targetSound, o.attempt)
-      );
-    });
     $('btn-res-share').addEventListener('click', function () {
       if (!state.lastOutcome) return;
       var o = state.lastOutcome;
-      shareTextOrAudio(
-        'Toot Match Result: ' + o.exactScore.toFixed(1) + '%',
-        TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore),
-        stitchComparisonAudio(o.targetSound, o.attempt),
-        { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result }
-      );
+      var sName = getSampleName(o.targetSound);
+      var reportText = TootLabs.Store.buildComparisonReportText(o.targetSound, o.attempt, o.attempt.result, o.exactScore);
+      var pdfPayload = { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result };
+      var stitched = stitchComparisonAudio(o.targetSound, o.attempt);
+      openShareEmailModal({
+        title: 'Share or Email Match Result',
+        subtitle: o.attempt.name + ' vs ' + sName + ' (' + o.exactScore.toFixed(1) + '%)',
+        onShare: function () {
+          shareTextOrAudio('Toot Match Result: ' + o.exactScore.toFixed(1) + '%', reportText, stitched, pdfPayload);
+        },
+        onEmail: function () {
+          emailAnalysisReport('Toot Match Referee Report: ' + o.attempt.name, reportText, pdfPayload, stitched);
+        }
+      });
     });
 
     // Fartnalysis Mode Switcher, Megamix Source Filter & Selectors
@@ -6015,6 +6336,7 @@
       'labs-analysis-overlay',
       'labs-rename-modal',
       'labs-delete-modal',
+      'labs-share-modal',
       'labs-chart-modal',
       'labs-about-modal',
       'labs-splash-modal',
@@ -6189,11 +6511,14 @@
     handleSwipeNavigation: handleSwipeNavigation,
     openTeamView: openTeamView,
     openAboutModal: openAboutModal,
+    openShareEmailModal: openShareEmailModal,
+    closeShareEmailModal: closeShareEmailModal,
     openSplashModal: openSplashModal,
     closeSplashModal: closeSplashModal,
     openGuessMode: openGuessMode,
     openQuickFireMode: openQuickFireMode,
     setQuickFireCount: setQuickFireCount,
+    createQuickFireAutoDetector: createQuickFireAutoDetector,
     startQuickFireRound: startQuickFireRound,
     abortQuickFireRound: abortQuickFireRound,
     setGuessSubMode: setGuessSubMode,

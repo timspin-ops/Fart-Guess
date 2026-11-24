@@ -791,11 +791,10 @@
       '</div>';
 
     var headerBtnsHtml =
-      (opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
+      (opts.onShareOrEmail || opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
         ? '<div class="labs-fn-header-btns">' +
-          (opts.onShare ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-share">📤 Share</button>' : '') +
+          (opts.onShareOrEmail || opts.onShare || opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-share">📤 Share / Email</button>' : '') +
           (opts.onDownloadPdf ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>' : '') +
-          (opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-email">📧 Email (Audio + PDF)</button>' : '') +
           '</div>'
         : '');
 
@@ -1181,21 +1180,17 @@
     bindSidePresets('B', function () { return specB; });
 
     var cmpShareBtn = mountEl.querySelector('.labs-cmp-share');
-    if (cmpShareBtn && opts.onShare) {
+    if (cmpShareBtn) {
       cmpShareBtn.addEventListener('click', function () {
-        opts.onShare(soundA, soundB, result, exactScore, [canvasA, canvasB]);
+        if (opts.onShareOrEmail) opts.onShareOrEmail(soundA, soundB, result, exactScore, [canvasA, canvasB]);
+        else if (opts.onShare) opts.onShare(soundA, soundB, result, exactScore, [canvasA, canvasB]);
+        else if (opts.onEmailAnalysis) opts.onEmailAnalysis(soundA, soundB, result, exactScore, [canvasA, canvasB]);
       });
     }
     var cmpPdfBtn = mountEl.querySelector('.labs-cmp-pdf');
     if (cmpPdfBtn && opts.onDownloadPdf) {
       cmpPdfBtn.addEventListener('click', function () {
         opts.onDownloadPdf(soundA, soundB, result, exactScore, [canvasA, canvasB]);
-      });
-    }
-    var cmpEmailBtn = mountEl.querySelector('.labs-cmp-email');
-    if (cmpEmailBtn && opts.onEmailAnalysis) {
-      cmpEmailBtn.addEventListener('click', function () {
-        opts.onEmailAnalysis(soundA, soundB, result, exactScore, [canvasA, canvasB]);
       });
     }
     var cmpTeamBtn = mountEl.querySelector('.labs-fn-meet-team');
@@ -4531,9 +4526,8 @@
       '    <div class="labs-fn-single-actions">' +
       '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play Specimen</button>' +
       compareBtnHtml +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-share">📤 Share</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-share">📤 Share / Email</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>' +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-email-report">📧 Email (Audio + PDF)</button>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       '      <button type="button" class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</button>' +
@@ -4905,19 +4899,15 @@
     var shareBtn = mountEl.querySelector('.labs-s-share');
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
-        if (opts.onShare) opts.onShare(sound, [specCanvas]);
+        if (opts.onShareOrEmail) opts.onShareOrEmail(sound, [specCanvas]);
+        else if (opts.onShare) opts.onShare(sound, [specCanvas]);
+        else if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-s-pdf');
     if (pdfBtn) {
       pdfBtn.addEventListener('click', function () {
         if (opts.onDownloadPdf) opts.onDownloadPdf(sound, [specCanvas]);
-      });
-    }
-    var emailRepBtn = mountEl.querySelector('.labs-s-email-report');
-    if (emailRepBtn) {
-      emailRepBtn.addEventListener('click', function () {
-        if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
       });
     }
     var singleTeamBtn = mountEl.querySelector('.labs-fn-meet-team');
@@ -5225,9 +5215,8 @@
       '    <div class="labs-fn-single-actions">' +
       '      <button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-g-play">▶ Play Combined Track</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-stop">⏹ Stop</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-share">📤 Share</button>' +
+      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-share">📤 Share / Email</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email (Audio + PDF)</button>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
@@ -5462,19 +5451,15 @@
     var shareGrpBtn = mountEl.querySelector('.labs-g-share');
     if (shareGrpBtn) {
       shareGrpBtn.addEventListener('click', function () {
-        if (opts.onShare) opts.onShare(g, [specCanvas]);
+        if (opts.onShareOrEmail) opts.onShareOrEmail(g, [specCanvas]);
+        else if (opts.onShare) opts.onShare(g, [specCanvas]);
+        else if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
       });
     }
     var pdfBtn = mountEl.querySelector('.labs-g-pdf');
     if (pdfBtn) {
       pdfBtn.addEventListener('click', function () {
         if (opts.onDownloadPdf) opts.onDownloadPdf(g, [specCanvas]);
-      });
-    }
-    var emailRepBtn = mountEl.querySelector('.labs-g-email-report');
-    if (emailRepBtn) {
-      emailRepBtn.addEventListener('click', function () {
-        if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
       });
     }
     var grpTeamBtn = mountEl.querySelector('.labs-fn-meet-team');

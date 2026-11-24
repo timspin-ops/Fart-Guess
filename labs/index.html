@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124j" />
-  <script defer src="../js/dsp.js?v=20261124j"></script>
-  <script defer src="../js/audioEngine.js?v=20261124j"></script>
-  <script defer src="../js/storage.js?v=20261124j"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124j"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124j"></script>
-  <script defer src="js/labsStore.js?v=20261124j"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124j"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124j"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124j"></script>
-  <script defer src="js/labsApp.js?v=20261124j"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124k" />
+  <script defer src="../js/dsp.js?v=20261124k"></script>
+  <script defer src="../js/audioEngine.js?v=20261124k"></script>
+  <script defer src="../js/storage.js?v=20261124k"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124k"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124k"></script>
+  <script defer src="js/labsStore.js?v=20261124k"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124k"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124k"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124k"></script>
+  <script defer src="js/labsApp.js?v=20261124k"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -286,8 +286,7 @@
 
           <div class="labs-detail-sec-actions">
             <button type="button" id="btn-detail-analyze" class="labs-btn-ghost labs-btn-sm">🧪 Analyze Fart</button>
-            <button type="button" id="btn-detail-share" class="labs-btn-ghost labs-btn-sm">📤 Share</button>
-            <button type="button" id="btn-detail-email-analysis" class="labs-btn-ghost labs-btn-sm">📧 Email (Audio + PDF)</button>
+            <button type="button" id="btn-detail-share" class="labs-btn-ghost labs-btn-sm">📤 Share / Email</button>
             <button type="button" id="btn-detail-rename" class="labs-btn-ghost labs-btn-sm">✏️ Rename</button>
             <button type="button" id="btn-detail-delete" class="labs-btn-danger labs-btn-sm">🗑️ Delete</button>
           </div>
@@ -533,8 +532,7 @@
               <button type="button" id="btn-res-next-guesser" class="labs-btn labs-btn-emerald labs-btn-sm">🎲 Next Mystery Fart</button>
             </div>
             <div class="labs-result-sec-actions">
-              <button type="button" id="btn-res-email" class="labs-btn-ghost labs-btn-sm">📧 Email (Audio + PDF)</button>
-              <button type="button" id="btn-res-share" class="labs-btn-ghost labs-btn-sm">📤 Share</button>
+              <button type="button" id="btn-res-share" class="labs-btn-ghost labs-btn-sm">📤 Share / Email</button>
             </div>
           </section>
 
@@ -611,7 +609,19 @@
               <div>
                 <div class="labs-eyebrow">HANDS-FREE RAPID GAUNTLET</div>
                 <h3 class="labs-ch-title">QUICK-FIRE MIMIC ROUND</h3>
-                <div class="labs-ch-meta">Hear each fart → mic turns on automatically → recreate it → mic closes → next fart fires! Score all X recreations at once.</div>
+              </div>
+            </div>
+
+            <div id="qf-briefing-box" class="labs-qf-briefing">
+              <div class="labs-eyebrow">DR. TURBULENCE'S RAPID-GAUNTLET PROTOCOL · 100% AUTOMATIC</div>
+              <p class="labs-qf-briefing-copy">No button juggling mid-toot! A.S.S. v4.2 plays each specimen, automatically opens your mic, locks onto your sonic recreation, shuts the mic OFF when you finish, and fires the next fart — all hands-free until the grand laboratory tally.</p>
+              <div class="labs-qf-flow-steps">
+                <div class="labs-qf-flow-pill is-listen"><strong>1. 🔊 LISTEN</strong><span>Specimen plays automatically</span></div>
+                <div class="labs-qf-flow-pill is-guess"><strong>2. 🎤 GUESS!</strong><span>Mic opens ON its own</span></div>
+                <div class="labs-qf-flow-pill is-auto"><strong>3. 🟢 AUTO-NEXT</strong><span>Mic closes &amp; advances!</span></div>
+              </div>
+              <div class="labs-qf-briefing-tip">
+                <span>🛠️ <strong>Manual Override:</strong> Noisy room or auto-detect didn't trip? Tap <strong>⏭ Next Fart</strong> anytime during <strong>GUESS</strong> to advance manually.</span>
               </div>
             </div>
 
@@ -649,18 +659,20 @@
             <div id="qf-progress-dots" class="labs-qf-dots" aria-label="Round Progress"></div>
 
             <div id="qf-stage-banner" class="labs-qf-stage-banner is-listening" role="status" aria-live="polite">
-              <div id="qf-stage-badge" class="labs-qf-stage-badge">🔊 LISTEN · FART #1</div>
+              <div id="qf-phase-word" class="labs-qf-phase-word">🔊 LISTEN</div>
+              <div id="qf-stage-badge" class="labs-qf-stage-badge">FART #1 · PREPARING</div>
               <div id="qf-fart-title" class="labs-qf-fart-title">Preparing…</div>
-              <div id="qf-stage-sub" class="labs-qf-stage-sub">Mic opens automatically right after playback</div>
+              <div id="qf-stage-sub" class="labs-qf-stage-sub">Hands-free: mic opens automatically right after playback</div>
             </div>
 
             <div class="labs-qf-bar-track"><div id="qf-timer-bar" class="labs-qf-bar-fill"></div></div>
             <canvas id="qf-wave-canvas" class="labs-live-wave"></canvas>
-            <button type="button" id="btn-qf-done-early" class="labs-btn labs-btn-orange labs-btn-sm hidden">⏹ Done — Next Fart →</button>
+            <button type="button" id="btn-qf-done-early" class="labs-btn labs-btn-orange labs-btn-sm hidden" aria-label="Stop mic and play next fart">⏭ Next Fart</button>
           </section>
 
           <section id="qf-results-card" class="labs-glass-card labs-challenge-card labs-qf-card hidden">
             <div class="labs-qf-hero">
+              <div id="qf-celebration-banner" class="labs-qf-celeb-banner hidden"></div>
               <div>
                 <div class="labs-eyebrow">QUICK-FIRE GAUNTLET COMPLETE</div>
                 <div class="labs-qf-avg-line">
@@ -857,6 +869,34 @@
     </div>
   </div>
 
+  <!-- Unified Share / Email Modal -->
+  <div id="labs-share-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-share-modal-title">
+    <div class="labs-glass-card labs-modal-card labs-share-sheet">
+      <div class="labs-eyebrow">INSTITUTE DISPATCH · PDF &amp; WAV BUNDLE</div>
+      <h3 id="labs-share-modal-title" class="labs-section-heading">Share or Email Report</h3>
+      <p class="labs-modal-copy" id="labs-share-modal-sub">Choose how to send the full A.S.S. v4.2 PDF report &amp; WAV audio.</p>
+      <div class="labs-share-option-stack">
+        <button type="button" id="btn-share-modal-native" class="labs-share-opt-btn labs-share-opt-native">
+          <span class="labs-share-opt-ico" aria-hidden="true">📤</span>
+          <span class="labs-share-opt-copy">
+            <strong>Share (PDF + Audio)</strong>
+            <small>Use your device share sheet or copy &amp; save files</small>
+          </span>
+        </button>
+        <button type="button" id="btn-share-modal-email" class="labs-share-opt-btn labs-share-opt-email">
+          <span class="labs-share-opt-ico" aria-hidden="true">📧</span>
+          <span class="labs-share-opt-copy">
+            <strong>Email (Audio + PDF)</strong>
+            <small>Open email draft with full PDF report &amp; WAV audio</small>
+          </span>
+        </button>
+      </div>
+      <div class="labs-modal-actions">
+        <button type="button" id="btn-share-modal-close" class="labs-btn-ghost labs-btn-sm">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Full-Screen Scientific Chart Investigation Modal -->
   <div id="labs-chart-modal" class="labs-chart-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-cm-title">
     <div class="labs-glass-card labs-chart-modal-sheet">
@@ -918,22 +958,22 @@
         <div class="labs-splash-step">
           <span class="labs-splash-num">1</span>
           <div>
-            <strong>🎯 Guess The Fart (Complete Mystery Mode)</strong>
-            <p>Both the Mystery Fart's name and audio stay secret! Guess completely blind, or tap <em>💡 Hint (0/3)</em> up to 3 times (Name → Duration &amp; Pattern → Pitch &amp; Vibe), hear the reveal, and compare live side-by-side 3D spectrum plots.</p>
+            <strong>🎯 Guess The Fart &amp; Mimic Mode</strong>
+            <p>Mystery Fart keeps both name &amp; audio secret (use <em>💡 Hint (0/3)</em> or tap <em>Play Fart First</em> to Mimic). Tap <em>Guess The Fart</em>, then <em>Score Now</em> for solo or <em>2nd Player</em> for group showdown + side-by-side 3D plots.</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">2</span>
           <div>
-            <strong>🦜 Mimic Mode (Play Fart First)</strong>
-            <p>Want to imitate a specimen upfront? Tap <em>Play Fart First</em> next to Guess to hear the fart before attempting it and switch into <em>Mimic The Fart</em>.</p>
+            <strong>⚡ Quick-Fire Mimic Round (Hands-Free Automatic)</strong>
+            <p>Pick how many farts (default 5): follow the big <strong>🔊 LISTEN</strong> → <strong>🎤 GUESS!</strong> cue. The mic opens &amp; shuts OFF automatically after you recreate each fart — or tap <em>⏭ Next Fart</em> anytime if auto-detect misses!</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">3</span>
           <div>
-            <strong>🎙️ Solo or Multiplayer — Zero Setup</strong>
-            <p>Record a real fart on Home (Sentry Auto Detect lets you tap <em>Stop &amp; Save</em> or <em>Disarm</em> anytime). On Guess, tap <em>Guess The Fart</em> to record — then either tap <em>Score Now</em> for solo or pass the phone and tap <em>2nd Player</em> to rank the whole room.</p>
+            <strong>🎙️ Record, Swipe Vault &amp; Fartnalysis</strong>
+            <p>Record real specimens on Home (Sentry Auto Detect v3 ignores speech &amp; noise), swipe left/right between Home / Vault / 3-tab Fartnalysis, and tap <em>📤 Share / Email</em> on any report to Share or Email PDF + WAV.</p>
           </div>
         </div>
         <div class="labs-splash-step labs-splash-step-beta">
