@@ -88,6 +88,12 @@
     recordMode: 'auto',
     inlineSpecA: null,
     inlineSpecB: null,
+    revealSpecA: null,
+    revealSpecB: null,
+    revealStepTimers: [],
+    revealSkipCb: null,
+    revealGen: 0,
+    lastRevealOrder: [],
     resultTimers: [],
     vaultDoorTimers: [],
     analysisTimers: [],
@@ -849,7 +855,25 @@
     }
   }
 
+  function destroyRevealSpecs() {
+    if (state.revealSpecA) {
+      try { state.revealSpecA.partners = []; } catch (e) {}
+      if (typeof state.revealSpecA.destroy === 'function') {
+        try { state.revealSpecA.destroy(); } catch (e) {}
+      }
+    }
+    if (state.revealSpecB) {
+      try { state.revealSpecB.partners = []; } catch (e) {}
+      if (typeof state.revealSpecB.destroy === 'function') {
+        try { state.revealSpecB.destroy(); } catch (e) {}
+      }
+    }
+    state.revealSpecA = null;
+    state.revealSpecB = null;
+  }
+
   function clearRevealTimers() {
+    state.revealGen = (state.revealGen || 0) + 1;
     if (state.revealTimerId) {
       clearTimeout(state.revealTimerId);
       state.revealTimerId = null;
@@ -858,14 +882,29 @@
       clearTimeout(state.revealFallbackTimerId);
       state.revealFallbackTimerId = null;
     }
+    if (Array.isArray(state.revealStepTimers)) {
+      for (var i = 0; i < state.revealStepTimers.length; i++) {
+        clearTimeout(state.revealStepTimers[i]);
+      }
+      state.revealStepTimers = [];
+    }
+    state.revealSkipCb = null;
     state.revealInProgress = false;
+    destroyRevealSpecs();
     if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.stopChannel === 'function') {
       root.TootApp.Audio.stopChannel('guess_reveal');
     }
     var revBanner = $('guess-reveal-banner');
     var revBar = $('guess-reveal-bar');
+    var paneA = $('reveal-pane-orig');
+    var paneB = $('reveal-pane-guess');
+    if (paneA) paneA.classList.remove('is-playing-orig');
+    if (paneB) paneB.classList.remove('is-playing-guess');
     if (revBanner) revBanner.classList.add('hidden');
-    if (revBar) revBar.classList.remove('filling');
+    if (revBar) {
+      revBar.classList.remove('filling');
+      if (revBar.style) revBar.style.width = '0%';
+    }
   }
 
   function destroyInlineSpecs() {
@@ -2766,6 +2805,14 @@
     }
   }
 
+  var REVEAL_HEARING_TITLES = [
+    '⚖️ EXHIBIT PLAYBACK — TRUTH VS. ALLEGED IMITATION',
+    '🔬 FORENSIC ACOUSTIC LINEUP — ENTERING EVIDENCE INTO THE RECORD',
+    '🏛️ TRIBUNAL HEARING — AUDIT OF SUSPECTED FLATULENCE',
+    '🎙️ LIVE SPECTRAL CONFRONTATION — ORIGINAL VS. TESTIMONY',
+    '🧪 PEER-REVIEWED WIND AUDIT — STAND BY FOR REALITY'
+  ];
+
   function triggerRevealAndAnalyze(target, rawGuesses, modeUsed, subtitleLabel, delayMs) {
     if (!target || !rawGuesses || rawGuesses.length === 0) {
       return Promise.resolve([]);
@@ -2773,77 +2820,276 @@
     clearRevealTimers();
     state.lastOutcome = null;
     state.lastSessionResults = [];
+    state.lastRevealOrder = [];
+
+    var gen = ++state.revealGen;
+    state.revealInProgress = true;
     renderGuessView();
 
-    state.revealInProgress = true;
-    var waitMs = typeof delayMs === 'number' ? Math.max(0, delayMs) : 1500;
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Spectrogram3D = root.TootApp && root.TootApp.Spectrogram3D;
+    if (DSP && target.samples && (!target.features || !target.features.spectrogram)) {
+      target.features = DSP.extractFeatures(target.samples, target.sampleRate || 44100);
+    }
+    for (var gi = 0; gi < rawGuesses.length; gi++) {
+      var gItem = rawGuesses[gi];
+      if (DSP && gItem && gItem.samples && (!gItem.features || !gItem.features.spectrogram)) {
+        gItem.features = DSP.extractFeatures(gItem.samples, gItem.sampleRate || 44100);
+      }
+    }
+
+    var isFastTest = typeof delayMs === 'number' && delayMs < 100;
+    var introWaitMs = typeof delayMs === 'number' ? Math.max(0, delayMs) : 850;
+    var interClipGapMs = isFastTest ? 10 : 420;
+    var settleMs = isFastTest ? 15 : 380;
+
     var banner = $('guess-reveal-banner');
+    var titleEl = $('guess-reveal-title');
     var txtEl = $('guess-reveal-text');
     var barEl = $('guess-reveal-bar');
+    var lineupEl = $('guess-reveal-lineup');
+    var paneA = $('reveal-pane-orig');
+    var paneB = $('reveal-pane-guess');
+    var lblA = $('reveal-spec-lbl-a');
+    var lblB = $('reveal-spec-lbl-b');
+    var pillA = $('reveal-pill-a');
+    var pillB = $('reveal-pill-b');
+    var cvsA = $('reveal-spec3d-orig');
+    var cvsB = $('reveal-spec3d-guess');
+
     var targetName = getSampleName(target);
-    var lockNoun = rawGuesses.length === 1 ? 'Guess locked!' : rawGuesses.length + ' guesses locked!';
+    var firstGuessName = (rawGuesses[0] && rawGuesses[0].name) || 'Your Guess';
+    var steps = [{ kind: 'orig', key: 'orig', label: targetName, sound: target }];
+    for (var si = 0; si < rawGuesses.length; si++) {
+      var gObj = rawGuesses[si];
+      steps.push({
+        kind: 'guess',
+        key: 'guess_' + si,
+        guessIndex: si,
+        label: (gObj && gObj.name) || ('Player ' + (si + 1)),
+        sound: gObj
+      });
+    }
 
     if (banner) banner.classList.remove('hidden');
-    if (txtEl) txtEl.textContent = '🔒 ' + lockNoun + ' Revealing "' + targetName + '"…';
+    if (titleEl) {
+      titleEl.textContent = REVEAL_HEARING_TITLES[Math.floor(Math.random() * REVEAL_HEARING_TITLES.length)];
+    }
+    if (txtEl) {
+      var lockNoun = rawGuesses.length === 1 ? 'Testimony sealed!' : rawGuesses.length + ' testimonies sealed!';
+      txtEl.textContent = '🔒 ' + lockNoun + ' Queuing Exhibit A ("' + targetName + '") + side-by-side 3D spectrum…';
+    }
     if (barEl) {
       barEl.classList.remove('filling');
-      try { void barEl.offsetWidth; } catch (e) {}
-      barEl.classList.add('filling');
+      if (barEl.style) barEl.style.width = '8%';
+    }
+    if (paneA) paneA.classList.remove('is-playing-orig');
+    if (paneB) paneB.classList.remove('is-playing-guess');
+    if (lblA) lblA.textContent = 'Exhibit A · ' + targetName;
+    if (lblB) lblB.textContent = (rawGuesses.length === 1 ? 'Exhibit B · ' : 'Exhibit B1 · ') + firstGuessName;
+    if (pillA) pillA.textContent = 'QUEUED';
+    if (pillB) pillB.textContent = 'STANDBY';
+
+    function updateLineupPills(activeIdx) {
+      if (!lineupEl) return;
+      lineupEl.setAttribute('data-active-step', String(activeIdx));
+      lineupEl.setAttribute('data-active-label', activeIdx >= 0 && steps[activeIdx] ? steps[activeIdx].label : '');
+      lineupEl.innerHTML = steps
+        .map(function (st, idx) {
+          var cls = idx < activeIdx ? ' is-done' : idx === activeIdx ? ' is-active' : '';
+          var ico = idx < activeIdx ? '✓' : idx === activeIdx ? '🔊' : (st.kind === 'orig' ? '🔒' : '🎤');
+          var textLbl = st.kind === 'orig' ? 'Mystery Fart' : st.label;
+          return '<span class="labs-reveal-pill' + cls + '" data-rev-step="' + idx + '">' + ico + ' ' + esc(textLbl) + '</span>';
+        })
+        .join('');
+    }
+    updateLineupPills(-1);
+
+    if (Spectrogram3D) {
+      var specA = target && target.features ? target.features.spectrogram : null;
+      if (cvsA && specA) {
+        state.revealSpecA = new Spectrogram3D(cvsA, { spectrogram: specA, colormap: 'plasma' });
+      }
+    }
+
+    function mountRevealGuessSpec(guessSound) {
+      if (!Spectrogram3D || !cvsB) return;
+      var specG = guessSound && guessSound.features ? guessSound.features.spectrogram : null;
+      if (!specG) return;
+      if (state.revealSpecA) {
+        try { state.revealSpecA.partners = []; } catch (e) {}
+      }
+      if (state.revealSpecB && typeof state.revealSpecB.destroy === 'function') {
+        try { state.revealSpecB.destroy(); } catch (e) {}
+      }
+      state.revealSpecB = new Spectrogram3D(cvsB, { spectrogram: specG, colormap: 'magma' });
+      if (state.revealSpecA && typeof state.revealSpecA.linkPartner === 'function') {
+        state.revealSpecA.linkPartner(state.revealSpecB);
+        if (typeof state.revealSpecA.azimuth === 'number') {
+          state.revealSpecB.azimuth = state.revealSpecA.azimuth;
+          state.revealSpecB.elevation = state.revealSpecA.elevation;
+          state.revealSpecB.zoom = state.revealSpecA.zoom;
+          state.revealSpecB.render();
+        }
+      }
+      if (typeof root.requestAnimationFrame === 'function') {
+        root.requestAnimationFrame(function () {
+          if (state.revealSpecB) state.revealSpecB.resize();
+        });
+      }
+    }
+
+    mountRevealGuessSpec(rawGuesses[0]);
+    if (typeof root.requestAnimationFrame === 'function') {
+      root.requestAnimationFrame(function () {
+        if (state.revealSpecA) state.revealSpecA.resize();
+        if (state.revealSpecB) state.revealSpecB.resize();
+      });
     }
 
     return new Promise(function (resolve) {
-      state.revealTimerId = setTimeout(function () {
-        state.revealTimerId = null;
-        state.guessRevealed = true;
-        renderGuessView();
-        if (txtEl) txtEl.textContent = '🔊 NOW PLAYING: "' + targetName + '" — Listen to how close you got!';
+      var finished = false;
 
-        var done = false;
-        function finishReveal() {
-          if (done) return;
-          done = true;
+      function finishReveal() {
+        if (finished || gen !== state.revealGen) return;
+        finished = true;
+        if (state.revealTimerId) {
+          clearTimeout(state.revealTimerId);
+          state.revealTimerId = null;
+        }
+        if (state.revealFallbackTimerId) {
+          clearTimeout(state.revealFallbackTimerId);
+          state.revealFallbackTimerId = null;
+        }
+        if (Array.isArray(state.revealStepTimers)) {
+          for (var ti = 0; ti < state.revealStepTimers.length; ti++) {
+            clearTimeout(state.revealStepTimers[ti]);
+          }
+          state.revealStepTimers = [];
+        }
+        if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.stopChannel === 'function') {
+          root.TootApp.Audio.stopChannel('guess_reveal');
+        }
+        destroyRevealSpecs();
+        state.revealSkipCb = null;
+        state.revealInProgress = false;
+        state.guessRevealed = true;
+        if (paneA) paneA.classList.remove('is-playing-orig');
+        if (paneB) paneB.classList.remove('is-playing-guess');
+        if (banner) banner.classList.add('hidden');
+        if (barEl) {
+          barEl.classList.remove('filling');
+          if (barEl.style) barEl.style.width = '0%';
+        }
+        renderGuessView();
+        var modeLabel = modeUsed === 'mimic' ? 'Mimic Mode' : 'Guess The Fart';
+        var sub = subtitleLabel || (modeLabel + ' · Comparing vs ' + targetName);
+        analyzeAndShowResults(target, rawGuesses, sub).then(resolve);
+      }
+
+      state.revealSkipCb = finishReveal;
+
+      function playStep(stepIdx) {
+        if (finished || gen !== state.revealGen) return;
+        if (stepIdx >= steps.length) {
+          var endTimer = setTimeout(finishReveal, settleMs);
+          state.revealStepTimers.push(endTimer);
+          return;
+        }
+
+        var step = steps[stepIdx];
+        state.lastRevealOrder.push(step.key);
+        updateLineupPills(stepIdx);
+        if (barEl && barEl.style) {
+          barEl.style.width = Math.round(((stepIdx + 1) / steps.length) * 100) + '%';
+        }
+
+        if (step.kind === 'orig') {
+          state.guessRevealed = true;
+          renderGuessView();
+          if (paneA) paneA.classList.add('is-playing-orig');
+          if (paneB) paneB.classList.remove('is-playing-guess');
+          if (lblA) lblA.textContent = 'Exhibit A · ' + targetName;
+          if (pillA) pillA.textContent = '🔊 PLAYING';
+          if (pillB) pillB.textContent = 'UP NEXT';
+          if (txtEl) {
+            txtEl.textContent = '🔊 EXHIBIT A (MYSTERY FART): "' + targetName + '" — Listen to the real specimen!';
+          }
+        } else {
+          if (step.guessIndex > 0) {
+            mountRevealGuessSpec(step.sound);
+          }
+          if (paneA) paneA.classList.remove('is-playing-orig');
+          if (paneB) paneB.classList.add('is-playing-guess');
+          if (pillA) pillA.textContent = '✓ HEARD';
+          if (pillB) pillB.textContent = '🔊 PLAYING';
+          if (lblB) {
+            lblB.textContent = (rawGuesses.length === 1 ? 'Exhibit B · ' : 'Exhibit B' + (step.guessIndex + 1) + ' · ') + step.label;
+          }
+          if (txtEl) {
+            txtEl.textContent = rawGuesses.length === 1
+              ? '🎤 EXHIBIT B (YOUR ALIBI): "' + step.label + '" — Comparing live 3D spectrum…'
+              : '🎤 EXHIBIT B' + (step.guessIndex + 1) + ' (' + (step.guessIndex + 1) + ' OF ' + rawGuesses.length + '): "' + step.label + '" — Playing sworn testimony…';
+          }
+        }
+
+        var stepDone = false;
+        function advanceNext() {
+          if (stepDone || finished || gen !== state.revealGen) return;
+          stepDone = true;
           if (state.revealFallbackTimerId) {
             clearTimeout(state.revealFallbackTimerId);
             state.revealFallbackTimerId = null;
           }
-          var settleDelay = waitMs < 100 ? 15 : 350;
-          setTimeout(function () {
-            state.revealInProgress = false;
-            if (banner) banner.classList.add('hidden');
-            if (barEl) barEl.classList.remove('filling');
-            var sub = subtitleLabel || ('Guess The Fart · Comparing vs ' + targetName);
-            analyzeAndShowResults(target, rawGuesses, sub).then(resolve);
-          }, settleDelay);
+          if (step.kind === 'orig') {
+            drawGuessWaveforms();
+            if (state.revealSpecA) state.revealSpecA.setPlayhead(null);
+          } else if (state.revealSpecB) {
+            state.revealSpecB.setPlayhead(null);
+          }
+          var gapTimer = setTimeout(function () {
+            playStep(stepIdx + 1);
+          }, interClipGapMs);
+          state.revealStepTimers.push(gapTimer);
         }
 
-        var clipMs = Math.round(((target.samples ? target.samples.length : 0) / (target.sampleRate || 44100)) * 1000);
-        var fallbackMs = waitMs < 100 ? 45 : Math.min(9500, Math.max(850, clipMs + 650));
-        state.revealFallbackTimerId = setTimeout(finishReveal, fallbackMs);
+        var snd = step.sound;
+        var clipMs = Math.round(((snd && snd.samples ? snd.samples.length : 0) / ((snd && snd.sampleRate) || 44100)) * 1000);
+        var fallbackMs = isFastTest ? 35 : Math.min(9500, Math.max(850, clipMs + 650));
+        state.revealFallbackTimerId = setTimeout(advanceNext, fallbackMs);
 
         try {
-          var playRes = TootApp.Audio.playSound(target.samples, target.sampleRate, {
+          var playRes = TootApp.Audio.playSound(snd.samples, snd.sampleRate || 44100, {
             channel: 'guess_reveal',
             onProgress: function (p) {
-              if ($('guess-target-wave')) {
-                drawStaticWaveform($('guess-target-wave'), target.samples, { fallbackW: 480, fallbackH: 46, progress: p });
+              if (finished || gen !== state.revealGen) return;
+              if (step.kind === 'orig') {
+                if ($('guess-target-wave')) {
+                  drawStaticWaveform($('guess-target-wave'), snd.samples, { fallbackW: 480, fallbackH: 46, progress: p });
+                }
+                if (state.revealSpecA) state.revealSpecA.setPlayhead(p);
+              } else if (state.revealSpecB) {
+                state.revealSpecB.setPlayhead(p);
               }
             },
-            onEnded: function () {
-              drawGuessWaveforms();
-              finishReveal();
-            }
+            onEnded: advanceNext
           });
           if (playRes && typeof playRes.catch === 'function') {
             playRes.catch(function () {
-              if (waitMs < 100) finishReveal();
-              else setTimeout(finishReveal, 500);
+              var errT = setTimeout(advanceNext, isFastTest ? 10 : 500);
+              state.revealStepTimers.push(errT);
             });
           }
         } catch (err) {
-          if (waitMs < 100) finishReveal();
-          else setTimeout(finishReveal, 500);
+          var catchT = setTimeout(advanceNext, isFastTest ? 10 : 500);
+          state.revealStepTimers.push(catchT);
         }
-      }, waitMs);
+      }
+
+      state.revealTimerId = setTimeout(function () {
+        state.revealTimerId = null;
+        playStep(0);
+      }, introWaitMs);
     });
   }
 
@@ -2988,8 +3234,8 @@
     state.sessionGuesses = [];
     renderGuessView();
     function dispatchBatch(useTarget) {
-      if (!opts.immediate && state.guessMode === 'guess' && !state.guessRevealed) {
-        return triggerRevealAndAnalyze(useTarget, batch, 'guess', null, opts.delayMs);
+      if (!opts.immediate) {
+        return triggerRevealAndAnalyze(useTarget, batch, state.guessMode, null, opts.delayMs);
       }
       return analyzeAndShowResults(useTarget, batch);
     }
@@ -4272,6 +4518,11 @@
         analyzeSessionGuesses();
       });
     }
+    if ($('btn-reveal-skip')) {
+      $('btn-reveal-skip').addEventListener('click', function () {
+        if (typeof state.revealSkipCb === 'function') state.revealSkipCb();
+      });
+    }
     $('btn-guess-queue-analyze').addEventListener('click', function () {
       analyzeSessionGuesses();
     });
@@ -4499,6 +4750,8 @@
       else if (state.view === 'detail') drawDetailWaveform(null);
       else if (state.view === 'guess') {
         drawGuessWaveforms();
+        if (state.revealSpecA) state.revealSpecA.resize();
+        if (state.revealSpecB) state.revealSpecB.resize();
         if (state.inlineSpecA) state.inlineSpecA.resize();
         if (state.inlineSpecB) state.inlineSpecB.resize();
       } else if (state.view === 'fartnalysis' && state.fnController) state.fnController.resize();

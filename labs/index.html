@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124d" />
-  <script defer src="../js/dsp.js?v=20261124d"></script>
-  <script defer src="../js/audioEngine.js?v=20261124d"></script>
-  <script defer src="../js/storage.js?v=20261124d"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124d"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124d"></script>
-  <script defer src="js/labsStore.js?v=20261124d"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124d"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124d"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124d"></script>
-  <script defer src="js/labsApp.js?v=20261124d"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124e" />
+  <script defer src="../js/dsp.js?v=20261124e"></script>
+  <script defer src="../js/audioEngine.js?v=20261124e"></script>
+  <script defer src="../js/storage.js?v=20261124e"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124e"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124e"></script>
+  <script defer src="js/labsStore.js?v=20261124e"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124e"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124e"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124e"></script>
+  <script defer src="js/labsApp.js?v=20261124e"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -375,8 +375,32 @@
             <canvas id="guess-live-wave" class="labs-live-wave hidden"></canvas>
 
             <div id="guess-reveal-banner" class="labs-reveal-banner hidden" role="status" aria-live="polite">
-              <div id="guess-reveal-text" class="labs-reveal-text">🔒 Guess locked! Revealing the Mystery Fart…</div>
+              <div class="labs-reveal-head">
+                <div class="labs-reveal-titles">
+                  <div class="labs-eyebrow" id="guess-reveal-eyebrow">INSTITUTE OF ACOUSTIC FLATULENCE · SWORN EXHIBIT PLAYBACK</div>
+                  <div class="labs-reveal-heading" id="guess-reveal-title">⚖️ EXHIBIT PLAYBACK — TRUTH VS. ALLEGED IMITATION</div>
+                </div>
+                <button type="button" id="btn-reveal-skip" class="labs-btn-ghost labs-btn-xs">Skip →</button>
+              </div>
+              <div id="guess-reveal-text" class="labs-reveal-text">🔒 Locking acoustic exhibits…</div>
               <div class="labs-reveal-bar-track"><div id="guess-reveal-bar" class="labs-reveal-bar-fill"></div></div>
+              <div id="guess-reveal-lineup" class="labs-reveal-lineup"></div>
+              <div class="labs-reveal-spec3d-grid">
+                <div id="reveal-pane-orig" class="labs-reveal-spec3d-pane">
+                  <div class="labs-reveal-pane-top">
+                    <span class="labs-inline-spec3d-tag tag-orig" id="reveal-spec-lbl-a">Exhibit A · Mystery Fart</span>
+                    <span class="labs-reveal-play-pill" id="reveal-pill-a">QUEUED</span>
+                  </div>
+                  <canvas id="reveal-spec3d-orig" class="labs-reveal-spec3d-canvas"></canvas>
+                </div>
+                <div id="reveal-pane-guess" class="labs-reveal-spec3d-pane">
+                  <div class="labs-reveal-pane-top">
+                    <span class="labs-inline-spec3d-tag tag-guess" id="reveal-spec-lbl-b">Exhibit B · Your Guess</span>
+                    <span class="labs-reveal-play-pill" id="reveal-pill-b">STANDBY</span>
+                  </div>
+                  <canvas id="reveal-spec3d-guess" class="labs-reveal-spec3d-canvas"></canvas>
+                </div>
+              </div>
             </div>
 
             <div id="guess-multi-name-wrap" class="labs-guesser-name-row hidden">

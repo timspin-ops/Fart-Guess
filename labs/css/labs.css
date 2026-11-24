@@ -5448,29 +5448,51 @@ select {
   text-align: center;
 }
 
-/* Reveal Countdown Banner */
+/* Reveal Showdown Banner & Live Side-by-Side 3D Spectrum */
 .labs-reveal-banner {
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(56, 189, 248, 0.16));
-  border: 1px solid rgba(251, 146, 60, 0.55);
+  padding: 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+  border: 1.5px solid rgba(251, 146, 60, 0.58);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
+}
+
+.labs-reveal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.labs-reveal-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.labs-reveal-heading {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.25;
 }
 
 .labs-reveal-text {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #fef3c7;
-  text-align: center;
+  text-align: left;
 }
 
 .labs-reveal-bar-track {
   width: 100%;
   height: 6px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 23, 42, 0.85);
   overflow: hidden;
 }
 
@@ -5478,12 +5500,115 @@ select {
   height: 100%;
   width: 0%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #f97316, #38bdf8, #22c55e);
-  transition: width 1.45s linear;
+  background: linear-gradient(90deg, #22c55e, #38bdf8, #f97316);
+  transition: width 0.38s ease-out;
 }
 
 .labs-reveal-bar-fill.filling {
   width: 100%;
+}
+
+.labs-reveal-lineup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.labs-reveal-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+  transition: transform 0.16s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.labs-reveal-pill.is-active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(34, 197, 94, 0.25));
+  border-color: #fb923c;
+  color: #ffffff;
+  font-weight: 800;
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.32);
+}
+
+.labs-reveal-pill.is-done {
+  border-color: rgba(34, 197, 94, 0.48);
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.labs-reveal-spec3d-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.labs-reveal-spec3d-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px;
+  border-radius: 12px;
+  background: rgba(9, 14, 28, 0.84);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.labs-reveal-spec3d-pane.is-playing-orig {
+  border-color: rgba(74, 222, 128, 0.82);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.26);
+}
+
+.labs-reveal-spec3d-pane.is-playing-guess {
+  border-color: rgba(251, 146, 60, 0.88);
+  box-shadow: 0 0 16px rgba(249, 115, 22, 0.28);
+}
+
+.labs-reveal-pane-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+
+.labs-reveal-play-pill {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: #cbd5e1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.labs-reveal-spec3d-pane.is-playing-orig .labs-reveal-play-pill {
+  background: rgba(34, 197, 94, 0.24);
+  border-color: #4ade80;
+  color: #dcfce7;
+}
+
+.labs-reveal-spec3d-pane.is-playing-guess .labs-reveal-play-pill {
+  background: rgba(249, 115, 22, 0.28);
+  border-color: #fb923c;
+  color: #ffedd5;
+}
+
+.labs-reveal-spec3d-canvas {
+  display: block;
+  width: 100%;
+  height: 185px;
+  border-radius: 9px;
+  background: #060913;
+  touch-action: none;
 }
 
 /* Inline Multiplayer Queue */
@@ -5910,5 +6035,11 @@ select {
   .labs-vault-filter-bar .labs-format-btn {
     font-size: 0.72rem;
     padding: 6px 8px;
+  }
+  .labs-reveal-spec3d-canvas {
+    height: 152px;
+  }
+  .labs-reveal-heading {
+    font-size: 0.78rem;
   }
 }
