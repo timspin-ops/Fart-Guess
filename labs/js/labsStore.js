@@ -532,36 +532,89 @@
   }
 
   /* ==================== HIGH-LEVEL VAULT OPERATIONS ==================== */
+  var cachedOggSupport = null;
+
+  function normalizePreloadUrl(url, filename) {
+    var u = String(url || '').trim();
+    if (u.indexOf('/VaultPreLoads/') === 0) {
+      return '..' + u;
+    }
+    if (!u && filename) {
+      return '../VaultPreLoads/' + String(filename).split('/').map(encodeURIComponent).join('/');
+    }
+    return u;
+  }
+
+  function isCodecSupportedForUrl(url) {
+    if (typeof root.Audio !== 'function' || typeof root.document === 'undefined') {
+      return true;
+    }
+    if (/\.ogg(?:$|\?)/i.test(String(url || ''))) {
+      if (cachedOggSupport === null) {
+        try {
+          var probeAudio = new root.Audio();
+          cachedOggSupport = Boolean(probeAudio && typeof probeAudio.canPlayType === 'function' && probeAudio.canPlayType('audio/ogg'));
+        } catch (e) {
+          cachedOggSupport = false;
+        }
+      }
+      return cachedOggSupport;
+    }
+    return true;
+  }
+
+  function fetchJsonOrNull(url) {
+    if (typeof root.fetch !== 'function') return Promise.resolve(null);
+    return root
+      .fetch(url, { cache: 'no-store' })
+      .then(function (resp) {
+        if (!resp || !resp.ok) return null;
+        return resp.json();
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
   function loadPreloadCatalog() {
     if (typeof root.fetch !== 'function') return Promise.resolve([]);
     if (root.location && root.location.protocol === 'file:') return Promise.resolve([]);
-    return root
-      .fetch('/api/preloads', { cache: 'no-store' })
-      .then(function (resp) {
-        if (!resp || !resp.ok) return { files: [] };
-        return resp.json();
+
+    var host = (root.location && root.location.hostname) || '';
+    var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === '0.0.0.0';
+    var primaryUrl = isLocal ? '/api/preloads' : '../VaultPreLoads/manifest.json';
+    var fallbackUrl = isLocal ? '../VaultPreLoads/manifest.json' : '/api/preloads';
+
+    return fetchJsonOrNull(primaryUrl)
+      .then(function (data) {
+        if (data && Array.isArray(data.files)) return data;
+        return fetchJsonOrNull(fallbackUrl);
       })
       .then(function (data) {
         var files = data && Array.isArray(data.files) ? data.files : [];
-        preloadCatalogCache = files.map(function (item, idx) {
-          var label = item.name || ('Vault Fart #' + (idx + 1));
-          return {
-            id: item.id || ('preload_' + idx),
-            name: label,
-            displayName: label,
-            emoji: '💨',
-            description: 'Built-in Default Vault specimen',
-            isBuiltIn: true,
-            preloadUrl: item.url,
-            filename: item.filename || label,
-            createdAt: idx + 1,
-            sampleRate: 44100,
-            samples: null,
-            rawSamples: null,
-            features: null,
-            loaded: false
-          };
-        });
+        preloadCatalogCache = files
+          .map(function (item, idx) {
+            var normUrl = normalizePreloadUrl(item.url, item.filename);
+            if (!normUrl || !isCodecSupportedForUrl(normUrl)) return null;
+            var label = item.name || ('Vault Fart #' + (idx + 1));
+            return {
+              id: item.id || ('preload_' + idx),
+              name: label,
+              displayName: label,
+              emoji: '💨',
+              description: 'Pre-loaded Default Vault specimen',
+              isBuiltIn: true,
+              preloadUrl: normUrl,
+              filename: item.filename || label,
+              createdAt: idx + 1,
+              sampleRate: 44100,
+              samples: null,
+              rawSamples: null,
+              features: null,
+              loaded: false
+            };
+          })
+          .filter(Boolean);
         return preloadCatalogCache.slice();
       })
       .catch(function () {
@@ -594,27 +647,31 @@
       })
       .then(function (arrBuf) {
         var Audio = root.TootApp && root.TootApp.Audio;
-        if (!Audio || typeof Audio.ensureContext !== 'function') {
+        if (!Audio || (typeof Audio.decodeAudioBytes !== 'function' && typeof Audio.ensureContext !== 'function')) {
           throw new Error('Web Audio API unavailable to decode preloaded sound.');
         }
-        return Audio.ensureContext().then(function (ctx) {
-          return ctx.decodeAudioData(arrBuf).then(function (audioBuf) {
-            var mono = Audio.audioBufferToMono(audioBuf);
-            var DSP = root.TootApp && root.TootApp.DSP;
-            var clipInfo = DSP && typeof DSP.autoClipAudio === 'function' ? DSP.autoClipAudio(mono.samples, mono.sampleRate) : null;
-            var finalSamples =
-              clipInfo && clipInfo.ok && clipInfo.clipped && clipInfo.clipped.length > 0
-                ? clipInfo.clipped
-                : mono.samples;
-            sound.rawSamples = mono.samples;
-            sound.samples = finalSamples;
-            sound.sampleRate = mono.sampleRate || 44100;
-            sound.clipInfo = clipInfo;
-            sound.loaded = true;
-            sound.features = DSP ? DSP.extractFeatures(finalSamples, sound.sampleRate) : null;
-            if (preloadInFlight) preloadInFlight.delete(sound.id);
-            return sound;
-          });
+        var decodePromise =
+          typeof Audio.decodeAudioBytes === 'function'
+            ? Audio.decodeAudioBytes(arrBuf)
+            : Audio.ensureContext().then(function (ctx) {
+                return ctx.decodeAudioData(arrBuf);
+              });
+        return decodePromise.then(function (audioBuf) {
+          var mono = Audio.audioBufferToMono(audioBuf);
+          var DSP = root.TootApp && root.TootApp.DSP;
+          var clipInfo = DSP && typeof DSP.autoClipAudio === 'function' ? DSP.autoClipAudio(mono.samples, mono.sampleRate) : null;
+          var finalSamples =
+            clipInfo && clipInfo.ok && clipInfo.clipped && clipInfo.clipped.length > 0
+              ? clipInfo.clipped
+              : mono.samples;
+          sound.rawSamples = mono.samples;
+          sound.samples = finalSamples;
+          sound.sampleRate = mono.sampleRate || 44100;
+          sound.clipInfo = clipInfo;
+          sound.loaded = true;
+          sound.features = DSP ? DSP.extractFeatures(finalSamples, sound.sampleRate) : null;
+          if (preloadInFlight) preloadInFlight.delete(sound.id);
+          return sound;
         });
       })
       .catch(function (err) {

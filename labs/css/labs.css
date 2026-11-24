@@ -5349,6 +5349,54 @@ select {
   cursor: not-allowed;
 }
 
+.labs-game-scorenow-btn {
+  min-height: 76px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(52, 211, 153, 0.85);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.94), rgba(5, 150, 105, 0.94));
+  color: #ffffff;
+  padding: 10px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.28);
+  transition: transform 0.14s ease, filter 0.15s ease, border-color 0.18s ease;
+}
+
+.labs-game-scorenow-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.labs-game-scorenow-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.labs-game-scorenow-btn strong {
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.labs-game-scorenow-btn small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.15;
+}
+
+.labs-clue-wave-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .labs-game-playfirst-btn span {
   font-size: 0.95rem;
 }
@@ -5835,7 +5883,7 @@ select {
     flex: 1 1 100%;
   }
   .labs-game-hero-row {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.38fr) minmax(0, 1fr);
     gap: 8px;
   }
   .labs-game-primary-btn {

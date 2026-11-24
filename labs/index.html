@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124b" />
-  <script defer src="../js/dsp.js?v=20261124b"></script>
-  <script defer src="../js/audioEngine.js?v=20261124b"></script>
-  <script defer src="../js/storage.js?v=20261124b"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124b"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124b"></script>
-  <script defer src="js/labsStore.js?v=20261124b"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124b"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124b"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124b"></script>
-  <script defer src="js/labsApp.js?v=20261124b"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124d" />
+  <script defer src="../js/dsp.js?v=20261124d"></script>
+  <script defer src="../js/audioEngine.js?v=20261124d"></script>
+  <script defer src="../js/storage.js?v=20261124d"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124d"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124d"></script>
+  <script defer src="js/labsStore.js?v=20261124d"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124d"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124d"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124d"></script>
+  <script defer src="js/labsApp.js?v=20261124d"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -311,10 +311,6 @@
               <span id="guess-mode-pill" class="labs-mode-pill">🎯 GUESS THE FART · MYSTERY</span>
               <button type="button" id="btn-guess-reset-blind" class="labs-link-chip hidden">🔒 Back to Mystery</button>
             </div>
-            <div class="labs-play-format-switch" role="group" aria-label="Player Count">
-              <button type="button" id="btn-play-solo" class="labs-format-btn active" data-play-format="solo">Solo</button>
-              <button type="button" id="btn-play-multi" class="labs-format-btn" data-play-format="multiplayer">Multiplayer</button>
-            </div>
           </div>
 
           <!-- Compact Mystery Clue Bar (Hides waveform & duration until reveal) -->
@@ -345,7 +341,10 @@
 
               <div id="guess-target-wave-wrap" class="labs-clue-wave-wrap hidden">
                 <canvas id="guess-target-wave" class="labs-wave-canvas"></canvas>
-                <button type="button" id="btn-guess-analyze-orig" class="labs-btn-ghost labs-btn-xs">🧪 Analyze Fart</button>
+                <div class="labs-clue-wave-btns">
+                  <button type="button" id="btn-guess-replay-wave" class="labs-btn-ghost labs-btn-xs">▶ Replay</button>
+                  <button type="button" id="btn-guess-analyze-orig" class="labs-btn-ghost labs-btn-xs">🧪 Analyze Fart</button>
+                </div>
               </div>
             </div>
           </section>
@@ -365,6 +364,11 @@
                 <strong id="guess-playfirst-label">Play Fart First</strong>
                 <small id="guess-playfirst-sub">Mimic Mode</small>
               </button>
+              <button type="button" id="btn-guess-score-now" class="labs-game-scorenow-btn hidden">
+                <span id="guess-scorenow-icon">🔊</span>
+                <strong id="guess-scorenow-label">Score Now</strong>
+                <small id="guess-scorenow-sub">Reveal &amp; score</small>
+              </button>
             </div>
 
             <div id="guess-rec-status" class="labs-game-status hidden"></div>
@@ -376,8 +380,8 @@
             </div>
 
             <div id="guess-multi-name-wrap" class="labs-guesser-name-row hidden">
-              <label class="labs-guesser-label" for="guess-name-input">Player Name:</label>
-              <input type="text" id="guess-name-input" class="labs-text-input labs-guesser-input" maxlength="32" placeholder="Guesser 1" />
+              <label class="labs-guesser-label" for="guess-name-input">Next Player:</label>
+              <input type="text" id="guess-name-input" class="labs-text-input labs-guesser-input" maxlength="32" placeholder="Player 2" />
             </div>
 
             <div id="guess-session-queue-card" class="labs-queue-inline hidden">
@@ -386,7 +390,7 @@
                 <span class="labs-chip labs-chip-green" id="guess-queue-count">0 Locked</span>
               </div>
               <div id="guess-queue-list" class="labs-queue-list"></div>
-              <button type="button" id="btn-guess-queue-analyze" class="labs-analyze-cta">🔊 All Guesses In — Reveal Fart &amp; Score</button>
+              <button type="button" id="btn-guess-queue-analyze" class="labs-analyze-cta">🔊 Score Now — Reveal Fart</button>
             </div>
           </section>
 
@@ -794,8 +798,8 @@
         <div class="labs-splash-step">
           <span class="labs-splash-num">3</span>
           <div>
-            <strong>🎙️ Record New Fart on Home &amp; Solo / Multiplayer</strong>
-            <p>Use <em>Record New Fart</em> on Home — Sentry Auto Detect listens for farts automatically and lets you tap <em>Stop &amp; Save</em> or <em>Disarm</em> anytime. Switch Solo or Multiplayer on Guess to rank the whole room.</p>
+            <strong>🎙️ Solo or Multiplayer — Zero Setup</strong>
+            <p>Record a real fart on Home (Sentry Auto Detect lets you tap <em>Stop &amp; Save</em> or <em>Disarm</em> anytime). On Guess, tap <em>Guess The Fart</em> to record — then either tap <em>Score Now</em> for solo or pass the phone and tap <em>2nd Player</em> to rank the whole room.</p>
           </div>
         </div>
         <div class="labs-splash-step labs-splash-step-beta">

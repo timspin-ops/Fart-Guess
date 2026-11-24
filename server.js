@@ -3,6 +3,7 @@
 var http = require('http');
 var fs = require('fs');
 var path = require('path');
+var crypto = require('crypto');
 
 var PORT = parseInt(process.env.PORT || '3000', 10);
 var ROOT_DIR = __dirname;
@@ -47,8 +48,20 @@ function stablePreloadId(relPath) {
 
 function humanizeFilename(filename) {
   var stem = path.basename(String(filename || ''), path.extname(String(filename || '')));
+  stem = stem.replace(/^\d+__.*?__/, '');
   stem = stem.replace(/^\d+\s*[-_.]+\s*(?=[a-zA-Z])/, '');
-  stem = stem.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  stem = stem.replace(/\s*\(\d+\)\s*$/, '');
+  stem = stem
+    .replace(/fatulance/gi, 'Flatulence')
+    .replace(/realpoot(\d*)/gi, 'Real Poot $1')
+    .replace(/verybadfart/gi, 'Very Bad Fart')
+    .replace(/badfart(\d*)/gi, 'Bad Fart $1')
+    .replace(/skiddingfart/gi, 'Skidding Fart')
+    .replace(/zort(\d+)/gi, 'Zort $1')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\d{6}\s+\d{4}s\d+\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   if (!stem) return 'Vault Fart';
   return stem
     .split(' ')
@@ -59,7 +72,7 @@ function humanizeFilename(filename) {
 }
 
 function scanPreloadsSync() {
-  var results = [];
+  var raw = [];
   function walk(dirPath, relPrefix, depth) {
     if (depth > 2) return;
     var entries;
@@ -76,20 +89,82 @@ function scanPreloadsSync() {
       if (ent.isDirectory()) {
         walk(full, rel, depth + 1);
       } else if (ent.isFile() && PRELOAD_AUDIO_RE.test(ent.name)) {
-        results.push({
-          id: stablePreloadId(rel),
-          name: humanizeFilename(ent.name),
-          filename: rel,
-          url: '/VaultPreLoads/' + rel.split('/').map(encodeURIComponent).join('/')
-        });
+        raw.push({ full: full, rel: rel, name: ent.name });
       }
     }
   }
   walk(PRELOAD_DIR, '', 0);
+
+  raw.sort(function (a, b) {
+    var aDup = /\s\(\d+\)(?=\.[^.]+$|$)/.test(a.rel) ? 1 : 0;
+    var bDup = /\s\(\d+\)(?=\.[^.]+$|$)/.test(b.rel) ? 1 : 0;
+    if (aDup !== bDup) return aDup - bDup;
+    return a.rel.localeCompare(b.rel);
+  });
+
+  var seenHashes = {};
+  var seenNames = {};
+  var results = [];
+
+  for (var j = 0; j < raw.length; j++) {
+    var item = raw[j];
+    var buf;
+    try {
+      buf = fs.readFileSync(item.full);
+    } catch (e) {
+      continue;
+    }
+    var hash = crypto.createHash('sha256').update(buf).digest('hex');
+    if (seenHashes[hash]) continue;
+    seenHashes[hash] = true;
+
+    var baseName = humanizeFilename(item.name);
+    var nameKey = baseName.toLowerCase();
+    var displayName = baseName;
+    if (seenNames[nameKey]) {
+      var suffix = seenNames[nameKey] + 1;
+      while (seenNames[(baseName + ' #' + suffix).toLowerCase()]) {
+        suffix++;
+      }
+      displayName = baseName + ' #' + suffix;
+      seenNames[nameKey] = suffix;
+      seenNames[displayName.toLowerCase()] = 1;
+    } else {
+      seenNames[nameKey] = 1;
+    }
+
+    results.push({
+      id: stablePreloadId(item.rel),
+      name: displayName,
+      filename: item.rel,
+      ext: path.extname(item.name).toLowerCase(),
+      size: buf.length,
+      url: '../VaultPreLoads/' + item.rel.split('/').map(encodeURIComponent).join('/')
+    });
+  }
+
   results.sort(function (a, b) {
-    return a.filename.localeCompare(b.filename);
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
   return results;
+}
+
+function writeManifestSync() {
+  var files = scanPreloadsSync();
+  var payload = {
+    generatedAt: new Date().toISOString(),
+    count: files.length,
+    files: files
+  };
+  fs.mkdirSync(PRELOAD_DIR, { recursive: true });
+  fs.writeFileSync(path.join(PRELOAD_DIR, 'manifest.json'), JSON.stringify(payload, null, 2) + '\n', 'utf8');
+  return payload;
+}
+
+if (process.argv.indexOf('--write-manifest') !== -1) {
+  var manifestOut = writeManifestSync();
+  console.log('PRELOAD_MANIFEST_WRITTEN ' + manifestOut.count);
+  process.exit(0);
 }
 
 var server = http.createServer(function (req, res) {

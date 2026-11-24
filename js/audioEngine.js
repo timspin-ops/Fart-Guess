@@ -34,6 +34,54 @@
     return Promise.resolve(audioCtx);
   }
 
+  function getDecodeContext() {
+    if (audioCtx) return audioCtx;
+    var Ctx = root.AudioContext || root.webkitAudioContext;
+    if (Ctx) {
+      audioCtx = new Ctx();
+      return audioCtx;
+    }
+    var OfflineCtx = root.OfflineAudioContext || root.webkitOfflineAudioContext;
+    if (OfflineCtx) {
+      return new OfflineCtx(1, 44100, 44100);
+    }
+    throw new Error('Web Audio API is not supported in this browser.');
+  }
+
+  function decodeAudioBytes(arrayBuffer) {
+    if (!arrayBuffer || !arrayBuffer.byteLength) {
+      return Promise.reject(new Error('Empty audio buffer.'));
+    }
+    var ctx;
+    try {
+      ctx = getDecodeContext();
+    } catch (err) {
+      return Promise.reject(err);
+    }
+    var copy = arrayBuffer.slice(0);
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      function onOk(audioBuf) {
+        if (settled) return;
+        settled = true;
+        resolve(audioBuf);
+      }
+      function onErr(err) {
+        if (settled) return;
+        settled = true;
+        reject(err || new Error('Failed to decode audio data.'));
+      }
+      try {
+        var maybePromise = ctx.decodeAudioData(copy, onOk, onErr);
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(onOk, onErr);
+        }
+      } catch (err) {
+        onErr(err);
+      }
+    });
+  }
+
   function samplesToAudioBuffer(ctx, samples, sampleRate) {
     var sr = sampleRate || ctx.sampleRate || 44100;
     var len = Math.max(1, samples ? samples.length : 0);
@@ -1818,12 +1866,9 @@
    */
   function decodeAudioFile(file) {
     if (!file) return Promise.reject(new Error('No file selected.'));
-    return ensureContext()
-      .then(function (ctx) {
-        return file.arrayBuffer().then(function (buf) {
-          return ctx.decodeAudioData(buf);
-        });
-      })
+    return file
+      .arrayBuffer()
+      .then(decodeAudioBytes)
       .then(function (audioBuf) {
         var mono = audioBufferToMono(audioBuf);
         var clipInfo = TootApp.DSP.autoClipAudio(mono.samples, mono.sampleRate);
@@ -1911,6 +1956,7 @@
     isAutoDetecting: isAutoDetecting,
     isRecording: isRecording,
     isRecordingOrStarting: isRecordingOrStarting,
+    decodeAudioBytes: decodeAudioBytes,
     decodeAudioFile: decodeAudioFile,
     encodeWavBlob: encodeWavBlob
   };
