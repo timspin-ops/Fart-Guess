@@ -5075,3 +5075,549 @@ select {
   flex-wrap: wrap;
   padding-top: 4px;
 }
+
+/* ==================== STREAMLINED DUAL-MODE GAME UI (GUESS VS MIMIC) ==================== */
+.labs-game-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.labs-game-mode-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.labs-mode-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: rgba(249, 115, 22, 0.16);
+  border: 1px solid rgba(251, 146, 60, 0.55);
+  color: #fed7aa;
+}
+
+.labs-mode-pill.is-mimic {
+  background: rgba(96, 165, 250, 0.16);
+  border-color: rgba(96, 165, 250, 0.55);
+  color: #bfdbfe;
+}
+
+.labs-link-chip {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.7);
+  color: #cbd5e1;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.labs-link-chip:hover {
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+.labs-play-format-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  gap: 2px;
+}
+
+.labs-format-btn {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.labs-format-btn.active {
+  background: rgba(56, 189, 248, 0.22);
+  color: #f8fafc;
+}
+
+/* Mystery Clue Bar */
+.labs-clue-bar {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-clue-empty {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  text-align: center;
+  padding: 4px;
+}
+
+.labs-clue-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.labs-clue-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.labs-clue-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.labs-clue-name {
+  font-size: 1.04rem;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-clue-meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labs-clue-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.labs-picker-drawer {
+  padding-top: 6px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.labs-clue-wave-wrap {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.labs-clue-wave-wrap .labs-wave-canvas {
+  flex: 1;
+  height: 46px;
+  min-width: 0;
+}
+
+/* Above-the-Fold Hero Buttons Card */
+.labs-game-hero-card {
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.labs-game-hero-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.72fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.labs-game-primary-btn {
+  min-height: 76px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(251, 146, 60, 0.75);
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.92), rgba(234, 88, 12, 0.92));
+  color: #ffffff;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(234, 88, 12, 0.25);
+  transition: transform 0.14s ease, filter 0.15s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.labs-game-primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.labs-game-primary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.labs-game-primary-btn.is-mimic {
+  border-color: rgba(96, 165, 250, 0.82);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(139, 92, 246, 0.9));
+  box-shadow: 0 10px 24px rgba(59, 130, 246, 0.26);
+}
+
+.labs-game-primary-btn.recording {
+  border-color: rgba(248, 113, 113, 0.95);
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25), 0 10px 24px rgba(220, 38, 38, 0.35);
+}
+
+.labs-game-btn-icon {
+  font-size: 1.45rem;
+  flex-shrink: 0;
+}
+
+.labs-game-btn-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.labs-game-btn-copy strong {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.labs-game-btn-copy small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.2;
+}
+
+.labs-game-playfirst-btn {
+  min-height: 76px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(56, 189, 248, 0.55);
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+  padding: 10px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.labs-game-playfirst-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #38bdf8;
+  background: rgba(30, 58, 138, 0.38);
+}
+
+.labs-game-playfirst-btn.is-active {
+  border-color: rgba(96, 165, 250, 0.78);
+  background: rgba(37, 99, 235, 0.22);
+}
+
+.labs-game-playfirst-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.labs-game-playfirst-btn span {
+  font-size: 0.95rem;
+}
+
+.labs-game-playfirst-btn strong {
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.labs-game-playfirst-btn small {
+  font-size: 0.68rem;
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.labs-game-record-btn {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 13px;
+  border: 1.5px solid rgba(34, 197, 94, 0.55);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(6, 78, 59, 0.35));
+  color: #ecfdf5;
+  padding: 9px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.labs-game-record-btn:hover {
+  border-color: #4ade80;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.26), rgba(6, 78, 59, 0.5));
+}
+
+.labs-game-rec-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.labs-game-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #93c5fd;
+  text-align: center;
+}
+
+/* Reveal Countdown Banner */
+.labs-reveal-banner {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.16), rgba(56, 189, 248, 0.16));
+  border: 1px solid rgba(251, 146, 60, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.labs-reveal-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #fef3c7;
+  text-align: center;
+}
+
+.labs-reveal-bar-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  overflow: hidden;
+}
+
+.labs-reveal-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f97316, #38bdf8, #22c55e);
+  transition: width 1.45s linear;
+}
+
+.labs-reveal-bar-fill.filling {
+  width: 100%;
+}
+
+/* Inline Multiplayer Queue */
+.labs-queue-inline {
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.labs-queue-inline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Inline Winner & Standings Card Directly Underneath Guess Button */
+.labs-inline-results {
+  padding: 14px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.labs-inline-res-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.labs-inline-score-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.labs-score-hero-compact {
+  width: 124px;
+  height: 124px;
+  flex-shrink: 0;
+}
+
+.labs-score-hero-compact .labs-score-big {
+  font-size: 1.55rem;
+}
+
+.labs-score-hero-compact .labs-score-lbl {
+  font-size: 0.56rem;
+}
+
+.labs-inline-score-meta {
+  flex: 1;
+  min-width: 185px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.labs-inline-score-meta .labs-rank-desc {
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.labs-reward-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.labs-reward-inline .labs-stars-row {
+  min-height: 28px;
+  justify-content: flex-start;
+  gap: 5px;
+}
+
+.labs-res-lb-inline {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  margin-bottom: 0;
+}
+
+.labs-verdict-box-inline {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.labs-verdict-box-inline .labs-verdict-text {
+  margin-top: 4px;
+  font-size: 0.84rem;
+}
+
+.labs-inline-results .labs-pb-pill {
+  align-self: flex-start;
+  width: fit-content;
+  margin: 0;
+}
+
+.labs-inline-results .labs-result-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-inline-results .labs-result-sec-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Quiet Footer Row for Past History & Blind Prediction Mode (Beta) */
+.labs-guess-footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.labs-quiet-link-btn {
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+
+.labs-quiet-link-btn:hover {
+  color: #e2e8f0;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .labs-clue-name {
+    font-size: 0.94rem;
+  }
+  .labs-clue-actions {
+    gap: 4px;
+  }
+  .labs-clue-actions .labs-btn,
+  .labs-clue-actions .labs-btn-ghost {
+    padding: 5px 8px;
+    font-size: 0.74rem;
+  }
+  .labs-game-hero-row {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+  .labs-game-primary-btn {
+    padding: 10px 11px;
+    gap: 8px;
+  }
+  .labs-game-btn-copy strong {
+    font-size: 0.94rem;
+  }
+  .labs-inline-score-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .labs-inline-score-meta {
+    align-items: center;
+    width: 100%;
+  }
+  .labs-inline-score-meta .labs-rank-desc,
+  .labs-reward-inline {
+    align-items: center;
+    text-align: center;
+  }
+}

@@ -58,6 +58,14 @@
     sessionGuesses: [],
     lastSessionResults: [],
     guessSubMode: 'standard',
+    guessMode: 'guess',
+    playFormat: 'solo',
+    guessRevealed: false,
+    pickerOpen: false,
+    historyOpen: false,
+    revealInProgress: false,
+    revealTimerId: null,
+    revealFallbackTimerId: null,
     blindGuesses: [],
     blindOriginal: null,
     lastOutcome: null,
@@ -803,9 +811,35 @@
           ? 'Sentry mode armed — beeps on start & stop, auto-saved to Vault.'
           : 'Manual 1-tap capture — beeps on start & stop, saved to Vault.';
     }
+
+    var guessSentryTag = $('guess-rec-sentry-tag');
+    if (guessSentryTag) {
+      guessSentryTag.textContent = next === 'auto' ? 'Sentry ON' : 'Manual';
+      guessSentryTag.classList.toggle('labs-chip-green', next === 'auto');
+    }
+  }
+
+  function clearRevealTimers() {
+    if (state.revealTimerId) {
+      clearTimeout(state.revealTimerId);
+      state.revealTimerId = null;
+    }
+    if (state.revealFallbackTimerId) {
+      clearTimeout(state.revealFallbackTimerId);
+      state.revealFallbackTimerId = null;
+    }
+    state.revealInProgress = false;
+    if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.stopChannel === 'function') {
+      root.TootApp.Audio.stopChannel('guess_reveal');
+    }
+    var revBanner = $('guess-reveal-banner');
+    var revBar = $('guess-reveal-bar');
+    if (revBanner) revBanner.classList.add('hidden');
+    if (revBar) revBar.classList.remove('filling');
   }
 
   function clearResultAnimations() {
+    clearRevealTimers();
     for (var i = 0; i < state.resultTimers.length; i++) {
       clearTimeout(state.resultTimers[i]);
     }
@@ -964,8 +998,9 @@
 
   function showView(viewKey) {
     closeSettingsMenu();
+    if (viewKey === 'result') viewKey = 'guess';
     var prevView = state.view;
-    if (prevView === 'result' && viewKey !== 'result') {
+    if (prevView === 'guess' && viewKey !== 'guess') {
       clearResultAnimations();
     }
     if (prevView === 'vault' && viewKey !== 'vault') {
@@ -1198,7 +1233,16 @@
       TootLabs.Store.saveNewSpecimen(res).then(function (saved) {
         state.samples.unshift(saved);
         state.quickSavedId = saved.id;
-        if (!state.guessTargetId) state.guessTargetId = saved.id;
+        if (!state.guessTargetId || state.view === 'guess') {
+          state.guessTargetId = saved.id;
+          state.guessAttempts = [];
+          state.sessionGuesses = [];
+          state.pendingGuess = null;
+          state.guessMode = 'guess';
+          state.guessRevealed = false;
+          state.lastOutcome = null;
+          state.lastSessionResults = [];
+        }
         if (!state.fnSampleId) state.fnSampleId = saved.id;
 
         renderHomeView();
@@ -1213,6 +1257,7 @@
           },
           function () {
             bar.classList.add('hidden');
+            if (state.view === 'guess') renderGuessView();
             showToast('Saved "' + getSampleName(saved) + '" to Fart Vault!');
           }
         );
@@ -1346,8 +1391,9 @@
     });
   }
 
-  /* Clean Manual RECORD GUESS Only (No Auto Detect on Guess The Fart) */
+  /* Clean Manual GUESS / MIMIC Capture Only (No Auto Detect on Guess Screen) */
   function startGuessCapture() {
+    if (state.revealInProgress) return;
     if (TootApp.Audio.isRecordingOrStarting()) {
       if (state.recordingKind === 'guess' && TootApp.Audio.isRecording() && state.activeRecStopper) {
         state.activeRecStopper();
@@ -1357,23 +1403,28 @@
 
     var target = getSampleById(state.guessTargetId);
     if (!target) {
-      showToast('Select a fart first.', true);
+      showToast('Record or select a saved fart first!', true);
       return;
     }
 
     resetMicTestUI('Ready');
     state.recordingKind = 'guess';
     var btn = $('btn-guess-rec');
+    var playFirstBtn = $('btn-guess-play-first');
     var labelEl = $('guess-rec-label');
+    var subEl = $('guess-rec-sub');
     var iconEl = $('guess-rec-icon');
     var statusEl = $('guess-rec-status');
     var waveCanvas = $('guess-live-wave');
     var settled = false;
 
+    if (playFirstBtn) playFirstBtn.disabled = true;
+    statusEl.classList.remove('hidden');
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
     if (!isWarm) {
       btn.disabled = true;
       labelEl.textContent = 'Requesting Mic…';
+      if (subEl) subEl.textContent = 'Allow microphone access to record';
       iconEl.textContent = '⏳';
       statusEl.textContent = 'Requesting microphone permission…';
     } else {
@@ -1388,30 +1439,40 @@
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = 'Record Guess';
-      iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
 
       if (!res || !res.ok) {
+        renderGuessView();
         var micName = (res && res.trackLabel) || 'Default Microphone';
         var msg =
           res && res.reason === 'all_zeros'
             ? 'No audio captured from "' + micName + '". Check Microphone settings.'
             : res && res.reason === 'too_quiet'
-            ? 'Guess was too quiet — increase Gain in Microphone settings.'
+            ? 'Recording was too quiet — increase Gain in Microphone settings.'
             : (res && res.error) || 'Could not record guess.';
+        statusEl.classList.remove('hidden');
         statusEl.textContent = msg;
         showToast(msg, true);
         return;
       }
 
+      statusEl.classList.add('hidden');
       var sr = res.sampleRate || 44100;
       var samples = res.clippedSamples;
       var preBreath = (res.clipInfo && res.clipInfo.preOnsetBreath) || null;
       var guessFeat = TootApp.DSP.extractFeatures(samples, sr);
       if (guessFeat && preBreath) guessFeat.preOnsetBreath = preBreath;
-      state.pendingGuess = {
+
+      var defaultNum = state.sessionGuesses.length + 1;
+      var nameInput = $('guess-name-input');
+      var typedName = nameInput && nameInput.value ? nameInput.value.trim() : '';
+      var guessName = state.playFormat === 'multiplayer'
+        ? (typedName || 'Guesser ' + defaultNum)
+        : 'Guesser 1';
+
+      var entry = {
         id: 'att_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        name: guessName,
         sampleRate: sr,
         samples: samples,
         rawSamples: res.rawSamples || samples,
@@ -1420,15 +1481,34 @@
         features: guessFeat
       };
 
-      var defaultNum = state.sessionGuesses.length + 1;
-      $('guess-name-input').value = 'Guesser ' + defaultNum;
-      $('guess-name-input').placeholder = 'Guesser ' + defaultNum;
-      renderGuessView();
+      if (state.playFormat === 'solo') {
+        state.pendingGuess = null;
+        state.sessionGuesses = [];
+        renderGuessView();
+        if (state.guessMode === 'guess' && !state.guessRevealed) {
+          triggerRevealAndAnalyze(target, [entry], 'guess');
+        } else {
+          analyzeAndShowResults(
+            target,
+            [entry],
+            'Mimic Mode · Comparing recreation against ' + getSampleName(target)
+          );
+        }
+      } else {
+        state.pendingGuess = null;
+        state.sessionGuesses.push(entry);
+        if (nameInput) {
+          nameInput.value = '';
+          nameInput.placeholder = 'Guesser ' + (state.sessionGuesses.length + 1);
+        }
+        renderGuessView();
+        showToast(entry.name + ' locked!' + (state.guessMode === 'guess' && !state.guessRevealed ? ' Tap All Guesses In when ready!' : ''));
+      }
     }
 
     state.activeRecStopper = function () {
       btn.disabled = true;
-      statusEl.textContent = 'Auto-clipping guess…';
+      statusEl.textContent = 'Auto-clipping recording…';
       TootApp.Audio.stopRecording().then(finalizeGuess);
     };
 
@@ -1437,13 +1517,14 @@
       onStarted: function () {
         btn.disabled = false;
         btn.classList.add('recording');
-        labelEl.textContent = 'Stop Guess';
+        labelEl.textContent = state.guessMode === 'mimic' ? 'Stop Mimic' : 'Stop Guess';
+        if (subEl) subEl.textContent = 'Tap when finished';
         iconEl.textContent = '⏹';
         refreshMicDevices();
       },
       onLevel: function (timeData, rms, elapsed) {
         drawLiveWaveform(waveCanvas, timeData, rms);
-        statusEl.textContent = 'Recording guess ' + elapsed.toFixed(1) + 's — tap to stop';
+        statusEl.textContent = 'Recording ' + elapsed.toFixed(1) + 's — tap Stop when done';
       },
       onAutoStop: function (res) {
         finalizeGuess(res);
@@ -1454,9 +1535,9 @@
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = 'Record Guess';
-      iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
+      statusEl.classList.add('hidden');
+      renderGuessView();
       showToast((err && err.message) || 'Microphone unavailable.', true);
     });
   }
@@ -1690,29 +1771,42 @@
     });
   }
 
-  /* ==================== GUESS MODE & LEADERBOARD ==================== */
+  /* ==================== GUESS & MIMIC MODES + INLINE RESULTS ==================== */
   function drawGuessWaveforms() {
     var target = getSampleById(state.guessTargetId);
-    if (target && $('guess-target-wave')) {
-      drawStaticWaveform($('guess-target-wave'), target.samples, { fallbackW: 480, fallbackH: 66 });
-    }
-    if (target && state.pendingGuess && $('guess-compare-canvas')) {
-      drawComparisonWaveform($('guess-compare-canvas'), target.samples, state.pendingGuess.samples);
+    var waveCanvas = $('guess-target-wave');
+    if (!waveCanvas) return;
+    if (target && (state.guessRevealed || state.guessMode === 'mimic')) {
+      drawStaticWaveform(waveCanvas, target.samples, { fallbackW: 480, fallbackH: 46 });
+    } else if (typeof waveCanvas.getContext === 'function') {
+      var wctx = waveCanvas.getContext('2d');
+      if (wctx && typeof wctx.clearRect === 'function') {
+        wctx.clearRect(0, 0, waveCanvas.width || 480, waveCanvas.height || 46);
+      }
     }
   }
 
   function renderGuessLeaderboard() {
     var wrap = $('guess-leaderboard-wrap');
+    var toggleBtn = $('btn-guess-toggle-history');
     var winEl = $('guess-winner-banner');
     var listEl = $('guess-leaderboard-list');
     var target = getSampleById(state.guessTargetId);
 
     if (!target || state.guessAttempts.length === 0) {
-      wrap.classList.add('hidden');
+      if (toggleBtn) toggleBtn.classList.add('hidden');
+      if (wrap) wrap.classList.add('hidden');
       return;
     }
 
-    wrap.classList.remove('hidden');
+    if (toggleBtn) {
+      toggleBtn.classList.remove('hidden');
+      toggleBtn.textContent = (state.historyOpen ? '▾ Hide Vault Standings (' : '🏆 Past Vault Standings (') + state.guessAttempts.length + ')';
+    }
+    if (wrap) {
+      wrap.classList.toggle('hidden', !state.historyOpen);
+    }
+
     var sorted = state.guessAttempts.slice().sort(function (a, b) {
       return (b.exactScore || 0) - (a.exactScore || 0);
     });
@@ -1792,21 +1886,26 @@
 
   function renderSessionQueue() {
     var qCard = $('guess-session-queue-card');
-    var qTargetEl = $('guess-queue-target-name');
     var qCountEl = $('guess-queue-count');
     var qListEl = $('guess-queue-list');
+    var qAnalyzeBtn = $('btn-guess-queue-analyze');
     var target = getSampleById(state.guessTargetId);
 
     if (!qCard || !qListEl) return;
-    if (!target || state.sessionGuesses.length === 0) {
+    if (!target || state.sessionGuesses.length === 0 || state.playFormat !== 'multiplayer') {
       qCard.classList.add('hidden');
       qListEl.innerHTML = '';
       return;
     }
 
+    var isHiddenGuess = state.guessMode === 'guess' && !state.guessRevealed;
     qCard.classList.remove('hidden');
-    if (qTargetEl) qTargetEl.textContent = 'Original Fart: ' + getSampleName(target);
-    if (qCountEl) qCountEl.textContent = state.sessionGuesses.length + ' Recorded';
+    if (qCountEl) qCountEl.textContent = state.sessionGuesses.length + ' Locked';
+    if (qAnalyzeBtn) {
+      qAnalyzeBtn.textContent = isHiddenGuess
+        ? '🔊 All Guesses In — Reveal Fart & Score'
+        : '🧪 Score All Mimic Attempts';
+    }
 
     qListEl.innerHTML = state.sessionGuesses
       .map(function (g, idx) {
@@ -1815,7 +1914,7 @@
           '<div class="labs-queue-row">' +
           '  <div class="labs-queue-info">' +
           '    <strong>' + esc(g.name) + '</strong>' +
-          '    <span class="labs-chip labs-chip-green">Recorded · ' + dur + '</span>' +
+          '    <span class="labs-chip ' + (isHiddenGuess ? 'labs-chip-orange' : 'labs-chip-green') + '">' + (isHiddenGuess ? 'Locked' : 'Recorded') + ' · ' + dur + '</span>' +
           '  </div>' +
           '  <div class="labs-att-btns">' +
           '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-qplay="' + idx + '">▶</button>' +
@@ -1911,90 +2010,214 @@
   }
 
   function setGuessSubMode(subMode) {
+    clearRevealTimers();
     var next = subMode === 'blind' ? 'blind' : 'standard';
     state.guessSubMode = next;
-    var stdBtn = $('btn-submode-standard');
-    var blindBtn = $('btn-submode-blind');
     var stdPane = $('guess-standard-pane');
     var blindPane = $('guess-blind-pane');
-    if (stdBtn) stdBtn.classList.toggle('active', next === 'standard');
-    if (blindBtn) blindBtn.classList.toggle('active', next === 'blind');
     if (stdPane) stdPane.classList.toggle('hidden', next !== 'standard');
     if (blindPane) blindPane.classList.toggle('hidden', next !== 'blind');
     if (next === 'blind') renderBlindPane();
     else renderGuessView();
   }
 
+  function setPlayFormat(fmt) {
+    var next = fmt === 'multiplayer' ? 'multiplayer' : 'solo';
+    state.playFormat = next;
+    if (next === 'solo') {
+      state.sessionGuesses = [];
+      state.pendingGuess = null;
+    }
+    renderGuessView();
+  }
+
+  function setGuessMode(mode) {
+    clearRevealTimers();
+    clearResultAnimations();
+    var next = mode === 'mimic' ? 'mimic' : 'guess';
+    state.guessMode = next;
+    if (next === 'mimic') {
+      state.guessRevealed = true;
+    } else {
+      state.guessRevealed = false;
+      state.sessionGuesses = [];
+      state.pendingGuess = null;
+      state.lastOutcome = null;
+      state.lastSessionResults = [];
+    }
+    renderGuessView();
+  }
+
   function renderGuessView() {
     var strip = $('guess-vault-strip');
-    if (state.samples.length === 0) {
-      strip.innerHTML = '<span class="labs-hint-text">No saved farts yet. Record a new fart first!</span>';
-    } else {
-      strip.innerHTML = state.samples
-        .map(function (s) {
-          var st = TootLabs.Store.getSampleStats(s.id);
-          var active = s.id === state.guessTargetId;
-          var scoreBadge = st.attemptCount > 0 ? '<span class="labs-pill-score">' + st.bestScore.toFixed(1) + '%</span>' : '';
-          return (
-            '<button type="button" class="labs-strip-pill' +
-            (active ? ' active' : '') +
-            '" data-pick-fart="' +
-            esc(s.id) +
-            '">' +
-            '<span>' + esc(getSampleName(s)) + '</span>' +
-            scoreBadge +
-            '</button>'
-          );
-        })
-        .join('');
+    if (strip) {
+      if (state.samples.length === 0) {
+        strip.innerHTML = '<span class="labs-hint-text">No saved farts yet. Tap Record New Fart below!</span>';
+      } else {
+        strip.innerHTML = state.samples
+          .map(function (s) {
+            var st = TootLabs.Store.getSampleStats(s.id);
+            var active = s.id === state.guessTargetId;
+            var scoreBadge = st.attemptCount > 0 ? '<span class="labs-pill-score">' + st.bestScore.toFixed(1) + '%</span>' : '';
+            return (
+              '<button type="button" class="labs-strip-pill' +
+              (active ? ' active' : '') +
+              '" data-pick-fart="' +
+              esc(s.id) +
+              '">' +
+              '<span>' + esc(getSampleName(s)) + '</span>' +
+              scoreBadge +
+              '</button>'
+            );
+          })
+          .join('');
 
-      strip.querySelectorAll('[data-pick-fart]').forEach(function (b) {
-        b.addEventListener('click', function () {
-          openGuessMode(this.getAttribute('data-pick-fart'));
+        strip.querySelectorAll('[data-pick-fart]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            state.pickerOpen = false;
+            openGuessMode(this.getAttribute('data-pick-fart'));
+          });
         });
-      });
+      }
     }
 
+    var soloBtn = $('btn-play-solo');
+    var multiBtn = $('btn-play-multi');
+    if (soloBtn) soloBtn.classList.toggle('active', state.playFormat === 'solo');
+    if (multiBtn) multiBtn.classList.toggle('active', state.playFormat === 'multiplayer');
+
     var target = getSampleById(state.guessTargetId);
-    $('guess-empty-target').classList.toggle('hidden', Boolean(target));
-    $('guess-loaded-pane').classList.toggle('hidden', !target);
-    $('btn-guess-rec').disabled = !target;
+    var emptyEl = $('guess-empty-target');
+    var loadedEl = $('guess-loaded-pane');
+    if (emptyEl) emptyEl.classList.toggle('hidden', Boolean(target));
+    if (loadedEl) loadedEl.classList.toggle('hidden', !target);
+
+    var pickerDrawer = $('guess-picker-drawer');
+    var togglePickerBtn = $('btn-guess-toggle-picker');
+    if (pickerDrawer) pickerDrawer.classList.toggle('hidden', !state.pickerOpen || !target);
+    if (togglePickerBtn) {
+      togglePickerBtn.disabled = !target;
+      togglePickerBtn.setAttribute('aria-expanded', state.pickerOpen ? 'true' : 'false');
+      togglePickerBtn.textContent = state.pickerOpen ? '▴ Hide' : '▾ Pick';
+    }
     if ($('btn-guess-random')) {
       $('btn-guess-random').disabled = state.samples.length === 0;
     }
+
+    var isHiddenGuess = state.guessMode === 'guess' && !state.guessRevealed;
+
+    // Mode pill & reset chip
+    var modePill = $('guess-mode-pill');
+    var resetBlindBtn = $('btn-guess-reset-blind');
+    if (modePill) {
+      modePill.classList.toggle('is-mimic', state.guessMode === 'mimic');
+      modePill.textContent =
+        state.guessMode === 'mimic'
+          ? '🦜 MIMIC MODE · SOUND HEARD'
+          : state.guessRevealed
+          ? '🎯 GUESS THE FART · REVEALED'
+          : '🎯 GUESS THE FART · HIDDEN';
+    }
+    if (resetBlindBtn) {
+      resetBlindBtn.classList.toggle('hidden', isHiddenGuess || !target);
+      resetBlindBtn.textContent = state.guessMode === 'mimic' ? '🔒 Back to Blind' : '🔄 New Blind Round';
+    }
+
+    // Clue Bar metadata & waveform gate (ZERO audio/waveform spoilers before reveal!)
+    var clueIcon = $('guess-clue-icon');
+    var clueName = $('guess-target-name');
+    var clueDur = $('guess-target-dur');
+    var clueMeta = $('guess-target-meta');
+    var waveWrap = $('guess-target-wave-wrap');
 
     if (target) {
       var feat = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
       target.features = feat;
       var prof = TootApp.DSP.describeSoundProfile(feat);
-      var tStats = TootLabs.Store.getSampleStats(target.id);
-      $('guess-target-name').textContent = getSampleName(target);
-      $('guess-target-dur').textContent = (target.samples.length / target.sampleRate).toFixed(2) + 's';
-      $('guess-target-meta').textContent = formatDateShort(target.createdAt) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
-      if ($('guess-target-best')) {
-        $('guess-target-best').textContent = tStats.attemptCount > 0 ? 'Best: ' + tStats.bestScore.toFixed(1) + '%' : 'Best: —';
+      var oDur = target.samples.length / target.sampleRate;
+      if (clueIcon) clueIcon.textContent = isHiddenGuess ? '🔒' : '🔊';
+      if (clueName) clueName.textContent = getSampleName(target);
+      if (clueDur) {
+        clueDur.textContent = oDur.toFixed(2) + 's';
+        clueDur.classList.toggle('hidden', isHiddenGuess);
+      }
+      if (clueMeta) {
+        clueMeta.textContent = isHiddenGuess
+          ? 'Audio hidden until reveal'
+          : (state.guessMode === 'mimic' ? 'Mimic Mode · ' : 'Revealed · ') + prof.pitchLabel + ' · ' + prof.textureLabel;
+      }
+      if (waveWrap) waveWrap.classList.toggle('hidden', isHiddenGuess);
+    } else {
+      if (clueIcon) clueIcon.textContent = '💨';
+      if (clueName) clueName.textContent = 'No Fart Selected';
+      if (clueDur) clueDur.classList.add('hidden');
+      if (clueMeta) clueMeta.textContent = 'Record a fart below to get started.';
+      if (waveWrap) waveWrap.classList.add('hidden');
+    }
+
+    // Primary Action Buttons
+    var recBtn = $('btn-guess-rec');
+    var recIcon = $('guess-rec-icon');
+    var recLbl = $('guess-rec-label');
+    var recSub = $('guess-rec-sub');
+    var playFirstBtn = $('btn-guess-play-first');
+    var pfLbl = $('guess-playfirst-label');
+    var pfSub = $('guess-playfirst-sub');
+
+    var isCapturing = TootApp.Audio.isRecordingOrStarting() && state.recordingKind === 'guess';
+    var lockPlayFirst =
+      !target ||
+      state.revealInProgress ||
+      isCapturing ||
+      (isHiddenGuess && state.playFormat === 'multiplayer' && state.sessionGuesses.length > 0);
+
+    if (recBtn && !isCapturing) {
+      recBtn.disabled = !target || state.revealInProgress;
+      recBtn.classList.toggle('is-mimic', state.guessMode === 'mimic');
+      if (recIcon) recIcon.textContent = state.guessMode === 'mimic' ? '🦜' : '🎤';
+      if (recLbl) recLbl.textContent = state.guessMode === 'mimic' ? 'Mimic The Fart' : 'Guess The Fart';
+      if (recSub) {
+        if (!target) {
+          recSub.textContent = 'Record a fart below first';
+        } else if (state.guessMode === 'mimic') {
+          recSub.textContent =
+            state.playFormat === 'multiplayer' && state.sessionGuesses.length > 0
+              ? 'Record Guesser ' + (state.sessionGuesses.length + 1) + ' mimic'
+              : 'Reproduce the fart you just heard';
+        } else {
+          recSub.textContent =
+            state.playFormat === 'multiplayer' && state.sessionGuesses.length > 0
+              ? 'Record Guesser ' + (state.sessionGuesses.length + 1) + ' blindly'
+              : 'Record what you imagine it sounds like';
+        }
       }
     }
 
-    var prevPanel = $('guess-preview-panel');
-    if (target && state.pendingGuess) {
-      prevPanel.classList.remove('hidden');
-      var gDur = state.pendingGuess.samples.length / state.pendingGuess.sampleRate;
-      var oDur = target.samples.length / target.sampleRate;
-      $('guess-attempt-dur').textContent = gDur.toFixed(2) + 's';
-      $('guess-preview-ratio').textContent = 'Original ' + oDur.toFixed(2) + 's vs Guess ' + gDur.toFixed(2) + 's';
-      $('guess-rec-status').textContent = 'Add another guesser or tap ANALYZE RESULTS to determine the winner.';
-    } else {
-      prevPanel.classList.add('hidden');
-      $('guess-attempt-dur').textContent = target ? 'Standby' : 'No Fart';
-      if (!TootApp.Audio.isRecordingOrStarting()) {
-        $('guess-rec-label').textContent = 'Record Guess';
-        $('guess-rec-status').textContent = target
-          ? state.sessionGuesses.length > 0
-            ? state.sessionGuesses.length + ' guess(es) queued — next default: Guesser ' + (state.sessionGuesses.length + 1)
-            : 'Next default label: Guesser 1'
-          : 'Record or select a saved fart above first.';
-      }
+    if (playFirstBtn) {
+      playFirstBtn.disabled = lockPlayFirst;
+      playFirstBtn.classList.toggle('is-active', state.guessMode === 'mimic');
+      if (pfLbl) pfLbl.textContent = state.guessMode === 'mimic' ? 'Replay Fart' : 'Play Fart First';
+      if (pfSub) pfSub.textContent = state.guessMode === 'mimic' ? 'Hear original again' : 'Mimic Mode';
+    }
+
+    // Multiplayer Guesser Name input
+    var multiWrap = $('guess-multi-name-wrap');
+    var nameInput = $('guess-name-input');
+    if (multiWrap) multiWrap.classList.toggle('hidden', !target || state.playFormat !== 'multiplayer');
+    if (nameInput && !nameInput.value.trim()) {
+      nameInput.placeholder = 'Guesser ' + (state.sessionGuesses.length + 1);
+    }
+
+    // Inline Results Visibility (right below Guess controls)
+    var inlineRes = $('guess-inline-results');
+    if (inlineRes) {
+      var showRes =
+        Boolean(state.lastOutcome) &&
+        Boolean(state.lastOutcome.targetSound) &&
+        Boolean(target) &&
+        state.lastOutcome.targetSound.id === target.id &&
+        (state.guessRevealed || state.guessMode === 'mimic');
+      inlineRes.classList.toggle('hidden', !showRes);
     }
 
     renderSessionQueue();
@@ -2004,22 +2227,36 @@
 
   function openGuessMode(sampleId) {
     TootApp.Audio.stopAll();
+    clearRevealTimers();
+    clearResultAnimations();
+
     var resolvedId = sampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id) || null;
-    if (sampleId && sampleId !== state.guessTargetId) {
-      state.sessionGuesses = [];
-    }
     state.guessTargetId = resolvedId;
+    state.guessSubMode = 'standard';
+    state.guessMode = 'guess';
+    state.guessRevealed = false;
+    state.pickerOpen = false;
+    state.historyOpen = false;
+    state.sessionGuesses = [];
     state.pendingGuess = null;
-    $('guess-live-wave').classList.add('hidden');
+    state.lastOutcome = null;
+    state.lastSessionResults = [];
+
+    var stdPane = $('guess-standard-pane');
+    var blindPane = $('guess-blind-pane');
+    if (stdPane) stdPane.classList.remove('hidden');
+    if (blindPane) blindPane.classList.add('hidden');
+    if ($('guess-live-wave')) $('guess-live-wave').classList.add('hidden');
+    if ($('guess-rec-status')) $('guess-rec-status').classList.add('hidden');
 
     if (!resolvedId) {
       state.guessAttempts = [];
       showView('guess');
       renderGuessView();
-      return;
+      return Promise.resolve();
     }
 
-    TootLabs.Store.loadAttemptsForSample(resolvedId).then(function (attempts) {
+    return TootLabs.Store.loadAttemptsForSample(resolvedId).then(function (attempts) {
       state.guessAttempts = attempts || [];
       showView('guess');
       renderGuessView();
@@ -2037,8 +2274,128 @@
     if (pool.length === 0) pool = state.samples;
     var chosen = pool[Math.floor(Math.random() * pool.length)];
     openGuessMode(chosen.id);
-    showToast('🎲 Random Vault Fart: "' + getSampleName(chosen) + '"');
+    showToast('🎲 Blind Clue: "' + getSampleName(chosen) + '"');
     return chosen;
+  }
+
+  function playFartFirst() {
+    if (state.revealInProgress) return;
+    var target = getSampleById(state.guessTargetId);
+    if (!target) {
+      showToast('Record or select a saved fart first!', true);
+      return;
+    }
+    if (state.guessMode === 'guess' && !state.guessRevealed && state.playFormat === 'multiplayer' && state.sessionGuesses.length > 0) {
+      showToast('Guesses already locked blind — tap All Guesses In to reveal!', true);
+      return;
+    }
+
+    var switchedFromGuess = state.guessMode !== 'mimic';
+    state.guessMode = 'mimic';
+    state.guessRevealed = true;
+    if (switchedFromGuess) {
+      state.lastOutcome = null;
+      state.lastSessionResults = [];
+    }
+    renderGuessView();
+
+    try {
+      var playRes = TootApp.Audio.playSound(target.samples, target.sampleRate, {
+        channel: 'guess_orig',
+        onProgress: function (p) {
+          if ($('guess-target-wave')) {
+            drawStaticWaveform($('guess-target-wave'), target.samples, { fallbackW: 480, fallbackH: 46, progress: p });
+          }
+        },
+        onEnded: function () {
+          drawGuessWaveforms();
+        }
+      });
+      if (playRes && typeof playRes.catch === 'function') {
+        playRes.catch(function () {});
+      }
+    } catch (err) {}
+  }
+
+  function triggerRevealAndAnalyze(target, rawGuesses, modeUsed, subtitleLabel, delayMs) {
+    if (!target || !rawGuesses || rawGuesses.length === 0) {
+      return Promise.resolve([]);
+    }
+    clearRevealTimers();
+    state.lastOutcome = null;
+    state.lastSessionResults = [];
+    renderGuessView();
+
+    state.revealInProgress = true;
+    var waitMs = typeof delayMs === 'number' ? Math.max(0, delayMs) : 1500;
+    var banner = $('guess-reveal-banner');
+    var txtEl = $('guess-reveal-text');
+    var barEl = $('guess-reveal-bar');
+    var targetName = getSampleName(target);
+    var lockNoun = rawGuesses.length === 1 ? 'Guess locked!' : rawGuesses.length + ' guesses locked!';
+
+    if (banner) banner.classList.remove('hidden');
+    if (txtEl) txtEl.textContent = '🔒 ' + lockNoun + ' Revealing "' + targetName + '"…';
+    if (barEl) {
+      barEl.classList.remove('filling');
+      try { void barEl.offsetWidth; } catch (e) {}
+      barEl.classList.add('filling');
+    }
+
+    return new Promise(function (resolve) {
+      state.revealTimerId = setTimeout(function () {
+        state.revealTimerId = null;
+        state.guessRevealed = true;
+        renderGuessView();
+        if (txtEl) txtEl.textContent = '🔊 NOW PLAYING: "' + targetName + '" — Listen to how close you got!';
+
+        var done = false;
+        function finishReveal() {
+          if (done) return;
+          done = true;
+          if (state.revealFallbackTimerId) {
+            clearTimeout(state.revealFallbackTimerId);
+            state.revealFallbackTimerId = null;
+          }
+          var settleDelay = waitMs < 100 ? 15 : 350;
+          setTimeout(function () {
+            state.revealInProgress = false;
+            if (banner) banner.classList.add('hidden');
+            if (barEl) barEl.classList.remove('filling');
+            var sub = subtitleLabel || ('Guess The Fart · Comparing vs ' + targetName);
+            analyzeAndShowResults(target, rawGuesses, sub).then(resolve);
+          }, settleDelay);
+        }
+
+        var clipMs = Math.round(((target.samples ? target.samples.length : 0) / (target.sampleRate || 44100)) * 1000);
+        var fallbackMs = waitMs < 100 ? 45 : Math.min(9500, Math.max(850, clipMs + 650));
+        state.revealFallbackTimerId = setTimeout(finishReveal, fallbackMs);
+
+        try {
+          var playRes = TootApp.Audio.playSound(target.samples, target.sampleRate, {
+            channel: 'guess_reveal',
+            onProgress: function (p) {
+              if ($('guess-target-wave')) {
+                drawStaticWaveform($('guess-target-wave'), target.samples, { fallbackW: 480, fallbackH: 46, progress: p });
+              }
+            },
+            onEnded: function () {
+              drawGuessWaveforms();
+              finishReveal();
+            }
+          });
+          if (playRes && typeof playRes.catch === 'function') {
+            playRes.catch(function () {
+              if (waitMs < 100) finishReveal();
+              else setTimeout(finishReveal, 500);
+            });
+          }
+        } catch (err) {
+          if (waitMs < 100) finishReveal();
+          else setTimeout(finishReveal, 500);
+        }
+      }, waitMs);
+    });
   }
 
   function addAnotherGuesser() {
@@ -2047,13 +2404,14 @@
       return null;
     }
     var defaultLabel = 'Guesser ' + (state.sessionGuesses.length + 1);
-    var typed = ($('guess-name-input').value || '').trim();
+    var nameEl = $('guess-name-input');
+    var typed = (nameEl && nameEl.value ? nameEl.value : '').trim();
     var entry = Object.assign({}, state.pendingGuess, { name: typed || defaultLabel });
     state.sessionGuesses.push(entry);
     state.pendingGuess = null;
-    $('guess-name-input').value = '';
+    if (nameEl) nameEl.value = '';
     renderGuessView();
-    showToast(entry.name + ' recorded! Ready for Guesser ' + (state.sessionGuesses.length + 1) + '.');
+    showToast(entry.name + ' locked! Ready for Guesser ' + (state.sessionGuesses.length + 1) + '.');
     return entry;
   }
 
@@ -2125,6 +2483,7 @@
       state.lastSessionResults = outcomes;
       state.lastOutcome = outcomes[0];
       state.guessTargetId = target.id;
+      state.guessRevealed = true;
       state.fnSampleId = target.id;
       state.fnAttemptId = outcomes[0].attempt.id;
 
@@ -2138,26 +2497,35 @@
           subtitle: subtitleLabel || ('Comparing ' + outcomes.length + (outcomes.length === 1 ? ' guess' : ' guesses') + ' against ' + getSampleName(target))
         },
         function () {
-          showView('result');
-          renderResultScreen(state.lastOutcome, state.lastSessionResults);
+          state.guessSubMode = 'standard';
+          state.guessRevealed = true;
+          var stdPane = $('guess-standard-pane');
+          var blindPane = $('guess-blind-pane');
+          if (stdPane) stdPane.classList.remove('hidden');
+          if (blindPane) blindPane.classList.add('hidden');
+          showView('guess');
+          renderGuessView();
+          renderInlineResults(state.lastOutcome, state.lastSessionResults);
         }
       );
       return outcomes;
     });
   }
 
-  function analyzeSessionGuesses() {
+  function analyzeSessionGuesses(opts) {
+    opts = opts || {};
     var target = getSampleById(state.guessTargetId);
     if (!target) {
       showToast('Select a fart first.', true);
       return Promise.resolve([]);
     }
     if (state.pendingGuess) {
+      var nameEl = $('guess-name-input');
       var fallbackName = 'Guesser ' + (state.sessionGuesses.length + 1);
-      var customName = ($('guess-name-input').value || '').trim() || fallbackName;
+      var customName = (nameEl && nameEl.value ? nameEl.value : '').trim() || fallbackName;
       state.sessionGuesses.push(Object.assign({}, state.pendingGuess, { name: customName }));
       state.pendingGuess = null;
-      $('guess-name-input').value = '';
+      if (nameEl) nameEl.value = '';
     }
     if (state.sessionGuesses.length === 0) {
       showToast('Record at least one guess first.', true);
@@ -2165,6 +2533,10 @@
     }
     var batch = state.sessionGuesses.slice();
     state.sessionGuesses = [];
+    renderGuessView();
+    if (!opts.immediate && state.guessMode === 'guess' && !state.guessRevealed) {
+      return triggerRevealAndAnalyze(target, batch, 'guess', null, opts.delayMs);
+    }
     return analyzeAndShowResults(target, batch);
   }
 
@@ -2327,7 +2699,7 @@
     return (idx + 1) + 'th Place';
   }
 
-  function renderResultScreen(outcome, sessionResults) {
+  function renderInlineResults(outcome, sessionResults) {
     if (!outcome) return;
     clearResultAnimations();
 
@@ -2336,11 +2708,10 @@
     var exact = outcome.exactScore;
     var rank = outcome.rank;
     var reward = outcome.reward;
-    var stats = outcome.sampleStats || {};
 
-    var stageEl = document.querySelector ? document.querySelector('#labs-view-result .labs-result-stage') : null;
+    var stageEl = $('guess-inline-results');
     if (stageEl && stageEl.classList) {
-      stageEl.classList.remove('reveal-enter');
+      stageEl.classList.remove('hidden', 'reveal-enter');
       try { void stageEl.offsetWidth; } catch (e) {}
       stageEl.classList.add('reveal-enter');
     }
@@ -2418,9 +2789,7 @@
     var pbEl = $('res-pb-pill');
     pbEl.classList.add('hidden');
 
-    var rankBlockEl = document.querySelector ? document.querySelector('#labs-view-result .labs-rank-block') : null;
     var rewardStageEl = $('res-reward-stage');
-    if (rankBlockEl && rankBlockEl.classList) rankBlockEl.classList.add('labs-reveal-pending');
     if (rewardStageEl && rewardStageEl.classList) rewardStageEl.classList.add('labs-reveal-pending');
 
     var ringFg = $('res-ring-fg');
@@ -2464,11 +2833,6 @@
     rankBadge.style.color = rank.color;
     $('res-rank-desc').textContent = (outcome.attempt.name || 'Winner') + ' — ' + rank.desc;
 
-    $('res-best-score').textContent = (stats.bestScore || exact).toFixed(1) + '%';
-    $('res-prev-score').textContent =
-      typeof outcome.previousScore === 'number' ? outcome.previousScore.toFixed(1) + '%' : 'Baseline';
-    $('res-current-score').textContent = exact.toFixed(1) + '%';
-
     var deltaNoteEl = $('res-delta-note');
     if (resultsList.length > 1) {
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
@@ -2488,7 +2852,7 @@
     } else {
       deltaNoteEl.classList.remove('hidden');
       deltaNoteEl.classList.add('delta-neutral');
-      deltaNoteEl.textContent = 'First guess recorded — hand the phone to Guesser 2 or play another round to beat ' + exact.toFixed(1) + '%!';
+      deltaNoteEl.textContent = 'First guess recorded — tap Guess The Fart above or Play Real → Winner to try again!';
     }
 
     $('res-verdict-text').textContent = outcome.verdict;
@@ -2503,8 +2867,7 @@
 
     state.resultTimers.push(
       setTimeout(function () {
-        if (state.view !== 'result') return;
-        if (rankBlockEl && rankBlockEl.classList) rankBlockEl.classList.remove('labs-reveal-pending');
+        if (state.view !== 'guess') return;
         if (rewardStageEl && rewardStageEl.classList) rewardStageEl.classList.remove('labs-reveal-pending');
         bellLabel.textContent = 'Assigning Telemetry Rating…';
         if (outcome.isPersonalBest) {
@@ -2519,7 +2882,7 @@
       (function (starIndex) {
         state.resultTimers.push(
           setTimeout(function () {
-            if (state.view !== 'result') return;
+            if (state.view !== 'guess') return;
             var span = document.createElement('span');
             span.className = 'labs-reward-star';
             span.textContent = '⭐';
@@ -2542,7 +2905,7 @@
       var finaleAt = lastStarAt + 680;
       state.resultTimers.push(
         setTimeout(function () {
-          if (state.view !== 'result') return;
+          if (state.view !== 'guess') return;
           if (TootLabs.AudioFx) {
             TootLabs.AudioFx.playLegendaryFinale();
             state.confettiHandle = TootLabs.AudioFx.launchConfetti($('result-confetti-canvas'));
@@ -2890,6 +3253,16 @@
     var gearBtn = $('btn-labs-settings');
     if (gearBtn) gearBtn.addEventListener('click', toggleSettingsMenu);
 
+    var menuBlindBtn = $('btn-menu-blind');
+    if (menuBlindBtn) {
+      menuBlindBtn.addEventListener('click', function () {
+        closeSettingsMenu();
+        openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id)).then(function () {
+          setGuessSubMode('blind');
+        });
+      });
+    }
+
     var menuAboutBtn = $('btn-menu-about');
     if (menuAboutBtn) menuAboutBtn.addEventListener('click', openAboutModal);
 
@@ -3071,80 +3444,72 @@
       $('labs-delete-modal').classList.remove('hidden');
     });
 
-    // Guess View Buttons
+    // Guess & Mimic Game Screen Buttons
+    if ($('btn-play-solo')) {
+      $('btn-play-solo').addEventListener('click', function () { setPlayFormat('solo'); });
+    }
+    if ($('btn-play-multi')) {
+      $('btn-play-multi').addEventListener('click', function () { setPlayFormat('multiplayer'); });
+    }
+    if ($('btn-guess-reset-blind')) {
+      $('btn-guess-reset-blind').addEventListener('click', function () {
+        setGuessMode('guess');
+      });
+    }
     if ($('btn-guess-random')) {
       $('btn-guess-random').addEventListener('click', pickRandomGuessTarget);
     }
-    $('btn-guess-empty-rec').addEventListener('click', startQuickRecordFart);
-
-    function playGuessTargetFart() {
-      var target = getSampleById(state.guessTargetId);
-      if (!target) return;
-      TootApp.Audio.playSound(target.samples, target.sampleRate, {
-        channel: 'guess_orig',
-        onProgress: function (p) {
-          drawStaticWaveform($('guess-target-wave'), target.samples, { fallbackW: 480, fallbackH: 66, progress: p });
-        },
-        onEnded: function () {
-          drawGuessWaveforms();
-        }
+    if ($('btn-guess-toggle-picker')) {
+      $('btn-guess-toggle-picker').addEventListener('click', function () {
+        state.pickerOpen = !state.pickerOpen;
+        renderGuessView();
       });
     }
-
-    $('btn-guess-play').addEventListener('click', playGuessTargetFart);
-    $('btn-guess-replay').addEventListener('click', playGuessTargetFart);
     $('btn-guess-analyze-orig').addEventListener('click', function () {
       if (state.guessTargetId) openFartnalysis('original', state.guessTargetId, null);
     });
     $('btn-guess-rec').addEventListener('click', startGuessCapture);
-    $('btn-guess-prev-orig').addEventListener('click', playGuessTargetFart);
-    $('btn-guess-prev-att').addEventListener('click', function () {
-      if (state.pendingGuess) TootApp.Audio.playSound(state.pendingGuess.samples, state.pendingGuess.sampleRate, { channel: 'prev_g' });
+    if ($('btn-guess-play-first')) {
+      $('btn-guess-play-first').addEventListener('click', playFartFirst);
+    }
+    if ($('btn-guess-record-new')) {
+      $('btn-guess-record-new').addEventListener('click', startQuickRecordFart);
+    }
+    $('btn-guess-queue-analyze').addEventListener('click', function () {
+      analyzeSessionGuesses();
     });
-    $('btn-guess-prev-ab').addEventListener('click', function () {
-      var target = getSampleById(state.guessTargetId);
-      if (target && state.pendingGuess) {
-        TootApp.Audio.playSequence(
-          [
-            { samples: target.samples, sampleRate: target.sampleRate, channel: 'prev_o' },
-            { samples: state.pendingGuess.samples, sampleRate: state.pendingGuess.sampleRate, channel: 'prev_g' }
-          ],
-          220
-        );
-      }
-    });
-    $('btn-guess-redo').addEventListener('click', function () {
-      state.pendingGuess = null;
-      renderGuessView();
-    });
-    $('btn-guess-add-another').addEventListener('click', addAnotherGuesser);
-    $('btn-guess-judge').addEventListener('click', analyzeSessionGuesses);
-    $('btn-guess-queue-analyze').addEventListener('click', analyzeSessionGuesses);
-
-    // Guess Sub-Modes (Primary vs Blind Prediction Experimental Mode)
-    $('btn-submode-standard').addEventListener('click', function () {
-      setGuessSubMode('standard');
-    });
-    $('btn-submode-blind').addEventListener('click', function () {
-      setGuessSubMode('blind');
-    });
+    if ($('btn-guess-toggle-history')) {
+      $('btn-guess-toggle-history').addEventListener('click', function () {
+        state.historyOpen = !state.historyOpen;
+        renderGuessLeaderboard();
+      });
+    }
+    if ($('btn-open-blind-footer')) {
+      $('btn-open-blind-footer').addEventListener('click', function () {
+        setGuessSubMode('blind');
+      });
+    }
+    if ($('btn-blind-back')) {
+      $('btn-blind-back').addEventListener('click', function () {
+        setGuessSubMode('standard');
+      });
+    }
     $('btn-blind-rec-guess').addEventListener('click', startBlindGuessCapture);
     $('btn-blind-rec-orig').addEventListener('click', startBlindOriginalCapture);
     $('btn-blind-analyze').addEventListener('click', analyzeBlindSession);
 
-    // Match Result Buttons
+    // Inline Match Result Buttons
     $('btn-res-next-guesser').addEventListener('click', function () {
-      var sid = (state.lastOutcome && state.lastOutcome.targetSound && state.lastOutcome.targetSound.id) || state.guessTargetId;
-      openGuessMode(sid);
+      if (state.samples && state.samples.length > 1) {
+        pickRandomGuessTarget();
+      } else {
+        setGuessMode('guess');
+      }
     });
     $('btn-res-compare').addEventListener('click', function () {
       if (state.lastOutcome) {
         openFartnalysis('comparison', state.lastOutcome.targetSound.id, state.lastOutcome.attempt.id);
       }
-    });
-    $('btn-res-leaderboard').addEventListener('click', function () {
-      var sid = (state.lastOutcome && state.lastOutcome.targetSound && state.lastOutcome.targetSound.id) || state.guessTargetId;
-      openGuessMode(sid);
     });
     $('btn-res-replay').addEventListener('click', function () {
       if (!state.lastOutcome) return;
@@ -3286,6 +3651,10 @@
     closeSplashModal: closeSplashModal,
     openGuessMode: openGuessMode,
     setGuessSubMode: setGuessSubMode,
+    setGuessMode: setGuessMode,
+    setPlayFormat: setPlayFormat,
+    playFartFirst: playFartFirst,
+    triggerRevealAndAnalyze: triggerRevealAndAnalyze,
     addAnotherGuesser: addAnotherGuesser,
     analyzeSessionGuesses: analyzeSessionGuesses,
     analyzeBlindSession: analyzeBlindSession,
