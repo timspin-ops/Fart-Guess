@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261123k" />
-  <script defer src="../js/dsp.js?v=20261123k"></script>
-  <script defer src="../js/audioEngine.js?v=20261123k"></script>
-  <script defer src="../js/storage.js?v=20261123k"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261123k"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261123k"></script>
-  <script defer src="js/labsStore.js?v=20261123k"></script>
-  <script defer src="js/labsAudioFx.js?v=20261123k"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261123k"></script>
-  <script defer src="js/labsPdfExport.js?v=20261123k"></script>
-  <script defer src="js/labsApp.js?v=20261123k"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261123l" />
+  <script defer src="../js/dsp.js?v=20261123l"></script>
+  <script defer src="../js/audioEngine.js?v=20261123l"></script>
+  <script defer src="../js/storage.js?v=20261123l"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261123l"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261123l"></script>
+  <script defer src="js/labsStore.js?v=20261123l"></script>
+  <script defer src="js/labsAudioFx.js?v=20261123l"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261123l"></script>
+  <script defer src="js/labsPdfExport.js?v=20261123l"></script>
+  <script defer src="js/labsApp.js?v=20261123l"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -34,9 +34,18 @@
           <div class="labs-brand-sub" id="labs-brand-sub">GUESS THE FART · ACOUSTIC LAB</div>
         </div>
       </div>
+
+      <div class="labs-topbar-settings-wrap">
+        <button type="button" id="btn-labs-settings" class="labs-gear-btn" aria-label="Settings and Info" aria-haspopup="true" aria-expanded="false" title="Settings, About &amp; Meet The Team">⚙️</button>
+        <div id="labs-settings-menu" class="labs-settings-menu hidden" role="menu">
+          <button type="button" id="btn-menu-about" class="labs-settings-item" role="menuitem"><span>ℹ️</span><span>About Toot Match Labs</span></button>
+          <button type="button" id="btn-menu-team" class="labs-settings-item" role="menuitem"><span>🏛️</span><span>Meet The Team</span></button>
+          <button type="button" id="btn-menu-howto" class="labs-settings-item" role="menuitem"><span>📖</span><span>How To Play</span></button>
+        </div>
+      </div>
     </header>
 
-    <!-- Instant Quick-Record Capture & Post-Save Bar -->
+    <!-- Instant Quick-Record Capture Bar (Active Recording / Sentry Listening Only) -->
     <div id="labs-quick-rec-bar" class="labs-glass-card labs-quick-bar hidden">
       <div id="labs-quick-capturing" class="labs-quick-capture-row">
         <div class="labs-quick-info">
@@ -57,15 +66,6 @@
         </div>
         <canvas id="labs-quick-wave" class="labs-quick-wave"></canvas>
         <button type="button" id="btn-quick-stop-save" class="labs-btn labs-btn-emerald labs-btn-sm">⏹ Stop &amp; Save</button>
-      </div>
-      <div id="labs-quick-saved" class="labs-quick-saved-row hidden">
-        <div class="labs-quick-saved-title">Saved: <strong id="labs-quick-saved-name">New Fart</strong></div>
-        <div class="labs-quick-saved-btns">
-          <button type="button" id="btn-quick-play" class="labs-btn labs-btn-blue labs-btn-sm">▶ Play</button>
-          <button type="button" id="btn-quick-guess" class="labs-btn labs-btn-emerald labs-btn-sm">🎯 Guess This Fart</button>
-          <button type="button" id="btn-quick-analyze" class="labs-btn labs-btn-purple labs-btn-sm">🧪 Analyze</button>
-          <button type="button" id="btn-quick-dismiss" class="labs-btn-ghost labs-btn-sm" aria-label="Close">✕</button>
-        </div>
       </div>
     </div>
 
@@ -111,11 +111,14 @@
         </div>
 
         <section class="labs-action-cards-grid" aria-label="Primary Actions">
-          <button type="button" id="btn-home-record-fart" class="labs-action-card labs-ac-emerald">
-            <span class="labs-ac-icon">🎙️</span>
+          <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
+            <div class="labs-ac-top-row">
+              <span class="labs-ac-icon">🎙️</span>
+              <button type="button" id="btn-home-sentry-toggle" class="labs-ac-sentry-pill active" aria-pressed="true" title="Toggle Sentry Auto Detect Mode">● AUTO DETECT: ON</button>
+            </div>
             <span class="labs-ac-title">Record New Fart</span>
-            <span class="labs-ac-desc">Instant 1-tap capture, auto-trimmed and saved to Vault.</span>
-          </button>
+            <span class="labs-ac-desc" id="home-rec-desc">Sentry mode armed — beeps on start &amp; stop, auto-saved to Vault.</span>
+          </div>
 
           <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
             <span class="labs-ac-icon">🎯</span>
@@ -128,17 +131,6 @@
             <span class="labs-ac-title">Analyze A Fart</span>
             <span class="labs-ac-desc">Deep FFT &amp; 3D lab reports for one fart, a guess, or all combined.</span>
           </button>
-        </section>
-
-        <section class="labs-glass-card labs-home-mode-bar" aria-label="Capture Mode">
-          <div class="labs-mode-bar-label">
-            <span class="labs-eyebrow">CAPTURE MODE</span>
-            <span class="labs-mode-bar-sub" id="home-mode-hint">Manual Record captures immediately · Auto Detect arms a 5s rolling trigger buffer</span>
-          </div>
-          <div class="labs-rec-mode-switch" role="group" aria-label="Recording Mode">
-            <button type="button" class="labs-rec-mode-btn active" data-rec-mode="manual">Manual Record</button>
-            <button type="button" class="labs-rec-mode-btn" data-rec-mode="auto">AUTO DETECT</button>
-          </div>
         </section>
 
         <section class="labs-glass-card labs-summary-card" aria-label="Lab Summary">
@@ -166,21 +158,6 @@
           </div>
         </section>
 
-        <section class="labs-glass-card labs-home-team-card" id="home-team-card" aria-label="Toot Match Labs Research Institute">
-          <div class="labs-home-team-copy">
-            <div class="labs-eyebrow">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
-            <div class="labs-home-team-tagline">Advancing The Science Of Gastrointestinal Acoustics Since 2026</div>
-            <div class="labs-home-team-avatars" aria-hidden="true">
-              <img src="img/team/bottomsworth.png" alt="Professor Reginald P. Bottomsworth" loading="lazy" />
-              <img src="img/team/turbulence.png" alt="Dr. Ava Turbulence" loading="lazy" />
-              <img src="img/team/wobble.png" alt="Dr. Penelope Wobble" loading="lazy" />
-              <img src="img/team/flatley.png" alt="Dr. Miles Flatley" loading="lazy" />
-              <img src="img/team/pufferton.png" alt="Dr. Winston Pufferton" loading="lazy" />
-            </div>
-          </div>
-          <button type="button" id="btn-home-meet-team" class="labs-btn-ghost labs-btn-sm">🏛️ Meet The Team →</button>
-        </section>
-
         <section class="labs-vault-section">
           <div class="labs-section-head">
             <div>
@@ -202,8 +179,8 @@
           </div>
           <div class="labs-vault-top-btns">
             <div class="labs-rec-mode-switch labs-vault-rec-switch" role="group" aria-label="Vault Record Mode">
-              <button type="button" class="labs-rec-mode-btn active" data-rec-mode="manual">Manual Record</button>
-              <button type="button" class="labs-rec-mode-btn" data-rec-mode="auto">AUTO DETECT</button>
+              <button type="button" class="labs-rec-mode-btn active" data-rec-mode="auto">Sentry (Auto Detect)</button>
+              <button type="button" class="labs-rec-mode-btn" data-rec-mode="manual">Manual Record</button>
             </div>
             <button type="button" id="btn-vault-record" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
             <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
@@ -322,22 +299,10 @@
 
       <!-- ==================== GUESS MODE ==================== -->
       <section id="labs-view-guess" class="labs-view">
-        <div class="labs-subview-bar labs-wrap-bar">
+        <div class="labs-subview-bar">
           <div>
             <div class="labs-eyebrow">GAME MODE · GUESS THE FART</div>
             <h2 class="labs-section-heading">Guess The Fart</h2>
-          </div>
-          <div class="labs-vault-top-btns">
-            <button type="button" id="btn-guess-random" class="labs-btn labs-btn-purple labs-btn-sm">🎲 Random Fart</button>
-            <button type="button" id="btn-guess-record-new" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
-          </div>
-        </div>
-
-        <div class="labs-glass-card labs-guess-explainer">
-          <div class="labs-guess-explainer-lines">
-            <span><strong>1.</strong> Listen to the original fart.</span>
-            <span><strong>2.</strong> Try to recreate what you hear.</span>
-            <span><strong>3.</strong> Science will determine who came closest.</span>
           </div>
         </div>
 
@@ -350,8 +315,19 @@
         </div>
 
         <div id="guess-standard-pane">
+          <div class="labs-glass-card labs-guess-explainer" id="guess-standard-explainer">
+            <div class="labs-guess-explainer-lines">
+              <span><strong>1.</strong> Listen to the original fart.</span>
+              <span><strong>2.</strong> Try to recreate what you hear.</span>
+              <span><strong>3.</strong> Science will determine who came closest.</span>
+            </div>
+          </div>
+
           <div class="labs-vault-strip-wrap">
-            <div class="labs-strip-label">STEP 1 · Select A Fart</div>
+            <div class="labs-strip-head">
+              <div class="labs-strip-label">STEP 1 · Select Original Fart</div>
+              <button type="button" id="btn-guess-random" class="labs-btn labs-btn-purple labs-btn-xs">🎲 Random Fart</button>
+            </div>
             <div id="guess-vault-strip" class="labs-vault-strip"></div>
           </div>
 
@@ -392,7 +368,7 @@
           <section class="labs-glass-card labs-challenge-card" id="guess-recorder-card">
             <div class="labs-ch-card-head">
               <div>
-                <div class="labs-eyebrow">STEP 4 &amp; 5 · RECORD GUESS</div>
+                <div class="labs-eyebrow">STEP 2 · RECORD GUESS</div>
                 <h3 class="labs-ch-title">Now try to recreate the fart you just heard.</h3>
                 <div class="labs-ch-meta" id="guess-rec-status">Tap Record Guess to record the next player's recreation.</div>
               </div>
@@ -774,6 +750,66 @@
       <div id="labs-cm-experts" class="labs-cm-experts"></div>
 
       <div id="labs-cm-notes" class="labs-footnotes"></div>
+    </div>
+  </div>
+
+  <!-- Humorous About Toot Match Labs Modal -->
+  <div id="labs-about-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-about-title">
+    <div class="labs-glass-card labs-modal-card labs-about-sheet">
+      <div class="labs-eyebrow">TOOT MATCH LABS · INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
+      <h3 id="labs-about-title" class="labs-section-heading">About The Institute</h3>
+      <p class="labs-modal-copy">Founded in 2026 on a question nobody asked: what if backyard party flatulence received aerospace-grade acoustic signal processing?</p>
+      <div class="labs-about-block">
+        <strong>A.S.S. (Acoustic Similarity System v4.2)</strong>
+        <p>Every similarity verdict, 3D spectrogram, thunder quotient, and mouth-fart authenticity suspicion score runs 100% deterministically on your device. No emissions ever leave your phone unless you explicitly hit Email or Share.</p>
+      </div>
+      <div class="labs-about-block">
+        <strong>Official Research Mandate</strong>
+        <p>Advancing the science of gastrointestinal acoustics while maintaining strict laboratory decorum, unblinking peer review, and suspiciously generous coffee budgets.</p>
+      </div>
+      <div class="labs-modal-actions labs-about-footer">
+        <button type="button" id="btn-about-open-team" class="labs-btn labs-btn-blue labs-btn-sm">🏛️ Meet The Team</button>
+        <button type="button" id="btn-about-close" class="labs-btn-ghost labs-btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- First-Launch Welcome & Instructional Splash Modal -->
+  <div id="labs-splash-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-splash-title">
+    <div class="labs-glass-card labs-modal-card labs-splash-sheet">
+      <div class="labs-hero-badge">OFFICIAL FIELD BRIEFING · GETTING STARTED</div>
+      <h3 id="labs-splash-title" class="labs-section-heading">Welcome To Toot Match Labs</h3>
+      <p class="labs-modal-copy">Record authentic audio events, challenge friends to recreate them, and let our Institute settle the scoreboard scientifically.</p>
+      <div class="labs-splash-steps">
+        <div class="labs-splash-step">
+          <span class="labs-splash-num">1</span>
+          <div>
+            <strong>Record New Fart (Sentry Auto Detect ON)</strong>
+            <p>Tap Record New Fart and set your phone down. It beeps when armed, captures the event automatically, beeps on finish, and locks it in the Vault.</p>
+          </div>
+        </div>
+        <div class="labs-splash-step">
+          <span class="labs-splash-num">2</span>
+          <div>
+            <strong>Guess The Fart</strong>
+            <p>Pick a specimen (or hit Random Fart), play it for everyone in the room, then let each friend record their best imitation.</p>
+          </div>
+        </div>
+        <div class="labs-splash-step">
+          <span class="labs-splash-num">3</span>
+          <div>
+            <strong>Fartnalysis &amp; Crown The Winner</strong>
+            <p>Our scientists evaluate pitch, flutter, pressure, and Authenticity Analysis to declare a winner and export full PDF + Audio reports.</p>
+          </div>
+        </div>
+      </div>
+      <div class="labs-splash-foot">
+        <label class="labs-check" for="chk-splash-hide">
+          <input type="checkbox" id="chk-splash-hide" checked />
+          <span>Don't show on startup</span>
+        </label>
+        <button type="button" id="btn-splash-start" class="labs-btn labs-btn-emerald">Got It — Let's Play</button>
+      </div>
     </div>
   </div>
 

@@ -72,7 +72,7 @@
     renameTarget: null,
     activeRecStopper: null,
     recordingKind: null,
-    recordMode: 'manual',
+    recordMode: 'auto',
     resultTimers: [],
     vaultDoorTimers: [],
     analysisTimers: [],
@@ -789,12 +789,19 @@
       btns[i].classList.toggle('active', btns[i].getAttribute('data-rec-mode') === next);
     }
 
-    var homeHint = $('home-mode-hint');
-    if (homeHint) {
-      homeHint.textContent =
+    var sentryBtn = $('btn-home-sentry-toggle');
+    if (sentryBtn) {
+      sentryBtn.classList.toggle('active', next === 'auto');
+      sentryBtn.setAttribute('aria-pressed', next === 'auto' ? 'true' : 'false');
+      sentryBtn.textContent = next === 'auto' ? '● AUTO DETECT: ON' : '○ AUTO DETECT: OFF';
+    }
+
+    var recDesc = $('home-rec-desc');
+    if (recDesc) {
+      recDesc.textContent =
         next === 'auto'
-          ? 'AUTO DETECT active on Record New Fart: beeps on arm, listens with 5s rolling buffer & beeps after auto-stop'
-          : 'Manual Record captures immediately · Auto Detect arms a 5s rolling trigger buffer';
+          ? 'Sentry mode armed — beeps on start & stop, auto-saved to Vault.'
+          : 'Manual 1-tap capture — beeps on start & stop, saved to Vault.';
     }
   }
 
@@ -908,7 +915,55 @@
   }
 
   /* ==================== NAVIGATION ==================== */
+  function closeSettingsMenu() {
+    var menu = $('labs-settings-menu');
+    var gear = $('btn-labs-settings');
+    if (menu) menu.classList.add('hidden');
+    if (gear) gear.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleSettingsMenu(ev) {
+    if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+    var menu = $('labs-settings-menu');
+    var gear = $('btn-labs-settings');
+    if (!menu) return;
+    var nextOpen = menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', !nextOpen);
+    if (gear) gear.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+  }
+
+  function openAboutModal() {
+    closeSettingsMenu();
+    var m = $('labs-about-modal');
+    if (m) m.classList.remove('hidden');
+  }
+
+  function closeAboutModal() {
+    var m = $('labs-about-modal');
+    if (m) m.classList.add('hidden');
+  }
+
+  function openSplashModal() {
+    closeSettingsMenu();
+    var m = $('labs-splash-modal');
+    if (m) m.classList.remove('hidden');
+  }
+
+  function closeSplashModal() {
+    var m = $('labs-splash-modal');
+    if (m) m.classList.add('hidden');
+    var chk = $('chk-splash-hide');
+    if (chk && chk.checked) {
+      try {
+        if (typeof localStorage !== 'undefined' && localStorage) {
+          localStorage.setItem('toot_labs_seen_splash_v1', '1');
+        }
+      } catch (e) {}
+    }
+  }
+
   function showView(viewKey) {
+    closeSettingsMenu();
     var prevView = state.view;
     if (prevView === 'result' && viewKey !== 'result') {
       clearResultAnimations();
@@ -1073,7 +1128,6 @@
     var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
     var bar = $('labs-quick-rec-bar');
     var capPane = $('labs-quick-capturing');
-    var savedPane = $('labs-quick-saved');
     var timerEl = $('labs-quick-timer');
     var waveEl = $('labs-quick-wave');
     var stopBtn = $('btn-quick-stop-save');
@@ -1086,7 +1140,6 @@
 
     bar.classList.remove('hidden');
     capPane.classList.remove('hidden');
-    savedPane.classList.add('hidden');
     stopBtn.disabled = false;
 
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
@@ -1159,10 +1212,7 @@
             subtitle: 'Cataloging "' + getSampleName(saved) + '" in Bio-Acoustic Vault'
           },
           function () {
-            bar.classList.remove('hidden');
-            capPane.classList.add('hidden');
-            savedPane.classList.remove('hidden');
-            $('labs-quick-saved-name').textContent = getSampleName(saved);
+            bar.classList.add('hidden');
             showToast('Saved "' + getSampleName(saved) + '" to Fart Vault!');
           }
         );
@@ -1182,7 +1232,7 @@
       };
 
       TootApp.Audio.startAutoDetect({
-        settleSec: 0.24,
+        settleSec: 0.28,
         onStarted: function () {
           if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStartBeep === 'function') {
             TootLabs.AudioFx.playAutoDetectStartBeep();
@@ -1241,12 +1291,20 @@
     state.activeRecStopper = function () {
       stopBtn.disabled = true;
       timerEl.textContent = 'Auto-clipping & saving…';
-      TootApp.Audio.stopRecording().then(finalizeQuick);
+      TootApp.Audio.stopRecording().then(function (res) {
+        if (res && res.ok && TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
+          TootLabs.AudioFx.playAutoDetectStopBeep();
+        }
+        finalizeQuick(res);
+      });
     };
 
     TootApp.Audio.startRecording({
       maxDurationSec: 7,
       onStarted: function () {
+        if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStartBeep === 'function') {
+          TootLabs.AudioFx.playAutoDetectStartBeep();
+        }
         timerEl.textContent = 'Recording 0.0s…';
         refreshMicDevices();
       },
@@ -1255,6 +1313,9 @@
         drawLiveWaveform(waveEl, timeData, rms);
       },
       onAutoStop: function (res) {
+        if (res && res.ok && TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
+          TootLabs.AudioFx.playAutoDetectStopBeep();
+        }
         finalizeQuick(res);
       }
     }).catch(function (err) {
@@ -2790,6 +2851,61 @@
         showToast('Fart deleted from Vault');
       });
     });
+
+    // Top-right Settings Gear Menu, About Modal & Instructional Splash
+    var gearBtn = $('btn-labs-settings');
+    if (gearBtn) gearBtn.addEventListener('click', toggleSettingsMenu);
+
+    var menuAboutBtn = $('btn-menu-about');
+    if (menuAboutBtn) menuAboutBtn.addEventListener('click', openAboutModal);
+
+    var menuTeamBtn = $('btn-menu-team');
+    if (menuTeamBtn) {
+      menuTeamBtn.addEventListener('click', function () {
+        closeSettingsMenu();
+        openTeamView();
+      });
+    }
+
+    var menuHowToBtn = $('btn-menu-howto');
+    if (menuHowToBtn) menuHowToBtn.addEventListener('click', openSplashModal);
+
+    var aboutModal = $('labs-about-modal');
+    var aboutCloseBtn = $('btn-about-close');
+    var aboutTeamBtn = $('btn-about-open-team');
+    if (aboutCloseBtn) aboutCloseBtn.addEventListener('click', closeAboutModal);
+    if (aboutTeamBtn) {
+      aboutTeamBtn.addEventListener('click', function () {
+        closeAboutModal();
+        openTeamView();
+      });
+    }
+    if (aboutModal) {
+      aboutModal.addEventListener('click', function (ev) {
+        if (ev.target === aboutModal) closeAboutModal();
+      });
+    }
+
+    var splashModal = $('labs-splash-modal');
+    var splashStartBtn = $('btn-splash-start');
+    if (splashStartBtn) splashStartBtn.addEventListener('click', closeSplashModal);
+    if (splashModal) {
+      splashModal.addEventListener('click', function (ev) {
+        if (ev.target === splashModal) closeSplashModal();
+      });
+    }
+
+    if (typeof document.addEventListener === 'function') {
+      document.addEventListener('click', function (ev) {
+        var menu = $('labs-settings-menu');
+        var gear = $('btn-labs-settings');
+        if (!menu || menu.classList.contains('hidden')) return;
+        var tgt = ev && ev.target;
+        if (tgt === gear || (gear && typeof gear.contains === 'function' && gear.contains(tgt))) return;
+        if (tgt === menu || (typeof menu.contains === 'function' && menu.contains(tgt))) return;
+        closeSettingsMenu();
+      });
+    }
   }
 
   /* ==================== EVENT BINDINGS ==================== */
@@ -2810,28 +2926,30 @@
       });
     });
 
-    // Global Quick Record & Bar Actions
+    // Global Quick Record Action
     $('btn-quick-stop-save').addEventListener('click', function () {
       if (state.recordingKind === 'quick' && state.activeRecStopper) {
         state.activeRecStopper();
       }
     });
-    $('btn-quick-play').addEventListener('click', function () {
-      var s = getSampleById(state.quickSavedId);
-      if (s) TootApp.Audio.playSound(s.samples, s.sampleRate, { channel: 'quick_play' });
-    });
-    $('btn-quick-guess').addEventListener('click', function () {
-      if (state.quickSavedId) openGuessMode(state.quickSavedId);
-    });
-    $('btn-quick-analyze').addEventListener('click', function () {
-      if (state.quickSavedId) openFartnalysis('original', state.quickSavedId, null);
-    });
-    $('btn-quick-dismiss').addEventListener('click', function () {
-      $('labs-quick-rec-bar').classList.add('hidden');
-    });
 
-    // Home 3 Primary Action Cards & Meet The Team
-    $('btn-home-record-fart').addEventListener('click', startQuickRecordFart);
+    // Home 3 Primary Action Cards & Inline Record Sentry Toggle
+    var homeRecBtn = $('btn-home-record-fart');
+    homeRecBtn.addEventListener('click', startQuickRecordFart);
+    homeRecBtn.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        startQuickRecordFart();
+      }
+    });
+    var homeSentryBtn = $('btn-home-sentry-toggle');
+    if (homeSentryBtn) {
+      homeSentryBtn.addEventListener('click', function (ev) {
+        if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+        if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+        setRecordMode(state.recordMode === 'auto' ? 'manual' : 'auto');
+      });
+    }
     $('btn-home-guess-fart').addEventListener('click', function () {
       openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id));
     });
@@ -2846,9 +2964,6 @@
       renderVaultView();
       showView('vault');
     });
-    if ($('btn-home-meet-team')) {
-      $('btn-home-meet-team').addEventListener('click', openTeamView);
-    }
 
     // Vault View Buttons & Airlock Door
     $('btn-vault-record').addEventListener('click', startQuickRecordFart);
@@ -2926,7 +3041,6 @@
     if ($('btn-guess-random')) {
       $('btn-guess-random').addEventListener('click', pickRandomGuessTarget);
     }
-    $('btn-guess-record-new').addEventListener('click', startQuickRecordFart);
     $('btn-guess-empty-rec').addEventListener('click', startQuickRecordFart);
 
     function playGuessTargetFart() {
@@ -3098,6 +3212,15 @@
     initMicControls();
     initModals();
     initNavigationAndActions();
+    setRecordMode(state.recordMode);
+
+    var seenSplash = false;
+    try {
+      seenSplash = typeof localStorage !== 'undefined' && localStorage && localStorage.getItem('toot_labs_seen_splash_v1') === '1';
+    } catch (e) {}
+    if (!seenSplash) {
+      openSplashModal();
+    }
 
     TootLabs.Store.loadVaultSamples()
       .then(function (list) {
@@ -3124,6 +3247,9 @@
     getState: function () { return state; },
     showView: showView,
     openTeamView: openTeamView,
+    openAboutModal: openAboutModal,
+    openSplashModal: openSplashModal,
+    closeSplashModal: closeSplashModal,
     openGuessMode: openGuessMode,
     setGuessSubMode: setGuessSubMode,
     addAnotherGuesser: addAnotherGuesser,
