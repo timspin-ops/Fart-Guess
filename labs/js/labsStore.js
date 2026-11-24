@@ -7,6 +7,9 @@
   var ATTEMPTS_DB_NAME = 'FartGuessLabsAttemptsDB';
   var ATTEMPTS_DB_VER = 1;
   var ATTEMPTS_STORE = 'attempts';
+  var MAX_DEFAULT_MEGAMIX = 20;
+  var preloadInFlight = typeof Map !== 'undefined' ? new Map() : null;
+  var preloadCatalogCache = null;
 
   var SPECIMEN_NICKNAMES = [
     'Seattle Thunder',
@@ -494,16 +497,157 @@
       });
   }
 
+  function loadAllAttempts() {
+    return openAttemptsDB()
+      .then(function (db) {
+        return new Promise(function (resolve, reject) {
+          var tx = db.transaction(ATTEMPTS_STORE, 'readonly');
+          var store = tx.objectStore(ATTEMPTS_STORE);
+          var req = store.getAll();
+          req.onsuccess = function () {
+            var list = (req.result || []).map(hydrateAttempt).filter(Boolean);
+            list.sort(function (a, b) {
+              return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+            list.forEach(function (item) {
+              memoryAttempts.set(item.id, item);
+            });
+            resolve(list);
+          };
+          req.onerror = function () {
+            reject(req.error);
+          };
+        });
+      })
+      .catch(function () {
+        var rows = [];
+        memoryAttempts.forEach(function (val) {
+          rows.push(val);
+        });
+        rows.sort(function (a, b) {
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        return rows;
+      });
+  }
+
   /* ==================== HIGH-LEVEL VAULT OPERATIONS ==================== */
+  function loadPreloadCatalog() {
+    if (typeof root.fetch !== 'function') return Promise.resolve([]);
+    if (root.location && root.location.protocol === 'file:') return Promise.resolve([]);
+    return root
+      .fetch('/api/preloads', { cache: 'no-store' })
+      .then(function (resp) {
+        if (!resp || !resp.ok) return { files: [] };
+        return resp.json();
+      })
+      .then(function (data) {
+        var files = data && Array.isArray(data.files) ? data.files : [];
+        preloadCatalogCache = files.map(function (item, idx) {
+          var label = item.name || ('Vault Fart #' + (idx + 1));
+          return {
+            id: item.id || ('preload_' + idx),
+            name: label,
+            displayName: label,
+            emoji: '💨',
+            description: 'Built-in Default Vault specimen',
+            isBuiltIn: true,
+            preloadUrl: item.url,
+            filename: item.filename || label,
+            createdAt: idx + 1,
+            sampleRate: 44100,
+            samples: null,
+            rawSamples: null,
+            features: null,
+            loaded: false
+          };
+        });
+        return preloadCatalogCache.slice();
+      })
+      .catch(function () {
+        return preloadCatalogCache ? preloadCatalogCache.slice() : [];
+      });
+  }
+
+  function ensureSampleLoaded(sound) {
+    if (!sound) return Promise.resolve(null);
+    if (sound.samples && sound.samples.length > 0) {
+      sound.loaded = true;
+      if (!sound.features && root.TootApp && root.TootApp.DSP) {
+        sound.features = root.TootApp.DSP.extractFeatures(sound.samples, sound.sampleRate || 44100);
+      }
+      return Promise.resolve(sound);
+    }
+    if (!sound.preloadUrl || typeof root.fetch !== 'function') {
+      return Promise.resolve(sound);
+    }
+    if (preloadInFlight && preloadInFlight.has(sound.id)) {
+      return preloadInFlight.get(sound.id);
+    }
+    var p = root
+      .fetch(sound.preloadUrl)
+      .then(function (resp) {
+        if (!resp || !resp.ok) {
+          throw new Error('Failed to load audio specimen: ' + (sound.name || sound.id));
+        }
+        return resp.arrayBuffer();
+      })
+      .then(function (arrBuf) {
+        var Audio = root.TootApp && root.TootApp.Audio;
+        if (!Audio || typeof Audio.ensureContext !== 'function') {
+          throw new Error('Web Audio API unavailable to decode preloaded sound.');
+        }
+        return Audio.ensureContext().then(function (ctx) {
+          return ctx.decodeAudioData(arrBuf).then(function (audioBuf) {
+            var mono = Audio.audioBufferToMono(audioBuf);
+            var DSP = root.TootApp && root.TootApp.DSP;
+            var clipInfo = DSP && typeof DSP.autoClipAudio === 'function' ? DSP.autoClipAudio(mono.samples, mono.sampleRate) : null;
+            var finalSamples =
+              clipInfo && clipInfo.ok && clipInfo.clipped && clipInfo.clipped.length > 0
+                ? clipInfo.clipped
+                : mono.samples;
+            sound.rawSamples = mono.samples;
+            sound.samples = finalSamples;
+            sound.sampleRate = mono.sampleRate || 44100;
+            sound.clipInfo = clipInfo;
+            sound.loaded = true;
+            sound.features = DSP ? DSP.extractFeatures(finalSamples, sound.sampleRate) : null;
+            if (preloadInFlight) preloadInFlight.delete(sound.id);
+            return sound;
+          });
+        });
+      })
+      .catch(function (err) {
+        if (preloadInFlight) preloadInFlight.delete(sound.id);
+        throw err;
+      });
+    if (preloadInFlight) preloadInFlight.set(sound.id, p);
+    return p;
+  }
+
   function loadVaultSamples() {
     var storage = root.TootApp && root.TootApp.Storage;
-    if (!storage) return Promise.resolve([]);
-    return storage.loadCustomSounds().then(function (list) {
-      var rows = (list || []).slice();
-      for (var i = 0; i < rows.length; i++) {
-        ensureSampleMeta(rows[i]);
-      }
-      return rows;
+    if (!storage) return loadPreloadCatalog();
+    return Promise.all([storage.loadCustomSounds(), loadPreloadCatalog()]).then(function (res) {
+      var customRows = (res[0] || []).slice().map(function (s) {
+        s.isBuiltIn = false;
+        s.loaded = Boolean(s.samples && s.samples.length > 0);
+        ensureSampleMeta(s);
+        return s;
+      });
+      var seen = new Set(customRows.map(function (r) { return r.id; }));
+      var builtIns = (res[1] || []).filter(function (b) { return !seen.has(b.id); });
+      var meta = loadMeta();
+      builtIns.forEach(function (b) {
+        var m = meta.samples[b.id];
+        if (m && m.customRenamed && m.nickname) {
+          b.name = m.nickname;
+          b.displayName = m.nickname;
+        } else {
+          b.displayName = b.name;
+        }
+      });
+      return customRows.concat(builtIns);
     });
   }
 
@@ -563,7 +707,7 @@
     sound.name = clean;
     sound.displayName = clean;
 
-    if (!storage) return Promise.resolve(sound);
+    if (!storage || sound.isBuiltIn) return Promise.resolve(sound);
     return storage.saveCustomSound(sound).then(function (saved) {
       saved.displayName = clean;
       return saved;
@@ -750,7 +894,7 @@
 
       prepared.push({
         sound: s,
-        name: ensureNickname(s),
+        name: s.isBuiltIn || s.sampleId ? (s.displayName || s.name || 'Specimen') : ensureNickname(s),
         buf: buf,
         feat: feat || {},
         pitchHz: effHz,
@@ -1055,12 +1199,15 @@
     SPECIMEN_NICKNAMES: SPECIMEN_NICKNAMES,
     LEGENDARY_TITLES: LEGENDARY_TITLES,
     GROUP_SORT_OPTIONS: GROUP_SORT_OPTIONS,
+    MAX_DEFAULT_MEGAMIX: MAX_DEFAULT_MEGAMIX,
     ensureNickname: ensureNickname,
     computeExactScore: computeExactScore,
     getRankForScore: getRankForScore,
     getRewardTier: getRewardTier,
     pickLegendaryTitle: pickLegendaryTitle,
     buildScientificVerdict: buildScientificVerdict,
+    loadPreloadCatalog: loadPreloadCatalog,
+    ensureSampleLoaded: ensureSampleLoaded,
     loadVaultSamples: loadVaultSamples,
     saveNewSpecimen: saveNewSpecimen,
     renameSample: renameSample,
@@ -1072,6 +1219,7 @@
     buildComparisonReportText: buildComparisonReportText,
     buildGroupAnalysisReportText: buildGroupAnalysisReportText,
     loadAttemptsForSample: loadAttemptsForSample,
+    loadAllAttempts: loadAllAttempts,
     getSampleStats: getSampleStats,
     getSummaryStats: getSummaryStats
   };

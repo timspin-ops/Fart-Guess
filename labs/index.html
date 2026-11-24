@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261123r" />
-  <script defer src="../js/dsp.js?v=20261123r"></script>
-  <script defer src="../js/audioEngine.js?v=20261123r"></script>
-  <script defer src="../js/storage.js?v=20261123r"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261123r"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261123r"></script>
-  <script defer src="js/labsStore.js?v=20261123r"></script>
-  <script defer src="js/labsAudioFx.js?v=20261123r"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261123r"></script>
-  <script defer src="js/labsPdfExport.js?v=20261123r"></script>
-  <script defer src="js/labsApp.js?v=20261123r"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124a" />
+  <script defer src="../js/dsp.js?v=20261124a"></script>
+  <script defer src="../js/audioEngine.js?v=20261124a"></script>
+  <script defer src="../js/storage.js?v=20261124a"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124a"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124a"></script>
+  <script defer src="js/labsStore.js?v=20261124a"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124a"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124a"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124a"></script>
+  <script defer src="js/labsApp.js?v=20261124a"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -66,7 +66,10 @@
           </div>
         </div>
         <canvas id="labs-quick-wave" class="labs-quick-wave"></canvas>
-        <button type="button" id="btn-quick-stop-save" class="labs-btn labs-btn-emerald labs-btn-sm">⏹ Stop &amp; Save</button>
+        <div class="labs-quick-btns">
+          <button type="button" id="btn-quick-stop-save" class="labs-btn labs-btn-emerald labs-btn-sm">⏹ Stop &amp; Save</button>
+          <button type="button" id="btn-quick-cancel-auto" class="labs-btn-ghost labs-btn-sm hidden">✕ Disarm</button>
+        </div>
       </div>
     </div>
 
@@ -108,14 +111,14 @@
           <div class="labs-hero-badge">THE ACOUSTIC REFEREE FOR HUMAN SOUND</div>
           <h1 class="labs-hero-title">TOOT MATCH LABS</h1>
           <div class="labs-hero-kicker">Guess The Fart — Judged by Science.</div>
-          <p class="labs-hero-sub">Pick a saved fart name and guess blindly before hearing it — or tap Play First for Mimic Mode. Our lab ranks the room and crowns the winner.</p>
+          <p class="labs-hero-sub">Pick a Mystery Fart name and guess blindly before hearing it — or tap Play First for Mimic Mode. Compare side-by-side 3D spectrum plots and crown the winner.</p>
         </div>
 
         <section class="labs-action-cards-grid" aria-label="Primary Actions">
           <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
             <span class="labs-ac-icon">🎯</span>
             <span class="labs-ac-title">Guess The Fart</span>
-            <span class="labs-ac-desc">See the name, guess blindly — then hear the reveal &amp; score. Or tap Play First for Mimic Mode.</span>
+            <span class="labs-ac-desc">Guess a Mystery Fart blindly before the reveal &amp; 3D spectrum comparison — or tap Play First for Mimic Mode.</span>
           </button>
 
           <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
@@ -179,14 +182,15 @@
             <h2 class="labs-section-heading">Your Fart Vault</h2>
           </div>
           <div class="labs-vault-top-btns">
-            <div class="labs-rec-mode-switch labs-vault-rec-switch" role="group" aria-label="Vault Record Mode">
-              <button type="button" class="labs-rec-mode-btn active" data-rec-mode="auto">Sentry (Auto Detect)</button>
-              <button type="button" class="labs-rec-mode-btn" data-rec-mode="manual">Manual Record</button>
-            </div>
-            <button type="button" id="btn-vault-record" class="labs-btn labs-btn-emerald labs-btn-sm">● Record New Fart</button>
             <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
             <button type="button" id="btn-vault-reseal" class="labs-btn-ghost labs-btn-sm" title="Close and re-open Vault airlock">🔒 Re-Seal</button>
           </div>
+        </div>
+
+        <div id="vault-filter-bar" class="labs-vault-filter-bar hidden" role="group" aria-label="Vault Specimen Filter">
+          <button type="button" class="labs-format-btn active" data-vault-filter="all">All Farts</button>
+          <button type="button" class="labs-format-btn" data-vault-filter="recorded">Recorded Real Farts</button>
+          <button type="button" class="labs-format-btn" data-vault-filter="defaults">Default Pack</button>
         </div>
 
         <div id="vault-chamber" class="labs-vault-chamber">
@@ -303,8 +307,8 @@
         <div id="guess-standard-pane">
           <div class="labs-game-top-bar">
             <div class="labs-game-mode-wrap">
-              <span id="guess-mode-pill" class="labs-mode-pill">🎯 GUESS THE FART · HIDDEN</span>
-              <button type="button" id="btn-guess-reset-blind" class="labs-link-chip hidden">🔒 Back to Blind</button>
+              <span id="guess-mode-pill" class="labs-mode-pill">🎯 GUESS THE FART · MYSTERY</span>
+              <button type="button" id="btn-guess-reset-blind" class="labs-link-chip hidden">🔒 Back to Mystery</button>
             </div>
             <div class="labs-play-format-switch" role="group" aria-label="Player Count">
               <button type="button" id="btn-play-solo" class="labs-format-btn active" data-play-format="solo">Solo</button>
@@ -315,7 +319,7 @@
           <!-- Compact Mystery Clue Bar (Hides waveform & duration until reveal) -->
           <section class="labs-glass-card labs-clue-bar" id="guess-clue-bar">
             <div id="guess-empty-target" class="labs-clue-empty hidden">
-              <span>No saved farts yet — tap <strong>Record New Fart</strong> below!</span>
+              <span>No saved farts yet — head to <strong>Home</strong> and tap <strong>Record New Fart</strong>!</span>
             </div>
 
             <div id="guess-loaded-pane">
@@ -326,7 +330,7 @@
                     <h2 id="guess-target-name" class="labs-clue-name">No Fart Selected</h2>
                     <span id="guess-target-dur" class="labs-chip labs-chip-green hidden">0.00s</span>
                   </div>
-                  <div id="guess-target-meta" class="labs-clue-meta">Audio &amp; waveform hidden until reveal</div>
+                  <div id="guess-target-meta" class="labs-clue-meta">Mystery audio hidden until reveal</div>
                 </div>
                 <div class="labs-clue-actions">
                   <button type="button" id="btn-guess-random" class="labs-btn labs-btn-purple labs-btn-xs">🎲 Next</button>
@@ -345,7 +349,7 @@
             </div>
           </section>
 
-          <!-- Above-the-Fold Hero Actions (No Auto Detect controls inside) -->
+          <!-- Above-the-Fold Hero Actions -->
           <section class="labs-glass-card labs-game-hero-card" id="guess-recorder-card">
             <div class="labs-game-hero-row">
               <button type="button" id="btn-guess-rec" class="labs-game-primary-btn">
@@ -362,16 +366,11 @@
               </button>
             </div>
 
-            <button type="button" id="btn-guess-record-new" class="labs-game-record-btn">
-              <span class="labs-game-rec-left"><span>🎙️</span><strong>Record New Fart</strong></span>
-              <span id="guess-rec-sentry-tag" class="labs-chip labs-chip-green">Sentry ON</span>
-            </button>
-
             <div id="guess-rec-status" class="labs-game-status hidden"></div>
             <canvas id="guess-live-wave" class="labs-live-wave hidden"></canvas>
 
             <div id="guess-reveal-banner" class="labs-reveal-banner hidden" role="status" aria-live="polite">
-              <div id="guess-reveal-text" class="labs-reveal-text">🔒 Guess locked! Revealing the real fart…</div>
+              <div id="guess-reveal-text" class="labs-reveal-text">🔒 Guess locked! Revealing the Mystery Fart…</div>
               <div class="labs-reveal-bar-track"><div id="guess-reveal-bar" class="labs-reveal-bar-fill"></div></div>
             </div>
 
@@ -390,11 +389,11 @@
             </div>
           </section>
 
-          <!-- Inline Winner & Standings Right Underneath the Guess Button -->
+          <!-- Inline Score, Rankings & Side-by-Side 3D Spectrum Plot Right Underneath -->
           <section id="guess-inline-results" class="labs-glass-card labs-inline-results hidden" aria-live="polite">
             <div class="labs-inline-res-head">
               <div>
-                <div class="labs-eyebrow">WHO GUESSED THE FART BEST?</div>
+                <div class="labs-eyebrow" id="res-heading-eyebrow">WHO GUESSED THE FART BEST?</div>
                 <div class="labs-res-context-sub" id="res-sample-context">RESULTS LEADERBOARD</div>
               </div>
               <span class="labs-chip labs-chip-green" id="res-winner-chip">🏆 1st Place</span>
@@ -434,19 +433,51 @@
             </div>
 
             <div class="labs-res-lb-card labs-res-lb-inline" id="res-leaderboard-card">
-              <div class="labs-eyebrow" style="margin-bottom:6px">WINNER &amp; GUESSER RANKINGS</div>
+              <div class="labs-eyebrow" id="res-lb-eyebrow" style="margin-bottom:6px">WINNER &amp; GUESSER RANKINGS</div>
               <div id="res-leaderboard-list" class="labs-res-lb-list"></div>
             </div>
 
+            <div id="res-spec3d-bay" class="labs-inline-spec3d-bay">
+              <div class="labs-inline-spec3d-head">
+                <div>
+                  <div class="labs-eyebrow">SIDE-BY-SIDE 3D SPECTRUM PLOT</div>
+                  <div class="labs-inline-spec3d-sub" id="res-spec3d-b-title">Original vs Your Guess</div>
+                </div>
+                <div class="labs-spec-presets" role="group" aria-label="3D View Presets">
+                  <button type="button" class="labs-mini-chip active" data-res-preset="3d">3D</button>
+                  <button type="button" class="labs-mini-chip" data-res-preset="top">Top</button>
+                  <button type="button" class="labs-mini-chip" data-res-preset="side">Side</button>
+                  <button type="button" class="labs-mini-chip" data-res-preset="spin">Spin</button>
+                </div>
+              </div>
+
+              <div class="labs-inline-spec3d-grid">
+                <div class="labs-inline-spec3d-pane">
+                  <span class="labs-inline-spec3d-tag tag-orig" id="res-spec3d-lbl-a">Original Fart</span>
+                  <canvas id="res-spec3d-orig" class="labs-inline-spec3d-canvas"></canvas>
+                </div>
+                <div class="labs-inline-spec3d-pane">
+                  <span class="labs-inline-spec3d-tag tag-guess" id="res-spec3d-lbl-b">Your Guess</span>
+                  <canvas id="res-spec3d-guess" class="labs-inline-spec3d-canvas"></canvas>
+                </div>
+              </div>
+
+              <div class="labs-inline-spec3d-audio">
+                <button type="button" id="btn-res-play-orig" class="labs-btn labs-btn-emerald labs-btn-sm">▶ Play Original</button>
+                <button type="button" id="btn-res-play-guess" class="labs-btn labs-btn-orange labs-btn-sm">▶ Play Guess</button>
+                <button type="button" id="btn-res-play-both" class="labs-btn labs-btn-purple labs-btn-sm">🔊 Play Both Together</button>
+              </div>
+            </div>
+
             <div class="labs-verdict-box-inline">
-              <div class="labs-eyebrow">SCIENTIFIC EXPLANATION · WINNER COMPARISON</div>
+              <div class="labs-eyebrow" id="res-verdict-eyebrow">SCIENTIFIC EXPLANATION · WINNER COMPARISON</div>
               <p class="labs-verdict-text" id="res-verdict-text"></p>
             </div>
 
             <div class="labs-result-actions">
               <button type="button" id="btn-res-replay" class="labs-btn labs-btn-blue labs-btn-sm">⚡ Play Real → Winner</button>
               <button type="button" id="btn-res-compare" class="labs-btn labs-btn-purple labs-btn-sm">🧪 Full Fartnalysis</button>
-              <button type="button" id="btn-res-next-guesser" class="labs-btn labs-btn-emerald labs-btn-sm">🎲 Next Hidden Fart</button>
+              <button type="button" id="btn-res-next-guesser" class="labs-btn labs-btn-emerald labs-btn-sm">🎲 Next Mystery Fart</button>
             </div>
             <div class="labs-result-sec-actions">
               <button type="button" id="btn-res-email" class="labs-btn-ghost labs-btn-sm">📧 Email (Audio + PDF)</button>
@@ -546,6 +577,20 @@
             <span>Comparison Recording</span>
             <select id="fn-guess-select"></select>
           </label>
+        </div>
+
+        <!-- Megamix Source Filter (Mode 4 Only) -->
+        <div id="fn-group-filter-bar" class="labs-glass-card labs-group-filter-bar hidden">
+          <div class="labs-group-filter-pills" role="group" aria-label="Megamix Source Filter">
+            <button type="button" class="labs-format-btn active" data-group-source="all">All (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="recorded">Recorded (Real Farts) (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="guesses">Recorded Guesses (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="defaults">Default Farts (0)</button>
+          </div>
+          <div class="labs-group-cap-row">
+            <span id="fn-group-cap-note" class="labs-hint-text">Analyzing selected Vault recordings</span>
+            <button type="button" id="btn-group-shuffle-defaults" class="labs-btn-ghost labs-btn-xs hidden">🎲 Shuffle 20</button>
+          </div>
         </div>
 
         <div id="fn-empty-state" class="labs-glass-card labs-empty-card hidden">
@@ -734,29 +779,29 @@
         <div class="labs-splash-step">
           <span class="labs-splash-num">1</span>
           <div>
-            <strong>🎯 Guess The Fart (Primary Blind Mode)</strong>
-            <p>See only the fart's funny name while the audio stays hidden. Record what you imagine it sounds like — then hear the dramatic reveal and see your score!</p>
+            <strong>🎯 Guess The Fart (Mystery Mode)</strong>
+            <p>See only the Mystery Fart's name while the audio stays secret. Record what you imagine it sounds like, hear the reveal, and compare side-by-side 3D spectrum plots — play Original, Guess, or Both Together!</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">2</span>
           <div>
             <strong>🦜 Mimic Mode (Play Fart First)</strong>
-            <p>Want to imitate it directly? Tap <em>Play Fart First</em> next to Guess to hear the fart upfront and flip the button into <em>Mimic The Fart</em>.</p>
+            <p>Want to imitate a specimen upfront? Tap <em>Play Fart First</em> next to Guess to hear the fart before attempting it and switch into <em>Mimic The Fart</em>.</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">3</span>
           <div>
-            <strong>🎙️ Record New Fart &amp; Multiplayer</strong>
-            <p>Sentry Auto Detect beeps when armed and auto-saves new Vault specimens. Switch Solo/Multiplayer anytime so the whole room locks guesses before reveal.</p>
+            <strong>🎙️ Record New Fart on Home &amp; Solo / Multiplayer</strong>
+            <p>Use <em>Record New Fart</em> on Home — Sentry Auto Detect listens for farts automatically and lets you tap <em>Stop &amp; Save</em> or <em>Disarm</em> anytime. Switch Solo or Multiplayer on Guess to rank the whole room.</p>
           </div>
         </div>
         <div class="labs-splash-step labs-splash-step-beta">
           <span class="labs-splash-num">4</span>
           <div>
             <strong>🔮 Blind Prediction Mode <span class="labs-exp-badge">Beta</span></strong>
-            <p>Available anytime in ⚙️ Settings: record blind guesses <strong>before</strong> a live fart even happens, then capture the original fart afterward.</p>
+            <p>Available anytime in ⚙️ Settings: record blind predictions <strong>before</strong> a live fart even happens, then capture the real Mystery Fart afterward.</p>
           </div>
         </div>
       </div>
