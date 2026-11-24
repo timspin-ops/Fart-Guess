@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124f" />
-  <script defer src="../js/dsp.js?v=20261124f"></script>
-  <script defer src="../js/audioEngine.js?v=20261124f"></script>
-  <script defer src="../js/storage.js?v=20261124f"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124f"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124f"></script>
-  <script defer src="js/labsStore.js?v=20261124f"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124f"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124f"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124f"></script>
-  <script defer src="js/labsApp.js?v=20261124f"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124g" />
+  <script defer src="../js/dsp.js?v=20261124g"></script>
+  <script defer src="../js/audioEngine.js?v=20261124g"></script>
+  <script defer src="../js/storage.js?v=20261124g"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124g"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124g"></script>
+  <script defer src="js/labsStore.js?v=20261124g"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124g"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124g"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124g"></script>
+  <script defer src="js/labsApp.js?v=20261124g"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -392,19 +392,26 @@
               <div class="labs-reveal-bar-track"><div id="guess-reveal-bar" class="labs-reveal-bar-fill"></div></div>
               <div id="guess-reveal-lineup" class="labs-reveal-lineup"></div>
               <div class="labs-reveal-spec3d-grid">
-                <div id="reveal-pane-orig" class="labs-reveal-spec3d-pane">
-                  <div class="labs-reveal-pane-top">
-                    <span class="labs-inline-spec3d-tag tag-orig" id="reveal-spec-lbl-a">Exhibit A · Mystery Fart</span>
-                    <span class="labs-reveal-play-pill" id="reveal-pill-a">QUEUED</span>
-                  </div>
-                  <canvas id="reveal-spec3d-orig" class="labs-reveal-spec3d-canvas"></canvas>
-                </div>
                 <div id="reveal-pane-guess" class="labs-reveal-spec3d-pane">
                   <div class="labs-reveal-pane-top">
-                    <span class="labs-inline-spec3d-tag tag-guess" id="reveal-spec-lbl-b">Exhibit B · Your Guess</span>
-                    <span class="labs-reveal-play-pill" id="reveal-pill-b">STANDBY</span>
+                    <span class="labs-inline-spec3d-tag tag-guess" id="reveal-spec-lbl-b">🎤 Your Guess</span>
+                    <span class="labs-reveal-play-pill" id="reveal-pill-b">UP FIRST</span>
                   </div>
                   <canvas id="reveal-spec3d-guess" class="labs-reveal-spec3d-canvas"></canvas>
+                </div>
+                <div id="reveal-pane-orig" class="labs-reveal-spec3d-pane labs-reveal-pane-mystery is-mystery-sealed">
+                  <div class="labs-reveal-pane-top">
+                    <span class="labs-inline-spec3d-tag tag-orig" id="reveal-spec-lbl-a">🔒 THE MYSTERY FART</span>
+                    <span class="labs-reveal-play-pill" id="reveal-pill-a">PLAYS LAST</span>
+                  </div>
+                  <div class="labs-reveal-canvas-wrap">
+                    <canvas id="reveal-spec3d-orig" class="labs-reveal-spec3d-canvas"></canvas>
+                    <div id="reveal-mystery-seal" class="labs-mystery-seal" aria-hidden="true">
+                      <span class="labs-seal-ico">🔒</span>
+                      <strong>MYSTERY FART</strong>
+                      <small>Real sound plays last!</small>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -431,10 +438,11 @@
                 <div class="labs-eyebrow" id="res-heading-eyebrow">WHO GUESSED THE FART BEST?</div>
                 <div class="labs-res-context-sub" id="res-sample-context">RESULTS LEADERBOARD</div>
               </div>
-              <span class="labs-chip labs-chip-green" id="res-winner-chip">🏆 1st Place</span>
+              <div class="labs-inline-res-badges">
+                <span class="labs-chip labs-chip-green hidden" id="res-winner-chip">🏆 1st Place</span>
+                <div id="res-pb-pill" class="labs-pb-banner hidden">NEW PERSONAL BEST</div>
+              </div>
             </div>
-
-            <div id="res-pb-pill" class="labs-pb-banner hidden">NEW PERSONAL BEST</div>
 
             <div class="labs-inline-score-row">
               <div class="labs-score-hero-wrap labs-score-hero-compact">
@@ -456,19 +464,22 @@
               </div>
 
               <div class="labs-inline-score-meta">
-                <div class="labs-rank-pill" id="res-rank-badge">Skilled</div>
-                <div class="labs-rank-desc" id="res-rank-desc"></div>
-                <div class="labs-reward-inline" id="res-reward-stage">
-                  <div id="res-stars-row" class="labs-stars-row" aria-label="Reward Stars"></div>
-                  <div id="res-bell-label" class="labs-bell-label">Calculating rating…</div>
-                  <div id="res-legendary-title" class="labs-legendary-title hidden"></div>
+                <div class="labs-score-rank-row">
+                  <div class="labs-rank-pill" id="res-rank-badge">Skilled</div>
+                  <div class="labs-reward-inline" id="res-reward-stage">
+                    <div id="res-stars-row" class="labs-stars-row" aria-label="Reward Stars"></div>
+                  </div>
                 </div>
-                <div id="res-delta-note" class="labs-delta-banner hidden"></div>
+                <div id="res-bell-label" class="labs-bell-label">Calculating rating…</div>
+                <div class="labs-rank-desc" id="res-rank-desc"></div>
               </div>
             </div>
 
+            <div id="res-legendary-title" class="labs-legendary-title hidden"></div>
+            <div id="res-delta-note" class="labs-delta-banner hidden"></div>
+
             <div class="labs-res-lb-card labs-res-lb-inline" id="res-leaderboard-card">
-              <div class="labs-eyebrow" id="res-lb-eyebrow" style="margin-bottom:6px">WINNER &amp; GUESSER RANKINGS</div>
+              <div class="labs-eyebrow" id="res-lb-eyebrow" style="margin-bottom:4px">COMPARISON SCORECARD</div>
               <div id="res-leaderboard-list" class="labs-res-lb-list"></div>
             </div>
 
@@ -476,7 +487,7 @@
               <div class="labs-inline-spec3d-head">
                 <div>
                   <div class="labs-eyebrow">SIDE-BY-SIDE 3D SPECTRUM PLOT</div>
-                  <div class="labs-inline-spec3d-sub" id="res-spec3d-b-title">Original vs Your Guess</div>
+                  <div class="labs-inline-spec3d-sub" id="res-spec3d-b-title">Mystery Fart vs Your Guess</div>
                 </div>
                 <div class="labs-spec-presets" role="group" aria-label="3D View Presets">
                   <button type="button" class="labs-mini-chip active" data-res-preset="3d">3D</button>
@@ -488,29 +499,29 @@
 
               <div class="labs-inline-spec3d-grid">
                 <div class="labs-inline-spec3d-pane">
-                  <span class="labs-inline-spec3d-tag tag-orig" id="res-spec3d-lbl-a">Original Fart</span>
+                  <span class="labs-inline-spec3d-tag tag-orig" id="res-spec3d-lbl-a">🎯 REAL MYSTERY FART</span>
                   <canvas id="res-spec3d-orig" class="labs-inline-spec3d-canvas"></canvas>
                 </div>
                 <div class="labs-inline-spec3d-pane">
-                  <span class="labs-inline-spec3d-tag tag-guess" id="res-spec3d-lbl-b">Your Guess</span>
+                  <span class="labs-inline-spec3d-tag tag-guess" id="res-spec3d-lbl-b">🎤 YOUR GUESS</span>
                   <canvas id="res-spec3d-guess" class="labs-inline-spec3d-canvas"></canvas>
                 </div>
               </div>
 
               <div class="labs-inline-spec3d-audio">
-                <button type="button" id="btn-res-play-orig" class="labs-btn labs-btn-emerald labs-btn-sm">▶ Play Original</button>
+                <button type="button" id="btn-res-play-orig" class="labs-btn labs-btn-emerald labs-btn-sm">🎯 Play Mystery Fart</button>
                 <button type="button" id="btn-res-play-guess" class="labs-btn labs-btn-orange labs-btn-sm">▶ Play Guess</button>
                 <button type="button" id="btn-res-play-both" class="labs-btn labs-btn-purple labs-btn-sm">🔊 Play Both Together</button>
               </div>
             </div>
 
             <div class="labs-verdict-box-inline">
-              <div class="labs-eyebrow" id="res-verdict-eyebrow">SCIENTIFIC EXPLANATION · WINNER COMPARISON</div>
+              <div class="labs-eyebrow" id="res-verdict-eyebrow">SCIENTIFIC COMPARISON REPORT</div>
               <p class="labs-verdict-text" id="res-verdict-text"></p>
             </div>
 
             <div class="labs-result-actions">
-              <button type="button" id="btn-res-replay" class="labs-btn labs-btn-blue labs-btn-sm">⚡ Play Real → Winner</button>
+              <button type="button" id="btn-res-replay" class="labs-btn labs-btn-blue labs-btn-sm">▶ Play Guess → Mystery Fart</button>
               <button type="button" id="btn-res-compare" class="labs-btn labs-btn-purple labs-btn-sm">🧪 Full Fartnalysis</button>
               <button type="button" id="btn-res-next-guesser" class="labs-btn labs-btn-emerald labs-btn-sm">🎲 Next Mystery Fart</button>
             </div>

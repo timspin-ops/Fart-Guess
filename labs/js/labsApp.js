@@ -667,7 +667,8 @@
     return out;
   }
 
-  function pickAnalysisStages(context) {
+  function pickAnalysisStages(context, opts) {
+    opts = opts || {};
     var isResults = context === 'comparison';
     var openPool = isResults ? ANALYSIS_COMPARISON_OPENING_POOL : ANALYSIS_OPENING_POOL;
     var opening = openPool[Math.floor(Math.random() * openPool.length)];
@@ -712,7 +713,9 @@
       stages.push(pickedMid[m]);
     }
     stages.push({
-      text: isResults ? 'Determining winner...' : 'Finalizing laboratory verdict...',
+      text: isResults
+        ? (opts.isSolo ? 'Scoring your comparison...' : 'Determining winner...')
+        : 'Finalizing laboratory verdict...',
       rare: false,
       scientist: false
     });
@@ -770,7 +773,7 @@
     }
     if (consensusEl) consensusEl.classList.add('hidden');
 
-    var stages = pickAnalysisStages(opts.context);
+    var stages = pickAnalysisStages(opts.context, { isSolo: Boolean(opts.isSolo) });
     var finished = false;
 
     function finishNow(immediate) {
@@ -3012,6 +3015,7 @@
     var lineupEl = $('guess-reveal-lineup');
     var paneA = $('reveal-pane-orig');
     var paneB = $('reveal-pane-guess');
+    var sealEl = $('reveal-mystery-seal');
     var lblA = $('reveal-spec-lbl-a');
     var lblB = $('reveal-spec-lbl-b');
     var pillA = $('reveal-pill-a');
@@ -3021,7 +3025,8 @@
 
     var targetName = getSampleName(target);
     var firstGuessName = (rawGuesses[0] && rawGuesses[0].name) || 'Your Guess';
-    var steps = [{ kind: 'orig', key: 'orig', label: targetName, sound: target }];
+    var isMysteryReveal = modeUsed !== 'mimic';
+    var steps = [];
     for (var si = 0; si < rawGuesses.length; si++) {
       var gObj = rawGuesses[si];
       steps.push({
@@ -3032,28 +3037,35 @@
         sound: gObj
       });
     }
+    steps.push({ kind: 'orig', key: 'orig', label: targetName, sound: target });
 
-    if (banner) banner.classList.remove('hidden');
+    if (banner) {
+      banner.classList.remove('hidden', 'is-mystery-finale');
+    }
     if (titleEl) {
       titleEl.textContent = REVEAL_HEARING_TITLES[Math.floor(Math.random() * REVEAL_HEARING_TITLES.length)];
     }
     if (txtEl) {
       var lockNoun = rawGuesses.length === 1 ? 'Testimony sealed!' : rawGuesses.length + ' testimonies sealed!';
-      var preOrigLabel = modeUsed === 'guess' && (state.hintLevel || 0) < 1 ? 'Mystery Fart' : '"' + targetName + '"';
-      txtEl.textContent = '🔒 ' + lockNoun + ' Queuing Exhibit A (' + preOrigLabel + ') + side-by-side 3D spectrum…';
+      var guessLead = rawGuesses.length === 1 ? 'playing your guess first' : 'playing ' + rawGuesses.length + ' guesses first';
+      txtEl.textContent = '🔒 ' + lockNoun + ' ' + guessLead.charAt(0).toUpperCase() + guessLead.slice(1) + ' — the REAL Mystery Fart plays last!';
     }
     if (barEl) {
       barEl.classList.remove('filling');
       if (barEl.style) barEl.style.width = '8%';
     }
-    if (paneA) paneA.classList.remove('is-playing-orig');
-    if (paneB) paneB.classList.remove('is-playing-guess');
-    if (lblA) {
-      lblA.textContent = modeUsed === 'guess' && (state.hintLevel || 0) < 1 ? 'Exhibit A · Mystery Fart' : 'Exhibit A · ' + targetName;
+    if (paneA) {
+      paneA.classList.remove('is-playing-orig');
+      paneA.classList.toggle('is-mystery-sealed', isMysteryReveal);
     }
-    if (lblB) lblB.textContent = (rawGuesses.length === 1 ? 'Exhibit B · ' : 'Exhibit B1 · ') + firstGuessName;
-    if (pillA) pillA.textContent = 'QUEUED';
-    if (pillB) pillB.textContent = 'STANDBY';
+    if (paneB) paneB.classList.remove('is-playing-guess');
+    if (sealEl) sealEl.classList.toggle('hidden', !isMysteryReveal);
+    if (lblA) {
+      lblA.textContent = isMysteryReveal && (state.hintLevel || 0) < 1 ? '🔒 MYSTERY FART' : '🎯 REAL · ' + targetName;
+    }
+    if (lblB) lblB.textContent = rawGuesses.length === 1 ? '🎤 YOUR GUESS' : '🎤 GUESS 1 · ' + firstGuessName;
+    if (pillA) pillA.textContent = 'PLAYS LAST';
+    if (pillB) pillB.textContent = 'UP FIRST';
 
     function updateLineupPills(activeIdx) {
       if (!lineupEl) return;
@@ -3061,9 +3073,12 @@
       lineupEl.setAttribute('data-active-label', activeIdx >= 0 && steps[activeIdx] ? steps[activeIdx].label : '');
       lineupEl.innerHTML = steps
         .map(function (st, idx) {
-          var cls = idx < activeIdx ? ' is-done' : idx === activeIdx ? ' is-active' : '';
-          var ico = idx < activeIdx ? '✓' : idx === activeIdx ? '🔊' : (st.kind === 'orig' ? '🔒' : '🎤');
-          var textLbl = st.kind === 'orig' ? 'Mystery Fart' : st.label;
+          var isOrig = st.kind === 'orig';
+          var cls = (isOrig ? ' is-mystery-pill' : '') + (idx < activeIdx ? ' is-done' : idx === activeIdx ? ' is-active' : '');
+          var ico = idx < activeIdx ? '✓' : idx === activeIdx ? (isOrig ? '🚨' : '🔊') : (isOrig ? '🎯' : '🎤');
+          var textLbl = isOrig
+            ? 'MYSTERY FART (REAL)'
+            : (rawGuesses.length === 1 ? st.label : 'Guess ' + (st.guessIndex + 1) + ': ' + st.label);
           return '<span class="labs-reveal-pill' + cls + '" data-rev-step="' + idx + '">' + ico + ' ' + esc(textLbl) + '</span>';
         })
         .join('');
@@ -3139,9 +3154,11 @@
         state.revealSkipCb = null;
         state.revealInProgress = false;
         state.guessRevealed = true;
-        if (paneA) paneA.classList.remove('is-playing-orig');
+        if (paneA) paneA.classList.remove('is-playing-orig', 'is-mystery-sealed');
         if (paneB) paneB.classList.remove('is-playing-guess');
+        if (sealEl) sealEl.classList.add('hidden');
         if (banner) banner.classList.add('hidden');
+        if (banner) banner.classList.remove('is-mystery-finale');
         if (barEl) {
           barEl.classList.remove('filling');
           if (barEl.style) barEl.style.width = '0%';
@@ -3172,29 +3189,39 @@
         if (step.kind === 'orig') {
           state.guessRevealed = true;
           renderGuessView();
-          if (paneA) paneA.classList.add('is-playing-orig');
+          if (paneA) {
+            paneA.classList.remove('is-mystery-sealed');
+            paneA.classList.add('is-playing-orig');
+          }
+          if (sealEl) sealEl.classList.add('hidden');
+          if (banner) banner.classList.add('is-mystery-finale');
           if (paneB) paneB.classList.remove('is-playing-guess');
-          if (lblA) lblA.textContent = 'Exhibit A · ' + targetName;
-          if (pillA) pillA.textContent = '🔊 PLAYING';
-          if (pillB) pillB.textContent = 'UP NEXT';
+          if (lblA) lblA.textContent = '🎯 REAL · ' + targetName;
+          if (pillA) pillA.textContent = '🚨 REAL FART!';
+          if (pillB) pillB.textContent = '✓ HEARD';
           if (txtEl) {
-            txtEl.textContent = '🔊 EXHIBIT A (MYSTERY FART): "' + targetName + '" — Listen to the real specimen!';
+            txtEl.textContent = '🚨 GRAND REVEAL — NOW PLAYING THE REAL MYSTERY FART: "' + targetName + '"!';
           }
         } else {
           if (step.guessIndex > 0) {
             mountRevealGuessSpec(step.sound);
           }
-          if (paneA) paneA.classList.remove('is-playing-orig');
+          if (paneA) {
+            paneA.classList.remove('is-playing-orig');
+            paneA.classList.toggle('is-mystery-sealed', isMysteryReveal);
+          }
+          if (sealEl) sealEl.classList.toggle('hidden', !isMysteryReveal);
+          if (banner) banner.classList.remove('is-mystery-finale');
           if (paneB) paneB.classList.add('is-playing-guess');
-          if (pillA) pillA.textContent = '✓ HEARD';
+          if (pillA) pillA.textContent = 'PLAYS LAST';
           if (pillB) pillB.textContent = '🔊 PLAYING';
           if (lblB) {
-            lblB.textContent = (rawGuesses.length === 1 ? 'Exhibit B · ' : 'Exhibit B' + (step.guessIndex + 1) + ' · ') + step.label;
+            lblB.textContent = (rawGuesses.length === 1 ? '🎤 YOUR GUESS' : '🎤 GUESS ' + (step.guessIndex + 1) + ' · ' + step.label);
           }
           if (txtEl) {
             txtEl.textContent = rawGuesses.length === 1
-              ? '🎤 EXHIBIT B (YOUR ALIBI): "' + step.label + '" — Comparing live 3D spectrum…'
-              : '🎤 EXHIBIT B' + (step.guessIndex + 1) + ' (' + (step.guessIndex + 1) + ' OF ' + rawGuesses.length + '): "' + step.label + '" — Playing sworn testimony…';
+              ? '🎤 PLAYING YOUR GUESS — Listen closely before the real Mystery Fart drops!'
+              : '🎤 PLAYING GUESS ' + (step.guessIndex + 1) + ' OF ' + rawGuesses.length + ': "' + step.label + '" — Real Mystery Fart plays last!';
           }
         }
 
@@ -3354,6 +3381,7 @@
       runAnalysisSequence(
         {
           context: 'comparison',
+          isSolo: outcomes.length === 1,
           title: 'ANALYZING RESULTS',
           subtitle: subtitleLabel || ('Comparing ' + outcomes.length + (outcomes.length === 1 ? ' guess' : ' guesses') + ' against ' + getSampleName(target))
         },
@@ -3578,7 +3606,7 @@
 
   function pickSoloChipBadge(score) {
     if (score >= 95) return '🧙 Cheek Sorcery · ' + score.toFixed(1) + '%';
-    if (score >= 85) return '🎺 Suspiciously Accurate · ' + score.toFixed(1) + '%';
+    if (score >= 85) return '🎯 Suspiciously Accurate · ' + score.toFixed(1) + '%';
     if (score >= 70) return '💨 Room-Fooling Forgery · ' + score.toFixed(1) + '%';
     if (score >= 50) return '🌬️ Noble Amateur Effort · ' + score.toFixed(1) + '%';
     if (score >= 25) return '🦆 Bold Audacity · ' + score.toFixed(1) + '%';
@@ -3587,7 +3615,7 @@
 
   function pickSoloRowLabel(score) {
     if (score >= 95) return '🧙 Courtroom-Grade Clone';
-    if (score >= 85) return '🎺 Honor-Roll Forger';
+    if (score >= 85) return '🎯 Honor-Roll Forger';
     if (score >= 70) return '🌬️ Convincing Alibi';
     if (score >= 50) return '🙃 Half-Cooked Toot';
     if (score >= 25) return '🦆 Different Zip Code';
@@ -3629,30 +3657,34 @@
     }
 
     $('res-sample-context').textContent = isSoloRound
-      ? ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · SOLO ROUND')
-      : ('ORIGINAL FART: ' + getSampleName(target).toUpperCase() + ' · ' + resultsList.length + ' GUESSES');
+      ? ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · SOLO COMPARISON')
+      : ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · ' + resultsList.length + ' PLAYERS');
 
     var winChip = $('res-winner-chip');
     if (winChip) {
-      winChip.textContent = isSoloRound
-        ? pickSoloChipBadge(exact)
-        : ('🏆 ' + (outcome.attempt.name || 'Guesser 1') + ' · ' + exact.toFixed(1) + '%');
+      if (isSoloRound) {
+        winChip.classList.add('hidden');
+        winChip.textContent = '';
+      } else {
+        winChip.classList.remove('hidden');
+        winChip.textContent = '🏆 Winner: ' + (outcome.attempt.name || 'Player 1') + ' · ' + exact.toFixed(1) + '%';
+      }
     }
 
     var lbEye = $('res-lb-eyebrow');
     if (lbEye) {
-      lbEye.textContent = isSoloRound ? 'YOUR SOLO SCORECARD' : 'WINNER & GUESSER RANKINGS';
+      lbEye.textContent = isSoloRound ? 'COMPARISON SCORECARD' : '🏆 WINNER & PLAYER RANKINGS';
     }
     var verdEye = $('res-verdict-eyebrow');
     if (verdEye) {
-      verdEye.textContent = isSoloRound ? 'SCIENTIFIC EXPLANATION · YOUR COMPARISON' : 'SCIENTIFIC EXPLANATION · WINNER COMPARISON';
+      verdEye.textContent = isSoloRound ? 'SCIENTIFIC COMPARISON REPORT' : 'SCIENTIFIC REPORT · WINNER COMPARISON';
     }
     var repBtn = $('btn-res-replay');
     if (repBtn) {
-      repBtn.textContent = isSoloRound ? '⚡ Play Real → Yours' : '⚡ Play Real → Winner';
+      repBtn.textContent = isSoloRound ? '▶ Play Guess → Mystery Fart' : '▶ Play Winner → Mystery Fart';
     }
 
-    // Hero Leaderboard / Solo Scorecard
+    // Hero Leaderboard / Tidy 3-Row Full-Width Scorecard
     var lbListEl = $('res-leaderboard-list');
     if (lbListEl) {
       lbListEl.innerHTML = resultsList
@@ -3660,38 +3692,34 @@
           var s = typeof item.exactScore === 'number' ? item.exactScore : 0;
           var rk = item.rank || TootLabs.Store.getRankForScore(s);
           var ms = item.metricsSummary || {};
-          var isWinner = idx === 0;
-          var placeText = isSoloRound ? pickSoloRowLabel(s) : placeLabel(idx);
-          var tagHtml = isSoloRound
-            ? ' <span class="labs-closest-badge">' + esc(pickSoloSubQuip(s)) + '</span>'
-            : (isWinner ? ' <span class="labs-closest-badge">Closest Match</span>' : '');
+          var isWinner = !isSoloRound && idx === 0;
+          var rowClass = isWinner ? ' first-place' : isSoloRound ? ' is-solo' : '';
+          var identHtml = isSoloRound
+            ? '<span class="labs-res-guesser-name">' + esc(item.attempt.name) + '</span>' +
+              '<span class="labs-solo-quip-badge">' + esc(pickSoloRowLabel(s)) + '</span>'
+            : '<span class="labs-res-place">' + placeLabel(idx) + '</span>' +
+              '<span class="labs-res-guesser-name">' + esc(item.attempt.name) + '</span>' +
+              (isWinner ? '<span class="labs-closest-badge">🏆 Winner · Closest Match</span>' : '');
           return (
-            '<div class="labs-res-lb-row' + (isWinner ? ' first-place' : '') + '">' +
-            '  <div class="labs-res-lb-main">' +
-            '    <div class="labs-res-lb-left">' +
-            '      <span class="labs-res-place">' + placeText + '</span>' +
-            '      <div>' +
-            '        <div class="labs-res-guesser-name">' + esc(item.attempt.name) + tagHtml + '</div>' +
-            '        <div class="labs-res-mini-metrics">' +
-            '          <span>Overall ' + (ms.overall != null ? ms.overall : Math.round(s)) + '%</span>' +
-            '          <span>Timing ' + (ms.timing != null ? ms.timing : '—') + '%</span>' +
-            '          <span>Duration ' + (ms.duration != null ? ms.duration : '—') + '%</span>' +
-            '          <span>Pressure ' + (ms.pressure != null ? ms.pressure : '—') + '%</span>' +
-            '          <span>Resonance ' + (ms.resonance != null ? ms.resonance : '—') + '%</span>' +
-            '          <span>Thunder ' + (ms.thunder != null ? ms.thunder : '—') + '%</span>' +
-            (ms.authB != null ? '<span>Auth ' + ms.authB + '%</span>' : '') +
-            '          <span>ML ' + (ms.ml != null ? ms.ml : '—') + '%</span>' +
-            '        </div>' +
-            '      </div>' +
-            '    </div>' +
-            '    <div class="labs-res-lb-right">' +
-            '      <span class="labs-res-lb-score" style="color:' + rk.color + '">' + s.toFixed(1) + '%</span>' +
-            '      <div class="labs-att-btns">' +
-            '        <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-play="' + idx + '">▶ Play</button>' +
-            '        <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-single="' + idx + '">Analysis</button>' +
-            '        <button type="button" class="labs-btn labs-btn-blue labs-btn-sm" data-rlb-cmp="' + idx + '">Compare</button>' +
-            '      </div>' +
-            '    </div>' +
+            '<div class="labs-res-lb-row' + rowClass + '">' +
+            '  <div class="labs-res-lb-top">' +
+            '    <div class="labs-res-lb-ident">' + identHtml + '</div>' +
+            '    <span class="labs-res-lb-score" style="color:' + rk.color + '">' + s.toFixed(1) + '%</span>' +
+            '  </div>' +
+            '  <div class="labs-res-mini-metrics">' +
+            '    <span><small>Overall</small> <b>' + (ms.overall != null ? ms.overall : Math.round(s)) + '%</b></span>' +
+            '    <span><small>Timing</small> <b>' + (ms.timing != null ? ms.timing : '—') + '%</b></span>' +
+            '    <span><small>Duration</small> <b>' + (ms.duration != null ? ms.duration : '—') + '%</b></span>' +
+            '    <span><small>Pressure</small> <b>' + (ms.pressure != null ? ms.pressure : '—') + '%</b></span>' +
+            '    <span><small>Resonance</small> <b>' + (ms.resonance != null ? ms.resonance : '—') + '%</b></span>' +
+            '    <span><small>Thunder</small> <b>' + (ms.thunder != null ? ms.thunder : '—') + '%</b></span>' +
+            (ms.authB != null ? '<span><small>Auth</small> <b>' + ms.authB + '%</b></span>' : '') +
+            '    <span><small>ML</small> <b>' + (ms.ml != null ? ms.ml : '—') + '%</b></span>' +
+            '  </div>' +
+            '  <div class="labs-res-lb-actions">' +
+            '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-play="' + idx + '">▶ Play</button>' +
+            '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-single="' + idx + '">🧪 Analysis</button>' +
+            '    <button type="button" class="labs-btn labs-btn-blue labs-btn-sm" data-rlb-cmp="' + idx + '">🔬 Compare</button>' +
             '  </div>' +
             '</div>'
           );
@@ -3735,16 +3763,21 @@
     var origName = getSampleName(target);
     var challengerName = isSoloRound ? 'Your Guess' : (outcome.attempt.name || 'Winner');
     if ($('res-spec3d-b-title')) {
-      $('res-spec3d-b-title').textContent = origName + ' vs ' + challengerName;
+      $('res-spec3d-b-title').textContent = '🎯 Mystery Fart (' + origName + ') vs ' + challengerName;
     }
     if ($('res-spec3d-lbl-a')) {
-      $('res-spec3d-lbl-a').textContent = 'Original · ' + origName;
+      $('res-spec3d-lbl-a').textContent = '🎯 MYSTERY · ' + origName;
     }
     if ($('res-spec3d-lbl-b')) {
-      $('res-spec3d-lbl-b').textContent = challengerName + ' · ' + exact.toFixed(1) + '%';
+      $('res-spec3d-lbl-b').textContent = isSoloRound
+        ? '🎤 GUESS · ' + exact.toFixed(1) + '%'
+        : '🏆 ' + challengerName.slice(0, 10) + ' · ' + exact.toFixed(1) + '%';
+    }
+    if ($('btn-res-play-orig')) {
+      $('btn-res-play-orig').textContent = '🎯 Play Mystery Fart';
     }
     if ($('btn-res-play-guess')) {
-      $('btn-res-play-guess').textContent = isSoloRound ? '▶ Play Guess' : ('▶ Play ' + challengerName.slice(0, 14));
+      $('btn-res-play-guess').textContent = isSoloRound ? '🎤 Play Your Guess' : ('🏆 Play ' + challengerName.slice(0, 12));
     }
 
     var presetBtns = document.querySelectorAll('#res-spec3d-bay [data-res-preset]');
@@ -3819,13 +3852,13 @@
     rankBadge.textContent = rank.title;
     rankBadge.style.borderColor = rank.color;
     rankBadge.style.color = rank.color;
-    $('res-rank-desc').textContent = (outcome.attempt.name || 'Winner') + ' — ' + rank.desc;
+    $('res-rank-desc').textContent = isSoloRound ? rank.desc : ((outcome.attempt.name || 'Winner') + ' — ' + rank.desc);
 
     var deltaNoteEl = $('res-delta-note');
     if (resultsList.length > 1) {
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
       deltaNoteEl.textContent =
-        '🏆 ' + outcome.attempt.name + ' wins the ' + resultsList.length + '-guesser round at ' + exact.toFixed(1) + '% Closest Match!';
+        '🏆 ' + outcome.attempt.name + ' wins the ' + resultsList.length + '-player round at ' + exact.toFixed(1) + '%!';
     } else if (typeof outcome.previousScore === 'number') {
       var delta = Math.round((exact - outcome.previousScore) * 10) / 10;
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
@@ -3840,7 +3873,7 @@
     } else {
       deltaNoteEl.classList.remove('hidden');
       deltaNoteEl.classList.add('delta-neutral');
-      deltaNoteEl.textContent = 'First guess recorded — tap Guess The Fart above or Play Real → Winner to try again!';
+      deltaNoteEl.textContent = 'First comparison logged — tap Guess The Fart above to beat your score!';
     }
 
     $('res-verdict-text').textContent = outcome.verdict;
@@ -3879,8 +3912,8 @@
             var curCount = starIndex + 1;
             bellLabel.textContent =
               curCount < reward.stars
-                ? curCount + (curCount === 1 ? ' Bell…' : ' Bells…')
-                : reward.stars + (reward.stars === 1 ? ' Bell · ' : ' Bells · ') + reward.label;
+                ? curCount + (curCount === 1 ? ' Star…' : ' Stars…')
+                : reward.stars + (reward.stars === 1 ? ' Star · ' : ' Stars · ') + reward.label;
 
             if (TootLabs.AudioFx) TootLabs.AudioFx.playBell(starIndex);
           }, startDelay + starIndex * stepMs)
@@ -4813,10 +4846,10 @@
       if (!state.lastOutcome) return;
       TootApp.Audio.playSequence(
         [
-          { samples: state.lastOutcome.targetSound.samples, sampleRate: state.lastOutcome.targetSound.sampleRate, channel: 'r_a' },
-          { samples: state.lastOutcome.attempt.samples, sampleRate: state.lastOutcome.attempt.sampleRate, channel: 'r_b' }
+          { samples: state.lastOutcome.attempt.samples, sampleRate: state.lastOutcome.attempt.sampleRate, channel: 'r_b' },
+          { samples: state.lastOutcome.targetSound.samples, sampleRate: state.lastOutcome.targetSound.sampleRate, channel: 'r_a' }
         ],
-        220
+        240
       );
     });
     $('btn-res-email').addEventListener('click', function () {

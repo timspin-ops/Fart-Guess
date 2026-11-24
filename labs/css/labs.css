@@ -4041,10 +4041,13 @@ select {
 }
 
 .labs-res-lb-row {
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: rgba(15, 23, 42, 0.85);
+  padding: 10px 11px;
+  border-radius: 13px;
+  background: rgba(15, 23, 42, 0.86);
   border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .labs-res-lb-row.first-place {
@@ -4052,79 +4055,128 @@ select {
   background: linear-gradient(135deg, rgba(250, 204, 21, 0.12), rgba(34, 197, 94, 0.08));
 }
 
-.labs-res-lb-main {
+.labs-res-lb-row.is-solo {
+  border-color: rgba(96, 165, 250, 0.34);
+  background: rgba(15, 23, 42, 0.88);
+}
+
+.labs-res-lb-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
 }
 
-.labs-res-lb-left {
+.labs-res-lb-ident {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
   flex: 1;
-  min-width: 210px;
 }
 
 .labs-res-place {
   font-family: var(--font-mono);
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: #FDE047;
   white-space: nowrap;
 }
 
 .labs-res-guesser-name {
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   font-weight: 800;
   color: var(--text);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+}
+
+.labs-solo-quip-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  color: #bae6fd;
+  white-space: nowrap;
 }
 
 .labs-closest-badge {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.65rem;
   font-weight: 800;
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(34, 197, 94, 0.2);
   border: 1px solid rgba(34, 197, 94, 0.55);
   color: #86EFAC;
+  white-space: nowrap;
 }
 
 .labs-res-mini-metrics {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
-  margin-top: 6px;
+  margin-top: 0;
+  width: 100%;
 }
 
 .labs-res-mini-metrics span {
   font-family: var(--font-mono);
-  font-size: 0.66rem;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 4px 3px;
+  border-radius: 7px;
   background: rgba(30, 41, 59, 0.9);
   border: 1px solid rgba(71, 85, 105, 0.55);
-  color: var(--text-sec);
-}
-
-.labs-res-lb-right {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  text-align: center;
+  min-width: 0;
+}
+
+.labs-res-mini-metrics small {
+  font-size: 0.56rem;
+  color: #94a3b8;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.labs-res-mini-metrics b {
+  font-size: 0.72rem;
+  color: #f8fafc;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.labs-res-lb-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
+}
+
+.labs-res-lb-actions button {
+  width: 100%;
+  justify-content: center;
+  padding: 6px 4px;
+  font-size: 0.74rem;
 }
 
 .labs-res-lb-score {
   font-family: var(--font-mono);
-  font-size: 1.28rem;
+  font-size: 1.18rem;
   font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Analysis Theatre Scientist Update & Consensus Banner */
@@ -5592,10 +5644,73 @@ select {
   background: rgba(34, 197, 94, 0.12);
 }
 
+.labs-reveal-pill.is-mystery-pill {
+  border-color: rgba(168, 85, 247, 0.52);
+  color: #e9d5ff;
+  background: rgba(88, 28, 135, 0.34);
+}
+
+.labs-reveal-pill.is-mystery-pill.is-active {
+  border-color: #4ade80;
+  color: #ffffff;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.42), rgba(250, 204, 21, 0.28));
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.48);
+}
+
+.labs-reveal-banner.is-mystery-finale {
+  border-color: #4ade80;
+  box-shadow: 0 0 26px rgba(34, 197, 94, 0.32);
+}
+
 .labs-reveal-spec3d-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.labs-reveal-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.labs-mystery-seal {
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  background: radial-gradient(circle at 50% 42%, rgba(88, 28, 135, 0.52), rgba(6, 9, 19, 0.92));
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 10px;
+  gap: 4px;
+  border: 1px dashed rgba(192, 132, 252, 0.55);
+  z-index: 2;
+}
+
+.labs-mystery-seal.hidden {
+  display: none;
+}
+
+.labs-seal-ico {
+  font-size: 1.45rem;
+  filter: drop-shadow(0 0 10px rgba(192, 132, 252, 0.65));
+}
+
+.labs-mystery-seal strong {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #f3e8ff;
+}
+
+.labs-mystery-seal small {
+  font-size: 0.66rem;
+  color: #d8b4fe;
+  font-weight: 600;
 }
 
 .labs-reveal-spec3d-pane {
@@ -5610,9 +5725,14 @@ select {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+.labs-reveal-pane-mystery.is-mystery-sealed {
+  border-color: rgba(168, 85, 247, 0.58);
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.2);
+}
+
 .labs-reveal-spec3d-pane.is-playing-orig {
-  border-color: rgba(74, 222, 128, 0.82);
-  box-shadow: 0 0 16px rgba(34, 197, 94, 0.26);
+  border-color: #4ade80;
+  box-shadow: 0 0 22px rgba(34, 197, 94, 0.45);
 }
 
 .labs-reveal-spec3d-pane.is-playing-guess {
@@ -5622,13 +5742,20 @@ select {
 
 .labs-reveal-pane-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
   min-width: 0;
+  width: 100%;
+}
+
+.labs-reveal-pane-top .labs-inline-spec3d-tag {
+  width: 100%;
+  font-size: 0.68rem;
 }
 
 .labs-reveal-play-pill {
+  order: -1;
   font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 800;
@@ -5681,11 +5808,11 @@ select {
 
 /* Inline Winner & Standings Card Directly Underneath Guess Button */
 .labs-inline-results {
-  padding: 14px;
+  padding: 12px;
   margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   border-color: rgba(34, 197, 94, 0.35);
 }
 
@@ -5693,64 +5820,99 @@ select {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.labs-inline-res-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .labs-inline-score-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap;
 }
 
 .labs-score-hero-compact {
-  width: 124px;
-  height: 124px;
+  width: 104px;
+  height: 104px;
   flex-shrink: 0;
 }
 
 .labs-score-hero-compact .labs-score-big {
-  font-size: 1.55rem;
+  font-size: 1.38rem;
 }
 
 .labs-score-hero-compact .labs-score-lbl {
-  font-size: 0.56rem;
+  font-size: 0.52rem;
+  letter-spacing: 0.1em;
 }
 
 .labs-inline-score-meta {
   flex: 1;
-  min-width: 185px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 4px;
+}
+
+.labs-score-rank-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
+  width: 100%;
+}
+
+.labs-inline-score-meta .labs-rank-pill {
+  font-size: 0.96rem;
+  padding: 4px 12px;
 }
 
 .labs-inline-score-meta .labs-rank-desc {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
   text-align: left;
 }
 
+.labs-inline-score-meta .labs-bell-label {
+  font-size: 0.78rem;
+}
+
 .labs-reward-inline {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .labs-reward-inline .labs-stars-row {
-  min-height: 28px;
+  min-height: 22px;
   justify-content: flex-start;
-  gap: 5px;
+  gap: 3px;
+}
+
+.labs-reward-inline .labs-reward-star {
+  font-size: 1.18rem;
 }
 
 .labs-res-lb-inline {
-  padding: 10px 12px;
+  padding: 9px 10px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(148, 163, 184, 0.18);
   margin-bottom: 0;
+  gap: 8px;
+}
+
+.labs-inline-results .labs-delta-banner {
+  padding: 7px 10px;
+  font-size: 0.76rem;
+  border-radius: 10px;
 }
 
 .labs-verdict-box-inline {
@@ -5767,7 +5929,9 @@ select {
 
 .labs-inline-results .labs-pb-pill,
 .labs-inline-results .labs-pb-banner {
-  align-self: flex-start;
+  padding: 4px 11px;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
   width: fit-content;
   margin: 0;
 }
@@ -5958,7 +6122,7 @@ select {
 }
 
 .labs-inline-spec3d-tag {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   overflow: hidden;
@@ -6071,18 +6235,17 @@ select {
     font-size: 0.94rem;
   }
   .labs-inline-score-row {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    gap: 10px;
   }
-  .labs-inline-score-meta {
-    align-items: center;
-    width: 100%;
+  .labs-score-hero-compact {
+    width: 92px;
+    height: 92px;
   }
-  .labs-inline-score-meta .labs-rank-desc,
-  .labs-reward-inline {
-    align-items: center;
-    text-align: center;
+  .labs-score-hero-compact .labs-score-big {
+    font-size: 1.24rem;
+  }
+  .labs-score-hero-compact .labs-score-lbl {
+    font-size: 0.48rem;
   }
   .labs-vault-filter-bar .labs-format-btn {
     font-size: 0.72rem;
