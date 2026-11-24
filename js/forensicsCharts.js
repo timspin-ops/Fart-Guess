@@ -11,21 +11,21 @@
     { key: 'timbre', label: '🎨 Timbre & MFCC', shortLabel: 'Timbre' },
     { key: 'envelope', label: '📈 Blast Envelope', shortLabel: 'Envelope' },
     { key: 'wetness', label: '💦 Squelch Index', shortLabel: 'Squelch' },
-    { key: 'acoustics', label: '🎺 Sound Twin', shortLabel: 'Twin' },
+    { key: 'acoustics', label: '🌩️ Sound Twin', shortLabel: 'Twin' },
     { key: 'social', label: '🛋️ Elevator Alibi', shortLabel: 'Alibi' }
   ];
 
   var NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   var ACOUSTIC_TWINS = [
-    { name: 'Contrabass Tuba', short: 'Tuba', emoji: '🎺', freq: 68, flat: 0.14, mod: 0.16 },
+    { name: 'Rolling Thunder', short: 'Thunder', emoji: '⛈️', freq: 68, flat: 0.14, mod: 0.16 },
     { name: 'Harbor Foghorn', short: 'Foghorn', emoji: '🚢', freq: 96, flat: 0.18, mod: 0.14 },
-    { name: 'Angry Bullfrog', short: 'Bullfrog', emoji: '🐸', freq: 128, flat: 0.28, mod: 0.52 },
-    { name: '2-Stroke Vespa', short: 'Vespa', emoji: '🛵', freq: 180, flat: 0.30, mod: 0.45 },
+    { name: 'Boot Stuck In Mud', short: 'Mud Boot', emoji: '🥾', freq: 128, flat: 0.28, mod: 0.52 },
+    { name: 'Cold-Start Chainsaw', short: 'Chainsaw', emoji: '🪚', freq: 180, flat: 0.30, mod: 0.45 },
     { name: 'Panicked Goose', short: 'Goose', emoji: '🪿', freq: 265, flat: 0.26, mod: 0.34 },
     { name: 'Deflating Balloon', short: 'Balloon', emoji: '🎈', freq: 370, flat: 0.22, mod: 0.26 },
-    { name: 'Rubber Duck', short: 'Duck', emoji: '🐥', freq: 500, flat: 0.24, mod: 0.20 },
-    { name: 'Leaky Bike Tire', short: 'Bike Tire', emoji: '🚲', freq: 1150, flat: 0.72, mod: 0.14 }
+    { name: 'Wet Flip-Flop', short: 'Flip-Flop', emoji: '🩴', freq: 500, flat: 0.24, mod: 0.20 },
+    { name: 'Leaky Steam Valve', short: 'Steam Valve', emoji: '💨', freq: 1150, flat: 0.72, mod: 0.14 }
   ];
 
   function clamp(v, lo, hi) {
@@ -123,7 +123,7 @@
       pct < 24
         ? 'Desert Dry Puff'
         : pct < 46
-        ? 'Crisp Trumpeter'
+        ? 'Dry Gravel Sputter'
         : pct < 70
         ? 'Bubbly Swamp Gurgle'
         : 'Hazard-Tape Squelcher';
@@ -402,10 +402,10 @@
         safeNum(p.polarityMul, 1) < 1
           ? 'Question-Mark vs Sad-Trombone Collision! One sound bends UP like a nervous question while the other deflates DOWN — triggering the ×0.28 Sweep Polarity Penalty.'
           : p.refUnvoiced !== p.userUnvoiced
-          ? 'Stealth vs Brass Discrepancy: One specimen was silent-but-breezy turbulence while the other played a full musical note (' + (noteA.split('•')[0]) + ' vs ' + (noteB.split('•')[0]) + ').'
+          ? 'Crosswind vs Storm Discrepancy: One specimen stayed silent-and-breezy while the other blasted a pitched ' + (noteA.split('•')[0]) + ' vs ' + (noteB.split('•')[0]) + ' pressure front.'
           : p.semitoneDiff != null && p.semitoneDiff < 2.2
-          ? 'Eerily In-Tune! Within ' + fmt(p.semitoneDiff, 2) + ' semitones — practically harmonizing in the same porcelain choir.'
-          : 'Musical Detuning Alert: Separated by ' + (p.semitoneDiff != null ? fmt(p.semitoneDiff, 2) + ' semitones' : 'spectral hiss register') + ' on the Fart Piano.';
+          ? 'Eerily Locked Pitch! Within ' + fmt(p.semitoneDiff, 2) + ' semitones — calibrated closely enough to fool local Doppler radar.'
+          : 'Frequency Offset Alert: Separated by ' + (p.semitoneDiff != null ? fmt(p.semitoneDiff, 2) + ' semitones' : 'spectral air-vent register') + ' on the Fart Scale.';
 
       return {
         key: 'pitch',
@@ -523,7 +523,7 @@
         fB.spectralCentroidHz < fA.spectralCentroidHz * 0.72
           ? 'Guess sounds muffled through thick winter jeans compared to open-air Target.'
           : fB.spectralCentroidHz > fA.spectralCentroidHz * 1.35
-          ? 'Guess has extra bright brassy sizzle — less cushion damping than Target.'
+          ? 'Guess packs sharper high-frequency hiss — noticeably less upholstery muffling than Target.'
           : 'Astonishingly close resonance coloring — similar upholstery absorption profile!';
       return {
         key: 'timbre',
@@ -568,7 +568,7 @@
           {
             id: 'avgSpectrumEQ',
             title: '40-Band Log-Frequency Resonance Curve (45–4200 Hz)',
-            subtitle: 'Mean spectral magnitude with Sub-Tuba, Body Buzz, Nasal Honk & Air Hiss zones',
+            subtitle: 'Mean spectral magnitude across Sub-Thunder, Mud Rumble, Harsh Rasp & Steam Hiss zones',
             drawType: 'avgSpectrumEQ'
           },
           {
@@ -727,7 +727,7 @@
         subtitle: 'Computes pitch, noisiness, and flutter affinity against 8 scientifically calibrated non-human noisemakers.',
         weightLabel: 'Bonus Humor Lab',
         score: ac.matchScore,
-        commentary: 'Zoological & Brass Match: ' + twinJoke,
+        commentary: 'Wild & Weather Twin Match: ' + twinJoke,
         formula:
           'Affinity(Twin) = 100 × exp(−(|Δoct|/1.15 + |ΔFlat|×1.4 + |ΔMod|×0.75)) | Twin A: ' +
           ac.twinA.short +
@@ -743,14 +743,14 @@
           { label: 'Guess Twin (B)', value: ac.twinB.emoji + ' ' + ac.twinB.short, sub: ac.topScoreB + '% similarity (~' + ac.twinB.freq + ' Hz)' },
           { label: 'Twin Profile Overlap', value: ac.matchScore + '%', sub: 'Shared 8-class acoustic signature' },
           { label: 'Effective Tone Freq', value: Math.round(ac.detailA.effFreq) + ' vs ' + Math.round(ac.detailB.effFreq) + ' Hz', sub: 'Pitch or unvoiced centroid' },
-          { label: 'Pure Buzz vs Hiss', value: fmt(ac.detailA.flat, 2) + ' vs ' + fmt(ac.detailB.flat, 2), sub: 'Flatness along orchestral axis' },
-          { label: 'Orchestral Seat', value: ac.detailA.effFreq < 130 ? 'Tuba Section' : ac.detailA.effFreq < 400 ? 'Horn / Goose' : 'Squeak Toy / Valve', sub: 'Acoustic register assignment' }
+          { label: 'Buzz vs Airiness', value: fmt(ac.detailA.flat, 2) + ' vs ' + fmt(ac.detailB.flat, 2), sub: 'Flatness along acoustic texture axis' },
+          { label: 'Acoustic Biome', value: ac.detailA.effFreq < 130 ? 'Thunder / Mud Swamp' : ac.detailA.effFreq < 400 ? 'Chainsaw / Wildlife' : 'Balloon / Steam Vent', sub: 'Environmental twin zone' }
         ],
         charts: [
           {
             id: 'doppelgangerBars',
-            title: '8-Archetype Noisemaker Affinity Breakdown',
-            subtitle: 'Tuba • Foghorn • Bullfrog • Vespa • Goose • Balloon • Rubber Duck • Bike Tire',
+            title: '8-Archetype Wild & Weather Affinity Breakdown',
+            subtitle: 'Thunder • Foghorn • Mud Boot • Chainsaw • Goose • Balloon • Flip-Flop • Steam Valve',
             drawType: 'doppelgangerBars'
           },
           {
@@ -1671,7 +1671,7 @@
       var bH = h - bTop - 20;
       var bA = fA.bandProfile || [0.25, 0.25, 0.25, 0.25];
       var bB = fB.bandProfile || [0.25, 0.25, 0.25, 0.25];
-      var labels4 = ['Sub-Tuba', 'Body Buzz', 'Nasal Honk', 'Hiss/Rasp'];
+      var labels4 = ['Sub-Thunder', 'Mud Rumble', 'Harsh Rasp', 'Air/Steam'];
       var g4W = plotW / 4;
       var b4W = Math.min(20, g4W * 0.28);
       for (var b4 = 0; b4 < 4; b4++) {

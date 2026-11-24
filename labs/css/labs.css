@@ -5223,6 +5223,58 @@ select {
   border-top: 1px solid rgba(148, 163, 184, 0.15);
 }
 
+.labs-hint-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.labs-hint-btn {
+  border-color: rgba(250, 204, 21, 0.45);
+  color: #fde047;
+  background: rgba(250, 204, 21, 0.1);
+}
+
+.labs-hint-btn:hover:not(:disabled) {
+  border-color: rgba(250, 204, 21, 0.8);
+  background: rgba(250, 204, 21, 0.18);
+}
+
+.labs-hint-btn:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.labs-hint-note {
+  font-size: 0.74rem;
+  color: #94a3b8;
+  flex: 1;
+  min-width: 0;
+}
+
+.labs-hints-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+}
+
+.labs-hint-chip {
+  font-size: 0.76rem;
+  line-height: 1.38;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
+.labs-hint-chip strong {
+  color: #fde047;
+}
+
 .labs-clue-wave-wrap {
   margin-top: 4px;
   padding-top: 8px;

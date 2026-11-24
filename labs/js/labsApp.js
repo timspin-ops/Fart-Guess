@@ -61,6 +61,7 @@
     guessSubMode: 'standard',
     guessMode: 'guess',
     guessRevealed: false,
+    hintLevel: 0,
     pickerOpen: false,
     historyOpen: false,
     revealInProgress: false,
@@ -430,6 +431,44 @@
     }
   }
 
+  function drawPreviewWaveform(canvas, peaks, opts) {
+    opts = opts || {};
+    var sized = sizeCanvasDpr(canvas, opts.fallbackW || 260, opts.fallbackH || 44);
+    if (!sized) return;
+    var ctx = sized.ctx, w = sized.w, h = sized.h;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(55, 65, 81, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.5);
+    ctx.lineTo(w, h * 0.5);
+    ctx.stroke();
+
+    if (!peaks || peaks.length === 0) return;
+
+    var barWidth = opts.barWidth || 3;
+    var gap = opts.gap || 2;
+    var stepPx = barWidth + gap;
+    var numBars = Math.max(12, Math.floor(w / stepPx));
+    var grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, opts.colorA || '#60A5FA');
+    grad.addColorStop(1, opts.colorB || '#818CF8');
+    ctx.fillStyle = grad;
+
+    for (var k = 0; k < numBars; k++) {
+      var pos = (k / Math.max(1, numBars - 1)) * (peaks.length - 1);
+      var lo = Math.floor(pos);
+      var hi = Math.min(peaks.length - 1, lo + 1);
+      var frac = pos - lo;
+      var pk = ((peaks[lo] || 4) * (1 - frac) + (peaks[hi] || 4) * frac) / 100;
+      var barH = Math.max(3, Math.min(1, pk) * (h * 0.84));
+      var x = k * stepPx;
+      var y = (h - barH) * 0.5;
+      ctx.fillRect(x, y, barWidth, barH);
+    }
+  }
+
   function drawLiveWaveform(canvas, timeData, rms) {
     var sized = sizeCanvasDpr(canvas, 320, 64);
     if (!sized) return;
@@ -524,32 +563,33 @@
 
   var ANALYSIS_RESULTS_CORE_POOL = [
     'Comparing onset timing & attack snap...',
-    'Measuring pitch delta & cheek resonance...',
+    'Measuring pitch delta & Doppler storm shift...',
     'Cross-correlating flutter RPM cadence...',
-    'Weighing pressure decay & tail sputter...',
+    'Weighing pressure decay & mud-boot suction...',
     'Running A.S.S. 22-dimension comparison...',
     'Evaluating 3D spectrogram peak overlap...',
+    'Auditing emotional mood convergence (Zen vs Hostile)...',
     'Scoring vocal-tract forgery fidelity...',
-    'Comparing airflow turbulence dynamics...'
+    'Checking barometric gust & airflow turbulence...'
   ];
 
   var ANALYSIS_STANDARD_POOL = [
     'Calibrating frequency spectrum...',
-    'Calculating cheek resonance...',
+    'Cross-referencing Doppler storm radar...',
     'Consulting historical fart archive...',
     'Analyzing harmonic distribution...',
-    'Computing pressure profile...',
-    'Matching turbulence characteristics...',
-    'Comparing resonance events...',
+    'Computing barometric pressure profile...',
+    'Measuring wet-boot mud suction coefficient...',
+    'Running emotional mood telemetry (Zen vs Hostile)...',
     'Detecting acoustic anomalies...',
     'Evaluating authenticity indicators...',
     'Running temporal analysis...',
-    'Examining frequency structures...',
-    'Calculating moisture estimate...',
+    'Checking local cold-front thunder index...',
+    'Calculating swamp moisture estimate...',
     'Reviewing historical specimens...',
     'Performing multi-dimensional comparison...',
     'Analyzing waveform morphology...',
-    'Detecting airflow irregularities...',
+    'Detecting crosswind airflow irregularities...',
     'Processing gastrointestinal acoustics...',
     'Evaluating sonic fingerprints...',
     'Reconstructing emission profile...',
@@ -1343,7 +1383,7 @@
           state.lastOutcome = null;
           state.lastSessionResults = [];
         }
-        if (!state.fnSampleId) state.fnSampleId = saved.id;
+        state.fnSampleId = saved.id;
 
         renderHomeView();
         renderVaultView();
@@ -1357,8 +1397,8 @@
           },
           function () {
             bar.classList.add('hidden');
-            if (state.view === 'guess') renderGuessView();
-            showToast('Saved "' + getSampleName(saved) + '" to Fart Vault!');
+            showToast('Saved "' + getSampleName(saved) + '" — opening Fartnalysis!');
+            openFartnalysis('original', saved.id, null);
           }
         );
       });
@@ -1715,7 +1755,11 @@
     var name = getSampleName(s);
     var isDef = Boolean(s.isBuiltIn);
     var hasAudio = Boolean(s.samples && s.samples.length > 0);
-    var dur = hasAudio ? (s.samples.length / (s.sampleRate || 44100)).toFixed(2) + 's' : 'Ready';
+    var dur = hasAudio
+      ? (s.samples.length / (s.sampleRate || 44100)).toFixed(2) + 's'
+      : typeof s.previewDurationSec === 'number' && s.previewDurationSec > 0
+      ? s.previewDurationSec.toFixed(2) + 's'
+      : 'Ready';
     var dateLbl = isDef ? 'Pre-loaded Default' : formatDateShort(s.createdAt);
     var bestTxt = st.attemptCount > 0 ? st.bestScore.toFixed(1) + '%' : '—';
     var attTxt = st.attemptCount === 1 ? '1 Guess' : st.attemptCount + ' Guesses';
@@ -1893,6 +1937,13 @@
           fallbackH: 44,
           colorA: sample.isBuiltIn ? '#60A5FA' : '#22C55E',
           colorB: sample.isBuiltIn ? '#818CF8' : '#34D399'
+        });
+      } else if (sample && Array.isArray(sample.previewPeaks) && sample.previewPeaks.length > 0) {
+        drawPreviewWaveform(canvases[i], sample.previewPeaks, {
+          fallbackW: 260,
+          fallbackH: 44,
+          colorA: '#60A5FA',
+          colorB: '#818CF8'
         });
       } else if (sample && typeof canvases[i].getContext === 'function') {
         var ctx = canvases[i].getContext('2d');
@@ -2482,6 +2533,7 @@
     clearResultAnimations();
     var next = mode === 'mimic' ? 'mimic' : 'guess';
     state.guessMode = next;
+    state.hintLevel = 0;
     if (next === 'mimic') {
       state.guessRevealed = true;
     } else {
@@ -2492,6 +2544,83 @@
       state.lastSessionResults = [];
     }
     renderGuessView();
+  }
+
+  function buildGuessHintsHtml(target, hintLevel) {
+    if (!target || hintLevel <= 0) return '';
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var feat = target.features;
+    if (!feat && target.samples && target.samples.length > 0 && DSP) {
+      feat = DSP.extractFeatures(target.samples, target.sampleRate || 44100);
+      target.features = feat;
+    }
+    var pm = target.previewMeta || null;
+    var durSec =
+      feat && typeof feat.duration === 'number' && feat.duration > 0
+        ? feat.duration
+        : typeof target.previewDurationSec === 'number' && target.previewDurationSec > 0
+        ? target.previewDurationSec
+        : target.samples && target.samples.length > 0
+        ? target.samples.length / (target.sampleRate || 44100)
+        : 0;
+    var bursts = feat ? (feat.burstCount || 1) : (pm ? (pm.burstCount || 1) : 1);
+    var prof = feat && DSP ? DSP.describeSoundProfile(feat) : null;
+    var textureTxt = prof ? prof.textureLabel : (pm && pm.textureLabel) || 'Atmospheric turbulence';
+    var pitchTxt = prof ? prof.pitchLabel : (pm && pm.pitchLabel) || 'Mid-band rumble';
+    var mood =
+      TootLabs.Store && typeof TootLabs.Store.describeAcousticMood === 'function'
+        ? TootLabs.Store.describeAcousticMood(feat || (pm ? Object.assign({ durationSec: durSec }, pm) : { durationSec: durSec }))
+        : { moodLabel: 'Mysterious', wildAnalogy: 'Stealth acoustic event.' };
+
+    var chips = [];
+    if (hintLevel >= 1) {
+      chips.push(
+        '<div class="labs-hint-chip" data-hint-step="1">🏷️ <strong>Hint 1 · Name:</strong> ' +
+        esc(getSampleName(target)) +
+        '</div>'
+      );
+    }
+    if (hintLevel >= 2) {
+      var burstDesc =
+        bursts >= 3
+          ? bursts + ' bursts (staccato chatter)'
+          : bursts === 2
+          ? 'Double-tap burst'
+          : 'Single continuous release';
+      var durTxt = durSec > 0 ? durSec.toFixed(2) + 's' : 'Classified span';
+      chips.push(
+        '<div class="labs-hint-chip" data-hint-step="2">⏱️ <strong>Hint 2 · Length &amp; Pattern:</strong> ' +
+        esc(durTxt + ' · ' + burstDesc + ' · ' + textureTxt) +
+        '</div>'
+      );
+    }
+    if (hintLevel >= 3) {
+      chips.push(
+        '<div class="labs-hint-chip" data-hint-step="3">🌡️ <strong>Hint 3 · Pitch &amp; Vibe:</strong> ' +
+        esc(pitchTxt + ' · Mood: ' + mood.moodLabel + ' — ' + mood.wildAnalogy) +
+        '</div>'
+      );
+    }
+    return chips.join('');
+  }
+
+  function revealNextGuessHint() {
+    var target = getSampleById(state.guessTargetId);
+    var isHiddenGuess = state.guessMode === 'guess' && !state.guessRevealed;
+    if (!target || !isHiddenGuess || state.hintLevel >= 3) return state.hintLevel;
+
+    state.hintLevel = Math.min(3, (state.hintLevel || 0) + 1);
+    if (state.hintLevel >= 2 && !target.features && !target.previewMeta && target.preloadUrl) {
+      ensureTargetReady(target)
+        .then(function () {
+          renderGuessView();
+        })
+        .catch(function () {
+          renderGuessView();
+        });
+    }
+    renderGuessView();
+    return state.hintLevel;
   }
 
   function renderGuessView() {
@@ -2570,18 +2699,28 @@
     var clueDur = $('guess-target-dur');
     var clueMeta = $('guess-target-meta');
     var waveWrap = $('guess-target-wave-wrap');
+    var hintRow = $('guess-hint-row');
+    var hintBtn = $('btn-guess-hint');
+    var hintStatus = $('guess-hint-status');
+    var hintsTray = $('guess-hints-tray');
 
     if (target) {
       var hasAudio = Boolean(target.samples && target.samples.length > 0);
+      var hintLvl = state.hintLevel || 0;
       if (clueIcon) clueIcon.textContent = isHiddenGuess ? '🔒' : '🔊';
-      if (clueName) clueName.textContent = getSampleName(target);
+      if (clueName) {
+        clueName.textContent = isHiddenGuess && hintLvl < 1 ? 'Mystery Fart' : getSampleName(target);
+      }
       if (clueDur) {
         clueDur.textContent = hasAudio ? (target.samples.length / target.sampleRate).toFixed(2) + 's' : 'Ready';
         clueDur.classList.toggle('hidden', isHiddenGuess || !hasAudio);
       }
       if (clueMeta) {
         if (isHiddenGuess) {
-          clueMeta.textContent = 'Mystery audio hidden until reveal';
+          clueMeta.textContent =
+            hintLvl > 0
+              ? 'Hint ' + hintLvl + '/3 unlocked — audio still sealed until reveal'
+              : 'Complete mystery — audio & name hidden until reveal';
         } else if (hasAudio) {
           var feat = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
           target.features = feat;
@@ -2592,12 +2731,34 @@
         }
       }
       if (waveWrap) waveWrap.classList.toggle('hidden', isHiddenGuess || !hasAudio);
+      if (hintRow) hintRow.classList.toggle('hidden', !isHiddenGuess);
+      if (hintBtn) {
+        hintBtn.disabled = !isHiddenGuess || hintLvl >= 3;
+        hintBtn.textContent = hintLvl >= 3 ? '💡 All 3 Hints Used' : '💡 Hint (' + hintLvl + '/3)';
+      }
+      if (hintStatus) {
+        hintStatus.textContent =
+          hintLvl === 0
+            ? 'Next: Name'
+            : hintLvl === 1
+            ? 'Next: Duration & Rhythm'
+            : hintLvl === 2
+            ? 'Next: Pitch & Vibe'
+            : 'All clues revealed';
+      }
+      if (hintsTray) {
+        var showTray = isHiddenGuess && hintLvl > 0;
+        hintsTray.classList.toggle('hidden', !showTray);
+        hintsTray.innerHTML = showTray ? buildGuessHintsHtml(target, hintLvl) : '';
+      }
     } else {
       if (clueIcon) clueIcon.textContent = '💨';
       if (clueName) clueName.textContent = 'No Fart Selected';
       if (clueDur) clueDur.classList.add('hidden');
       if (clueMeta) clueMeta.textContent = 'Record a fart on Home first.';
       if (waveWrap) waveWrap.classList.add('hidden');
+      if (hintRow) hintRow.classList.add('hidden');
+      if (hintsTray) hintsTray.classList.add('hidden');
     }
 
     // Primary Action Buttons
@@ -2701,6 +2862,7 @@
     state.guessSubMode = 'standard';
     state.guessMode = 'guess';
     state.guessRevealed = false;
+    state.hintLevel = 0;
     state.pickerOpen = false;
     state.historyOpen = false;
     state.sessionGuesses = [];
@@ -2749,7 +2911,7 @@
     if (pool.length === 0) pool = state.samples;
     var chosen = pool[Math.floor(Math.random() * pool.length)];
     openGuessMode(chosen.id);
-    showToast('🎲 Mystery Fart: "' + getSampleName(chosen) + '"');
+    showToast('🎲 New Mystery Fart locked in — guess blind or tap 💡 Hint!');
     return chosen;
   }
 
@@ -2877,7 +3039,8 @@
     }
     if (txtEl) {
       var lockNoun = rawGuesses.length === 1 ? 'Testimony sealed!' : rawGuesses.length + ' testimonies sealed!';
-      txtEl.textContent = '🔒 ' + lockNoun + ' Queuing Exhibit A ("' + targetName + '") + side-by-side 3D spectrum…';
+      var preOrigLabel = modeUsed === 'guess' && (state.hintLevel || 0) < 1 ? 'Mystery Fart' : '"' + targetName + '"';
+      txtEl.textContent = '🔒 ' + lockNoun + ' Queuing Exhibit A (' + preOrigLabel + ') + side-by-side 3D spectrum…';
     }
     if (barEl) {
       barEl.classList.remove('filling');
@@ -2885,7 +3048,9 @@
     }
     if (paneA) paneA.classList.remove('is-playing-orig');
     if (paneB) paneB.classList.remove('is-playing-guess');
-    if (lblA) lblA.textContent = 'Exhibit A · ' + targetName;
+    if (lblA) {
+      lblA.textContent = modeUsed === 'guess' && (state.hintLevel || 0) < 1 ? 'Exhibit A · Mystery Fart' : 'Exhibit A · ' + targetName;
+    }
     if (lblB) lblB.textContent = (rawGuesses.length === 1 ? 'Exhibit B · ' : 'Exhibit B1 · ') + firstGuessName;
     if (pillA) pillA.textContent = 'QUEUED';
     if (pillB) pillB.textContent = 'STANDBY';
@@ -4497,6 +4662,9 @@
     if ($('btn-guess-random')) {
       $('btn-guess-random').addEventListener('click', pickRandomGuessTarget);
     }
+    if ($('btn-guess-hint')) {
+      $('btn-guess-hint').addEventListener('click', revealNextGuessHint);
+    }
     if ($('btn-guess-toggle-picker')) {
       $('btn-guess-toggle-picker').addEventListener('click', function () {
         state.pickerOpen = !state.pickerOpen;
@@ -4810,6 +4978,7 @@
     setGuessSubMode: setGuessSubMode,
     setGuessMode: setGuessMode,
     renderGuessView: renderGuessView,
+    revealNextGuessHint: revealNextGuessHint,
     playFartFirst: playFartFirst,
     triggerRevealAndAnalyze: triggerRevealAndAnalyze,
     addAnotherGuesser: addAnotherGuesser,

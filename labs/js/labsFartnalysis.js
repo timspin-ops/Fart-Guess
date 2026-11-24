@@ -76,93 +76,117 @@
     'Coffee consumption spiked 340% during spectral classification.',
     'Blaming the family dog remains statistically unsupported by our harmonic telemetry.',
     'Elevator occupancy risk estimates assume poor ventilation and zero eye contact.',
-    'Peer review remains heated; two fellows are no longer speaking over a disagreement in the 120 Hz band.',
+    'Peer review remains heated; two fellows are no longer speaking over whether that sounded like sleet or gumbo mud.',
     'Archive comparison yielded results our interns are still trying to process.',
-    'Recorded strictly in the interest of gastrointestinal truth, not personal pride.'
+    'Recorded strictly in the interest of gastrointestinal truth, not personal pride.',
+    'National Weather Service Doppler radar in Seattle briefly flagged our test booth as an isolated microburst.',
+    'Boots used for wet-mud reference calibration remain missing somewhere behind Building C.',
+    'Emotional Mood Classifier readings ("Zen vs. Hostile") carry a ±12% tolerance after spicy lunches.'
   ];
 
   var SCIENTIST_COMMENT_POOLS = {
     bottomsworth: [
       'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.',
-      'I have devoted thirty years to acoustic physics, and frankly this specimen just made a mockery of half my textbook.',
-      'Do not apologize for this recording. Frame the spectrogram and hang it above the fireplace.',
-      'The sheer audacity in the lower octaves tells me dinner involved bold decisions.',
-      'If Beethoven had composed with lower-pressure brass, it would have sounded suspiciously like this.',
+      'I have devoted thirty years to barometric and bio-acoustic physics, and frankly this specimen just rewrote Chapter Four.',
+      'Do not apologize for this recording. Frame the spectrogram and hang it next to the barometer.',
+      'The low-pressure surge here reminds me of a November squall rolling unexpectedly off Puget Sound.',
+      'Between weather-front rumble and pure attitude, this specimen scored off the charts for sheer dramatic timing.',
       'An astonishing display of aerodynamic commitment. My monocle fogged up twice.',
       'This profile warrants urgent Senate testimony, or at least a very serious apology to the couch cushions.',
       'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.',
+      'The mood telemetry reads strangely aggressive — like a territorial badger defending the living-room recliner.',
+      'Yet when played at half volume, the tail decay becomes surprisingly serene, almost like a porch screen door relaxing shut.',
       'The laboratory remains cautiously optimistic, though everyone has cracked a window just in case.'
     ],
     turbulence: [
-      'Pressure release dynamics are cleaner than a jet afterburner, which honestly concerns me for your upholstery.',
-      'That transient attack velocity hit the microphone like an unannounced press release.',
-      'Textbook turbulent vortex shedding — the kind usually seen behind SpaceX boosters, not dining room chairs.',
-      'Strong air-flow organization detected. Whatever structural valve held that back deserves a congressional medal.',
-      'The Reynolds number on this emission suggests either athletic focus or questionable late-night tacos.',
-      'Peak pressure sustained for far longer than polite society generally budgets for.',
-      'Smooth laminar onset followed by chaotic flutter — nature truly refuses to compromise.'
+      'Pressure release dynamics hit like a microburst slamming into a tin carport roof.',
+      'That transient attack velocity struck the microphone like a sudden hailstorm with zero weather advisory.',
+      'Textbook turbulent vortex shedding — the kind usually clocked behind coastal gale fronts or swamp airboats.',
+      'Strong airflow organization detected. Whatever structural valve held that back deserves a congressional medal.',
+      'Moisture flux telemetry resembles pulling a drenched rubber wellington boot out of ankle-deep bog mud.',
+      'Peak pressure sustained for far longer than polite society or local barometers generally budget for.',
+      'Started like a lazy Sunday hammock breeze, then panicked halfway through into an aggressive diesel backfire.',
+      'Aerodynamically restless: high-frequency gusts colliding straight into thick marshmallow mud resistance.',
+      'My pressure rig mistook the onset for a tire blowing out on gravel at forty miles per hour.',
+      'Smooth laminar onset followed by chaotic swamp-bubble flutter — nature truly refuses to compromise.'
     ],
     wobble: [
-      'The harmonic structure is so disciplined I briefly tried to tune a cello to it.',
-      'Several overtones just formed a polite major triad. Honestly, I am intimidated and a little proud.',
+      'The resonance trajectory bends like a storm front hitting a mountain ridge — thrillingly unstable.',
+      'Several low-frequency ridges stacked up like cumulonimbus thunderheads on July radar.',
       'I zoomed in on the spectrogram for twenty minutes and forgot to eat lunch.',
-      'If this specimen enters the local choir, at least two baritones are losing their solo.',
-      'A dazzling tremor in the 14 Hz register — pure organic vibrato you simply cannot teach at Juilliard.',
-      'That resonance curve bends like a question mark, as if even the producer was surprised halfway through.',
-      'Unusually coherent formant structure. Someone clearly practiced breathing through their diaphragm.'
+      'The emotional curve shifted from calm Zen afternoon sigh straight into hostile lawnmower territory in 0.4 seconds.',
+      'A dazzling tremor in the 14 Hz register — sounds like a wet flip-flop slapping dock planks in a stiff crosswind.',
+      'That pitch sweep bends upward like a rhetorical question even the producer did not see coming.',
+      'Strange thermal shimmer at the tail end, reminiscent of steam whistling sideways out of a radiator valve.',
+      'At high magnification the surface ripples look less like air and more like thick pancake batter bubbling on a griddle.',
+      'Unusually serene mid-band glide — surprisingly soothing if you ignore the blast radius.',
+      'Cleanly etched contour lines; Dr. Flatley tried to print them on a weather map.'
     ],
     flatley: [
-      'My neural clustering model looked at this waveform, paused for three seconds, and asked for hazard pay.',
+      'My neural clustering model looked at this waveform, paused for three seconds, and checked the Doppler radar.',
       'The similarity algorithms are unusually excited, which is the closest our software gets to smiling.',
       'This recording sits four standard deviations from normal human politeness — right where my dataset loves it.',
-      'Even after running 10,000 Monte Carlo simulations, the computer still mutters "good grief" under its breath.',
-      'Computational confidence just hit 99%. Either this is acoustic art or the laptop needs fresh air.',
-      'Statistically speaking, this sample occupies the exotic corner of our database reserved for campfire legends.',
+      'Even after running 10,000 Monte Carlo simulations, the computer still mutters "check the weather forecast" under its breath.',
+      'Mood telemetry flagged this clip as "Passive-Aggressive Thunder" with 94% statistical confidence.',
+      'Statistically speaking, this sample occupies the wild database shelf somewhere between "Flood Warning" and "Stuck Tire in Mud."',
+      'Computational confidence just hit 99%. Either this is peak acoustic chaos or the laptop needs fresh air.',
+      'The classifier initially filed this under "Small Outboard Engine Cold-Starting in November Mist" before correcting itself.',
+      'Zero predictability in the tail sputter — pure wild Markov-chain mayhem from millisecond one.',
       'The algorithm cannot stop replaying the peak transient. Frankly, I need to revoke its headphone privileges.'
     ],
     pufferton: [
       'The Vault has stored four thousand specimens, and none arrived with quite this much diplomatic immunity.',
       'I am filing this under "Historical Treasures Not Suitable For Thanksgiving Dinner."',
-      'Cataloged between a tuba solo and a mildly startled goose. Truly rare curatorial company.',
-      'Handle with cotton gloves: future anthropologists will study this recording to understand 21st-century confidence.',
-      'I nearly dropped my clipboard indexing this one. Pure museum-grade acoustics.',
-      'A priceless addition to the permanent archive — preferably stored behind triple-paned airtight glass.'
+      'Cataloged between a coastal foghorn log and "Tractor Tire Escaping a Muddy Rut." Truly rare company.',
+      'Handle with cotton gloves: future meteorologists and anthropologists alike will argue over what caused this.',
+      'Feels uncannily serene for the first half-second before turning violently chaotic — museum-grade mood whiplash.',
+      'I nearly dropped my clipboard indexing this one. Pure Hall-of-Fame wilderness acoustics.',
+      'If this specimen were weather, school buses would be delayed two hours purely out of caution.',
+      'Stored in Vault Drawer 19B alongside an angry goose recording and a suspiciously damp hiking boot.',
+      'Remarkably well-preserved waveform edges — like amber, if amber could clear a waiting room.',
+      'A priceless addition to the permanent archive — preferably kept behind triple-paned airtight glass.'
     ]
   };
 
   var SCIENTIST_COMMENTS = [
     { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.' },
-    { scientistId: 'wobble', label: 'Research Note', quote: 'Several overtones just formed a polite major triad. Honestly, I am intimidated and a little proud.' },
-    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'My neural clustering model looked at this waveform, paused for three seconds, and asked for hazard pay.' },
-    { scientistId: 'turbulence', label: 'Peer Review Note', quote: 'Pressure release dynamics are cleaner than a jet afterburner, which honestly concerns me for your upholstery.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'I am filing this under "Historical Treasures Not Suitable For Thanksgiving Dinner."' },
+    { scientistId: 'wobble', label: 'Mood & Radar Note', quote: 'The emotional curve shifted from calm Zen afternoon sigh straight into hostile lawnmower territory in 0.4 seconds.' },
+    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'My neural clustering model looked at this waveform, paused for three seconds, and checked the Doppler radar.' },
+    { scientistId: 'turbulence', label: 'Weather Front Note', quote: 'Pressure release dynamics hit like a microburst slamming into a tin carport roof.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'Cataloged between a coastal foghorn log and "Tractor Tire Escaping a Muddy Rut." Truly rare company.' },
     { scientistId: 'bottomsworth', label: 'Scientific Recommendation', quote: 'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.' },
-    { scientistId: 'turbulence', label: 'Field Observation', quote: 'The Reynolds number on this emission suggests either athletic focus or questionable late-night tacos.' },
-    { scientistId: 'wobble', label: 'Research Note', quote: 'The harmonic structure is so disciplined I briefly tried to tune a cello to it.' },
-    { scientistId: 'flatley', label: 'Computational Note', quote: 'Computational confidence just hit 99%. Either this is acoustic art or the laptop needs fresh air.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'A priceless addition to the permanent archive — preferably stored behind triple-paned airtight glass.' }
+    { scientistId: 'turbulence', label: 'Field Observation', quote: 'Moisture flux telemetry resembles pulling a drenched rubber wellington boot out of ankle-deep bog mud.' },
+    { scientistId: 'wobble', label: 'Storm Telemetry Note', quote: 'Several low-frequency ridges stacked up like cumulonimbus thunderheads on July radar.' },
+    { scientistId: 'flatley', label: 'Computational Note', quote: 'Mood telemetry flagged this clip as "Passive-Aggressive Thunder" with 94% statistical confidence.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'Stored in Vault Drawer 19B alongside an angry goose recording and a suspiciously damp hiking boot.' }
   ];
 
   var RARE_COMMENTS = [
-    'Laboratory dispute erupted: Dr. Wobble hears F-sharp; Professor Bottomsworth insists it is clearly "Defiant B-flat."',
+    'Laboratory dispute erupted: Dr. Wobble classifies this as "Category-3 Bog Suction," while Bottomsworth calls it a dry plains thunderclap.',
     'Emergency decaf revoked — entire peer-review panel switched to double espresso for this recording.',
-    'Building maintenance just called asking why all five acoustic sensors blushed simultaneously.',
-    'Several senior fellows requested a second listen and immediately checked the room ventilation.',
-    'Additional grant funding formally requested strictly to figure out how this chord happened.',
+    'Building maintenance just called asking why all five acoustic sensors registered a sudden barometric cold front.',
+    'National Weather Service phoned the lab to ask whether an unlogged squall line just formed inside Conference Room B.',
+    'Additional grant funding formally requested strictly to reconstruct how one emission achieved "Relaxing Spa Wind" and "Angry Chainsaw" simultaneously.',
     'Vault indexing delayed: Dr. Pufferton is wiping tears of academic pride off his glasses.',
-    'Unanimous committee memo: this recording has officially crossed from comedy into constitutional history.'
+    'Mood Board deadlock: two fellows insist this recording feels peaceful and meditative; three others hid under their desks.',
+    'Mud-calibration team confirmed identical acoustic drag to losing a left rain boot in spring pasture clay.',
+    'Several senior fellows requested a second listen and immediately opened two windows and a patio door.',
+    'Unanimous committee memo: this recording has officially crossed from comedy into meteorological history.'
   ];
 
   var SHAREABLE_VERDICTS = [
     'Archive Worthy. Honestly, Put It In The Louvre.',
     'Scientifically Remarkable (Yet Socially Unforgivable).',
     'Professor Bottomsworth Requested A Standing Ovation.',
-    'Unexpectedly Elegant. Blame The Tuba Section.',
+    'Category-4 Weather Event Without A Forecast.',
     'Aerodynamic Excellence Achieved Without A Permit.',
-    'A Bold Contribution To Modern Gastronomy & Physics.',
+    'Equal Parts Swamp Mud Suction & Unapologetic Physics.',
     'Acoustically Ambitious. Windows Open Recommended.',
     'Certified Research Material — Keep Away From Elevators.',
-    'Passed Peer Review (Barely Kept A Straight Face).'
+    'Passed Peer Review (Barely Kept A Straight Face).',
+    'Strangely Relaxing Until The Surprise Hailstorm Finish.',
+    'Hostile Mood Telemetry Confirmed — Check Nearest Exit.',
+    'Doppler Radar Mistook This For A Passing Cold Front.'
   ];
 
   var DIAL_SCIENTIST_MAP = {
@@ -499,12 +523,12 @@
     var centB = safeNum(fB.spectralCentroidHz, 220);
 
     var pitchQuip = oppSlope
-      ? 'Question-Mark vs Sad-Trombone Collision! One rises nervously while the other deflates (×0.28 sweep penalty).'
+      ? 'Storm-Front vs Rapid-Deflation Collision! One rises like an oncoming gale while the other drops downhill (×0.28 sweep penalty).'
       : pBd.refUnvoiced !== pBd.userUnvoiced
-      ? 'Stealth vs Brass mismatch: one stayed silent-but-breezy while the other blasted a full horn note.'
+      ? 'Crosswind vs Storm mismatch: one stayed silent-and-breezy while the other blasted a full pitched wave.'
       : safeNum(res.pitchScore, 0) >= 82
-      ? 'Eerily in tune! Practically harmonizing in the same porcelain brass choir.'
-      : 'Musical detuning logged between ' + refFreq + ' and ' + guessFreq + ' on the Fart Piano.';
+      ? 'Eerily locked on target! Practically oscillating at the exact same barometric core.'
+      : 'Frequency offset logged between ' + refFreq + ' and ' + guessFreq + ' across the spectral band.';
 
     var durQuip =
       Math.abs(deltaMs) < 35
@@ -522,18 +546,18 @@
       centB < centA * 0.72
         ? 'Recording B exhibits dense upholstery attenuation compared to open-air Reference A.'
         : centB > centA * 1.35
-        ? 'Recording B packs extra bright brassy sizzle — less cushion damping than Reference A.'
+        ? 'Recording B packs sharper high-end air hiss — less cushion damping than Reference A.'
         : 'Astonishingly close upholstery damping and cheek resonance coloring.';
 
     var rawList = [
       {
         id: 'tone',
-        title: '🎵 Pitch & Fart Piano Match',
+        title: '📡 Core Pitch & Frequency Sweep',
         score: Math.round(clamp(safeNum(res.pitchScore, 0), 0, 100)),
         sub: refFreq + ' vs ' + guessFreq,
         quip: pitchQuip,
         forensicsKey: 'pitch',
-        note: 'Tracks your toot like an opera singer (45–650 Hz), locks it to a Fart Piano key, and catches rising vs deflating bends.'
+        note: 'Tracks fundamental F0 (45–650 Hz), checks whether mood telemetry bends anxiously upward or deflates downward.'
       },
       {
         id: 'duration',
@@ -560,14 +584,14 @@
         sub: Math.round(centA) + ' vs ' + Math.round(centB) + ' Hz',
         quip: timbreQuip,
         forensicsKey: 'timbre',
-        note: 'Computes 13-band MFCC vocal-tract fingerprints to catch muffled denim vs bright open brass.'
+        note: 'Computes 13-band MFCC vocal-tract fingerprints to catch muffled denim vs sharp open-air snap.'
       },
       {
         id: 'thunder',
         title: '⚡ Sub-Bass Thunder Quotient',
         score: thunderScore,
         sub: Math.round(safeNum(bpA[0], 0) * 100) + '% vs ' + Math.round(safeNum(bpB[0], 0) * 100) + '% sub-bass',
-        quip: safeNum(bpA[0], 0) + safeNum(bpB[0], 0) >= 0.7 ? 'Dual window-rattling chamber boom — hollow drywall stands no chance.' : 'Lighter mid-horn punch without seismic bass thump.',
+        quip: safeNum(bpA[0], 0) + safeNum(bpB[0], 0) >= 0.7 ? 'Dual window-rattling thunderclap — drywalls and barometers stand no chance.' : 'Lighter mid-band snap without heavy rolling thunder.',
         forensicsKey: 'overall',
         note: 'Quantifies 45–150 Hz room-shaking rumble combined with explosive crest slam.'
       },
@@ -609,12 +633,12 @@
       },
       {
         id: 'harmonic',
-        title: '🎼 Tonal Purity vs Stealth Air',
+        title: '💨 Tonal Core vs Stealth Crosswind',
         score: harmonicScore,
         sub: 'Flatness ' + safeNum(fA.spectralFlatness, 0).toFixed(2) + ' vs ' + safeNum(fB.spectralFlatness, 0).toFixed(2),
-        quip: safeNum(fA.spectralFlatness, 0) > 0.45 && safeNum(fB.spectralFlatness, 0) > 0.45 ? 'Matched stealth air vents — maximum plausible office deniability.' : 'Balances pure brass cheek reed vs turbulent hiss scatter.',
+        quip: safeNum(fA.spectralFlatness, 0) > 0.45 && safeNum(fB.spectralFlatness, 0) > 0.45 ? 'Matched stealth crosswinds — maximum plausible office deniability.' : 'Balances dense thunder rumble against chaotic air turbulence.',
         forensicsKey: 'pitch',
-        note: 'Separates proud musical honks from silent-but-breezy office distractions.'
+        note: 'Separates aggressive foghorn booms from innocent AC-vent background gusts.'
       },
       {
         id: 'moisture',
@@ -1314,8 +1338,8 @@
   /* ==================== ON-DEVICE ML CLASSIFIER ==================== */
   var ML_PROTOTYPES = [
     {
-      name: 'Sub-Bass Brass',
-      emoji: '🎺',
+      name: 'Thunderstorm Rumble',
+      emoji: '⛈️',
       color: '#60A5FA',
       pitchLog: Math.log2(82),
       flatness: 0.16,
@@ -1323,7 +1347,7 @@
       subShare: 0.56,
       crest: 0.52,
       wetness: 0.25,
-      description: 'Low-frequency brass resonance anchored below 120 Hz with deep room-coupling bass.'
+      description: 'Low-frequency storm-front rumble anchored below 120 Hz with deep room-rattling sub-bass.'
     },
     {
       name: 'High-Pressure Squeaker',
@@ -1696,7 +1720,7 @@
         title: voicedPts.length ? 'Harmonic Event @ ' + Math.round(maxPitch) + ' Hz' : 'Harmonic Stealth Window',
         telemetry: voicedPts.length ? 'Peak F0 ' + Math.round(maxPitch) + ' Hz · Frame ' + (maxPitchFrame + 1) + ' (±' + pitchCi + ' Hz CI)' : 'Unvoiced Aerodynamic Band',
         story: voicedPts.length
-          ? 'Pitch locked cleanly onto ' + Math.round(maxPitch) + ' Hz with such brassy poise that Dr. Wobble briefly checked whether a French horn had snuck into the booth.'
+          ? 'Pitch locked onto ' + Math.round(maxPitch) + ' Hz with such barometric intensity that Dr. Wobble checked outside for an approaching squall line.'
           : 'Zero tonal pitching detected — pure whisper-stealth aerodynamics engineered for slipping quietly out of a crowded checkout line.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', Math.round(maxPitch) + 'pitch', 1).quote
@@ -1746,9 +1770,9 @@
         spanLo: (8 - 4) / 41,
         spanHi: (20 - 4) / 41,
         tag: 'Harmonic Event',
-        title: 'Classic Cheek-Flutter Band (8–20 Hz)',
+        title: 'Mud-Boot & Flutter Band (8–20 Hz)',
         telemetry: Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% Modulation Share',
-        story: 'The prized 8–20 Hz concert flutter sweet-spot captures ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of ripple power — pure percussive textbook form.',
+        story: 'The chaotic 8–20 Hz vortex pocket captures ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of ripple power — uncannily like a rain boot yanking free of thick clay mud.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', modRate + 'band', 2).quote
       },
@@ -3110,17 +3134,17 @@
       },
       {
         id: 's_resonance',
-        title: '🎨 Upholstery & Chamber Depth',
+        title: '🎨 Upholstery & Storm Depth',
         score: resScore,
         sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center',
-        quip: subRatio >= 0.35 ? 'Subwoofer-grade ' + Math.round(subRatio * 100) + '% bass rumble built to vibrate leather chairs.' : 'Crisp mid-horn harmonics dominate over bass boom.'
+        quip: subRatio >= 0.35 ? 'Thunderstorm-grade ' + Math.round(subRatio * 100) + '% sub-bass rumble built to rattle windowpanes.' : 'Sharp mid-band turbulence cuts clean through sofa cushions.'
       },
       {
         id: 's_tone',
-        title: '🎵 Fart Piano Note & Pitch',
+        title: '📡 Core Pitch & Mood Curve',
         score: toneScore,
         sub: formatHzLabel(feat) + ' · ' + noteTag,
-        quip: feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? 'Locks onto ' + noteTag + ' — technically ready for a porcelain brass choir.' : 'Operates like a stealth air valve rather than a brass horn.'
+        quip: feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? 'Locks onto ' + noteTag + ' with stubborn barometric conviction.' : 'Operates like an innocent hallway draft rather than a thunderstorm.'
       },
       {
         id: 's_turbulence',
@@ -3152,10 +3176,10 @@
       },
       {
         id: 's_twin',
-        title: '🎺 Acoustic Doppelgänger Twin',
+        title: '🌩️ Acoustic Doppelgänger Twin',
         score: twinScore,
         sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Archetype',
-        quip: bonus ? 'In a blind lineup, sounds startlingly like a ' + bonus.acoustics.twinA.name + '.' : 'Matched against non-human brass archetypes.'
+        quip: bonus ? 'In a blind lineup, sounds startlingly like a ' + bonus.acoustics.twinA.name + '.' : 'Matched against storm, mud, wildlife, and engine archetypes.'
       },
       {
         id: 's_panic',
@@ -3264,31 +3288,31 @@
       s_resonance: {
         badgeCode: 'DOC-02 // UPHOLSTERY & FORMANT RESONANCE',
         title: 'Upholstery Damping & Chamber Resonance',
-        subtitle: '40-band STFT distribution across winter-jeans bass vs bright brassy sizzle.',
+        subtitle: '40-band STFT distribution across winter-jeans bass vs sharp hiss turbulence.',
         commentary:
           'Spectral center of mass sits at ' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz with ' +
           Math.round(safeNum(bp[0], 0) * 100) + '% of acoustic power below 150 Hz. ' +
-          (bp[0] >= 0.35 ? 'Substantial subwoofer-grade chamber depth confirmed — wooden dining chairs act as pure amplifiers.' : 'Brighter upper cheek harmonics dominate; minimal winter-denim muffling detected.'),
+          (bp[0] >= 0.35 ? 'Substantial thunderstorm-grade bass depth confirmed — wooden dining chairs act as pure amplifiers.' : 'Sharper upper turbulence dominates; minimal winter-denim muffling detected.'),
         charts: [
           { title: '40-Band FFT Energy Spectrum', sub: '45 Hz to 4.2 kHz logarithmic surface', drawType: 's_spectrum' },
-          { title: '4-Band Energy Breakdown', sub: 'Sub-Tuba vs Body Buzz vs Nasal Honk vs Air', drawType: 's_4band' }
+          { title: '4-Band Energy Breakdown', sub: 'Sub-Thunder vs Mud Rumble vs Harsh Rasp vs Air', drawType: 's_4band' }
         ],
         stats: [
           { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Spectral center of mass' },
           { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Chair-rattling band' },
-          { label: 'Mid Buzz', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz reed band' },
-          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Brassy sizzle / air band' }
+          { label: 'Mid Rumble', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz turbulence band' },
+          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Steam-valve air hiss band' }
         ],
         formula: 'Centroid = SUM(f_k * E_k) / SUM(E_k)'
       },
       s_tone: {
-        badgeCode: 'DOC-03 // FUNDAMENTAL F0 & FART PIANO AUDIT',
-        title: 'Fundamental Musical Note & Sweep Track',
-        subtitle: 'Locks the toot to an exact piano key (yes, really) and tracks pitch bends.',
+        badgeCode: 'DOC-03 // FUNDAMENTAL F0 & MOOD TELEMETRY',
+        title: 'Fundamental Musical Note & Mood Curve',
+        subtitle: 'Tracks pitch glide in Hz and maps nervous upward bends vs calm deflations.',
         commentary:
           (feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
-            ? 'Clean tonal core locked onto ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz) across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Harmonious enough to audition for a porcelain brass quintet.'
-            : 'Stealth Broadband Emission (' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% voiced frames). Operates like a secret office-chair air leak rather than a concert horn.'),
+            ? 'Clean pitched core locked onto ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz) across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Confident enough to set off backyard storm sirens.'
+            : 'Stealth Crosswind Emission (' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% voiced frames). Operates like a secret office-chair air leak rather than a rolling weather front.'),
         charts: [
           { title: '32-Frame Pitch Sweep (Hz)', sub: 'Fundamental frequency over time', drawType: 's_pitch' },
           { title: 'Spectral Brightness Drift', sub: 'Log2 centroid trajectory across frames', drawType: 's_centroid_contour' }
@@ -3342,15 +3366,15 @@
       s_timbre: {
         badgeCode: 'DOC-06 // 13-BAND CEPSTRAL FINGERPRINT',
         title: 'Timbre, MFCC & Upholstery Coloring',
-        subtitle: 'Quantifies pure cheek reed buzz vs muffled winter-jeans air noise.',
+        subtitle: 'Quantifies mud-boot rasp vs muffled winter-jeans air noise.',
         commentary:
-          'Wiener Spectral Flatness reads ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'breezy stealth character — plausibly mistaken for an AC vent' : 'bold harmonic brass reed buzz — nobody thinks that was the chair') + '). Every acoustic fingerprint stays 100% locally computed.',
+          'Wiener Spectral Flatness reads ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'breezy stealth character — plausibly mistaken for a cracked window draft' : 'hostile low-end rumble and coarse flutter — nobody thinks that was the chair') + '). Every acoustic fingerprint stays 100% locally computed.',
         charts: [
           { title: '13-Band MFCC Signature', sub: 'Spectral envelope shape vector', drawType: 's_mfcc13' },
           { title: '40-Band FFT Energy Spectrum', sub: 'Formant resonances & overtones', drawType: 's_spectrum' }
         ],
         stats: [
-          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = brass reed, 1 = pure air' },
+          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = dense pitch, 1 = pure air' },
           { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Upholstery brightness' },
           { label: 'ML Top Fit', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
           { label: 'Voice Share', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Harmonic frames' }
@@ -3380,20 +3404,20 @@
       s_twin: {
         badgeCode: 'DOC-08 // ACOUSTIC DOPPELGÄNGER MATCHER',
         title: 'Acoustic Twin: ' + (bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference'),
-        subtitle: 'Cross-referenced against 8 calibrated non-human noisemakers.',
+        subtitle: 'Cross-referenced against 8 calibrated weather, mud, wildlife, and machine noisemakers.',
         commentary:
           bonus
-            ? 'Zoological & Brass Match: In a blind acoustic lineup, this specimen impersonates a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Mention that scientific fact loudly if accused at dinner.'
+            ? 'Wild & Weather Twin Match: In a blind acoustic lineup, this specimen impersonates a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Mention that scientific fact loudly if accused at dinner.'
             : 'Matched against calibrated noisemaker archetypes.',
         charts: [
-          { title: '8-Archetype Affinity Breakdown', sub: 'Tuba, Foghorn, Bullfrog, Vespa, Goose, Duck...', drawType: 's_twin_bars' },
+          { title: '8-Archetype Affinity Breakdown', sub: 'Thunder, Foghorn, Mud Boot, Chainsaw, Goose, Balloon...', drawType: 's_twin_bars' },
           { title: '2D Hz × Airiness Archetype Map', sub: 'Green dot = Your recording vs archetypes', drawType: 's_twin_map' }
         ],
         stats: [
           { label: 'Top Twin', value: bonus ? bonus.acoustics.twinA.short : '—', sub: bonus ? bonus.acoustics.topScoreA + '% similarity' : '' },
           { label: 'Effective Tone', value: formatHzLabel(feat), sub: 'Comparison frequency' },
-          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Buzz vs airiness axis' },
-          { label: 'Orchestral Seat', value: (feat.medianPitchHz || 200) < 130 ? 'Tuba / Foghorn' : 'Woodwind / Brass', sub: 'Register assignment' }
+          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Texture vs airiness axis' },
+          { label: 'Acoustic Biome', value: (feat.medianPitchHz || 200) < 130 ? 'Storm / Bog Mud' : 'Engine / Steam Vent', sub: 'Environmental zone' }
         ],
         formula: 'Affinity = 100 * exp(-(|deltaOct|/1.15 + |deltaFlat|*1.4 + |deltaMod|*0.75))'
       },
@@ -4955,10 +4979,10 @@
     var raw = [
       {
         id: 'g_coh',
-        title: 'Symphonic Coherence',
+        title: 'Barometric Front Coherence',
         score: cohScore,
-        sub: (m.count || 0) + ' Vault movements',
-        quip: cohScore >= 70 ? 'Disturbingly musical phrasing — sounds almost rehearsed.' : 'Wild tonal mood swings across movements, like an avant-garde brass rehearsal.'
+        sub: (m.count || 0) + ' Vault fronts',
+        quip: cohScore >= 70 ? 'Disturbingly consistent weather-front pressure — feels almost coordinated.' : 'Wild mood swings from calm Zen drizzle straight into swamp-boot chaos.'
       },
       {
         id: 'g_span',
@@ -5235,7 +5259,7 @@
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
       renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Ensemble Topology Note') +
       '    <div class="labs-group-wave-wrap">' +
-      '      <div class="labs-chart-box-head"><span>Composite Symphony Waveform</span><small>Color-coded Vault Movements in Active Order</small></div>' +
+      '      <div class="labs-chart-box-head"><span>Composite Storm-Front Waveform</span><small>Color-coded Vault Specimens in Active Order</small></div>' +
       '      <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
       '    </div>' +
       '  </section>' +

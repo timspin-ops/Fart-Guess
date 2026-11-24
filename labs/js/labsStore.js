@@ -44,6 +44,59 @@
     'Chamber Resonance'
   ];
 
+  var ACOUSTIC_ARCHETYPE_ORDER = [
+    'swamp_mud',
+    'storm_thunder',
+    'stealth_breeze',
+    'high_squeaker',
+    'rapid_flutter',
+    'rising_question',
+    'quick_pop',
+    'aggressive_rumble',
+    'zen_relaxing'
+  ];
+
+  var ACOUSTIC_NAME_BANKS = {
+    swamp_mud: {
+      adjectives: ['Squelchy', 'Swamp-Boot', 'Mud-Pit', 'Bog-Suction', 'Gumbo', 'Marsh-Wading', 'Soggy-Galosh', 'Bayou'],
+      nouns: ['Boot Pull', 'Mud Plunge', 'Swamp Bubbles', 'Wellie Escapee', 'Puddle Churn', 'Clay Suction', 'Bayou Gurgle', 'Quagmire Pop']
+    },
+    storm_thunder: {
+      adjectives: ['Barometric', 'Monsoon', 'Category-5', 'Supercell', 'Cumulonimbus', 'Gale-Force', 'Doppler', 'Thunderhead'],
+      nouns: ['Thunderclap', 'Pressure Front', 'Cloudburst', 'Squall Line', 'Rolling Storm', 'Trough Drop', 'Microburst', 'Hailstorm']
+    },
+    stealth_breeze: {
+      adjectives: ['Whispering', 'Stealth', 'Phantom', 'Silent-Front', 'Ghostly', 'Drafty', 'Breezy', 'Ninja'],
+      nouns: ['Crosswind', 'Window Draft', 'Tire Hiss', 'Steam Vent', 'Sneak Gust', 'Kettle Sigh', 'Trade Wind', 'Hiss Valve']
+    },
+    high_squeaker: {
+      adjectives: ['Helium', 'Squeaky', 'Pinched', 'Kettle-Whistle', 'Balloon-Knot', 'Treble', 'Panic-Pitch', 'High-Altitude'],
+      nouns: ['Squealer', 'Rubber Duck', 'Balloon Escape', 'Teapot Chirp', 'Mouse Alarm', 'Squeak Toy', 'Goose Honk', 'Whistle-Pop']
+    },
+    rapid_flutter: {
+      adjectives: ['Machine-Gun', 'Chattering', 'Lawnmower', 'Putt-Putt', 'Jackhammer', 'Rippling', 'Sputtering', 'Chainsaw'],
+      nouns: ['Flutter Blast', 'Staccato Rip', 'Tractor Cough', 'Engine Backfire', 'Motorboat', 'Rattle Trap', 'Bubble Burst', 'Wobble Volley']
+    },
+    rising_question: {
+      adjectives: ['Confused', 'Suspicious', 'Inquisitive', 'Skeptical', 'Plot-Twist', 'Dramatic', 'Curious', 'Eyebrow-Raise'],
+      nouns: ['Question Mark', 'Plot Twist', 'Elevator Inquiry', 'Upspeak Toot', 'Rhetorical Squeak', 'Cliffhanger', 'Interrogation', 'Rising Doubt']
+    },
+    quick_pop: {
+      adjectives: ['Micro', 'Blistering', 'Instant', 'Blink-and-Miss', 'Drive-By', 'Flash', 'Snappy', 'Tactical'],
+      nouns: ['Cork Pop', 'Snap-Crackle', 'Bubble Snap', 'Firecracker', 'Micro-Puff', 'Cap Gun', 'Quick Blip', 'Static Zap']
+    },
+    aggressive_rumble: {
+      adjectives: ['Hostile', 'Furious', 'Aggressive', 'Combative', 'Angry', 'Belligerent', 'Confrontational', 'Ferocious'],
+      nouns: ['Brawl Rumble', 'Bear Growl', 'Diesel Roar', 'Warpath Blast', 'Bulldozer', 'Grizzly Huff', 'Rage Vent', 'Rampage']
+    },
+    zen_relaxing: {
+      adjectives: ['Zen', 'Spa-Day', 'Relaxing', 'Therapeutic', 'Meditative', 'Peaceful', 'Hammock', 'Sunday-Nap'],
+      nouns: ['Exhale', 'Sigh of Relief', 'Yoga Release', 'Breeze Therapy', 'Calm Drift', 'Porch Creak', 'Hammock Poot', 'Serenity Puff']
+    }
+  };
+
+  var ACOUSTIC_NAME_COUNT = 9 * 8 * 8;
+
   var LEGENDARY_TITLES = [
     'MOUTH FART CHAMPION',
     'CERTIFIED CHEEK IMPERSONATOR',
@@ -171,8 +224,174 @@
     return rec ? rec.nickname : (sound && sound.name) || 'Specimen';
   }
 
-  function generateNewSpecimenName() {
-    return pickUniqueNickname('new_' + Date.now() + '_' + Math.random());
+  function extractNumericStats(feat, bonus) {
+    var f = feat || {};
+    var dur = safeNum(f.duration, safeNum(f.durationSec, 0.7));
+    var voiced = safeNum(f.voicedRatio, 0.5);
+    var pitchHz = voiced >= 0.25 && safeNum(f.medianPitchHz, 0) > 0
+      ? safeNum(f.medianPitchHz, 200)
+      : safeNum(f.pitchHz, safeNum(f.spectralCentroidHz, 200));
+    var flat = safeNum(f.spectralFlatness, 0.28);
+    var flux = safeNum(f.spectralFlux, 0.08);
+    var modRate = safeNum(f.modRateHz, 8);
+    var modDepth = safeNum(f.modDepth, 0.3);
+    var bursts = safeNum(f.burstCount, 1);
+    var trend = safeNum(f.pitchTrend, 0);
+    var crest = safeNum(f.crestFactorDb, safeNum(f.crestDb, 10));
+    var bp = Array.isArray(f.bandProfile) ? f.bandProfile : [0.25, 0.25, 0.25, 0.25];
+    var squelchBand = clamp((bp[1] || 0) * 0.7 + (bp[2] || 0) * 0.9, 0, 1);
+    var burstBonus = bursts >= 3 ? 14 : bursts === 2 ? 7 : 0;
+    var wetPct = bonus && bonus.wetness && typeof bonus.wetness.pct === 'number'
+      ? bonus.wetness.pct
+      : Math.round(clamp(22 * Math.min(1, modDepth / 0.65) + 46 * Math.min(1, flux / 0.22) + 22 * squelchBand + burstBonus, 2, 99));
+    return {
+      dur: dur,
+      voiced: voiced,
+      pitchHz: pitchHz,
+      flat: flat,
+      flux: flux,
+      modRate: modRate,
+      modDepth: modDepth,
+      bursts: bursts,
+      trend: trend,
+      crest: crest,
+      bp: bp,
+      wetPct: wetPct
+    };
+  }
+
+  function classifyAcousticArchetype(feat, bonus) {
+    var st = extractNumericStats(feat, bonus);
+    if (st.wetPct >= 62 || st.flux >= 0.17) return 'swamp_mud';
+    if (st.voiced < 0.25 || st.flat >= 0.48) return 'stealth_breeze';
+    if (st.pitchHz >= 290) return 'high_squeaker';
+    if (st.pitchHz < 145 && (st.crest >= 11 || st.dur >= 0.65 || (st.bp[0] || 0) >= 0.34)) return 'storm_thunder';
+    if (st.bursts >= 3 || st.modRate >= 14) return 'rapid_flutter';
+    if (st.trend > 0.14) return 'rising_question';
+    if (st.dur < 0.35) return 'quick_pop';
+    if (st.crest >= 12 || (st.bp[0] || 0) >= 0.36 || st.pitchHz < 175) return 'aggressive_rumble';
+    return 'zen_relaxing';
+  }
+
+  function describeAcousticMood(feat, bonus) {
+    var st = extractNumericStats(feat, bonus);
+    var archetype = classifyAcousticArchetype(feat, bonus);
+    if (archetype === 'swamp_mud') {
+      return {
+        archetype: archetype,
+        moodLabel: st.wetPct >= 75 ? 'Bogged Down & Chaotic' : 'Squishy & Unforgiving',
+        wildAnalogy: 'Sounds like yanking a waterlogged rain boot out of waist-deep swamp clay.'
+      };
+    }
+    if (archetype === 'storm_thunder') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Stormy & Barometric',
+        wildAnalogy: 'Tracks on Doppler radar like a low-pressure summer squall line rolling over a tin roof.'
+      };
+    }
+    if (archetype === 'stealth_breeze') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Sneaky & Nonchalant',
+        wildAnalogy: 'Feels like an innocent hallway draft from a cracked winter window nobody admits opening.'
+      };
+    }
+    if (archetype === 'high_squeaker') {
+      return {
+        archetype: archetype,
+        moodLabel: 'High-Strung & Startled',
+        wildAnalogy: 'Carries the frantic energy of a helium balloon escaping into a startled teacup.'
+      };
+    }
+    if (archetype === 'rapid_flutter') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Agitated & Restless',
+        wildAnalogy: 'Putt-putts like a stubborn outboard engine fighting headwinds on a choppy lake.'
+      };
+    }
+    if (archetype === 'rising_question') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Confused & Inquisitive',
+        wildAnalogy: 'Sweeps upward like an accidental rhetorical question nobody in the elevator wanted answered.'
+      };
+    }
+    if (archetype === 'quick_pop') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Impulsive & Snappy',
+        wildAnalogy: 'Fires like a dry champagne cork popping in a silent library — zero time to duck.'
+      };
+    }
+    if (archetype === 'aggressive_rumble') {
+      return {
+        archetype: archetype,
+        moodLabel: 'Aggressive & Confrontational',
+        wildAnalogy: 'Radiates hostile low-end pressure like a territorial badger guarding the thermostat.'
+      };
+    }
+    return {
+      archetype: 'zen_relaxing',
+      moodLabel: 'Relaxing & Zen',
+      wildAnalogy: 'Settles in like a peaceful porch-swing breeze therapy session on a warm Sunday afternoon.'
+    };
+  }
+
+  function buildCombosForArchetype(archKey) {
+    var bank = ACOUSTIC_NAME_BANKS[archKey];
+    if (!bank) return [];
+    var out = [];
+    for (var a = 0; a < bank.adjectives.length; a++) {
+      for (var n = 0; n < bank.nouns.length; n++) {
+        out.push(bank.adjectives[a] + ' ' + bank.nouns[n]);
+      }
+    }
+    return out;
+  }
+
+  function generateNewSpecimenName(features, seedKey) {
+    var meta = loadMeta();
+    var used = {};
+    var keys = Object.keys(meta.samples);
+    for (var i = 0; i < keys.length; i++) {
+      var nick = meta.samples[keys[i]] && meta.samples[keys[i]].nickname;
+      if (nick) used[nick] = true;
+    }
+
+    var seedStr = seedKey || ('new_' + Date.now() + '_' + meta.nextNickIndex + '_' + Math.random());
+    var hash = hashString(seedStr);
+
+    var order;
+    if (features && typeof features === 'object') {
+      var primary = classifyAcousticArchetype(features, null);
+      var pIdx = ACOUSTIC_ARCHETYPE_ORDER.indexOf(primary);
+      order = [];
+      for (var step = 0; step < ACOUSTIC_ARCHETYPE_ORDER.length; step++) {
+        order.push(ACOUSTIC_ARCHETYPE_ORDER[(Math.max(0, pIdx) + step) % ACOUSTIC_ARCHETYPE_ORDER.length]);
+      }
+    } else {
+      var rot = hash % ACOUSTIC_ARCHETYPE_ORDER.length;
+      order = [];
+      for (var s = 0; s < ACOUSTIC_ARCHETYPE_ORDER.length; s++) {
+        order.push(ACOUSTIC_ARCHETYPE_ORDER[(rot + s) % ACOUSTIC_ARCHETYPE_ORDER.length]);
+      }
+    }
+
+    for (var o = 0; o < order.length; o++) {
+      var combos = buildCombosForArchetype(order[o]);
+      var startIdx = (hash + o * 13) % combos.length;
+      for (var c = 0; c < combos.length; c++) {
+        var candidate = combos[(startIdx + c) % combos.length];
+        if (!used[candidate]) {
+          meta.nextNickIndex++;
+          return candidate;
+        }
+      }
+    }
+    meta.nextNickIndex++;
+    return 'Specimen #' + String(meta.nextNickIndex).padStart(2, '0');
   }
 
   function computeExactScore(result) {
@@ -226,7 +445,7 @@
         title: 'Expert',
         tier: 4,
         color: '#22C55E',
-        desc: 'Uncanny cheek-flutter discipline and brass resonance. FBI audio labs are taking notes.'
+        desc: 'Uncanny cheek-flutter control and barometric wallop. National Weather Service Doppler radar is taking notes.'
       };
     }
     if (s < 95) {
@@ -241,7 +460,7 @@
       title: 'Legendary',
       tier: 6,
       color: '#FACC15',
-      desc: 'Reference-grade porcelain virtuosity. You have achieved peak human wind-instrument parity.'
+      desc: 'Reference-grade porcelain virtuosity. You matched everything from swamp-boot suction to gale-force thunder.'
     };
   }
 
@@ -290,7 +509,7 @@
     if (score >= 95) {
       return (
         'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Eerily forensic vocal-tract cloning! ' +
-        'Your ' + durB + ' mimicry nailed the ' + pitchA + ' brass core (logging ' + pitchB + ' at ' + bpmB + ' cheek flaps/min) and matched the tail sputter well enough to fail a courtroom alibi.' +
+        'Your ' + durB + ' mimicry nailed the ' + pitchA + ' storm core (logging ' + pitchB + ' at ' + bpmB + ' cheek flaps/min) and matched the tail sputter well enough to fail a courtroom alibi.' +
         twinLine + alibiLine
       );
     }
@@ -327,7 +546,7 @@
     }
     return (
       'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Total gastro-acoustic alibi failure! Your ' +
-      durB + ' submission (' + pitchB + ', ' + bpmB + ' flaps/min) belongs to a completely different wind instrument than the ' +
+      durB + ' submission (' + pitchB + ', ' + bpmB + ' flaps/min) sounds like a completely different weather system than the ' +
       durA + ' (' + pitchA + ') exhibit.' +
       (firstTip ? ' Lab diagnosis: ' + firstTip : '') +
       twinLine
@@ -533,6 +752,7 @@
 
   /* ==================== HIGH-LEVEL VAULT OPERATIONS ==================== */
   var cachedOggSupport = null;
+  var cachedAlacSupport = null;
 
   function normalizePreloadUrl(url, filename) {
     var u = String(url || '').trim();
@@ -545,11 +765,12 @@
     return u;
   }
 
-  function isCodecSupportedForUrl(url) {
+  function isCodecSupportedForUrl(url, codec) {
     if (typeof root.Audio !== 'function' || typeof root.document === 'undefined') {
       return true;
     }
-    if (/\.ogg(?:$|\?)/i.test(String(url || ''))) {
+    var c = String(codec || '').toLowerCase();
+    if (c === 'ogg' || /\.ogg(?:$|\?)/i.test(String(url || ''))) {
       if (cachedOggSupport === null) {
         try {
           var probeAudio = new root.Audio();
@@ -559,6 +780,17 @@
         }
       }
       return cachedOggSupport;
+    }
+    if (c === 'alac') {
+      if (cachedAlacSupport === null) {
+        try {
+          var probeAlac = new root.Audio();
+          cachedAlacSupport = Boolean(probeAlac && typeof probeAlac.canPlayType === 'function' && probeAlac.canPlayType('audio/mp4; codecs="alac"'));
+        } catch (e) {
+          cachedAlacSupport = false;
+        }
+      }
+      return cachedAlacSupport;
     }
     return true;
   }
@@ -595,7 +827,8 @@
         preloadCatalogCache = files
           .map(function (item, idx) {
             var normUrl = normalizePreloadUrl(item.url, item.filename);
-            if (!normUrl || !isCodecSupportedForUrl(normUrl)) return null;
+            var itemCodec = item.codec || '';
+            if (!normUrl || !isCodecSupportedForUrl(normUrl, itemCodec)) return null;
             var label = item.name || ('Vault Fart #' + (idx + 1));
             return {
               id: item.id || ('preload_' + idx),
@@ -605,7 +838,11 @@
               description: 'Pre-loaded Default Vault specimen',
               isBuiltIn: true,
               preloadUrl: normUrl,
+              codec: itemCodec,
               filename: item.filename || label,
+              previewPeaks: Array.isArray(item.peaks) ? item.peaks.slice() : null,
+              previewDurationSec: typeof item.durationSec === 'number' && item.durationSec > 0 ? item.durationSec : null,
+              previewMeta: item.meta && typeof item.meta === 'object' ? item.meta : null,
               createdAt: idx + 1,
               sampleRate: 44100,
               samples: null,
@@ -711,9 +948,11 @@
   function saveNewSpecimen(recResult) {
     var storage = root.TootApp && root.TootApp.Storage;
     if (!storage) return Promise.reject(new Error('Storage unavailable'));
-    var nickname = generateNewSpecimenName();
     var sr = recResult.sampleRate || 44100;
     var samples = recResult.clippedSamples;
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var feat = recResult.features || (DSP && samples && samples.length ? DSP.extractFeatures(samples, sr) : null);
+    var nickname = generateNewSpecimenName(feat);
     var toSave = {
       id: 'custom_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
       name: nickname,
@@ -725,6 +964,7 @@
       trimStartSec: recResult.clipInfo ? recResult.clipInfo.startSec : 0,
       trimEndSec: recResult.clipInfo ? recResult.clipInfo.endSec : samples.length / sr,
       preOnsetBreath: (recResult.clipInfo && recResult.clipInfo.preOnsetBreath) || null,
+      features: feat,
       samples: samples
     };
     return storage.saveCustomSound(toSave).then(function (saved) {
@@ -741,6 +981,7 @@
       persistMeta();
       saved.displayName = nickname;
       saved.clipInfo = recResult.clipInfo;
+      if (!saved.features && feat) saved.features = feat;
       if (!saved.preOnsetBreath && toSave.preOnsetBreath) saved.preOnsetBreath = toSave.preOnsetBreath;
       if (saved.features && saved.preOnsetBreath && !saved.features.preOnsetBreath) {
         saved.features.preOnsetBreath = saved.preOnsetBreath;
@@ -1048,32 +1289,32 @@
       clamp(92 - pitchSpanOctaves * 18 - Math.abs(aggregateMoisturePct - 45) * 0.22, 18, 99)
     );
     var totalDurationSec = combined.length / targetSr;
-    var trackTitle = 'Vault Megamix — Opus in ' + count + ' Movement' + (count === 1 ? '' : 's');
+    var trackTitle = 'Vault Megamix — Storm System in ' + count + ' Front' + (count === 1 ? '' : 's');
 
     var moistureNote =
       aggregateMoisturePct >= 62
-        ? 'Hazmat Laundry Alert: collective moisture sits at ' + aggregateMoisturePct + '% — advise opening windows before pressing Play.'
+        ? 'Hazmat Laundry & Bog Warning: collective moisture sits at ' + aggregateMoisturePct + '% — thick wet-boot-in-mud suction energy.'
         : aggregateMoisturePct >= 38
-        ? 'Moderate ' + aggregateMoisturePct + '% squelch turbulence keeps the medley richly organic without triggering floor-mop protocols.'
-        : 'Remarkably desert-dry ensemble (' + aggregateMoisturePct + '% moisture) suitable for polite concert halls.';
+        ? 'Moderate ' + aggregateMoisturePct + '% squelch turbulence keeps the mix richly swamp-adjacent without triggering floor-mop protocols.'
+        : 'Remarkably desert-dry cascade (' + aggregateMoisturePct + '% moisture) suitable for quiet library reading rooms.';
 
     var groupVerdict =
-      'Conducted ' +
+      'Assembled ' +
       count +
       ' Vault specimens into a ' +
       totalDurationSec.toFixed(2) +
-      's continuous brass anthology, painstakingly arranged by ' +
+      's continuous barometric & acoustic anthology, ordered by ' +
       sortMeta.label +
       ' (' +
       (sortDir === 'desc' ? 'descending' : 'ascending') +
-      ') as though Carnegie Hall had requested it. ' +
+      ') like a miniature Doppler radar forecast. ' +
       'Ensemble spans ' +
       pitchSpanOctaves.toFixed(2) +
       ' octaves around a ' +
       Math.round(meanPitchHz) +
       ' Hz mean core (' +
       coherenceScore +
-      '% symphonic coherence), commanding a cumulative ' +
+      '% weather-front coherence), commanding a cumulative ' +
       combinedBlastRadiusM.toFixed(1) +
       'm elevator evacuation zone. ' +
       moistureNote;
@@ -1117,12 +1358,13 @@
         : '';
 
     var bpmMod = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var mood = describeAcousticMood(feat, bonus);
     var labNote =
       bonus && bonus.wetness.wetA >= 65
-        ? 'Laundry Advisory: Hazardous bubble-flux turbulence detected — consider standing near an open window.'
+        ? 'Laundry & Swamp Advisory: Heavy mud-boot suction turbulence detected — crack a window immediately.'
         : bonus && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
-        ? 'Institute Ruling: Harmonically committed enough to earn a seat near the back of a brass section.'
-        : 'Institute Ruling: Pure aerodynamic stealth turbulence — plausible office deniability remains intact.';
+        ? 'Institute Mood Ruling (' + mood.moodLabel + '): ' + mood.wildAnalogy
+        : 'Institute Ruling (' + mood.moodLabel + '): Pure aerodynamic stealth crosswind — plausible office deniability remains intact.';
 
     var lines = [
       'TOOT MATCH — ' + (roleLabel || 'FORENSIC AUDIO DOSSIER'),
@@ -1254,10 +1496,14 @@
 
   TootLabs.Store = {
     SPECIMEN_NICKNAMES: SPECIMEN_NICKNAMES,
+    ACOUSTIC_NAME_BANKS: ACOUSTIC_NAME_BANKS,
+    ACOUSTIC_NAME_COUNT: ACOUSTIC_NAME_COUNT,
     LEGENDARY_TITLES: LEGENDARY_TITLES,
     GROUP_SORT_OPTIONS: GROUP_SORT_OPTIONS,
     MAX_DEFAULT_MEGAMIX: MAX_DEFAULT_MEGAMIX,
     ensureNickname: ensureNickname,
+    generateNewSpecimenName: generateNewSpecimenName,
+    describeAcousticMood: describeAcousticMood,
     computeExactScore: computeExactScore,
     getRankForScore: getRankForScore,
     getRewardTier: getRewardTier,

@@ -71,6 +71,180 @@ function humanizeFilename(filename) {
     .join(' ');
 }
 
+function detectAudioCodec(buf, ext) {
+  var lower = String(ext || '').toLowerCase();
+  if (lower === '.m4a' && buf && buf.length > 0) {
+    return buf.indexOf(Buffer.from('alac')) !== -1 && buf.indexOf(Buffer.from('mp4a')) === -1
+      ? 'alac'
+      : 'aac';
+  }
+  if (lower === '.ogg') return 'ogg';
+  return lower.replace(/^\./, '') || 'unknown';
+}
+
+function extractWavPreview(buf, barCount) {
+  var bars = barCount || 56;
+  if (!buf || buf.length < 44 || buf.toString('ascii', 0, 4) !== 'RIFF' || buf.toString('ascii', 8, 12) !== 'WAVE') {
+    return null;
+  }
+  var audioFormat = 0;
+  var channels = 1;
+  var sampleRate = 44100;
+  var bits = 16;
+  var dataOffset = -1;
+  var dataLen = 0;
+  var pos = 12;
+  while (pos + 8 <= buf.length) {
+    var chunkId = buf.toString('ascii', pos, pos + 4);
+    var chunkSize = buf.readUInt32LE(pos + 4);
+    var bodyPos = pos + 8;
+    if (chunkId === 'fmt ' && bodyPos + 16 <= buf.length) {
+      audioFormat = buf.readUInt16LE(bodyPos);
+      channels = Math.max(1, buf.readUInt16LE(bodyPos + 2));
+      sampleRate = Math.max(1, buf.readUInt32LE(bodyPos + 4));
+      bits = buf.readUInt16LE(bodyPos + 14);
+      if (audioFormat === 0xfffe && chunkSize >= 40 && bodyPos + 26 <= buf.length) {
+        audioFormat = buf.readUInt16LE(bodyPos + 24);
+      }
+    } else if (chunkId === 'data') {
+      dataOffset = bodyPos;
+      dataLen = Math.min(chunkSize, Math.max(0, buf.length - bodyPos));
+      break;
+    }
+    pos = bodyPos + chunkSize + (chunkSize % 2);
+  }
+  if (dataOffset < 0 || dataLen <= 0 || (audioFormat !== 1 && audioFormat !== 3)) return null;
+  var bytesPerSample = Math.floor(bits / 8);
+  var frameBytes = bytesPerSample * channels;
+  if (bytesPerSample <= 0 || frameBytes <= 0) return null;
+  var totalFrames = Math.floor(dataLen / frameBytes);
+  if (totalFrames <= 0) return null;
+
+  var rawPeaks = new Array(bars);
+  var maxPeak = 0.0001;
+  for (var b = 0; b < bars; b++) {
+    var fStart = Math.floor((b / bars) * totalFrames);
+    var fEnd = Math.min(totalFrames, Math.max(fStart + 1, Math.floor(((b + 1) / bars) * totalFrames)));
+    var stride = Math.max(1, Math.floor((fEnd - fStart) / 64));
+    var pk = 0;
+    for (var f = fStart; f < fEnd; f += stride) {
+      var monoSum = 0;
+      for (var c = 0; c < channels; c++) {
+        var off = dataOffset + f * frameBytes + c * bytesPerSample;
+        if (off + bytesPerSample > buf.length) continue;
+        var s = 0;
+        if (audioFormat === 3 && bits === 32) {
+          s = buf.readFloatLE(off);
+        } else if (bits === 16) {
+          s = buf.readInt16LE(off) / 32768;
+        } else if (bits === 8) {
+          s = (buf.readUInt8(off) - 128) / 128;
+        } else if (bits === 24) {
+          var v24 = buf[off] | (buf[off + 1] << 8) | (buf[off + 2] << 16);
+          if (v24 & 0x800000) v24 |= ~0xffffff;
+          s = v24 / 8388608;
+        } else if (bits === 32) {
+          s = buf.readInt32LE(off) / 2147483648;
+        }
+        monoSum += s;
+      }
+      var absVal = Math.abs(monoSum / channels);
+      if (absVal > pk) pk = absVal;
+    }
+    rawPeaks[b] = pk;
+    if (pk > maxPeak) maxPeak = pk;
+  }
+  var peaks = rawPeaks.map(function (v) {
+    return Math.max(4, Math.min(100, Math.round((v / maxPeak) * 100)));
+  });
+  return {
+    durationSec: Number((totalFrames / sampleRate).toFixed(3)),
+    peaks: peaks
+  };
+}
+
+function extractMp4AlacPreview(buf, barCount) {
+  var bars = barCount || 56;
+  if (!buf || buf.length < 32) return null;
+
+  var idxM = buf.indexOf(Buffer.from('mdhd'));
+  if (idxM < 0 || idxM + 24 > buf.length) return null;
+  var version = buf[idxM + 4];
+  var timescale = 0;
+  var duration = 0;
+  if (version === 0 && idxM + 24 <= buf.length) {
+    timescale = buf.readUInt32BE(idxM + 16);
+    duration = buf.readUInt32BE(idxM + 20);
+  } else if (version === 1 && idxM + 36 <= buf.length) {
+    timescale = buf.readUInt32BE(idxM + 24);
+    duration = Number(buf.readBigUInt64BE(idxM + 28));
+  }
+  if (!timescale || duration <= 0) return null;
+  var durationSec = Number((duration / timescale).toFixed(3));
+
+  var idxS = buf.indexOf(Buffer.from('stsz'));
+  if (idxS < 0 || idxS + 16 > buf.length) return null;
+  var sampleSize = buf.readUInt32BE(idxS + 8);
+  var count = buf.readUInt32BE(idxS + 12);
+  if (!count || count <= 0) return null;
+
+  var sizes = new Array(count);
+  for (var i = 0; i < count; i++) {
+    if (sampleSize > 0) {
+      sizes[i] = sampleSize;
+    } else {
+      var off = idxS + 16 + i * 4;
+      if (off + 4 > buf.length) break;
+      sizes[i] = buf.readUInt32BE(off);
+    }
+  }
+  if (sizes.length === 0) return null;
+
+  var rawPeaks = new Array(bars);
+  var maxVal = 0.0001;
+  for (var b = 0; b < bars; b++) {
+    var pos = (b / bars) * (sizes.length - 1);
+    var lo = Math.floor(pos);
+    var hi = Math.min(sizes.length - 1, lo + 1);
+    var frac = pos - lo;
+    var sStart = Math.floor((b / bars) * sizes.length);
+    var sEnd = Math.min(sizes.length, Math.max(sStart + 1, Math.floor(((b + 1) / bars) * sizes.length)));
+    var bucketMax = 0;
+    for (var k = sStart; k < sEnd; k++) {
+      if ((sizes[k] || 0) > bucketMax) bucketMax = sizes[k] || 0;
+    }
+    var interp = (sizes[lo] || 0) * (1 - frac) + (sizes[hi] || 0) * frac;
+    var val = Math.max(bucketMax, interp);
+    rawPeaks[b] = val;
+    if (val > maxVal) maxVal = val;
+  }
+
+  var peaks = rawPeaks.map(function (v) {
+    return Math.max(6, Math.min(100, Math.round(Math.pow(v / maxVal, 0.85) * 100)));
+  });
+
+  return {
+    durationSec: durationSec,
+    peaks: peaks
+  };
+}
+
+function readCachedManifestMap() {
+  var map = {};
+  try {
+    var mp = path.join(PRELOAD_DIR, 'manifest.json');
+    if (!fs.existsSync(mp)) return map;
+    var data = JSON.parse(fs.readFileSync(mp, 'utf8'));
+    var files = data && Array.isArray(data.files) ? data.files : [];
+    for (var i = 0; i < files.length; i++) {
+      var item = files[i];
+      if (!item || !item.filename) continue;
+      map[item.filename + '|' + item.size] = item;
+    }
+  } catch (e) {}
+  return map;
+}
+
 function scanPreloadsSync() {
   var raw = [];
   function walk(dirPath, relPrefix, depth) {
@@ -102,6 +276,7 @@ function scanPreloadsSync() {
     return a.rel.localeCompare(b.rel);
   });
 
+  var cachedMap = readCachedManifestMap();
   var seenHashes = {};
   var seenNames = {};
   var results = [];
@@ -133,14 +308,37 @@ function scanPreloadsSync() {
       seenNames[nameKey] = 1;
     }
 
-    results.push({
+    var ext = path.extname(item.name).toLowerCase();
+    var codec = detectAudioCodec(buf, ext);
+    var entryObj = {
       id: stablePreloadId(item.rel),
       name: displayName,
       filename: item.rel,
-      ext: path.extname(item.name).toLowerCase(),
+      ext: ext,
+      codec: codec,
       size: buf.length,
       url: '../VaultPreLoads/' + item.rel.split('/').map(encodeURIComponent).join('/')
-    });
+    };
+    var cached = cachedMap[item.rel + '|' + buf.length];
+    if (cached && Array.isArray(cached.peaks) && cached.peaks.length > 0) {
+      entryObj.peaks = cached.peaks;
+      if (typeof cached.durationSec === 'number') entryObj.durationSec = cached.durationSec;
+      if (cached.meta && typeof cached.meta === 'object') entryObj.meta = cached.meta;
+      if (cached.codec) entryObj.codec = cached.codec;
+    } else if (ext === '.wav') {
+      var wavPrev = extractWavPreview(buf, 56);
+      if (wavPrev) {
+        entryObj.durationSec = wavPrev.durationSec;
+        entryObj.peaks = wavPrev.peaks;
+      }
+    } else if (codec === 'alac') {
+      var alacPrev = extractMp4AlacPreview(buf, 56);
+      if (alacPrev) {
+        entryObj.durationSec = alacPrev.durationSec;
+        entryObj.peaks = alacPrev.peaks;
+      }
+    }
+    results.push(entryObj);
   }
 
   results.sort(function (a, b) {

@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124e" />
-  <script defer src="../js/dsp.js?v=20261124e"></script>
-  <script defer src="../js/audioEngine.js?v=20261124e"></script>
-  <script defer src="../js/storage.js?v=20261124e"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124e"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124e"></script>
-  <script defer src="js/labsStore.js?v=20261124e"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124e"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124e"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124e"></script>
-  <script defer src="js/labsApp.js?v=20261124e"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124f" />
+  <script defer src="../js/dsp.js?v=20261124f"></script>
+  <script defer src="../js/audioEngine.js?v=20261124f"></script>
+  <script defer src="../js/storage.js?v=20261124f"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124f"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124f"></script>
+  <script defer src="js/labsStore.js?v=20261124f"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124f"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124f"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124f"></script>
+  <script defer src="js/labsApp.js?v=20261124f"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -334,6 +334,12 @@
                   <button type="button" id="btn-guess-toggle-picker" class="labs-btn-ghost labs-btn-xs" aria-expanded="false">▾ Pick</button>
                 </div>
               </div>
+
+              <div id="guess-hint-row" class="labs-hint-row">
+                <button type="button" id="btn-guess-hint" class="labs-btn-ghost labs-btn-xs labs-hint-btn">💡 Hint (0/3)</button>
+                <span id="guess-hint-status" class="labs-hint-note">Complete mystery — tap for a clue</span>
+              </div>
+              <div id="guess-hints-tray" class="labs-hints-tray hidden" aria-live="polite"></div>
 
               <div id="guess-picker-drawer" class="labs-picker-drawer hidden">
                 <div id="guess-vault-strip" class="labs-vault-strip"></div>
@@ -808,8 +814,8 @@
         <div class="labs-splash-step">
           <span class="labs-splash-num">1</span>
           <div>
-            <strong>🎯 Guess The Fart (Mystery Mode)</strong>
-            <p>See only the Mystery Fart's name while the audio stays secret. Record what you imagine it sounds like, hear the reveal, and compare side-by-side 3D spectrum plots — play Original, Guess, or Both Together!</p>
+            <strong>🎯 Guess The Fart (Complete Mystery Mode)</strong>
+            <p>Both the Mystery Fart's name and audio stay secret! Guess completely blind, or tap <em>💡 Hint (0/3)</em> up to 3 times (Name → Duration &amp; Pattern → Pitch &amp; Vibe), hear the reveal, and compare live side-by-side 3D spectrum plots.</p>
           </div>
         </div>
         <div class="labs-splash-step">
