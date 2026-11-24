@@ -95,6 +95,55 @@
       });
   }
 
+  function playAutoDetectStartBeep() {
+    return getAudioCtx()
+      .then(function (ctx) {
+        var t0 = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var g = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, t0);
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.linearRampToValueAtTime(0.09, t0 + 0.008);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.095);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + 0.105);
+      })
+      .catch(function () {
+        // Ignore locked autoplay contexts gracefully
+      });
+  }
+
+  function playAutoDetectStopBeep() {
+    return getAudioCtx()
+      .then(function (ctx) {
+        var t0 = ctx.currentTime;
+        var notes = [
+          { freq: 740.0, offset: 0, dur: 0.075 },
+          { freq: 1046.5, offset: 0.082, dur: 0.11 }
+        ];
+        for (var i = 0; i < notes.length; i++) {
+          var n = notes[i];
+          var osc = ctx.createOscillator();
+          var g = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(n.freq, t0 + n.offset);
+          g.gain.setValueAtTime(0.0001, t0 + n.offset);
+          g.gain.linearRampToValueAtTime(0.10, t0 + n.offset + 0.008);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.offset + n.dur);
+          osc.connect(g);
+          g.connect(ctx.destination);
+          osc.start(t0 + n.offset);
+          osc.stop(t0 + n.offset + n.dur + 0.015);
+        }
+      })
+      .catch(function () {
+        // Ignore locked autoplay contexts gracefully
+      });
+  }
+
   function playLegendaryFinale() {
     return getAudioCtx()
       .then(function (ctx) {
@@ -310,6 +359,8 @@
     playBell: playBell,
     playLabTick: playLabTick,
     playAnalysisComplete: playAnalysisComplete,
+    playAutoDetectStartBeep: playAutoDetectStartBeep,
+    playAutoDetectStopBeep: playAutoDetectStopBeep,
     playLegendaryFinale: playLegendaryFinale,
     playVaultDoorOpen: playVaultDoorOpen,
     launchConfetti: launchConfetti

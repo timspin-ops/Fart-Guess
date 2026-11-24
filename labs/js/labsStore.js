@@ -914,6 +914,13 @@
       lines.push('Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm | Alibi: ' + bonus.social.a.verdict);
     }
     lines.push(labNote);
+    var fnApi = root.TootLabs && root.TootLabs.Fartnalysis;
+    if (fnApi && typeof fnApi.pickShareableVerdict === 'function') {
+      lines.push('Official Verdict: ' + fnApi.pickShareableVerdict((sound.displayName || sound.name || 'Recording') + '|' + prof.durationLabel));
+    }
+    lines.push('');
+    lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
+    lines.push('Reviewed and Approved By: Professor Reginald P. Bottomsworth, Chief Acoustic Flatulence Officer, Institute of Acoustic Flatulence Research, Toot Match Labs');
     return lines.join('\n');
   }
 
@@ -923,14 +930,24 @@
     var rank = getRankForScore(exact);
     var reward = getRewardTier(exact);
     var verdict = buildScientificVerdict(soundA, soundB, result, exact);
-    return [
-      'TOOT MATCH — GUESS COMPARISON REPORT',
-      'Original Fart: ' + (soundA.displayName || soundA.name || 'Original'),
-      'Guesser: ' + (soundB.name || 'Guesser'),
-      'Match Quality: ' + exact.toFixed(1) + '% | Rank: ' + rank.title + ' (' + reward.bells + '/5 Stars)',
+    var fnApi = root.TootLabs && root.TootLabs.Fartnalysis;
+    var officialVerdict =
+      fnApi && typeof fnApi.pickShareableVerdict === 'function'
+        ? fnApi.pickShareableVerdict((soundA.displayName || soundA.name || '') + '|' + (soundB.name || '') + '|' + exact.toFixed(1))
+        : null;
+    var lines = [
+      'TOOT MATCH LABS — COMPARATIVE ACOUSTIC ANALYSIS REPORT',
+      'Primary Specimen: ' + (soundA.displayName || soundA.name || 'Specimen A'),
+      'Comparison Recording: ' + (soundB.name || 'Specimen B'),
+      'Similarity Score: ' + exact.toFixed(1) + '% | Rank: ' + rank.title + ' (' + reward.bells + '/5 Stars)',
       'Metrics: Duration ' + result.durationScore + '% | Tone ' + result.pitchScore + '% | Flutter ' + result.modulationScore + '% | Resonance ' + result.timbreScore + '% | Pressure ' + result.envelopeScore + '%',
       'Scientific Verdict: ' + verdict
-    ].join('\n');
+    ];
+    if (officialVerdict) lines.push('Official Verdict: ' + officialVerdict);
+    lines.push('');
+    lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
+    lines.push('Reviewed and Approved By: Professor Reginald P. Bottomsworth, Chief Acoustic Flatulence Officer, Institute of Acoustic Flatulence Research, Toot Match Labs');
+    return lines.join('\n');
   }
 
   function buildGroupAnalysisReportText(groupObj) {
@@ -941,15 +958,25 @@
         return '  ' + (idx + 1) + '. ' + seg.name + ' (' + seg.startSec.toFixed(2) + 's–' + seg.endSec.toFixed(2) + 's, ~' + Math.round(seg.pitchHz) + ' Hz, Wetness ' + seg.wetnessPct + '%)';
       })
       .join('\n');
-    return [
-      'TOOT MATCH — MULTI-FART COHERENT MEGAMIX REPORT',
+    var fnApi = root.TootLabs && root.TootLabs.Fartnalysis;
+    var officialVerdict =
+      fnApi && typeof fnApi.pickShareableVerdict === 'function'
+        ? fnApi.pickShareableVerdict(groupObj.name + '|' + (m.sortLabel || 'Default') + '|megamix')
+        : null;
+    var lines = [
+      'TOOT MATCH LABS — MULTI-SPECIMEN COHERENT MEGAMIX REPORT',
       'Track: ' + groupObj.name,
       'Arrangement: ' + (m.sortLabel || 'Default'),
       'Movements: ' + m.count + ' | Total Duration: ' + m.totalDurationSec.toFixed(2) + 's | Coherence Score: ' + m.coherenceScore + '%',
       'Aggregate Moisture: ' + m.aggregateMoisturePct + '% | Combined Blast Radius: ' + m.combinedBlastRadiusM.toFixed(1) + 'm',
       'Tracklist:\n' + tracks,
       'Verdict: ' + m.groupVerdict
-    ].join('\n');
+    ];
+    if (officialVerdict) lines.push('Official Verdict: ' + officialVerdict);
+    lines.push('');
+    lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
+    lines.push('Reviewed and Approved By: Professor Reginald P. Bottomsworth, Chief Acoustic Flatulence Officer, Institute of Acoustic Flatulence Research, Toot Match Labs');
+    return lines.join('\n');
   }
 
   function getSampleStats(sampleId) {

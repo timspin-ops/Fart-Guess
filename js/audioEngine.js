@@ -852,7 +852,8 @@
     var sr = Math.max(8000, Number(sampleRate) || 44100);
     var ringSeconds = Math.max(2.0, Number(opts.ringSeconds) || 5.0);
     var preEventSec = Math.max(2.0, Math.min(ringSeconds, Number(opts.preEventSec) || 3.0));
-    var calibrationSec = Math.max(0.15, Number(opts.calibrationSec) || 0.35);
+    var settleSec = Math.max(0, Number(opts.settleSec) || 0);
+    var calibrationSec = settleSec + Math.max(0.15, Number(opts.calibrationSec) || 0.35);
     var minPostEventSec = Math.max(1.2, Number(opts.minPostEventSec) || 1.85);
     var postSilenceSec = Math.max(0.8, Number(opts.postSilenceSec) || 1.55);
     var maxPostEventSec = Math.max(minPostEventSec + 1.0, Number(opts.maxPostEventSec) || 8.0);
@@ -1003,7 +1004,9 @@
         calSamples += n;
         var elapsedSec = calSamples / sr;
 
-        if (elapsedSec <= calibrationSec) {
+        if (elapsedSec <= settleSec) {
+          // Ignore initial arming beep window so it never inflates noiseFloorRms or self-triggers
+        } else if (elapsedSec <= calibrationSec) {
           calRmsSum += rms;
           calChunks++;
           noiseFloorRms = Math.max(0.002, Math.min(0.035, calRmsSum / Math.max(1, calChunks)));

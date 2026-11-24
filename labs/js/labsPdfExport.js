@@ -246,10 +246,10 @@
 
   function drawPdfFooter(ctx) {
     ctx.fillStyle = '#6B7280';
-    ctx.font = '600 14px monospace';
+    ctx.font = '600 13px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(
-      'Generated locally by Toot Match Labs · Deterministic Acoustic DSP + 22-Feature Softmax Classifier',
+      'Toot Match Labs · Institute of Acoustic Flatulence Research · Analysis performed using A.S.S. v4.2 · Reviewed by Prof. R. P. Bottomsworth',
       PAGE_W * 0.5,
       PAGE_H - 28
     );

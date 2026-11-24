@@ -48,12 +48,18 @@
 
   var state = {
     view: 'home',
+    prevNonTeamView: 'home',
     samples: [],
     detailSampleId: null,
     detailAttempts: [],
     guessTargetId: null,
     guessAttempts: [],
     pendingGuess: null,
+    sessionGuesses: [],
+    lastSessionResults: [],
+    guessSubMode: 'standard',
+    blindGuesses: [],
+    blindOriginal: null,
     lastOutcome: null,
     quickSavedId: null,
     fnMode: 'original',
@@ -477,21 +483,25 @@
 
   /* ==================== ANIMATION CLEANUP ==================== */
   var ANALYSIS_OPENING_POOL = [
-    'Capturing acoustic signature...',
+    'Capturing acoustic signatures...',
     'Generating waveform model...'
   ];
 
-  var ANALYSIS_STANDARD_POOL = [
-    'Mapping resonance profile...',
+  var ANALYSIS_RESULTS_CORE_POOL = [
+    'Mapping resonance profiles...',
+    'Comparing turbulence patterns...',
+    'Running similarity calculations...',
+    'Evaluating spectral alignment...',
+    'Computing pressure distribution...',
     'Comparing airflow dynamics...',
-    'Measuring turbulence patterns...',
-    'Calibrating frequency spectrum...',
-    'Comparing pressure distribution...',
-    'Running similarity algorithms...',
     'Evaluating thunder quotient...',
+    'Running A.S.S. cross-correlation...'
+  ];
+
+  var ANALYSIS_STANDARD_POOL = [
+    'Calibrating frequency spectrum...',
     'Calculating cheek resonance...',
     'Consulting historical fart archive...',
-    'Running machine learning validation...',
     'Analyzing harmonic distribution...',
     'Computing pressure profile...',
     'Matching turbulence characteristics...',
@@ -511,6 +521,14 @@
     'Checking for suspicious facial involvement...',
     'Estimating neighbour awareness risk...',
     'Validating laboratory findings...'
+  ];
+
+  var ANALYSIS_SCIENTIST_UPDATES = [
+    'Professor Bottomsworth is reviewing preliminary findings...',
+    'Dr. Flatley is validating similarity calculations...',
+    'Dr. Wobble is analyzing harmonic structure...',
+    'Dr. Turbulence is examining pressure release turbulence...',
+    'Dr. Pufferton is indexing specimen archive records...'
   ];
 
   var ANALYSIS_RARE_POOL = [
@@ -545,6 +563,8 @@
     state.analysisTimers = [];
     state.analysisDoneCb = null;
     var overlay = $('labs-analysis-overlay');
+    var consensusEl = $('labs-an-consensus');
+    if (consensusEl) consensusEl.classList.add('hidden');
     if (overlay) {
       overlay.classList.add('hidden');
       overlay.classList.remove('fading-out');
@@ -561,45 +581,70 @@
       quickBadge.classList.add('hidden');
       quickBadge.classList.remove('triggered');
     }
-    var guessPanel = $('guess-autodetect-panel');
-    if (guessPanel) {
-      guessPanel.classList.add('hidden');
-      guessPanel.classList.remove('triggered');
-    }
   }
 
-  function pickAnalysisStages() {
-    var opening = ANALYSIS_OPENING_POOL[Math.floor(Math.random() * ANALYSIS_OPENING_POOL.length)];
-    var pool = ANALYSIS_STANDARD_POOL.slice();
-    for (var i = pool.length - 1; i > 0; i--) {
+  function shuffleArray(arr) {
+    var out = arr.slice();
+    for (var i = out.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
-      var tmp = pool[i];
-      pool[i] = pool[j];
-      pool[j] = tmp;
+      var tmp = out[i];
+      out[i] = out[j];
+      out[j] = tmp;
+    }
+    return out;
+  }
+
+  function pickAnalysisStages(context) {
+    var isResults = context === 'comparison';
+    var opening = ANALYSIS_OPENING_POOL[Math.floor(Math.random() * ANALYSIS_OPENING_POOL.length)];
+    var coreShuffled = shuffleArray(isResults ? ANALYSIS_RESULTS_CORE_POOL : ANALYSIS_STANDARD_POOL);
+    var extraShuffled = shuffleArray(ANALYSIS_STANDARD_POOL);
+
+    var stages = [{ text: opening, rare: false, scientist: false }];
+    var midCount = Math.random() < 0.5 ? 5 : 6;
+    var pickedMid = [];
+    var seen = new Set([opening]);
+
+    for (var ci = 0; ci < coreShuffled.length && pickedMid.length < Math.min(4, midCount); ci++) {
+      if (!seen.has(coreShuffled[ci])) {
+        seen.add(coreShuffled[ci]);
+        pickedMid.push({ text: coreShuffled[ci], rare: false, scientist: false });
+      }
+    }
+    for (var ei = 0; ei < extraShuffled.length && pickedMid.length < midCount; ei++) {
+      if (!seen.has(extraShuffled[ei])) {
+        seen.add(extraShuffled[ei]);
+        pickedMid.push({ text: extraShuffled[ei], rare: false, scientist: false });
+      }
     }
 
-    var midCount = Math.random() < 0.5 ? 5 : 6;
-    var stages = [{ text: opening, rare: false }];
-    var pickedMid = pool.slice(0, midCount).map(function (t) {
-      return { text: t, rare: false };
-    });
+    // Occasional (or regular on results) scientist update
+    if (isResults || Math.random() < 0.58) {
+      var sciTxt = ANALYSIS_SCIENTIST_UPDATES[Math.floor(Math.random() * ANALYSIS_SCIENTIST_UPDATES.length)];
+      var sciPos = Math.max(1, Math.min(pickedMid.length, 1 + Math.floor(Math.random() * 3)));
+      pickedMid.splice(sciPos, 0, { text: sciTxt, rare: false, scientist: true });
+    }
 
     if (Math.random() < 0.42) {
       var rareTxt = ANALYSIS_RARE_POOL[Math.floor(Math.random() * ANALYSIS_RARE_POOL.length)];
       var insertPos = Math.max(2, Math.min(pickedMid.length, 2 + Math.floor(Math.random() * 3)));
-      pickedMid.splice(insertPos, 0, { text: rareTxt, rare: true });
+      pickedMid.splice(insertPos, 0, { text: rareTxt, rare: true, scientist: false });
     }
 
     for (var m = 0; m < pickedMid.length; m++) {
       stages.push(pickedMid[m]);
     }
-    stages.push({ text: 'Finalizing laboratory verdict', rare: false });
+    stages.push({
+      text: isResults ? 'Determining winner...' : 'Finalizing laboratory verdict...',
+      rare: false,
+      scientist: false
+    });
 
-    // Target 3.4s to 5.4s total across stages (plus ~300ms fade out)
-    var targetTotalMs = 3400 + Math.random() * 1950;
+    // Target ~3.5s to ~5.6s across stages (plus consensus beat + fade)
+    var targetTotalMs = 3500 + Math.random() * 1950;
     var weights = stages.map(function (st, idx) {
       if (idx === stages.length - 1) return 1.15;
-      return (st.rare ? 1.25 : 0.85) + Math.random() * 0.45;
+      return (st.scientist || st.rare ? 1.25 : 0.85) + Math.random() * 0.45;
     });
     var sumW = weights.reduce(function (a, b) { return a + b; }, 0) || stages.length;
 
@@ -607,7 +652,8 @@
       return {
         text: st.text,
         rare: st.rare,
-        durationMs: Math.max(320, Math.round((weights[idx] / sumW) * targetTotalMs))
+        scientist: st.scientist,
+        durationMs: Math.max(300, Math.round((weights[idx] / sumW) * targetTotalMs))
       };
     });
   }
@@ -617,15 +663,22 @@
     opts = opts || {};
 
     var overlay = $('labs-analysis-overlay');
+    var titleEl = $('labs-an-title');
     var stagesEl = $('labs-an-stages');
     var pctEl = $('labs-an-pct');
     var barEl = $('labs-an-bar-fill');
     var subEl = $('labs-an-subtitle');
+    var consensusEl = $('labs-an-consensus');
 
     if (!overlay || !stagesEl) {
       if (typeof onComplete === 'function') onComplete();
       return;
     }
+
+    if (titleEl) {
+      titleEl.textContent = opts.title || (opts.context === 'comparison' ? 'ANALYZING RESULTS' : 'ANALYZING RECORDING');
+    }
+    if (consensusEl) consensusEl.classList.add('hidden');
 
     var stages = pickAnalysisStages(opts.context);
     var finished = false;
@@ -640,6 +693,7 @@
       state.analysisDoneCb = null;
 
       if (immediate) {
+        if (consensusEl) consensusEl.classList.add('hidden');
         overlay.classList.add('hidden');
         overlay.classList.remove('fading-out');
         if (typeof onComplete === 'function') onComplete();
@@ -651,20 +705,26 @@
       }
       if (pctEl) pctEl.textContent = '100%';
       if (barEl) barEl.style.width = '100%';
-      overlay.classList.add('fading-out');
-      var endTimer = setTimeout(function () {
-        overlay.classList.add('hidden');
-        overlay.classList.remove('fading-out');
-        if (typeof onComplete === 'function') onComplete();
-      }, 310);
-      state.analysisTimers.push(endTimer);
+      if (consensusEl) consensusEl.classList.remove('hidden');
+
+      var fadeTimer = setTimeout(function () {
+        overlay.classList.add('fading-out');
+        var endTimer = setTimeout(function () {
+          overlay.classList.add('hidden');
+          overlay.classList.remove('fading-out');
+          if (consensusEl) consensusEl.classList.add('hidden');
+          if (typeof onComplete === 'function') onComplete();
+        }, 310);
+        state.analysisTimers.push(endTimer);
+      }, 620);
+      state.analysisTimers.push(fadeTimer);
     }
 
     state.analysisDoneCb = function () {
       finishNow(true);
     };
 
-    if (subEl) subEl.textContent = opts.subtitle || 'Executing multi-dimensional acoustic pipeline...';
+    if (subEl) subEl.textContent = opts.subtitle || 'Executing A.S.S. v4.2 multi-dimensional acoustic pipeline...';
     if (pctEl) pctEl.textContent = '0%';
     if (barEl) barEl.style.width = '0%';
     stagesEl.innerHTML = '';
@@ -677,9 +737,9 @@
         var startTimer = setTimeout(function () {
           if (finished) return;
           rowEl = document.createElement('li');
-          rowEl.className = 'labs-an-stage' + (stage.rare ? ' rare' : '');
+          rowEl.className = 'labs-an-stage' + (stage.rare ? ' rare' : '') + (stage.scientist ? ' scientist' : '');
           rowEl.innerHTML =
-            '<span class="labs-an-stage-ico">◌</span>' +
+            '<span class="labs-an-stage-ico">' + (stage.scientist ? '🥼' : '◌') + '</span>' +
             '<span class="labs-an-stage-txt">' + esc(stage.text) + '</span>';
           if (typeof stagesEl.appendChild === 'function') {
             stagesEl.appendChild(rowEl);
@@ -712,7 +772,7 @@
           if (index === stages.length - 1) {
             var pauseTimer = setTimeout(function () {
               finishNow(false);
-            }, 220);
+            }, 180);
             state.analysisTimers.push(pauseTimer);
           }
         }, elapsed);
@@ -733,24 +793,8 @@
     if (homeHint) {
       homeHint.textContent =
         next === 'auto'
-          ? 'AUTO DETECT active: arms mic with a 5s rolling buffer & auto-clips after silence'
+          ? 'AUTO DETECT active on Record New Fart: beeps on arm, listens with 5s rolling buffer & beeps after auto-stop'
           : 'Manual Record captures immediately · Auto Detect arms a 5s rolling trigger buffer';
-    }
-
-    if (!TootApp.Audio || !TootApp.Audio.isRecordingOrStarting()) {
-      var gLabel = $('guess-rec-label');
-      var gStatus = $('guess-rec-status');
-      var target = getSampleById(state.guessTargetId);
-      if (gLabel && !state.pendingGuess) {
-        gLabel.textContent = next === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
-      }
-      if (gStatus && !state.pendingGuess) {
-        gStatus.textContent = target
-          ? next === 'auto'
-            ? 'AUTO DETECT ready — tap to arm sensors & maintain a 5s rolling buffer.'
-            : 'Next default label: Guesser ' + (state.guessAttempts.length + 1)
-          : 'Record or select a saved fart above first.';
-      }
     }
   }
 
@@ -824,22 +868,68 @@
     state.vaultDoorTimers.push(t1, t2);
   }
 
+  function renderTeamView() {
+    var grid = $('team-faculty-grid');
+    if (!grid) return;
+    var team = (TootLabs.Fartnalysis && TootLabs.Fartnalysis.TEAM) || [];
+    grid.innerHTML = team
+      .map(function (sci) {
+        var specsHtml = (sci.specialities || [])
+          .map(function (sp) {
+            return '<span class="labs-chip">' + esc(sp) + '</span>';
+          })
+          .join('');
+        return (
+          '<article class="labs-glass-card labs-team-card">' +
+          '  <div class="labs-team-head">' +
+          '    <img class="labs-team-avatar" src="' + esc(sci.img) + '" alt="' + esc(sci.name) + '" loading="lazy" />' +
+          '    <div>' +
+          '      <div class="labs-eyebrow">' + esc(sci.title) + '</div>' +
+          '      <h3 class="labs-team-name">' + esc(sci.name) + '</h3>' +
+          '    </div>' +
+          '  </div>' +
+          '  <p class="labs-team-bio">' + esc(sci.bio) + '</p>' +
+          '  <div class="labs-team-specs-wrap">' +
+          '    <span class="labs-eyebrow">SPECIALITIES</span>' +
+          '    <div class="labs-team-spec-pills">' + specsHtml + '</div>' +
+          '  </div>' +
+          '</article>'
+        );
+      })
+      .join('');
+  }
+
+  function openTeamView() {
+    if (state.view && state.view !== 'team') {
+      state.prevNonTeamView = state.view;
+    }
+    renderTeamView();
+    showView('team');
+  }
+
   /* ==================== NAVIGATION ==================== */
   function showView(viewKey) {
     var prevView = state.view;
     if (prevView === 'result' && viewKey !== 'result') {
       clearResultAnimations();
     }
-    if (prevView === 'guess' && viewKey !== 'guess' && state.recordingKind === 'guess' && TootApp.Audio && TootApp.Audio.isAutoDetecting && TootApp.Audio.isAutoDetecting()) {
-      TootApp.Audio.stopAutoDetect(true);
-      clearAutoDetectUI();
-      state.activeRecStopper = null;
-      state.recordingKind = null;
-    }
     if (prevView === 'vault' && viewKey !== 'vault') {
       dismissVaultDoorImmediate();
     }
+    if (viewKey !== 'team' && prevView !== 'team') {
+      state.prevNonTeamView = prevView;
+    }
     state.view = viewKey;
+
+    var brandSub = $('labs-brand-sub');
+    if (brandSub) {
+      brandSub.textContent =
+        viewKey === 'fartnalysis'
+          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · FARTNALYSIS REPORT'
+          : viewKey === 'team'
+          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH'
+          : 'GUESS THE FART · ACOUSTIC LAB';
+    }
 
     var views = document.querySelectorAll('.labs-view');
     for (var i = 0; i < views.length; i++) {
@@ -864,6 +954,9 @@
 
     if (viewKey === 'vault' && prevView !== 'vault' && prevView !== 'detail') {
       triggerVaultDoorOpen();
+    }
+    if (viewKey === 'team') {
+      renderTeamView();
     }
 
     if (typeof root.requestAnimationFrame === 'function') {
@@ -911,18 +1004,6 @@
     var releaseBtn = $('btn-labs-mic-release');
     var statusEl = $('labs-mic-status');
     var meterEl = $('labs-mic-meter');
-
-    $('btn-labs-mic-drawer').addEventListener('click', function () {
-      $('labs-mic-drawer').classList.toggle('hidden');
-    });
-
-    $('btn-labs-stop').addEventListener('click', function () {
-      TootApp.Audio.stopAll();
-      if (TootApp.Audio.isMicTesting()) {
-        TootApp.Audio.stopMicTest();
-        resetMicTestUI('Ready');
-      }
-    });
 
     devSel.addEventListener('change', function () {
       TootApp.Audio.setSelectedDevice(this.value);
@@ -977,7 +1058,7 @@
     refreshMicDevices();
   }
 
-  /* Instant 1-Tap Quick Record & Auto Detect (Anywhere in App) */
+  /* Instant 1-Tap Quick Record & Auto Detect (Record New Fart Only) */
   function startQuickRecordFart() {
     if (TootApp.Audio.isRecordingOrStarting()) {
       if (state.recordingKind === 'quick' && TootApp.Audio.isRecording() && state.activeRecStopper) {
@@ -990,7 +1071,6 @@
     clearAutoDetectUI();
     state.recordingKind = 'quick';
     var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
-    var topBtn = $('btn-labs-quick-record');
     var bar = $('labs-quick-rec-bar');
     var capPane = $('labs-quick-capturing');
     var savedPane = $('labs-quick-saved');
@@ -1000,6 +1080,7 @@
     var autoBadge = $('labs-quick-auto-status');
     var autoTitleEl = $('labs-quick-auto-title');
     var autoMsgEl = $('labs-quick-auto-msg');
+    var autoBufEl = $('labs-quick-auto-buf');
     var settled = false;
     var autoWaitIdx = 0;
 
@@ -1011,18 +1092,15 @@
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
     if (useAuto) {
       timerEl.textContent = isWarm ? 'Arming sensors…' : 'Requesting mic…';
-      topBtn.classList.add('recording');
-      topBtn.textContent = '⏹ Disarm';
       stopBtn.textContent = '⏹ Cancel Auto';
       if (autoBadge) {
         autoBadge.classList.remove('hidden', 'triggered');
         if (autoTitleEl) autoTitleEl.textContent = 'LISTENING FOR EVENT';
         if (autoMsgEl) autoMsgEl.textContent = 'Acoustic sensors armed — ' + AUTO_DETECT_WAIT_MESSAGES[0];
+        if (autoBufEl) autoBufEl.textContent = 'Buffer: 0.0s / 5.0s';
       }
     } else {
       timerEl.textContent = isWarm ? 'Recording…' : 'Requesting mic…';
-      topBtn.classList.add('recording');
-      topBtn.textContent = '⏹ Stop & Save';
       stopBtn.textContent = '⏹ Stop & Save';
     }
 
@@ -1032,8 +1110,6 @@
       clearAutoDetectUI();
       state.activeRecStopper = null;
       state.recordingKind = null;
-      topBtn.classList.remove('recording');
-      topBtn.textContent = '● Record Fart';
       stopBtn.textContent = '⏹ Stop & Save';
       stopBtn.disabled = false;
 
@@ -1052,10 +1128,10 @@
         var micName = (res && res.trackLabel) || 'Default Microphone';
         var msg;
         if (res && res.reason === 'all_zeros') {
-          msg = 'No sound captured from "' + micName + '" — check 🎙️ Mic settings.';
+          msg = 'No sound captured from "' + micName + '" — check Microphone settings below.';
           $('labs-mic-drawer').classList.remove('hidden');
         } else if (res && res.reason === 'too_quiet') {
-          msg = 'Fart was too quiet on "' + micName + '" — try 2x/4x Boost in 🎙️ Mic.';
+          msg = 'Fart was too quiet on "' + micName + '" — try 2x/4x Boost below.';
           $('labs-mic-drawer').classList.remove('hidden');
         } else {
           msg = (res && res.error) || 'Could not capture audio. Check microphone permissions.';
@@ -1079,6 +1155,7 @@
         runAnalysisSequence(
           {
             context: 'specimen',
+            title: 'ANALYZING RECORDING',
             subtitle: 'Cataloging "' + getSampleName(saved) + '" in Bio-Acoustic Vault'
           },
           function () {
@@ -1096,11 +1173,20 @@
       state.activeRecStopper = function () {
         stopBtn.disabled = true;
         timerEl.textContent = 'Disarming sensors…';
-        TootApp.Audio.stopAutoDetect(false).then(finalizeQuick);
+        TootApp.Audio.stopAutoDetect(false).then(function (res) {
+          if (res && res.ok && TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
+            TootLabs.AudioFx.playAutoDetectStopBeep();
+          }
+          finalizeQuick(res);
+        });
       };
 
       TootApp.Audio.startAutoDetect({
+        settleSec: 0.24,
         onStarted: function () {
+          if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStartBeep === 'function') {
+            TootLabs.AudioFx.playAutoDetectStartBeep();
+          }
           timerEl.textContent = 'Buffer 0.0 / 5.0s';
           refreshMicDevices();
           state.autoDetectMsgTimer = setInterval(function () {
@@ -1113,8 +1199,11 @@
         onLevel: function (timeData, rms, info) {
           if (info && info.phase === 'triggered') {
             timerEl.textContent = 'Capturing event…';
+            if (autoBufEl) autoBufEl.textContent = 'EVENT LOCKED';
           } else {
-            timerEl.textContent = 'Buffer ' + (info ? info.bufferedSec.toFixed(1) : '0.0') + ' / 5.0s';
+            var bTxt = info ? info.bufferedSec.toFixed(1) : '0.0';
+            timerEl.textContent = 'Buffer ' + bTxt + ' / 5.0s';
+            if (autoBufEl) autoBufEl.textContent = 'Buffer: ' + bTxt + 's / 5.0s';
           }
           drawLiveWaveform(waveEl, timeData, rms);
         },
@@ -1124,13 +1213,17 @@
             state.autoDetectMsgTimer = null;
           }
           var trigHead = AUTO_DETECT_TRIGGER_TITLES[Math.floor(Math.random() * AUTO_DETECT_TRIGGER_TITLES.length)];
-          topBtn.textContent = '⏹ Finish & Save';
           stopBtn.textContent = '⏹ Finish & Save';
           if (autoBadge) autoBadge.classList.add('triggered');
           if (autoTitleEl) autoTitleEl.textContent = trigHead;
           if (autoMsgEl) autoMsgEl.textContent = 'Capturing sample...';
+          if (autoBufEl) autoBufEl.textContent = 'EVENT LOCKED';
         },
         onAutoStop: function (res) {
+          // Mic is already stopped & disconnected inside audioEngine before onAutoStop runs
+          if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
+            TootLabs.AudioFx.playAutoDetectStopBeep();
+          }
           finalizeQuick(res);
         }
       }).catch(function (err) {
@@ -1138,8 +1231,6 @@
         clearAutoDetectUI();
         state.activeRecStopper = null;
         state.recordingKind = null;
-        topBtn.classList.remove('recording');
-        topBtn.textContent = '● Record Fart';
         stopBtn.textContent = '⏹ Stop & Save';
         bar.classList.add('hidden');
         showToast((err && err.message) || 'Microphone unavailable.', true);
@@ -1170,13 +1261,12 @@
       settled = true;
       state.activeRecStopper = null;
       state.recordingKind = null;
-      topBtn.classList.remove('recording');
-      topBtn.textContent = '● Record Fart';
       bar.classList.add('hidden');
       showToast((err && err.message) || 'Microphone unavailable.', true);
     });
   }
 
+  /* Clean Manual RECORD GUESS Only (No Auto Detect on Guess The Fart) */
   function startGuessCapture() {
     if (TootApp.Audio.isRecordingOrStarting()) {
       if (state.recordingKind === 'guess' && TootApp.Audio.isRecording() && state.activeRecStopper) {
@@ -1187,26 +1277,18 @@
 
     var target = getSampleById(state.guessTargetId);
     if (!target) {
-      showToast('Select or record a fart first.', true);
+      showToast('Select a fart first.', true);
       return;
     }
 
     resetMicTestUI('Ready');
-    clearAutoDetectUI();
     state.recordingKind = 'guess';
-    var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
     var btn = $('btn-guess-rec');
     var labelEl = $('guess-rec-label');
     var iconEl = $('guess-rec-icon');
     var statusEl = $('guess-rec-status');
     var waveCanvas = $('guess-live-wave');
-    var adPanel = $('guess-autodetect-panel');
-    var adHead = $('guess-ad-headline');
-    var adSub = $('guess-ad-sub');
-    var adMsg = $('guess-ad-msg');
-    var adBuf = $('guess-ad-buf');
     var settled = false;
-    var waitIdx = 0;
 
     var isWarm = Boolean(TootApp.Audio.hasWarmMic && TootApp.Audio.hasWarmMic());
     if (!isWarm) {
@@ -1215,37 +1297,28 @@
       iconEl.textContent = '⏳';
       statusEl.textContent = 'Requesting microphone permission…';
     } else {
-      statusEl.textContent = useAuto ? 'Arming Auto Detect sensors…' : 'Arming microphone…';
+      statusEl.textContent = 'Arming microphone…';
     }
     waveCanvas.classList.remove('hidden');
 
     function finalizeGuess(res) {
       if (settled) return;
       settled = true;
-      clearAutoDetectUI();
       state.activeRecStopper = null;
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
+      labelEl.textContent = 'Record Guess';
       iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
 
-      if (!res || res.reason === 'cancelled') {
-        statusEl.textContent = 'Auto Detect disarmed — tap Arm Auto Detect when ready.';
-        if (res && res.reason === 'cancelled') {
-          showToast('Auto Detect disarmed');
-        }
-        return;
-      }
-
-      if (!res.ok) {
+      if (!res || !res.ok) {
         var micName = (res && res.trackLabel) || 'Default Microphone';
         var msg =
           res && res.reason === 'all_zeros'
-            ? 'No audio captured from "' + micName + '". Check 🎙️ Mic.'
+            ? 'No audio captured from "' + micName + '". Check Microphone settings.'
             : res && res.reason === 'too_quiet'
-            ? 'Guess was too quiet — increase Gain in 🎙️ Mic.'
+            ? 'Guess was too quiet — increase Gain in Microphone settings.'
             : (res && res.error) || 'Could not record guess.';
         statusEl.textContent = msg;
         showToast(msg, true);
@@ -1262,77 +1335,10 @@
         features: TootApp.DSP.extractFeatures(samples, sr)
       };
 
-      var defaultNum = state.guessAttempts.length + 1;
+      var defaultNum = state.sessionGuesses.length + 1;
       $('guess-name-input').value = 'Guesser ' + defaultNum;
+      $('guess-name-input').placeholder = 'Guesser ' + defaultNum;
       renderGuessView();
-    }
-
-    if (useAuto) {
-      if (adPanel) {
-        adPanel.classList.remove('hidden', 'triggered');
-        if (adHead) adHead.textContent = 'LISTENING FOR EVENT';
-        if (adSub) adSub.textContent = 'Acoustic sensors armed';
-        if (adMsg) adMsg.textContent = AUTO_DETECT_WAIT_MESSAGES[0];
-        if (adBuf) adBuf.textContent = 'Buffer: 0.0s / 5.0s';
-      }
-
-      state.activeRecStopper = function () {
-        btn.disabled = true;
-        statusEl.textContent = 'Disarming sensors…';
-        TootApp.Audio.stopAutoDetect(false).then(finalizeGuess);
-      };
-
-      TootApp.Audio.startAutoDetect({
-        onStarted: function () {
-          btn.disabled = false;
-          btn.classList.add('recording');
-          labelEl.textContent = 'Disarm';
-          iconEl.textContent = '📡';
-          statusEl.textContent = 'LISTENING FOR EVENT — 5s rolling buffer armed.';
-          refreshMicDevices();
-          state.autoDetectMsgTimer = setInterval(function () {
-            waitIdx = (waitIdx + 1) % AUTO_DETECT_WAIT_MESSAGES.length;
-            if (adMsg) adMsg.textContent = AUTO_DETECT_WAIT_MESSAGES[waitIdx];
-          }, 2300);
-        },
-        onLevel: function (timeData, rms, info) {
-          drawLiveWaveform(waveCanvas, timeData, rms);
-          if (adBuf && info) {
-            adBuf.textContent =
-              info.phase === 'triggered'
-                ? 'EVENT LOCKED'
-                : 'Buffer: ' + info.bufferedSec.toFixed(1) + 's / 5.0s';
-          }
-        },
-        onDetected: function () {
-          if (state.autoDetectMsgTimer) {
-            clearInterval(state.autoDetectMsgTimer);
-            state.autoDetectMsgTimer = null;
-          }
-          var trigHead = AUTO_DETECT_TRIGGER_TITLES[Math.floor(Math.random() * AUTO_DETECT_TRIGGER_TITLES.length)];
-          if (adPanel) adPanel.classList.add('triggered');
-          if (adHead) adHead.textContent = trigHead;
-          if (adSub) adSub.textContent = 'Capturing sample...';
-          if (adMsg) adMsg.textContent = 'Recording event tail — auto-stop on silence';
-          labelEl.textContent = 'Finish Now';
-          statusEl.textContent = trigHead + ' — Capturing sample...';
-        },
-        onAutoStop: function (res) {
-          finalizeGuess(res);
-        }
-      }).catch(function (err) {
-        settled = true;
-        clearAutoDetectUI();
-        state.activeRecStopper = null;
-        state.recordingKind = null;
-        btn.disabled = false;
-        btn.classList.remove('recording');
-        labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
-        iconEl.textContent = '🎤';
-        waveCanvas.classList.add('hidden');
-        showToast((err && err.message) || 'Microphone unavailable.', true);
-      });
-      return;
     }
 
     state.activeRecStopper = function () {
@@ -1363,7 +1369,7 @@
       state.recordingKind = null;
       btn.disabled = false;
       btn.classList.remove('recording');
-      labelEl.textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
+      labelEl.textContent = 'Record Guess';
       iconEl.textContent = '🎤';
       waveCanvas.classList.add('hidden');
       showToast((err && err.message) || 'Microphone unavailable.', true);
@@ -1699,6 +1705,141 @@
     });
   }
 
+  function renderSessionQueue() {
+    var qCard = $('guess-session-queue-card');
+    var qTargetEl = $('guess-queue-target-name');
+    var qCountEl = $('guess-queue-count');
+    var qListEl = $('guess-queue-list');
+    var target = getSampleById(state.guessTargetId);
+
+    if (!qCard || !qListEl) return;
+    if (!target || state.sessionGuesses.length === 0) {
+      qCard.classList.add('hidden');
+      qListEl.innerHTML = '';
+      return;
+    }
+
+    qCard.classList.remove('hidden');
+    if (qTargetEl) qTargetEl.textContent = 'Original Fart: ' + getSampleName(target);
+    if (qCountEl) qCountEl.textContent = state.sessionGuesses.length + ' Recorded';
+
+    qListEl.innerHTML = state.sessionGuesses
+      .map(function (g, idx) {
+        var dur = (g.samples.length / (g.sampleRate || 44100)).toFixed(2) + 's';
+        return (
+          '<div class="labs-queue-row">' +
+          '  <div class="labs-queue-info">' +
+          '    <strong>' + esc(g.name) + '</strong>' +
+          '    <span class="labs-chip labs-chip-green">Recorded · ' + dur + '</span>' +
+          '  </div>' +
+          '  <div class="labs-att-btns">' +
+          '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-qplay="' + idx + '">▶</button>' +
+          '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-qdel="' + idx + '" title="Remove guess">✕</button>' +
+          '  </div>' +
+          '</div>'
+        );
+      })
+      .join('');
+
+    qListEl.querySelectorAll('[data-qplay]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var item = state.sessionGuesses[parseInt(this.getAttribute('data-qplay'), 10)];
+        if (item) TootApp.Audio.playSound(item.samples, item.sampleRate, { channel: 'queue_play' });
+      });
+    });
+    qListEl.querySelectorAll('[data-qdel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var idx = parseInt(this.getAttribute('data-qdel'), 10);
+        if (!isNaN(idx)) {
+          state.sessionGuesses.splice(idx, 1);
+          renderGuessView();
+        }
+      });
+    });
+  }
+
+  function renderBlindPane() {
+    var listEl = $('blind-guesses-list');
+    var analyzeBtn = $('btn-blind-analyze');
+    var origStatus = $('blind-orig-status');
+    var origWaveWrap = $('blind-orig-wave-wrap');
+    var origWave = $('blind-orig-wave');
+    var nameInput = $('blind-name-input');
+
+    if (nameInput && !nameInput.value.trim()) {
+      nameInput.placeholder = 'Guesser ' + (state.blindGuesses.length + 1);
+    }
+
+    if (listEl) {
+      if (state.blindGuesses.length === 0) {
+        listEl.innerHTML = '<div class="labs-hint-text">No blind guesses recorded yet for this round.</div>';
+      } else {
+        listEl.innerHTML = state.blindGuesses
+          .map(function (g, idx) {
+            var dur = (g.samples.length / (g.sampleRate || 44100)).toFixed(2) + 's';
+            return (
+              '<div class="labs-queue-row">' +
+              '  <div class="labs-queue-info">' +
+              '    <strong>' + esc(g.name) + '</strong>' +
+              '    <span class="labs-chip labs-chip-orange">Blind Guess · ' + dur + '</span>' +
+              '  </div>' +
+              '  <div class="labs-att-btns">' +
+              '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-bplay="' + idx + '">▶</button>' +
+              '    <button type="button" class="labs-btn-ghost labs-btn-sm" data-bdel="' + idx + '">✕</button>' +
+              '  </div>' +
+              '</div>'
+            );
+          })
+          .join('');
+        listEl.querySelectorAll('[data-bplay]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var item = state.blindGuesses[parseInt(this.getAttribute('data-bplay'), 10)];
+            if (item) TootApp.Audio.playSound(item.samples, item.sampleRate, { channel: 'blind_play' });
+          });
+        });
+        listEl.querySelectorAll('[data-bdel]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var idx = parseInt(this.getAttribute('data-bdel'), 10);
+            if (!isNaN(idx)) {
+              state.blindGuesses.splice(idx, 1);
+              renderBlindPane();
+            }
+          });
+        });
+      }
+    }
+
+    if (origStatus) {
+      origStatus.textContent = state.blindOriginal
+        ? 'Recorded Original Fart: "' + getSampleName(state.blindOriginal) + '" (' + (state.blindOriginal.samples.length / state.blindOriginal.sampleRate).toFixed(2) + 's) — Saved to Vault!'
+        : 'No original fart recorded yet for this blind round.';
+    }
+    if (origWaveWrap && origWave) {
+      origWaveWrap.classList.toggle('hidden', !state.blindOriginal);
+      if (state.blindOriginal) {
+        drawStaticWaveform(origWave, state.blindOriginal.samples, { fallbackW: 440, fallbackH: 60 });
+      }
+    }
+    if (analyzeBtn) {
+      analyzeBtn.disabled = !(state.blindGuesses.length > 0 && state.blindOriginal);
+    }
+  }
+
+  function setGuessSubMode(subMode) {
+    var next = subMode === 'blind' ? 'blind' : 'standard';
+    state.guessSubMode = next;
+    var stdBtn = $('btn-submode-standard');
+    var blindBtn = $('btn-submode-blind');
+    var stdPane = $('guess-standard-pane');
+    var blindPane = $('guess-blind-pane');
+    if (stdBtn) stdBtn.classList.toggle('active', next === 'standard');
+    if (blindBtn) blindBtn.classList.toggle('active', next === 'blind');
+    if (stdPane) stdPane.classList.toggle('hidden', next !== 'standard');
+    if (blindPane) blindPane.classList.toggle('hidden', next !== 'blind');
+    if (next === 'blind') renderBlindPane();
+    else renderGuessView();
+  }
+
   function renderGuessView() {
     var strip = $('guess-vault-strip');
     if (state.samples.length === 0) {
@@ -1741,9 +1882,13 @@
       var feat = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
       target.features = feat;
       var prof = TootApp.DSP.describeSoundProfile(feat);
+      var tStats = TootLabs.Store.getSampleStats(target.id);
       $('guess-target-name').textContent = getSampleName(target);
       $('guess-target-dur').textContent = (target.samples.length / target.sampleRate).toFixed(2) + 's';
       $('guess-target-meta').textContent = formatDateShort(target.createdAt) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
+      if ($('guess-target-best')) {
+        $('guess-target-best').textContent = tStats.attemptCount > 0 ? 'Best: ' + tStats.bestScore.toFixed(1) + '%' : 'Best: —';
+      }
     }
 
     var prevPanel = $('guess-preview-panel');
@@ -1753,20 +1898,21 @@
       var oDur = target.samples.length / target.sampleRate;
       $('guess-attempt-dur').textContent = gDur.toFixed(2) + 's';
       $('guess-preview-ratio').textContent = 'Original ' + oDur.toFixed(2) + 's vs Guess ' + gDur.toFixed(2) + 's';
-      $('guess-rec-status').textContent = 'Optional: enter guesser name, then tap JUDGE THIS GUESS.';
+      $('guess-rec-status').textContent = 'Add another guesser or tap ANALYZE RESULTS to determine the winner.';
     } else {
       prevPanel.classList.add('hidden');
       $('guess-attempt-dur').textContent = target ? 'Standby' : 'No Fart';
       if (!TootApp.Audio.isRecordingOrStarting()) {
-        $('guess-rec-label').textContent = state.recordMode === 'auto' ? 'Arm Auto Detect' : 'Record Guess';
+        $('guess-rec-label').textContent = 'Record Guess';
         $('guess-rec-status').textContent = target
-          ? state.recordMode === 'auto'
-            ? 'AUTO DETECT ready — tap to arm sensors & maintain a 5s rolling buffer.'
-            : 'Next default label: Guesser ' + (state.guessAttempts.length + 1)
+          ? state.sessionGuesses.length > 0
+            ? state.sessionGuesses.length + ' guess(es) queued — next default: Guesser ' + (state.sessionGuesses.length + 1)
+            : 'Next default label: Guesser 1'
           : 'Record or select a saved fart above first.';
       }
     }
 
+    renderSessionQueue();
     renderGuessLeaderboard();
     drawGuessWaveforms();
   }
@@ -1774,6 +1920,9 @@
   function openGuessMode(sampleId) {
     TootApp.Audio.stopAll();
     var resolvedId = sampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id) || null;
+    if (sampleId && sampleId !== state.guessTargetId) {
+      state.sessionGuesses = [];
+    }
     state.guessTargetId = resolvedId;
     state.pendingGuess = null;
     $('guess-live-wave').classList.add('hidden');
@@ -1807,48 +1956,287 @@
     return chosen;
   }
 
-  function judgePendingGuess() {
-    var target = getSampleById(state.guessTargetId);
-    if (!target || !state.pendingGuess) {
-      showToast('Record a guess first.', true);
-      return;
+  function addAnotherGuesser() {
+    if (!state.pendingGuess) {
+      showToast('Record a guess first before adding another player.', true);
+      return null;
+    }
+    var defaultLabel = 'Guesser ' + (state.sessionGuesses.length + 1);
+    var typed = ($('guess-name-input').value || '').trim();
+    var entry = Object.assign({}, state.pendingGuess, { name: typed || defaultLabel });
+    state.sessionGuesses.push(entry);
+    state.pendingGuess = null;
+    $('guess-name-input').value = '';
+    renderGuessView();
+    showToast(entry.name + ' recorded! Ready for Guesser ' + (state.sessionGuesses.length + 1) + '.');
+    return entry;
+  }
+
+  function buildComparisonChipMetrics(targetSound, attemptSound, res) {
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var fA = targetSound.features || TootApp.DSP.extractFeatures(targetSound.samples, targetSound.sampleRate);
+    var fB = attemptSound.features || TootApp.DSP.extractFeatures(attemptSound.samples, attemptSound.sampleRate);
+    var bpA = fA.bandProfile || [0.25, 0.25, 0.25, 0.25];
+    var bpB = fB.bandProfile || [0.25, 0.25, 0.25, 0.25];
+    var subDiff = Math.abs((bpA[0] || 0.25) - (bpB[0] || 0.25));
+    var lowMidDiff = Math.abs((bpA[1] || 0.25) - (bpB[1] || 0.25));
+    var crestDiff = Math.abs((fA.crestFactorDb || 8) - (fB.crestFactorDb || 8));
+    var thunder = Math.round(Math.max(0, Math.min(100, ((1 - Math.min(1, subDiff * 2.2)) * 45 + (1 - Math.min(1, lowMidDiff * 1.8)) * 25 + (1 - Math.min(1, crestDiff / 14)) * 30) * 0.72 + (res.envelopeScore || 50) * 0.28)));
+    var tBd = (res.breakdown && res.breakdown.timbre) || {};
+    var oBd = (res.breakdown && res.breakdown.overall) || {};
+    var mlSim = Math.round(Math.max(0, Math.min(100, (tBd.mfccMeanScore || 0.5) * 34 + (tBd.mfccMacroScore || 0.5) * 28 + (tBd.gridCorr || 0.5) * 20 + (oBd.coreIdentity || 0.5) * 18)));
+    var eBd = (res.breakdown && res.breakdown.envelope) || {};
+    var timingScore = Math.round(Math.max(0, Math.min(100, (eBd.lagScore || res.envelopeScore || 50) * (eBd.lagScore <= 1 ? 100 : 1))));
+    var authA = TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(targetSound) : null;
+    var authB = TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(attemptSound) : null;
+    return {
+      overall: Math.round(TootLabs.Store.computeExactScore(res)),
+      timing: timingScore,
+      duration: Math.round(res.durationScore || 0),
+      pressure: Math.round(res.envelopeScore || 0),
+      resonance: Math.round(res.timbreScore || 0),
+      thunder: thunder,
+      authA: authA ? authA.authenticityScore : null,
+      authB: authB ? authB.authenticityScore : null,
+      ml: mlSim
+    };
+  }
+
+  function analyzeAndShowResults(target, rawGuesses, subtitleLabel) {
+    if (!target || !rawGuesses || rawGuesses.length === 0) {
+      showToast('Record at least one guess first.', true);
+      return Promise.resolve([]);
     }
 
     var featA = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
-    var featB = state.pendingGuess.features || TootApp.DSP.extractFeatures(state.pendingGuess.samples, state.pendingGuess.sampleRate);
     target.features = featA;
-    state.pendingGuess.features = featB;
 
-    var customName = $('guess-name-input').value.trim();
-    var result = TootApp.DSP.compareSounds(featA, featB);
+    var outcomes = [];
+    var chain = Promise.resolve();
+    rawGuesses.forEach(function (g, idx) {
+      chain = chain.then(function () {
+        var featB = g.features || TootApp.DSP.extractFeatures(g.samples, g.sampleRate);
+        g.features = featB;
+        var res = TootApp.DSP.compareSounds(featA, featB);
+        var gName = String(g.name || '').trim() || ('Guesser ' + (idx + 1));
+        return TootLabs.Store.recordChallengeResult(target, g, res, { guesserName: gName }).then(function (out) {
+          outcomes.push(
+            Object.assign({}, out, {
+              targetSound: target,
+              metricsSummary: buildComparisonChipMetrics(target, g, res)
+            })
+          );
+        });
+      });
+    });
 
-    TootLabs.Store.recordChallengeResult(target, state.pendingGuess, result, { guesserName: customName }).then(function (outcome) {
-      state.guessAttempts.unshift(outcome.attempt);
-      state.pendingGuess = null;
-      state.lastOutcome = Object.assign({}, outcome, { targetSound: target });
+    return chain.then(function () {
+      outcomes.sort(function (a, b) {
+        return (b.exactScore || 0) - (a.exactScore || 0);
+      });
+      for (var i = outcomes.length - 1; i >= 0; i--) {
+        state.guessAttempts.unshift(outcomes[i].attempt);
+      }
+      state.lastSessionResults = outcomes;
+      state.lastOutcome = outcomes[0];
+      state.guessTargetId = target.id;
       state.fnSampleId = target.id;
-      state.fnAttemptId = outcome.attempt.id;
+      state.fnAttemptId = outcomes[0].attempt.id;
 
       renderHomeView();
       renderVaultView();
+
       runAnalysisSequence(
         {
           context: 'comparison',
-          subtitle: 'Analyzing ' + (outcome.attempt.name || 'Guesser') + ' vs ' + getSampleName(target)
+          title: 'ANALYZING RESULTS',
+          subtitle: subtitleLabel || ('Comparing ' + outcomes.length + (outcomes.length === 1 ? ' guess' : ' guesses') + ' against ' + getSampleName(target))
         },
         function () {
           showView('result');
-          renderResultScreen(state.lastOutcome);
+          renderResultScreen(state.lastOutcome, state.lastSessionResults);
         }
       );
+      return outcomes;
     });
   }
 
-  /* ==================== MATCH RESULT SCREEN ==================== */
-  function renderResultScreen(outcome) {
+  function analyzeSessionGuesses() {
+    var target = getSampleById(state.guessTargetId);
+    if (!target) {
+      showToast('Select a fart first.', true);
+      return Promise.resolve([]);
+    }
+    if (state.pendingGuess) {
+      var fallbackName = 'Guesser ' + (state.sessionGuesses.length + 1);
+      var customName = ($('guess-name-input').value || '').trim() || fallbackName;
+      state.sessionGuesses.push(Object.assign({}, state.pendingGuess, { name: customName }));
+      state.pendingGuess = null;
+      $('guess-name-input').value = '';
+    }
+    if (state.sessionGuesses.length === 0) {
+      showToast('Record at least one guess first.', true);
+      return Promise.resolve([]);
+    }
+    var batch = state.sessionGuesses.slice();
+    state.sessionGuesses = [];
+    return analyzeAndShowResults(target, batch);
+  }
+
+  function startBlindGuessCapture() {
+    if (TootApp.Audio.isRecordingOrStarting()) {
+      if (state.recordingKind === 'blind_guess' && TootApp.Audio.isRecording() && state.activeRecStopper) {
+        state.activeRecStopper();
+      }
+      return;
+    }
+    resetMicTestUI('Ready');
+    state.recordingKind = 'blind_guess';
+    var btn = $('btn-blind-rec-guess');
+    var statusEl = $('blind-guess-status');
+    var nameInput = $('blind-name-input');
+    if (btn) btn.textContent = '⏹ Stop Blind Guess';
+    if (statusEl) statusEl.textContent = 'Recording blind guess… tap Stop to save.';
+
+    state.activeRecStopper = function () {
+      TootApp.Audio.stopRecording().then(finalizeBlindGuess);
+    };
+
+    function finalizeBlindGuess(res) {
+      state.activeRecStopper = null;
+      state.recordingKind = null;
+      if (btn) btn.textContent = '🎤 RECORD GUESS';
+      if (!res || !res.ok) {
+        if (statusEl) statusEl.textContent = (res && res.error) || 'Could not capture blind guess.';
+        showToast((res && res.error) || 'Could not capture blind guess.', true);
+        return;
+      }
+      var sr = res.sampleRate || 44100;
+      var defName = 'Guesser ' + (state.blindGuesses.length + 1);
+      var nm = (nameInput && nameInput.value ? nameInput.value.trim() : '') || defName;
+      state.blindGuesses.push({
+        id: 'blind_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        name: nm,
+        sampleRate: sr,
+        samples: res.clippedSamples,
+        clipInfo: res.clipInfo,
+        features: TootApp.DSP.extractFeatures(res.clippedSamples, sr)
+      });
+      if (nameInput) nameInput.value = '';
+      if (statusEl) statusEl.textContent = nm + ' recorded! Record another guess or capture Original Fart below.';
+      renderBlindPane();
+    }
+
+    TootApp.Audio.startRecording({
+      maxDurationSec: 7,
+      onAutoStop: finalizeBlindGuess
+    }).catch(function (err) {
+      state.activeRecStopper = null;
+      state.recordingKind = null;
+      if (btn) btn.textContent = '🎤 RECORD GUESS';
+      showToast((err && err.message) || 'Microphone unavailable.', true);
+    });
+  }
+
+  function startBlindOriginalCapture() {
+    if (TootApp.Audio.isRecordingOrStarting()) {
+      if (state.recordingKind === 'blind_orig' && TootApp.Audio.isRecording() && state.activeRecStopper) {
+        state.activeRecStopper();
+      }
+      return;
+    }
+    resetMicTestUI('Ready');
+    state.recordingKind = 'blind_orig';
+    var btn = $('btn-blind-rec-orig');
+    var statusEl = $('blind-orig-status');
+    var useAuto = state.recordMode === 'auto' && typeof TootApp.Audio.startAutoDetect === 'function';
+    if (btn) btn.textContent = useAuto ? '⏹ Disarm Auto' : '⏹ Stop Original Fart';
+    if (statusEl) statusEl.textContent = useAuto ? 'Auto Detect armed for Original Fart…' : 'Recording Original Fart…';
+
+    function finalizeBlindOrig(res) {
+      state.activeRecStopper = null;
+      state.recordingKind = null;
+      if (btn) btn.textContent = '● RECORD ORIGINAL FART';
+      if (!res || !res.ok) {
+        if (statusEl) statusEl.textContent = (res && res.error) || 'Could not capture original fart.';
+        showToast((res && res.error) || 'Could not capture original fart.', true);
+        return;
+      }
+      TootLabs.Store.saveNewSpecimen(res).then(function (saved) {
+        state.samples.unshift(saved);
+        state.blindOriginal = saved;
+        renderHomeView();
+        renderVaultView();
+        renderBlindPane();
+        showToast('Original Fart "' + getSampleName(saved) + '" saved! Tap ANALYZE RESULTS.');
+      });
+    }
+
+    if (useAuto) {
+      state.activeRecStopper = function () {
+        TootApp.Audio.stopAutoDetect(false).then(function (res) {
+          if (res && res.ok && TootLabs.AudioFx) TootLabs.AudioFx.playAutoDetectStopBeep();
+          finalizeBlindOrig(res);
+        });
+      };
+      TootApp.Audio.startAutoDetect({
+        settleSec: 0.24,
+        onStarted: function () {
+          if (TootLabs.AudioFx) TootLabs.AudioFx.playAutoDetectStartBeep();
+        },
+        onAutoStop: function (res) {
+          if (TootLabs.AudioFx) TootLabs.AudioFx.playAutoDetectStopBeep();
+          finalizeBlindOrig(res);
+        }
+      }).catch(function (err) {
+        state.activeRecStopper = null;
+        state.recordingKind = null;
+        if (btn) btn.textContent = '● RECORD ORIGINAL FART';
+        showToast((err && err.message) || 'Microphone unavailable.', true);
+      });
+      return;
+    }
+
+    state.activeRecStopper = function () {
+      TootApp.Audio.stopRecording().then(finalizeBlindOrig);
+    };
+    TootApp.Audio.startRecording({
+      maxDurationSec: 7,
+      onAutoStop: finalizeBlindOrig
+    }).catch(function (err) {
+      state.activeRecStopper = null;
+      state.recordingKind = null;
+      if (btn) btn.textContent = '● RECORD ORIGINAL FART';
+      showToast((err && err.message) || 'Microphone unavailable.', true);
+    });
+  }
+
+  function analyzeBlindSession() {
+    if (!state.blindOriginal || state.blindGuesses.length === 0) {
+      showToast('Record at least one blind guess AND the original fart first.', true);
+      return Promise.resolve([]);
+    }
+    var orig = state.blindOriginal;
+    var batch = state.blindGuesses.slice();
+    state.blindGuesses = [];
+    state.blindOriginal = null;
+    renderBlindPane();
+    return analyzeAndShowResults(orig, batch, 'Blind Prediction Mode · Comparing guesses vs ' + getSampleName(orig));
+  }
+
+  /* ==================== MATCH RESULT SCREEN (LEADERBOARD = STAR OF THE GAME) ==================== */
+  function placeLabel(idx) {
+    if (idx === 0) return '🏆 1st Place';
+    if (idx === 1) return '🥈 2nd Place';
+    if (idx === 2) return '🥉 3rd Place';
+    return (idx + 1) + 'th Place';
+  }
+
+  function renderResultScreen(outcome, sessionResults) {
     if (!outcome) return;
     clearResultAnimations();
 
+    var resultsList = Array.isArray(sessionResults) && sessionResults.length > 0 ? sessionResults : [outcome];
     var target = outcome.targetSound;
     var exact = outcome.exactScore;
     var rank = outcome.rank;
@@ -1863,7 +2251,74 @@
     }
 
     $('res-sample-context').textContent =
-      (outcome.attempt.name || 'Guesser').toUpperCase() + ' vs ' + getSampleName(target).toUpperCase();
+      'ORIGINAL FART: ' + getSampleName(target).toUpperCase() + ' · ' + resultsList.length + (resultsList.length === 1 ? ' GUESS' : ' GUESSES');
+
+    var winChip = $('res-winner-chip');
+    if (winChip) {
+      winChip.textContent = '🏆 ' + (outcome.attempt.name || 'Guesser 1') + ' · ' + exact.toFixed(1) + '%';
+    }
+
+    // Hero Leaderboard Card
+    var lbListEl = $('res-leaderboard-list');
+    if (lbListEl) {
+      lbListEl.innerHTML = resultsList
+        .map(function (item, idx) {
+          var s = typeof item.exactScore === 'number' ? item.exactScore : 0;
+          var rk = item.rank || TootLabs.Store.getRankForScore(s);
+          var ms = item.metricsSummary || {};
+          var isWinner = idx === 0;
+          return (
+            '<div class="labs-res-lb-row' + (isWinner ? ' first-place' : '') + '">' +
+            '  <div class="labs-res-lb-main">' +
+            '    <div class="labs-res-lb-left">' +
+            '      <span class="labs-res-place">' + placeLabel(idx) + '</span>' +
+            '      <div>' +
+            '        <div class="labs-res-guesser-name">' + esc(item.attempt.name) + (isWinner ? ' <span class="labs-closest-badge">Closest Match</span>' : '') + '</div>' +
+            '        <div class="labs-res-mini-metrics">' +
+            '          <span>Overall ' + (ms.overall != null ? ms.overall : Math.round(s)) + '%</span>' +
+            '          <span>Timing ' + (ms.timing != null ? ms.timing : '—') + '%</span>' +
+            '          <span>Duration ' + (ms.duration != null ? ms.duration : '—') + '%</span>' +
+            '          <span>Pressure ' + (ms.pressure != null ? ms.pressure : '—') + '%</span>' +
+            '          <span>Resonance ' + (ms.resonance != null ? ms.resonance : '—') + '%</span>' +
+            '          <span>Thunder ' + (ms.thunder != null ? ms.thunder : '—') + '%</span>' +
+            (ms.authB != null ? '<span>Auth ' + ms.authB + '%</span>' : '') +
+            '          <span>ML ' + (ms.ml != null ? ms.ml : '—') + '%</span>' +
+            '        </div>' +
+            '      </div>' +
+            '    </div>' +
+            '    <div class="labs-res-lb-right">' +
+            '      <span class="labs-res-lb-score" style="color:' + rk.color + '">' + s.toFixed(1) + '%</span>' +
+            '      <div class="labs-att-btns">' +
+            '        <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-play="' + idx + '">▶ Play</button>' +
+            '        <button type="button" class="labs-btn-ghost labs-btn-sm" data-rlb-single="' + idx + '">Analysis</button>' +
+            '        <button type="button" class="labs-btn labs-btn-blue labs-btn-sm" data-rlb-cmp="' + idx + '">Compare</button>' +
+            '      </div>' +
+            '    </div>' +
+            '  </div>' +
+            '</div>'
+          );
+        })
+        .join('');
+
+      lbListEl.querySelectorAll('[data-rlb-play]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = resultsList[parseInt(this.getAttribute('data-rlb-play'), 10)];
+          if (row && row.attempt) TootApp.Audio.playSound(row.attempt.samples, row.attempt.sampleRate, { channel: 'res_lb' });
+        });
+      });
+      lbListEl.querySelectorAll('[data-rlb-single]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = resultsList[parseInt(this.getAttribute('data-rlb-single'), 10)];
+          if (row && row.attempt) openFartnalysis('guess', target.id, row.attempt.id);
+        });
+      });
+      lbListEl.querySelectorAll('[data-rlb-cmp]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = resultsList[parseInt(this.getAttribute('data-rlb-cmp'), 10)];
+          if (row && row.attempt) openFartnalysis('comparison', target.id, row.attempt.id);
+        });
+      });
+    }
 
     var pbEl = $('res-pb-pill');
     pbEl.classList.add('hidden');
@@ -1912,7 +2367,7 @@
     rankBadge.textContent = rank.title;
     rankBadge.style.borderColor = rank.color;
     rankBadge.style.color = rank.color;
-    $('res-rank-desc').textContent = rank.desc;
+    $('res-rank-desc').textContent = (outcome.attempt.name || 'Winner') + ' — ' + rank.desc;
 
     $('res-best-score').textContent = (stats.bestScore || exact).toFixed(1) + '%';
     $('res-prev-score').textContent =
@@ -1920,7 +2375,11 @@
     $('res-current-score').textContent = exact.toFixed(1) + '%';
 
     var deltaNoteEl = $('res-delta-note');
-    if (typeof outcome.previousScore === 'number') {
+    if (resultsList.length > 1) {
+      deltaNoteEl.classList.remove('hidden', 'delta-neutral');
+      deltaNoteEl.textContent =
+        '🏆 ' + outcome.attempt.name + ' wins the ' + resultsList.length + '-guesser round at ' + exact.toFixed(1) + '% Closest Match!';
+    } else if (typeof outcome.previousScore === 'number') {
       var delta = Math.round((exact - outcome.previousScore) * 10) / 10;
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
       if (delta >= 0) {
@@ -1934,7 +2393,7 @@
     } else {
       deltaNoteEl.classList.remove('hidden');
       deltaNoteEl.classList.add('delta-neutral');
-      deltaNoteEl.textContent = 'First guess recorded — hand the phone to Guesser 2 or try to beat ' + exact.toFixed(1) + '%!';
+      deltaNoteEl.textContent = 'First guess recorded — hand the phone to Guesser 2 or play another round to beat ' + exact.toFixed(1) + '%!';
     }
 
     $('res-verdict-text').textContent = outcome.verdict;
@@ -1984,7 +2443,6 @@
     }
 
     if (reward.stars === 5) {
-      // Dramatic brief freeze (~680ms) after the 5th star bell before special victory finale
       var lastStarAt = startDelay + (reward.stars - 1) * stepMs;
       var finaleAt = lastStarAt + 680;
       state.resultTimers.push(
@@ -2063,20 +2521,27 @@
     if (needsGuess) {
       guessSel.innerHTML =
         state.fnAttempts.length === 0
-          ? '<option value="">No guesses recorded yet</option>'
+          ? '<option value="">No comparison recordings available</option>'
           : state.fnAttempts
               .map(function (a) {
                 return (
                   '<option value="' +
                   esc(a.id) +
                   '">' +
-                  esc(a.name + ' (' + (a.exactScore || 0).toFixed(1) + '%)') +
+                  esc(a.name + ' (' + (a.exactScore || 0).toFixed(1) + '% similarity)') +
                   '</option>'
                 );
               })
               .join('');
       if (state.fnAttemptId) guessSel.value = state.fnAttemptId;
     }
+  }
+
+  function handleCopyVerdict(verdictText) {
+    if (!verdictText) return;
+    copyTextQuiet(verdictText).then(function (ok) {
+      showToast(ok ? 'Copied verdict: "' + verdictText + '"' : 'Verdict: "' + verdictText + '"');
+    });
   }
 
   function renderFartnalysisView() {
@@ -2094,8 +2559,8 @@
     if (state.fnMode === 'group') {
       if (state.samples.length === 0) {
         emptyEl.classList.remove('hidden');
-        emptyTitle.textContent = 'No Farts in Vault for Megamix';
-        emptyCopy.textContent = 'Record at least one fart (or several!) to assemble the Coherent Multi-Fart Megamix.';
+        emptyTitle.textContent = 'No Archive Specimens for Megamix';
+        emptyCopy.textContent = 'Log at least one acoustic specimen to assemble the Multi-Specimen Megamix Research Summary.';
         mountEl.innerHTML = '';
         return;
       }
@@ -2106,8 +2571,11 @@
       emptyEl.classList.add('hidden');
       state.fnController = TootLabs.Fartnalysis.renderGroupDashboard(mountEl, {
         groupObj: groupObj,
+        archiveSamples: state.samples,
         sortBy: state.groupSortBy,
         sortDir: state.groupSortDir,
+        onOpenTeam: openTeamView,
+        onCopyVerdict: handleCopyVerdict,
         onSortChange: function (nextSortBy, nextSortDir) {
           if (root.TootApp && root.TootApp.Audio) root.TootApp.Audio.stopAll();
           state.groupSortBy = nextSortBy || state.groupSortBy;
@@ -2116,7 +2584,7 @@
         },
         onShare: function (g, specCanvases) {
           shareTextOrAudio(
-            'Multi-Fart Megamix Analysis',
+            'Multi-Specimen Megamix Fartnalysis Report',
             TootLabs.Store.buildGroupAnalysisReportText(g),
             g,
             { mode: 'group', groupObj: g, specCanvases: specCanvases }
@@ -2127,7 +2595,7 @@
         },
         onEmailAnalysis: function (g, specCanvases) {
           emailAnalysisReport(
-            'Multi-Fart Megamix Analysis',
+            'Multi-Specimen Megamix Fartnalysis Report',
             TootLabs.Store.buildGroupAnalysisReportText(g),
             { mode: 'group', groupObj: g, specCanvases: specCanvases },
             g
@@ -2140,8 +2608,8 @@
     var sample = getSampleById(state.fnSampleId);
     if (!sample) {
       emptyEl.classList.remove('hidden');
-      emptyTitle.textContent = 'No Saved Fart Selected';
-      emptyCopy.textContent = 'Record a fart first to inspect full FFT, frequency, envelope, and 3D spectrogram data.';
+      emptyTitle.textContent = 'No Primary Specimen Selected';
+      emptyCopy.textContent = 'Record an acoustic specimen to generate a complete Fartnalysis Report and Laboratory Findings.';
       mountEl.innerHTML = '';
       return;
     }
@@ -2150,28 +2618,27 @@
       emptyEl.classList.add('hidden');
       state.fnController = TootLabs.Fartnalysis.renderSingleDashboard(mountEl, {
         sound: sample,
+        archiveSamples: state.samples,
         label: getSampleName(sample),
-        eyebrow: '1 · ORIGINAL FART ANALYSIS',
-        primaryLabel: '🎯 Guess This Fart',
-        onPrimaryAction: function (s) {
-          openGuessMode(s.id);
-        },
+        eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN · ACOUSTIC ANALYSIS',
+        onOpenTeam: openTeamView,
+        onCopyVerdict: handleCopyVerdict,
         onShare: function (s, specCanvases) {
           shareTextOrAudio(
-            'Fartnalysis: ' + getSampleName(s),
-            TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'),
+            'Fartnalysis Report: ' + getSampleName(s),
+            TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT'),
             s,
-            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases }
+            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases }
           );
         },
         onDownloadPdf: function (s, specCanvases) {
-          downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases });
+          downloadAnalysisPdf({ mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases });
         },
         onEmailAnalysis: function (s, specCanvases) {
           emailAnalysisReport(
             'Fartnalysis Report: ' + getSampleName(s),
-            TootLabs.Store.buildSingleAnalysisReportText(s, 'ORIGINAL FART ANALYSIS'),
-            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: '1 · ORIGINAL FART ANALYSIS', specCanvases: specCanvases },
+            TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT'),
+            { mode: 'single', sound: s, label: getSampleName(s), eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases },
             s
           );
         }
@@ -2182,8 +2649,8 @@
     var attempt = state.fnAttempts.find(function (a) { return a.id === state.fnAttemptId; }) || state.fnAttempts[0] || null;
     if (!attempt) {
       emptyEl.classList.remove('hidden');
-      emptyTitle.textContent = 'No Guesses Recorded Yet for "' + getSampleName(sample) + '"';
-      emptyCopy.textContent = 'Head to Guess A Fart and record at least one player guess to unlock Guess Analysis and Comparison.';
+      emptyTitle.textContent = 'No Comparison Recordings Logged for "' + getSampleName(sample) + '"';
+      emptyCopy.textContent = 'Select a comparison recording to inspect Secondary Recording Telemetry and Comparative Analysis.';
       mountEl.innerHTML = '';
       return;
     }
@@ -2193,28 +2660,31 @@
       emptyEl.classList.add('hidden');
       state.fnController = TootLabs.Fartnalysis.renderSingleDashboard(mountEl, {
         sound: attempt,
-        label: attempt.name + ' (Guess for ' + getSampleName(sample) + ')',
-        eyebrow: '2 · GUESS FORENSIC ANALYSIS',
-        primaryLabel: '⚖️ Compare vs Original',
+        archiveSamples: state.samples,
+        label: attempt.name + ' (Secondary Recording for ' + getSampleName(sample) + ')',
+        eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING · LABORATORY FINDINGS',
+        primaryLabel: '⚖️ Open Comparative Analysis',
         onPrimaryAction: function () {
           openFartnalysis('comparison', sample.id, attempt.id);
         },
+        onOpenTeam: openTeamView,
+        onCopyVerdict: handleCopyVerdict,
         onShare: function (g, specCanvases) {
           shareTextOrAudio(
-            'Guess Analysis: ' + g.name,
-            TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'),
+            'Acoustic Analysis: ' + g.name,
+            TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS'),
             g,
-            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases }
+            { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases }
           );
         },
         onDownloadPdf: function (g, specCanvases) {
-          downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases });
+          downloadAnalysisPdf({ mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases });
         },
         onEmailAnalysis: function (g, specCanvases) {
           emailAnalysisReport(
-            'Guess Fartnalysis: ' + g.name,
-            TootLabs.Store.buildSingleAnalysisReportText(g, 'GUESS ANALYSIS'),
-            { mode: 'single', sound: g, label: g.name, eyebrow: '2 · GUESS FORENSIC ANALYSIS', specCanvases: specCanvases },
+            'Fartnalysis Report: ' + g.name,
+            TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS'),
+            { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases },
             g
           );
         }
@@ -2222,17 +2692,20 @@
       return;
     }
 
-    // 3. Comparison Analysis (9 Forensics suites + side-by-side 3D spectrograms)
+    // 3. Comparative Acoustic Analysis
     emptyEl.classList.add('hidden');
     state.fnController = TootLabs.Fartnalysis.renderDashboard(mountEl, {
       soundA: sample,
       soundB: attempt,
+      archiveSamples: state.samples,
       labelA: getSampleName(sample),
       labelB: attempt.name,
       result: attempt.result || null,
+      onOpenTeam: openTeamView,
+      onCopyVerdict: handleCopyVerdict,
       onShare: function (sA, sB, r, exact, specCanvases) {
         shareTextOrAudio(
-          'Toot Match Comparison: ' + exact.toFixed(1) + '%',
+          'Toot Match Comparative Report: ' + exact.toFixed(1) + '%',
           TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
           stitchComparisonAudio(sA, sB),
           { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases }
@@ -2243,7 +2716,7 @@
       },
       onEmailAnalysis: function (sA, sB, r, exact, specCanvases) {
         emailAnalysisReport(
-          'Toot Match Comparison: ' + sB.name + ' vs ' + getSampleName(sA),
+          'Toot Match Comparative Analysis: ' + sB.name + ' vs ' + getSampleName(sA),
           TootLabs.Store.buildComparisonReportText(sA, sB, r, exact),
           { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases },
           stitchComparisonAudio(sA, sB)
@@ -2338,7 +2811,6 @@
     });
 
     // Global Quick Record & Bar Actions
-    $('btn-labs-quick-record').addEventListener('click', startQuickRecordFart);
     $('btn-quick-stop-save').addEventListener('click', function () {
       if (state.recordingKind === 'quick' && state.activeRecStopper) {
         state.activeRecStopper();
@@ -2358,7 +2830,7 @@
       $('labs-quick-rec-bar').classList.add('hidden');
     });
 
-    // Home 3 Primary Action Cards
+    // Home 3 Primary Action Cards & Meet The Team
     $('btn-home-record-fart').addEventListener('click', startQuickRecordFart);
     $('btn-home-guess-fart').addEventListener('click', function () {
       openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id));
@@ -2374,6 +2846,9 @@
       renderVaultView();
       showView('vault');
     });
+    if ($('btn-home-meet-team')) {
+      $('btn-home-meet-team').addEventListener('click', openTeamView);
+    }
 
     // Vault View Buttons & Airlock Door
     $('btn-vault-record').addEventListener('click', startQuickRecordFart);
@@ -2494,7 +2969,20 @@
       state.pendingGuess = null;
       renderGuessView();
     });
-    $('btn-guess-judge').addEventListener('click', judgePendingGuess);
+    $('btn-guess-add-another').addEventListener('click', addAnotherGuesser);
+    $('btn-guess-judge').addEventListener('click', analyzeSessionGuesses);
+    $('btn-guess-queue-analyze').addEventListener('click', analyzeSessionGuesses);
+
+    // Guess Sub-Modes (Primary vs Blind Prediction Experimental Mode)
+    $('btn-submode-standard').addEventListener('click', function () {
+      setGuessSubMode('standard');
+    });
+    $('btn-submode-blind').addEventListener('click', function () {
+      setGuessSubMode('blind');
+    });
+    $('btn-blind-rec-guess').addEventListener('click', startBlindGuessCapture);
+    $('btn-blind-rec-orig').addEventListener('click', startBlindOriginalCapture);
+    $('btn-blind-analyze').addEventListener('click', analyzeBlindSession);
 
     // Match Result Buttons
     $('btn-res-next-guesser').addEventListener('click', function () {
@@ -2559,12 +3047,24 @@
     });
 
     $('btn-fn-back').addEventListener('click', function () {
-      openGuessMode(state.fnSampleId || state.guessTargetId);
+      renderVaultView();
+      showView('vault');
     });
 
     $('btn-fn-go-guess').addEventListener('click', function () {
-      openGuessMode(state.fnSampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id));
+      renderVaultView();
+      showView('vault');
     });
+
+    if ($('btn-fn-team')) {
+      $('btn-fn-team').addEventListener('click', openTeamView);
+    }
+    if ($('btn-team-back')) {
+      $('btn-team-back').addEventListener('click', function () {
+        var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
+        showView(backTo);
+      });
+    }
 
     var skipAnalysisBtn = $('btn-labs-an-skip');
     if (skipAnalysisBtn) {
@@ -2623,7 +3123,12 @@
   TootLabs.App = {
     getState: function () { return state; },
     showView: showView,
+    openTeamView: openTeamView,
     openGuessMode: openGuessMode,
+    setGuessSubMode: setGuessSubMode,
+    addAnotherGuesser: addAnotherGuesser,
+    analyzeSessionGuesses: analyzeSessionGuesses,
+    analyzeBlindSession: analyzeBlindSession,
     pickRandomGuessTarget: pickRandomGuessTarget,
     openFartnalysis: openFartnalysis,
     setRecordMode: setRecordMode,

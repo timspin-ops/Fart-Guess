@@ -5,6 +5,366 @@
 
   var gaugeUid = 0;
 
+  var INSTITUTE = {
+    name: 'TOOT MATCH LABS',
+    subtitle: 'Institute of Acoustic Flatulence Research',
+    tagline: 'Advancing The Science Of Gastrointestinal Acoustics Since 2026',
+    aiAcronym: 'A.S.S.',
+    aiName: 'Acoustic Similarity System',
+    aiVersion: 'v4.2'
+  };
+
+  var TEAM = [
+    {
+      id: 'bottomsworth',
+      name: 'Professor Reginald P. Bottomsworth',
+      shortName: 'Professor Bottomsworth',
+      title: 'Chief Acoustic Flatulence Officer',
+      img: 'img/team/bottomsworth.png',
+      initials: 'RB',
+      bio: 'Professor Bottomsworth founded Toot Match Labs after a distinguished career studying unusual acoustic phenomena. His work established many of the laboratory\'s modern analysis standards and remains central to the field of comparative flatulence science.',
+      specialities: ['Acoustic Classification', 'Resonance Research', 'Comparative Emissions Analysis']
+    },
+    {
+      id: 'turbulence',
+      name: 'Dr. Ava Turbulence',
+      shortName: 'Dr. Turbulence',
+      title: 'Director of Pressure Dynamics',
+      img: 'img/team/turbulence.png',
+      initials: 'AT',
+      bio: 'Dr. Turbulence specializes in pressure release events and airflow behaviour. Many of the laboratory\'s turbulence and thunder quotient models were developed under her leadership.',
+      specialities: ['Pressure Mapping', 'Turbulence Analysis', 'Flow Dynamics']
+    },
+    {
+      id: 'wobble',
+      name: 'Dr. Penelope Wobble',
+      shortName: 'Dr. Wobble',
+      title: 'Senior Spectrogram Scientist',
+      img: 'img/team/wobble.png',
+      initials: 'PW',
+      bio: 'Dr. Wobble is responsible for much of the laboratory\'s frequency and resonance research. Her work focuses on identifying unique harmonic signatures.',
+      specialities: ['Spectrogram Analysis', 'Frequency Mapping', 'Resonance Studies']
+    },
+    {
+      id: 'flatley',
+      name: 'Dr. Miles Flatley',
+      shortName: 'Dr. Flatley',
+      title: 'Director of Computational Acoustics',
+      img: 'img/team/flatley.png',
+      initials: 'MF',
+      bio: 'Dr. Flatley leads development of comparison algorithms and machine learning systems. His models analyze thousands of acoustic events each year.',
+      specialities: ['Machine Learning', 'Similarity Analysis', 'Pattern Recognition']
+    },
+    {
+      id: 'pufferton',
+      name: 'Dr. Winston Pufferton',
+      shortName: 'Dr. Pufferton',
+      title: 'Chief Archive Curator',
+      img: 'img/team/pufferton.png',
+      initials: 'WP',
+      bio: 'Dr. Pufferton maintains the Institute Archive and oversees preservation of historically significant recordings.',
+      specialities: ['Classification', 'Data Archiving', 'Research Preservation']
+    }
+  ];
+
+  var RESEARCH_FOOTNOTES = [
+    'Findings validated three times.',
+    'Additional scientific review recommended.',
+    'Research team remains intrigued.',
+    'Statistical confidence remains favourable.',
+    'Archive data continues to expand.',
+    'Additional funding has not yet been approved.',
+    'Coffee consumption increased during analysis.',
+    'Peer review remains ongoing.',
+    'Archive comparison yielded unexpected results.'
+  ];
+
+  var SCIENTIST_COMMENT_POOLS = {
+    bottomsworth: [
+      'Remarkably stable turbulence.',
+      'This profile warrants further study.',
+      'I have rarely encountered resonance of this character.',
+      'The science appears unusually cooperative today.',
+      'This may become archive worthy.',
+      'An impressive example of acoustic determination.',
+      'Further funding should be considered.',
+      'The laboratory remains cautiously optimistic.'
+    ],
+    turbulence: [
+      'Pressure release dynamics are unusually clean.',
+      'Strong air-flow organization detected.',
+      'Turbulence behaviour exceeds expectations.',
+      'This event developed exactly as the models predicted.',
+      'This sample deserves additional study.'
+    ],
+    wobble: [
+      'The frequency structure is surprisingly elegant.',
+      'I would like additional time with this spectrogram.',
+      'Several harmonics have attracted my attention.',
+      'The resonance profile appears unusually disciplined.',
+      'An unusually coherent resonance profile.'
+    ],
+    flatley: [
+      'The machine learning models are highly confident.',
+      'Our clustering algorithms are behaving enthusiastically.',
+      'Computational curiosity levels remain elevated.',
+      'This sample sits far from the archive average.',
+      'The similarity engine appears highly confident.'
+    ],
+    pufferton: [
+      'The archive contains few comparable examples.',
+      'A noteworthy addition to the collection.',
+      'This will be filed under Acoustically Significant.',
+      'A valuable addition to the archive.'
+    ]
+  };
+
+  var SCIENTIST_COMMENTS = [
+    { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'Remarkably stable turbulence.' },
+    { scientistId: 'wobble', label: 'Research Note', quote: 'An unusually coherent resonance profile.' },
+    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'The similarity engine appears highly confident.' },
+    { scientistId: 'turbulence', label: 'Peer Review Note', quote: 'Pressure release dynamics are unusually clean.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'A noteworthy addition to the collection.' },
+    { scientistId: 'bottomsworth', label: 'Scientific Recommendation', quote: 'The laboratory remains cautiously optimistic.' },
+    { scientistId: 'turbulence', label: 'Field Observation', quote: 'Strong air-flow organization detected.' },
+    { scientistId: 'wobble', label: 'Research Note', quote: 'The frequency structure is surprisingly elegant.' },
+    { scientistId: 'flatley', label: 'Computational Note', quote: 'The machine learning models are highly confident.' },
+    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'This will be filed under Acoustically Significant.' }
+  ];
+
+  var RARE_COMMENTS = [
+    'Laboratory disagreement detected.',
+    'Peer review is becoming animated.',
+    'This sample has generated debate.',
+    'Several scientists have requested a second look.',
+    'Additional coffee has been authorized.',
+    'Archive retrieval taking longer than expected.',
+    'This recording has attracted unusual scientific interest.'
+  ];
+
+  var SHAREABLE_VERDICTS = [
+    'Archive Worthy.',
+    'Scientifically Remarkable.',
+    'Professor Bottomsworth Requested A Second Opinion.',
+    'Unexpectedly Elegant.',
+    'Turbulence Excellence Achieved.',
+    'A Strong Contribution To Flatulence Science.',
+    'Acoustically Ambitious.',
+    'Certified Research Material.',
+    'Suitable For Peer Review.'
+  ];
+
+  var DIAL_SCIENTIST_MAP = {
+    s_crest: 'turbulence',
+    s_resonance: 'wobble',
+    s_tone: 'wobble',
+    s_turbulence: 'turbulence',
+    s_burst: 'turbulence',
+    s_timbre: 'wobble',
+    s_moisture: 'turbulence',
+    s_twin: 'pufferton',
+    s_panic: 'pufferton',
+    s_ml: 'flatley',
+    s_velocity: 'turbulence',
+    s_neighbor: 'bottomsworth',
+    s_authenticity: 'bottomsworth',
+    overall: 'bottomsworth',
+    duration: 'turbulence',
+    pitch: 'wobble',
+    modulation: 'turbulence',
+    timbre: 'wobble',
+    envelope: 'turbulence',
+    wetness: 'turbulence',
+    acoustics: 'pufferton',
+    social: 'bottomsworth',
+    authenticity: 'bottomsworth'
+  };
+
+  function hashSeed(str) {
+    var s = String(str || 'toot');
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function pickBySeed(seedStr, list, offset) {
+    if (!list || list.length === 0) return null;
+    var h = hashSeed(seedStr) + (offset || 0);
+    return list[Math.abs(h) % list.length];
+  }
+
+  function getScientistById(id) {
+    for (var i = 0; i < TEAM.length; i++) {
+      if (TEAM[i].id === id) return TEAM[i];
+    }
+    return TEAM[0];
+  }
+
+  function pickScientistComment(scientistId, seedStr, offset) {
+    var pool = SCIENTIST_COMMENT_POOLS[scientistId] || SCIENTIST_COMMENT_POOLS.bottomsworth;
+    var q = pickBySeed((seedStr || '') + '|' + scientistId, pool, offset || 0) || pool[0];
+    return { scientistId: scientistId, quote: q };
+  }
+
+  function pickRareComment(seedStr) {
+    var h = hashSeed((seedStr || '') + '|rare');
+    if (h % 5 !== 0) return null; // ~20% low-frequency institutional dispatch
+    return RARE_COMMENTS[Math.floor(h / 5) % RARE_COMMENTS.length];
+  }
+
+  function pickShareableVerdict(seedStr) {
+    return pickBySeed((seedStr || '') + '|verdict', SHAREABLE_VERDICTS, 0) || SHAREABLE_VERDICTS[0];
+  }
+
+  function renderRareCommentHtml(text) {
+    if (!text) return '';
+    return (
+      '<div class="labs-rare-comment" role="note">' +
+      '  <span class="labs-rare-tag">RARE LABORATORY DISPATCH</span>' +
+      '  <span class="labs-rare-text">' + esc(text) + '</span>' +
+      '</div>'
+    );
+  }
+
+  function renderScientistCommentHtml(scientistId, quote, noteLabel) {
+    var sci = getScientistById(scientistId);
+    return (
+      '<div class="labs-sci-comment">' +
+      '  <img class="labs-sci-avatar" src="' + esc(sci.img) + '" alt="' + esc(sci.name) + '" loading="lazy" />' +
+      '  <div class="labs-sci-body">' +
+      '    <span class="labs-sci-tag">' + esc(noteLabel || 'Laboratory Observation') + '</span>' +
+      '    <blockquote class="labs-sci-quote">"' + esc(quote) + '"</blockquote>' +
+      '    <div class="labs-sci-attr">— ' + esc(sci.shortName) + ' <span class="labs-sci-role">· ' + esc(sci.title) + '</span></div>' +
+      '  </div>' +
+      '</div>'
+    );
+  }
+
+  function buildArchiveComparison(feat, bonus, archiveSamples, seedStr) {
+    var f = feat || {};
+    var crest = safeNum(f.crestFactorDb, 8.5);
+    var modDepth = safeNum(f.modDepth, 0.3);
+    var cent = safeNum(f.spectralCentroidHz, 220);
+    var dur = safeNum(f.duration, 0.5);
+    var atk = safeNum(f.attackSec, 0.08);
+    var wet = bonus && bonus.wetness ? bonus.wetness.wetA : 32;
+
+    var energyPct = percentileAgainstArchive(crest + modDepth * 4.5, archiveSamples, 'crestFactorDb', 9.2, 3.1);
+    var energyLine = 'More energetic than ' + energyPct + '% of archived samples.';
+    var tags = [];
+    if (modDepth >= 0.42) tags.push('Above average turbulence.');
+    else tags.push('Controlled laminar flow.');
+    if (safeNum(f.pitchRangeSemitones, 0) >= 4.0 || cent >= 360 || cent <= 115) tags.push('Rare resonance distribution.');
+    else tags.push('Disciplined harmonic structure.');
+    if (atk <= 0.055 || (f.burstCount || 1) >= 2) tags.push('Uncommon pressure release signature.');
+    else tags.push('Balanced pressure release profile.');
+    if (energyPct >= 62 || wet >= 55) tags.push('Acoustically distinctive.');
+    if (energyPct >= 72 || dur >= 0.9 || (f.burstCount || 1) >= 3) tags.push('Potential archive candidate.');
+
+    var puff = pickScientistComment('pufferton', seedStr || 'archive', 1);
+    return {
+      energyPct: energyPct,
+      energyLine: energyLine,
+      tags: tags,
+      scientistId: 'pufferton',
+      quote: puff.quote
+    };
+  }
+
+  function renderArchiveComparisonHtml(archCmp) {
+    if (!archCmp) return '';
+    var sci = getScientistById(archCmp.scientistId || 'pufferton');
+    var pillsHtml = (archCmp.tags || [])
+      .map(function (t) {
+        return '<span class="labs-chart-pill">' + esc(t) + '</span>';
+      })
+      .join('');
+    return (
+      '<section class="labs-archive-cmp-card" aria-label="Institute Archive Comparison">' +
+      '  <div class="labs-archive-cmp-head">' +
+      '    <div>' +
+      '      <div class="labs-eyebrow">INSTITUTE ARCHIVE COMPARISON</div>' +
+      '      <div class="labs-archive-headline">' + esc(archCmp.energyLine) + '</div>' +
+      '    </div>' +
+      '    <span class="labs-chip labs-chip-blue">' + archCmp.energyPct + 'th Percentile</span>' +
+      '  </div>' +
+      '  <div class="labs-archive-meter-track"><div class="labs-archive-meter-fill" style="width:' + archCmp.energyPct + '%"></div></div>' +
+      '  <div class="labs-archive-pills">' + pillsHtml + '</div>' +
+      '  <div class="labs-chart-obs">' +
+      '    <img src="' + esc(sci.img) + '" alt="' + esc(sci.shortName) + '" loading="lazy" />' +
+      '    <span><strong>Archive Classification:</strong> "' + esc(archCmp.quote) + '" <em>— ' + esc(sci.shortName) + '</em></span>' +
+      '  </div>' +
+      '</section>'
+    );
+  }
+
+  function renderShareableVerdictHtml(verdictText, specimenTitle, pctLabel) {
+    var chief = getScientistById('bottomsworth');
+    return (
+      '<section class="labs-glass-card labs-share-verdict-card" aria-label="Official Shareable Laboratory Verdict">' +
+      '  <div class="labs-sv-top">' +
+      '    <div class="labs-sv-seal">' +
+      '      <img src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
+      '      <div>' +
+      '        <div class="labs-eyebrow">TOOT MATCH LABS · RESEARCH VERDICT</div>' +
+      '        <div class="labs-sv-spec">' + esc(specimenTitle) + (pctLabel ? ' · ' + esc(pctLabel) : '') + '</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-copy-verdict-btn" data-verdict-copy="' + esc(verdictText) + '">📋 Copy Verdict</button>' +
+      '  </div>' +
+      '  <div class="labs-sv-headline">' + esc(verdictText) + '</div>' +
+      '  <div class="labs-sv-footer">' +
+      '    <span>' + esc(INSTITUTE.subtitle) + '</span>' +
+      '    <span>Certified via ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
+      '  </div>' +
+      '</section>'
+    );
+  }
+
+  function renderReportSignatureHtml(seedStr) {
+    var chief = getScientistById('bottomsworth');
+    var fnBase = hashSeed(seedStr);
+    var notes = [];
+    for (var i = 0; i < 4; i++) {
+      notes.push(RESEARCH_FOOTNOTES[(fnBase + i * 2) % RESEARCH_FOOTNOTES.length]);
+    }
+    var notesHtml = notes
+      .map(function (n, idx) {
+        return '<li><sup>[' + (idx + 1) + ']</sup> * ' + esc(n) + '</li>';
+      })
+      .join('');
+
+    return (
+      '<section class="labs-glass-card labs-report-signature" aria-label="Laboratory Certification and Research Footnotes">' +
+      '  <div class="labs-sig-top">' +
+      '    <div class="labs-sig-reviewer">' +
+      '      <img class="labs-sig-portrait" src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
+      '      <div>' +
+      '        <div class="labs-eyebrow">Reviewed and Approved By</div>' +
+      '        <div class="labs-sig-name">' + esc(chief.name) + '</div>' +
+      '        <div class="labs-sig-title">' + esc(chief.title) + '</div>' +
+      '        <div class="labs-sig-org">' + esc(INSTITUTE.subtitle) + ' · ' + esc(INSTITUTE.name) + '</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="labs-sig-engine">' +
+      '      <div class="labs-eyebrow">Analysis Performed Using</div>' +
+      '      <div class="labs-sig-ass">' + esc(INSTITUTE.aiAcronym) + '</div>' +
+      '      <div class="labs-sig-ass-sub">' + esc(INSTITUTE.aiName) + ' ' + esc(INSTITUTE.aiVersion) + '</div>' +
+      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-fn-meet-team">🏛️ Meet The Team</button>' +
+      '    </div>' +
+      '  </div>' +
+      '  <p class="labs-sig-disclaimer">"This report has been generated using proprietary acoustic analysis techniques and may contain traces of excessive scientific enthusiasm."</p>' +
+      '  <div class="labs-footnotes">' +
+      '    <div class="labs-eyebrow">RESEARCH FOOTNOTES</div>' +
+      '    <ul>' + notesHtml + '</ul>' +
+      '  </div>' +
+      '</section>'
+    );
+  }
+
   function clamp(v, lo, hi) {
     return v < lo ? lo : v > hi ? hi : v;
   }
@@ -139,19 +499,19 @@
       Math.abs(deltaMs) < 35
         ? 'Uncanny stopwatch valve discipline — both pinched off within ±' + Math.abs(deltaMs) + 'ms.'
         : deltaMs > 0
-        ? 'Guess kept honking for +' + deltaMs + 'ms of pure bonus awkwardness.'
-        : 'Stage fright! Guess pinched off ' + Math.abs(deltaMs) + 'ms too early.';
+        ? 'Recording B kept resonating for +' + deltaMs + 'ms longer than Specimen A.'
+        : 'Specimen B truncated ' + Math.abs(deltaMs) + 'ms earlier than Reference A.';
 
     var envQuip =
       lagBins === 0
         ? 'Detonation peaks arrived phase-locked without needing lag compensation.'
-        : 'Shifted Guess by ' + (lagBins > 0 ? '+' : '') + lagBins + ' time bins so late Record taps stay fair.';
+        : 'Aligned Recording B by ' + (lagBins > 0 ? '+' : '') + lagBins + ' time bins for temporal fairness.';
 
     var timbreQuip =
       centB < centA * 0.72
-        ? 'Guess sounds muffled through thick winter jeans compared to open-air Reference.'
+        ? 'Recording B exhibits dense upholstery attenuation compared to open-air Reference A.'
         : centB > centA * 1.35
-        ? 'Guess packs extra bright brassy sizzle — less cushion damping than Reference.'
+        ? 'Recording B packs extra bright brassy sizzle — less cushion damping than Reference A.'
         : 'Astonishingly close upholstery damping and cheek resonance coloring.';
 
     var rawList = [
@@ -404,25 +764,44 @@
           '</div>'
         : '');
 
+    var cmpComment = pickScientistComment(
+      'flatley',
+      (labelA || '') + '|' + (labelB || '') + '|' + exactScore.toFixed(1),
+      0
+    );
+    cmpComment.label = 'Comparative Match Review';
+    var specWobble = pickScientistComment('wobble', (labelA || '') + '|' + (labelB || '') + '|spec3d', 1);
+    var rareDispatch = pickRareComment((labelA || '') + '|' + (labelB || '') + '|cmp');
+    var archCmp = buildArchiveComparison(
+      featA,
+      bonus,
+      opts.archiveSamples,
+      (labelA || '') + '|' + (labelB || '') + '|arch'
+    );
+    var shareVerdict = pickShareableVerdict(
+      (labelA || '') + '|' + (labelB || '') + '|' + exactScore.toFixed(1)
+    );
+
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
       '  <section class="labs-glass-card labs-fn-header">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMPARISON FORENSICS SUITE</div>' +
+      '        <div class="labs-eyebrow">COMPARISON FORENSICS SUITE · SCIENTIFIC REVIEW</div>' +
       '        <h2 class="labs-fn-title">' + esc(labelA) + ' <span class="labs-vs-arrow">vs</span> ' + esc(labelB) + '</h2>' +
       '      </div>' +
       '      <div class="labs-fn-right-cluster">' +
       headerBtnsHtml +
       '        <div class="labs-fn-score-chip">' +
       '          <span class="labs-fn-score-val">' + exactScore.toFixed(1) + '%</span>' +
-      '          <span class="labs-fn-score-lbl">MATCH</span>' +
+      '          <span class="labs-fn-score-lbl">SIMILARITY</span>' +
       '        </div>' +
       '      </div>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       twinBadgeHtml +
-      '      <span class="labs-hint-text">3D spectrograms above · Expandable comparison breakdown below</span>' +
+      '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
+      '      <span class="labs-hint-text">3D spectrograms above · Expandable comparative telemetry below</span>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
@@ -471,29 +850,35 @@
       '        <canvas class="labs-spec-canvas labs-fn-canvas-b"></canvas>' +
       '      </div>' +
       '    </div>' +
+      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Spectrogram Commentary') +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMPLETE COMPARISON ANALYSIS</div>' +
-      '        <h3 class="labs-section-title">Head-to-Head Forensic Breakdown</h3>' +
+      '        <div class="labs-eyebrow">COMPLETE COMPARATIVE ACOUSTIC ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Head-to-Head Research Summary</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Telemetry Suites</span>' +
       '    </div>' +
       '    <div class="labs-verdict-banner">' +
       '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL REFEREE VERDICT</span>' +
-      '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Solid Attempt')) + '</span>' +
+      '        <span class="labs-eyebrow">LABORATORY FINDINGS · OFFICIAL SCIENTIFIC VERDICT</span>' +
+      '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Aligned Profile')) + '</span>' +
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(cmpVerdict) + '</p>' +
       cmpTipsHtml +
       '    </div>' +
+      renderScientistCommentHtml(cmpComment.scientistId, cmpComment.quote, cmpComment.label) +
+      renderRareCommentHtml(rareDispatch) +
       humorStripHtml +
+      renderArchiveComparisonHtml(archCmp) +
       '    <div class="labs-hint-text">Tap any row below to expand complete FFT charts, side-by-side statistics &amp; equations inline.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
       '  </section>' +
+      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Similarity') +
+      renderReportSignatureHtml((labelA || '') + '|' + (labelB || '') + '|cmp') +
       '</div>';
 
     // Initialize 3D Spectrograms
@@ -548,7 +933,16 @@
 
       if (resolvedId === 'authenticity') {
         activeMountEl = slotEl;
-        slotEl.innerHTML = renderAuthenticityComparisonAccordionHtml(labelA, authA, labelB, authB);
+        var authSci = pickScientistComment(
+          DIAL_SCIENTIST_MAP.authenticity || 'bottomsworth',
+          (labelA || '') + '|' + (labelB || '') + '|auth',
+          1
+        );
+        slotEl.innerHTML =
+          renderAuthenticityComparisonAccordionHtml(labelA, authA, labelB, authB) +
+          '<div class="labs-acc-sci-slot">' +
+          renderScientistCommentHtml(authSci.scientistId, authSci.quote, 'Authenticity Review') +
+          '</div>';
         var closeAuthBtn = slotEl.querySelector('.labs-acc-close');
         if (closeAuthBtn) closeAuthBtn.addEventListener('click', closeActiveRow);
         var drawAuthNow = function () {
@@ -568,7 +962,16 @@
         return;
       }
 
-      slotEl.innerHTML = '<div class="labs-forensics-mount"></div>';
+      var rowSci = pickScientistComment(
+        DIAL_SCIENTIST_MAP[targetFKey] || DIAL_SCIENTIST_MAP[resolvedId] || 'turbulence',
+        (labelA || '') + '|' + (labelB || '') + '|' + resolvedId,
+        1
+      );
+      slotEl.innerHTML =
+        '<div class="labs-forensics-mount"></div>' +
+        '<div class="labs-acc-sci-slot">' +
+        renderScientistCommentHtml(rowSci.scientistId, rowSci.quote, 'Specialist Telemetry Remark') +
+        '</div>';
 
       var fMountEl = slotEl.querySelector('.labs-forensics-mount');
       activeMountEl = fMountEl;
@@ -758,6 +1161,17 @@
     if (cmpEmailBtn && opts.onEmailAnalysis) {
       cmpEmailBtn.addEventListener('click', function () {
         opts.onEmailAnalysis(soundA, soundB, result, exactScore, [canvasA, canvasB]);
+      });
+    }
+    var cmpTeamBtn = mountEl.querySelector('.labs-fn-meet-team');
+    if (cmpTeamBtn && opts.onOpenTeam) {
+      cmpTeamBtn.addEventListener('click', opts.onOpenTeam);
+    }
+    var cmpCopyVerdictBtn = mountEl.querySelector('.labs-copy-verdict-btn');
+    if (cmpCopyVerdictBtn) {
+      cmpCopyVerdictBtn.addEventListener('click', function () {
+        var txt = this.getAttribute('data-verdict-copy') || shareVerdict;
+        if (opts.onCopyVerdict) opts.onCopyVerdict(txt);
       });
     }
 
@@ -1041,31 +1455,686 @@
     };
   }
 
-  /* ==================== REUSABLE SINGLE & GROUP 2D CHART PLOTS ==================== */
-  function drawSpectrumPlot(target, feat, accent) {
+  /* ==================== REUSABLE SINGLE & GROUP 2D CHART PLOTS + ARCHIVE OVERLAYS ==================== */
+  function erfApprox(x) {
+    var sign = x < 0 ? -1 : 1;
+    var ax = Math.abs(x);
+    var t = 1 / (1 + 0.3275911 * ax);
+    var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-ax * ax);
+    return sign * y;
+  }
+
+  function percentileAgainstArchive(val, samplesArr, fieldName, fallbackMean, fallbackStd) {
+    var vals = [];
+    if (Array.isArray(samplesArr)) {
+      for (var i = 0; i < samplesArr.length; i++) {
+        var f = samplesArr[i] && samplesArr[i].features;
+        if (f && typeof f[fieldName] === 'number' && Number.isFinite(f[fieldName]) && f[fieldName] > 0) {
+          vals.push(f[fieldName]);
+        }
+      }
+    }
+    if (vals.length >= 4) {
+      var below = 0;
+      for (var j = 0; j < vals.length; j++) {
+        if (vals[j] <= val) below++;
+      }
+      return clamp(Math.round((below / vals.length) * 100), 4, 99);
+    }
+    var z = (val - fallbackMean) / Math.max(1e-4, fallbackStd);
+    var p = 0.5 * (1 + erfApprox(z / Math.SQRT2));
+    return clamp(Math.round(p * 100), 4, 99);
+  }
+
+  function buildArchiveBaselines(feat, archiveSamples) {
+    var avgSpec = feat && feat.avgSpectrum ? feat.avgSpectrum : [];
+    var nSpec = avgSpec.length || 40;
+    var fc = feat && feat.spectrogram && feat.spectrogram.freqCenters;
+    var specMean = new Array(nSpec);
+    var specSpread = new Array(nSpec);
+
+    for (var i = 0; i < nSpec; i++) {
+      var fHz = fc && i < fc.length ? safeNum(fc[i], 200) : 45 * Math.pow(4200 / 45, i / Math.max(1, nSpec - 1));
+      var prior = 0.62 * Math.exp(-Math.pow((Math.log2(fHz) - Math.log2(165)) / 1.55, 2)) + 0.14;
+      var sum = prior * 2.0;
+      var sumSq = prior * prior * 2.0;
+      var cnt = 2;
+      if (Array.isArray(archiveSamples)) {
+        for (var s = 0; s < archiveSamples.length; s++) {
+          var sf = archiveSamples[s] && archiveSamples[s].features;
+          if (sf && sf.avgSpectrum && i < sf.avgSpectrum.length) {
+            var v = clamp(safeNum(sf.avgSpectrum[i], 0), 0, 1);
+            sum += v;
+            sumSq += v * v;
+            cnt++;
+          }
+        }
+      }
+      var mu = sum / cnt;
+      var variance = Math.max(0.008, sumSq / cnt - mu * mu);
+      specMean[i] = clamp(mu, 0.04, 0.92);
+      specSpread[i] = clamp(1.96 * Math.sqrt(variance) * 0.65, 0.06, 0.28);
+    }
+
+    var ms = feat && feat.modSpectrum ? feat.modSpectrum : [];
+    var nMod = ms.length || 24;
+    var modMean = new Array(nMod);
+    for (var m = 0; m < nMod; m++) {
+      var mHz = 4 + (m / Math.max(1, nMod - 1)) * 41;
+      var mPrior = 0.56 * Math.exp(-Math.pow((mHz - 14.5) / 8.5, 2)) + 0.12;
+      var mSum = mPrior * 2.0;
+      var mCnt = 2;
+      if (Array.isArray(archiveSamples)) {
+        for (var k = 0; k < archiveSamples.length; k++) {
+          var mf = archiveSamples[k] && archiveSamples[k].features;
+          if (mf && mf.modSpectrum && m < mf.modSpectrum.length) {
+            mSum += clamp(safeNum(mf.modSpectrum[m], 0), 0, 1);
+            mCnt++;
+          }
+        }
+      }
+      modMean[m] = clamp(mSum / mCnt, 0.05, 0.85);
+    }
+
+    var env = feat && feat.envelope ? feat.envelope : [];
+    var nEnv = env.length || 32;
+    var envMean = new Array(nEnv);
+    for (var e = 0; e < nEnv; e++) {
+      var tf = e / Math.max(1, nEnv - 1);
+      var ePrior = tf < 0.16 ? 0.18 + (tf / 0.16) * 0.62 : 0.80 * Math.exp(-(tf - 0.16) * 2.45);
+      envMean[e] = clamp(ePrior, 0.04, 0.9);
+    }
+
+    return { specMean: specMean, specSpread: specSpread, modMean: modMean, envMean: envMean };
+  }
+
+  function ordinalPct(p) {
+    var mod100 = p % 100;
+    if (mod100 >= 11 && mod100 <= 13) return p + 'th';
+    var mod10 = p % 10;
+    if (mod10 === 1) return p + 'st';
+    if (mod10 === 2) return p + 'nd';
+    if (mod10 === 3) return p + 'rd';
+    return p + 'th';
+  }
+
+  function buildFinalChartsMetadata(sound, feat, bonus, archiveSamples) {
+    var f = feat || {};
+    var bases = buildArchiveBaselines(f, archiveSamples);
+    var spec = f.avgSpectrum || [];
+    var fc = f.spectrogram && f.spectrogram.freqCenters;
+    var centHz = safeNum(f.spectralCentroidHz, 240);
+    var peakSpecIdx = 0;
+    var peakSpecVal = -1;
+    var subPeakIdx = 0;
+    var subPeakVal = -1;
+    var upperIdx = Math.floor(spec.length * 0.55);
+    var maxArchDiffIdx = 0;
+    var maxArchDiffVal = -1;
+    for (var si = 0; si < spec.length; si++) {
+      if (spec[si] > peakSpecVal) { peakSpecVal = spec[si]; peakSpecIdx = si; }
+      var bHz = fc && si < fc.length ? fc[si] : 45 * Math.pow(4200 / 45, si / Math.max(1, spec.length - 1));
+      if (bHz <= 165 && spec[si] > subPeakVal) { subPeakVal = spec[si]; subPeakIdx = si; }
+      var diffArch = spec[si] - (bases.specMean[si] || 0.25);
+      if (diffArch > maxArchDiffVal && si >= upperIdx * 0.4) { maxArchDiffVal = diffArch; maxArchDiffIdx = si; }
+    }
+    var specHzAt = function (idx) {
+      return fc && idx < fc.length ? Math.round(fc[idx]) : Math.round(45 * Math.pow(4200 / 45, idx / Math.max(1, spec.length - 1)));
+    };
+    var peakSpecHz = specHzAt(peakSpecIdx);
+    var subPeakHz = specHzAt(subPeakIdx);
+    var outlierHz = specHzAt(maxArchDiffIdx);
+    var specPct = percentileAgainstArchive(centHz, archiveSamples, 'spectralCentroidHz', 235, 110);
+    var specAnomaly = peakSpecVal > 0.72 && (bases.specMean[peakSpecIdx] || 0.35) < peakSpecVal - 0.22;
+
+    var pArr = f.pitchHzArr || [];
+    var voicedPts = [];
+    var maxPitch = 0;
+    var minPitch = 9999;
+    var maxPitchFrame = 0;
+    var minPitchFrame = 0;
+    var steepFrame = 0;
+    var maxStepJump = 0;
+    var prevV = 0;
+    for (var pi = 0; pi < pArr.length; pi++) {
+      if (pArr[pi] > 20) {
+        voicedPts.push(pArr[pi]);
+        if (pArr[pi] > maxPitch) { maxPitch = pArr[pi]; maxPitchFrame = pi; }
+        if (pArr[pi] < minPitch) { minPitch = pArr[pi]; minPitchFrame = pi; }
+        if (prevV > 20 && Math.abs(pArr[pi] - prevV) > maxStepJump) {
+          maxStepJump = Math.abs(pArr[pi] - prevV);
+          steepFrame = pi;
+        }
+        prevV = pArr[pi];
+      } else {
+        prevV = 0;
+      }
+    }
+    var meanPitch = voicedPts.length ? voicedPts.reduce(function (a, b) { return a + b; }, 0) / voicedPts.length : safeNum(f.medianPitchHz, 0);
+    var pitchCi = voicedPts.length >= 3 ? Math.max(4, Math.round(clamp(safeNum(f.pitchRangeSemitones, 2) * 3.8, 4, 48))) : 16;
+    var pitchPct = percentileAgainstArchive(meanPitch || centHz, archiveSamples, 'medianPitchHz', 145, 55);
+    var pitchSpanSt = safeNum(f.pitchRangeSemitones, 0);
+
+    var ms = f.modSpectrum || [];
+    var modRate = safeNum(f.modRateHz, 12);
+    var modDepthPct = Math.round(clamp(safeNum(f.modDepth, 0.25) * 100, 0, 220));
+    var modPct = percentileAgainstArchive(safeNum(f.modDepth, 0.25), archiveSamples, 'modDepth', 0.36, 0.18);
+    var highTurb = modDepthPct >= 55 || modRate >= 22;
+    var modPeakNorm = clamp((modRate - 4) / 41, 0.04, 0.96);
+
+    var durSec = Math.max(0.05, safeNum(f.duration, 0.5));
+    var crestDb = safeNum(f.crestFactorDb, 8);
+    var envPct = percentileAgainstArchive(crestDb, archiveSamples, 'crestFactorDb', 9.2, 3.0);
+    var env = f.envelope || [];
+    var atkMs = Math.round(safeNum(f.attackSec, 0.08) * 1000);
+    var bursts = f.burstCount || 1;
+    var envPeakIdx = 0;
+    var envPeakVal = -1;
+    for (var ei = 0; ei < env.length; ei++) {
+      if (env[ei] > envPeakVal) { envPeakVal = env[ei]; envPeakIdx = ei; }
+    }
+    var envPeakNorm = envPeakIdx / Math.max(1, env.length - 1);
+    var t50Norm = clamp(safeNum(f.t50Ratio, 0.5), 0.08, 0.92);
+
+    var specHotspots = [
+      {
+        id: 'hs_spec_peak',
+        norm: (peakSpecIdx + 0.5) / Math.max(1, spec.length),
+        spanLo: clamp((peakSpecIdx - 2) / Math.max(1, spec.length), 0, 1),
+        spanHi: clamp((peakSpecIdx + 3) / Math.max(1, spec.length), 0, 1),
+        tag: specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster',
+        title: (specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster') + ' @ ' + peakSpecHz + ' Hz',
+        telemetry: peakSpecHz + ' Hz · ' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% Peak Energy (' + ordinalPct(specPct) + ' pct)',
+        story: 'A concentrated resonance cluster emerged around ' + peakSpecHz + ' Hz. Dr. Wobble identified unusual harmonic behaviour in this surrounding frequency band.',
+        scientistId: 'wobble',
+        scientistQuote: pickScientistComment('wobble', peakSpecHz + 'spec', 0).quote
+      },
+      {
+        id: 'hs_spec_thunder',
+        norm: (subPeakIdx + 0.5) / Math.max(1, spec.length),
+        spanLo: 0,
+        spanHi: clamp((subPeakIdx + 4) / Math.max(1, spec.length), 0.15, 0.45),
+        tag: 'Thunder Concentration',
+        title: 'Thunder Concentration @ ' + subPeakHz + ' Hz',
+        telemetry: 'Sub-165 Hz Core · ' + Math.round(clamp(subPeakVal, 0, 1) * 100) + '% Low-End Energy',
+        story: 'Low-frequency acoustic pressure concentrates around ' + subPeakHz + ' Hz. Dr. Turbulence noted structurally significant bass propagation across this band.',
+        scientistId: 'turbulence',
+        scientistQuote: pickScientistComment('turbulence', subPeakHz + 'thunder', 1).quote
+      },
+      {
+        id: 'hs_spec_outlier',
+        norm: (maxArchDiffIdx + 0.5) / Math.max(1, spec.length),
+        spanLo: clamp((maxArchDiffIdx - 2) / Math.max(1, spec.length), 0, 1),
+        spanHi: clamp((maxArchDiffIdx + 3) / Math.max(1, spec.length), 0, 1),
+        tag: 'Archive Outlier',
+        title: 'Archive Outlier @ ' + outlierHz + ' Hz',
+        telemetry: outlierHz + ' Hz · +' + Math.round(maxArchDiffVal * 100) + '% above Institute baseline',
+        story: 'Compared against historic Archive baselines, energy at ' + outlierHz + ' Hz diverges sharply from average specimens. Dr. Flatley flagged this band as acoustically distinctive.',
+        scientistId: 'flatley',
+        scientistQuote: pickScientistComment('flatley', outlierHz + 'outlier', 2).quote
+      }
+    ];
+
+    var pitchHotspots = [
+      {
+        id: 'hs_pitch_peak',
+        norm: maxPitchFrame / Math.max(1, pArr.length - 1),
+        spanLo: clamp((maxPitchFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
+        spanHi: clamp((maxPitchFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
+        tag: 'Harmonic Event',
+        title: voicedPts.length ? 'Harmonic Event @ ' + Math.round(maxPitch) + ' Hz' : 'Harmonic Stealth Window',
+        telemetry: voicedPts.length ? 'Peak F0 ' + Math.round(maxPitch) + ' Hz · Frame ' + (maxPitchFrame + 1) + ' (±' + pitchCi + ' Hz CI)' : 'Unvoiced Aerodynamic Band',
+        story: voicedPts.length
+          ? 'Peak fundamental locking reached ' + Math.round(maxPitch) + ' Hz with minimal micro-jitter. Dr. Wobble highlighted unusually disciplined harmonic structure here.'
+          : 'The emission maintained an unvoiced broadband character, keeping pitch detectors stealth-evasive while preserving steady timbre.',
+        scientistId: 'wobble',
+        scientistQuote: pickScientistComment('wobble', Math.round(maxPitch) + 'pitch', 1).quote
+      },
+      {
+        id: 'hs_pitch_inflect',
+        norm: steepFrame / Math.max(1, pArr.length - 1),
+        spanLo: clamp((steepFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
+        spanHi: clamp((steepFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
+        tag: 'Statistical Curiosity',
+        title: 'Pitch Inflection Shift (' + pitchSpanSt.toFixed(1) + ' st span)',
+        telemetry: 'Sweep Span ' + pitchSpanSt.toFixed(1) + ' semitones · ' + ordinalPct(pitchPct) + ' pct',
+        story: 'A rapid frequency excursion shifted across ' + pitchSpanSt.toFixed(1) + ' semitones. Professor Bottomsworth noted this contour as worthy of longitudinal peer review.',
+        scientistId: 'bottomsworth',
+        scientistQuote: pickScientistComment('bottomsworth', pitchSpanSt + 'sweep', 2).quote
+      },
+      {
+        id: 'hs_pitch_base',
+        norm: minPitchFrame / Math.max(1, pArr.length - 1),
+        spanLo: clamp((minPitchFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
+        spanHi: clamp((minPitchFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
+        tag: 'Archive Outlier',
+        title: 'Register Floor vs 90–240 Hz Corridor',
+        telemetry: 'Floor ' + (minPitch < 9000 ? Math.round(minPitch) + ' Hz' : 'Broadband') + ' · Mean ' + Math.round(meanPitch || centHz) + ' Hz',
+        story: 'Comparing the trajectory against the shaded 90–240 Hz Institute corridor places this recording at the ' + ordinalPct(pitchPct) + ' archive percentile.',
+        scientistId: 'pufferton',
+        scientistQuote: pickScientistComment('pufferton', Math.round(meanPitch) + 'floor', 0).quote
+      }
+    ];
+
+    var modHotspots = [
+      {
+        id: 'hs_mod_peak',
+        norm: modPeakNorm,
+        spanLo: clamp(modPeakNorm - 0.1, 0, 1),
+        spanHi: clamp(modPeakNorm + 0.1, 0, 1),
+        tag: 'Peak Turbulence Event',
+        title: 'Peak Turbulence Event @ ' + Math.round(modRate) + ' Hz',
+        telemetry: Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' flaps/min) · Depth ' + modDepthPct + '%',
+        story: 'Oscillation locks squarely onto ' + Math.round(modRate * 60) + ' flaps/min (' + modDepthPct + '% depth). Dr. Turbulence observed strong air-flow organization exceeding archive expectations.',
+        scientistId: 'turbulence',
+        scientistQuote: pickScientistComment('turbulence', modDepthPct + 'turb', 0).quote
+      },
+      {
+        id: 'hs_mod_flutter',
+        norm: 0.25,
+        spanLo: (8 - 4) / 41,
+        spanHi: (20 - 4) / 41,
+        tag: 'Harmonic Event',
+        title: 'Classic Cheek-Flutter Band (8–20 Hz)',
+        telemetry: Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% Modulation Share',
+        story: 'Between 8 Hz and 20 Hz lies classic cheek-flap flutter biomechanics. This specimen allocates ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of its ripple energy directly inside this region.',
+        scientistId: 'wobble',
+        scientistQuote: pickScientistComment('wobble', modRate + 'band', 2).quote
+      },
+      {
+        id: 'hs_mod_rattle',
+        norm: 0.68,
+        spanLo: (20 - 4) / 41,
+        spanHi: 1,
+        tag: 'Statistical Curiosity',
+        title: 'Fast Turbulence Rattle (20–45 Hz)',
+        telemetry: Math.round(safeNum(f.modBands && f.modBands[2], 0.3) * 100) + '% High-Rattle Share (' + ordinalPct(modPct) + ' pct)',
+        story: 'High-frequency flutter above 20 Hz indicates vigorous aerodynamic shear. Dr. Flatley logged elevated computational curiosity across this fast-rattle zone.',
+        scientistId: 'flatley',
+        scientistQuote: pickScientistComment('flatley', modPct + 'rattle', 1).quote
+      }
+    ];
+
+    var envHotspots = [
+      {
+        id: 'hs_env_peak',
+        norm: envPeakNorm,
+        spanLo: clamp(envPeakNorm - 0.08, 0, 1),
+        spanHi: clamp(envPeakNorm + 0.08, 0, 1),
+        tag: 'Pressure Instability Zone',
+        title: 'Peak Shockwave @ ' + Math.round(envPeakNorm * durSec * 1000) + ' ms',
+        telemetry: 'Attack ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB (' + ordinalPct(envPct) + ' pct)',
+        story: 'Maximum acoustic impulse peaked within ' + atkMs + ' ms at ' + crestDb.toFixed(1) + ' dB crest sharpness. Professor Bottomsworth noted remarkable pressure determination.',
+        scientistId: 'bottomsworth',
+        scientistQuote: pickScientistComment('bottomsworth', crestDb + 'crest', 3).quote
+      },
+      {
+        id: 'hs_env_t50',
+        norm: t50Norm,
+        spanLo: clamp(t50Norm - 0.1, 0, 1),
+        spanHi: clamp(t50Norm + 0.1, 0, 1),
+        tag: 'Statistical Curiosity',
+        title: 'Mid-Energy T50 Threshold (' + Math.round(t50Norm * 100) + '%)',
+        telemetry: 'Half-Energy Expended @ ' + Math.round(t50Norm * durSec * 1000) + 'ms · ±18ms CI',
+        story: '50% of cumulative sound power discharges before ' + Math.round(t50Norm * 100) + '% of elapsed duration, outpacing typical symmetric archive release curves.',
+        scientistId: 'turbulence',
+        scientistQuote: pickScientistComment('turbulence', Math.round(t50Norm * 100) + 't50', 2).quote
+      },
+      {
+        id: 'hs_env_tail',
+        norm: clamp(0.82, 0, 1),
+        spanLo: 0.68,
+        spanHi: 1.0,
+        tag: bursts > 1 ? 'Peak Turbulence Event' : 'Archive Outlier',
+        title: bursts > 1 ? bursts + '-Burst Release Tail' : 'Clean Valve Decay Tail',
+        telemetry: bursts + ' Hysteresis Burst(s) · ' + durSec.toFixed(2) + 's Total',
+        story: bursts > 1
+          ? 'The tail segments ' + bursts + ' separate pressure pulses across hysteresis gates, earning priority indexing from Dr. Pufferton.'
+          : 'Smooth trailing pressure attenuation with clean termination — filed cleanly inside the Institute archive.',
+        scientistId: 'pufferton',
+        scientistQuote: pickScientistComment('pufferton', bursts + 'tail', 2).quote
+      }
+    ];
+
+    return {
+      bases: bases,
+      c_spec: {
+        key: 'c_spec',
+        modalTitle: '40-Band FFT Energy Spectrum',
+        modalSubtitle: 'Logarithmic spectral energy (45 Hz – 4.2 kHz) vs Archive baseline & 95% confidence band',
+        extraLayerLabel: 'Band Division Markers',
+        expertIds: ['wobble', 'flatley'],
+        percentile: specPct,
+        percentileLabel: ordinalPct(specPct) + ' percentile',
+        ciLabel: '95% CI ±11%',
+        anomalyTag: specAnomaly ? 'Unusual Resonance Spike' : (specPct >= 75 ? 'Exceeds Archive Avg' : 'Within Archive Norm'),
+        scientistId: 'wobble',
+        observation: specAnomaly
+          ? 'A concentrated resonance spike emerged at ' + peakSpecHz + ' Hz. Dr. Wobble identified unusual harmonic behaviour in the surrounding frequency region.'
+          : specPct >= 75
+          ? 'Spectral centroid reaches ' + Math.round(centHz) + ' Hz, exceeding typical Institute archive averages across upper harmonics.'
+          : 'Harmonic distribution remains cleanly anchored around ' + peakSpecHz + ' Hz against historic Institute Archive baselines.',
+        defaultReadout: 'Peak ' + peakSpecHz + ' Hz (' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% rel) · Archive Avg @ Peak: ' + Math.round((bases.specMean[peakSpecIdx] || 0.3) * 100) + '% · Tap any bar or callout',
+        hotspots: specHotspots,
+        describeAtNorm: function (norm) {
+          var idx = clamp(Math.floor(norm * Math.max(1, spec.length)), 0, Math.max(0, spec.length - 1));
+          var hz = specHzAt(idx);
+          var valPct = Math.round(clamp(safeNum(spec[idx], 0), 0, 1) * 100);
+          var avgPct = Math.round(clamp(safeNum(bases.specMean[idx], 0.25), 0, 1) * 100);
+          var diff = valPct - avgPct;
+          var regionLabel = hz < 150 ? 'Thunder Concentration' : hz < 450 ? 'Harmonic Event' : 'Spectral Cluster';
+          var sciPick = hz < 150 ? 'turbulence' : 'wobble';
+          return {
+            tag: diff >= 18 ? 'Archive Outlier' : regionLabel,
+            title: hz + ' Hz Spectral Region (' + valPct + '% magnitude)',
+            telemetry: hz + ' Hz · Level ' + valPct + '% vs Archive ' + avgPct + '% (' + (diff >= 0 ? '+' : '') + diff + '%)',
+            story: diff >= 18
+              ? 'Laboratory Observation: At ' + hz + ' Hz, acoustic output stands +' + diff + '% above the Institute archive mean. ' + (sciPick === 'wobble' ? 'Dr. Wobble' : 'Dr. Turbulence') + ' flagged this resonance peak for elevated scientific scrutiny.'
+              : 'Laboratory Observation: Measured ' + valPct + '% relative spectral energy at ' + hz + ' Hz (' + (diff >= 0 ? '+' : '') + diff + '% vs archive baseline, 95% CI ±11%). Harmonically consistent with surrounding chamber resonances.',
+            scientistId: sciPick,
+            scientistQuote: pickScientistComment(sciPick, hz + 'probe', idx).quote,
+            spanLo: clamp((idx - 1.5) / Math.max(1, spec.length), 0, 1),
+            spanHi: clamp((idx + 2.5) / Math.max(1, spec.length), 0, 1)
+          };
+        },
+        sampleAtNorm: function (norm) {
+          var idx = clamp(Math.floor(norm * Math.max(1, spec.length)), 0, Math.max(0, spec.length - 1));
+          var hz = specHzAt(idx);
+          var valPct = Math.round(clamp(safeNum(spec[idx], 0), 0, 1) * 100);
+          var avgPct = Math.round(clamp(safeNum(bases.specMean[idx], 0.25), 0, 1) * 100);
+          var ciPct = Math.round(clamp(safeNum(bases.specSpread[idx], 0.12), 0.04, 0.35) * 100);
+          var diff = valPct - avgPct;
+          return hz + ' Hz · Level ' + valPct + '% vs Archive ' + avgPct + '% (' + (diff >= 0 ? '+' : '') + diff + '%, ±' + ciPct + '% CI)';
+        },
+        drillStats: [
+          { label: 'Peak Cluster', value: peakSpecHz + ' Hz', sub: Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% normalized amplitude' },
+          { label: 'Archive Percentile', value: ordinalPct(specPct), sub: 'Centroid ' + Math.round(centHz) + ' Hz' },
+          { label: '95% CI Band', value: '±11% mag', sub: 'Archive mean corridor overlaid' },
+          { label: 'Flagged Anomaly', value: specAnomaly ? 'Resonance Spike' : 'Calibrated Spread', sub: specAnomaly ? 'Dr. Wobble frequency alert' : 'Normal broadband spread' }
+        ],
+        drillNote: 'Logarithmic 40-band spectrum plotted directly against the Institute Archive mean curve (dashed amber) and 95% confidence band (shaded envelope). Tap any bar, peak, or hotspot to read its localized laboratory story.'
+      },
+      c_pitch: {
+        key: 'c_pitch',
+        modalTitle: 'Pitch & Frequency Sweep',
+        modalSubtitle: '32-frame YIN fundamental contour overlaid on Institute 90–240 Hz typical register corridor',
+        extraLayerLabel: 'Register Inflection Markers',
+        expertIds: ['wobble', 'bottomsworth'],
+        percentile: pitchPct,
+        percentileLabel: ordinalPct(pitchPct) + ' percentile',
+        ciLabel: '95% CI ±' + pitchCi + ' Hz',
+        anomalyTag: pitchSpanSt >= 5 ? 'Statistical Curiosity' : voicedPts.length === 0 ? 'Unvoiced Stealth Band' : 'Harmonic Event',
+        scientistId: 'wobble',
+        observation: pitchSpanSt >= 5
+          ? 'A wide ' + pitchSpanSt.toFixed(1) + '-semitone inflection sweep suggests uncommon characteristics compared to archived specimens.'
+          : voicedPts.length === 0
+          ? 'Acoustic emissions remained broadly unvoiced across all 32 frames, resisting classical pitch extraction.'
+          : 'Dr. Wobble verified coherent pitch trajectory relative to the 90–240 Hz Institute corridor.',
+        defaultReadout: voicedPts.length ? 'Mean ' + Math.round(meanPitch) + ' Hz (Peak ' + Math.round(maxPitch) + ' Hz @ Frame ' + (maxPitchFrame + 1) + ') · Tap contour points to inspect' : 'Unvoiced emission (<25% voiced frames) · Corridor 90–240 Hz shown · Tap to probe',
+        hotspots: pitchHotspots,
+        describeAtNorm: function (norm) {
+          var idx = clamp(Math.round(norm * Math.max(0, pArr.length - 1)), 0, Math.max(0, pArr.length - 1));
+          var tSec = (idx / Math.max(1, pArr.length - 1)) * durSec;
+          var hz = safeNum(pArr[idx], 0);
+          return {
+            tag: hz > 240 ? 'Archive Outlier' : hz > 20 ? 'Harmonic Event' : 'Statistical Curiosity',
+            title: hz > 20 ? 'Frame ' + (idx + 1) + ' Harmonic Point (' + Math.round(hz) + ' Hz)' : 'Frame ' + (idx + 1) + ' Unvoiced Air Segment',
+            telemetry: 't=' + tSec.toFixed(2) + 's · ' + (hz > 20 ? Math.round(hz) + ' Hz (±' + pitchCi + ' Hz CI)' : 'Broadband Turbulence'),
+            story: hz > 20
+              ? 'Laboratory Observation: At ' + tSec.toFixed(2) + 's, cheek oscillation sustained ' + Math.round(hz) + ' Hz (' + (hz > 240 ? 'above the 240 Hz archive ceiling' : hz < 90 ? 'below the 90 Hz sub-bass floor' : 'inside the primary 90–240 Hz vocal-reed zone') + ').'
+              : 'Laboratory Observation: At ' + tSec.toFixed(2) + 's, transient airflow overwhelmed harmonic locking, yielding pure unvoiced aerodynamic turbulence.',
+            scientistId: hz > 240 ? 'bottomsworth' : 'wobble',
+            scientistQuote: pickScientistComment(hz > 240 ? 'bottomsworth' : 'wobble', idx + 'f0', 0).quote,
+            spanLo: clamp((idx - 1.5) / Math.max(1, pArr.length - 1), 0, 1),
+            spanHi: clamp((idx + 1.5) / Math.max(1, pArr.length - 1), 0, 1)
+          };
+        },
+        sampleAtNorm: function (norm) {
+          var idx = clamp(Math.round(norm * Math.max(0, pArr.length - 1)), 0, Math.max(0, pArr.length - 1));
+          var tSec = (idx / Math.max(1, pArr.length - 1)) * durSec;
+          var hz = safeNum(pArr[idx], 0);
+          return hz > 20
+            ? 't=' + tSec.toFixed(2) + 's · Pitch ' + Math.round(hz) + ' Hz (95% CI ±' + pitchCi + ' Hz · Archive typ 90–240 Hz)'
+            : 't=' + tSec.toFixed(2) + 's · Unvoiced frame (Turbulent airband · Archive typ 90–240 Hz)';
+        },
+        drillStats: [
+          { label: 'Mean Pitch F0', value: voicedPts.length ? Math.round(meanPitch) + ' Hz' : 'Unvoiced', sub: voicedPts.length + '/' + pArr.length + ' voiced frames' },
+          { label: '95% Confidence', value: '±' + pitchCi + ' Hz', sub: 'Inter-frame stability margin' },
+          { label: 'Archive Percentile', value: ordinalPct(pitchPct), sub: 'Vs historical register corpus' },
+          { label: 'Sweep Excursion', value: pitchSpanSt.toFixed(1) + ' st', sub: pitchSpanSt >= 5 ? 'Wide inflection anomaly' : 'Controlled pitch contour' }
+        ],
+        drillNote: 'Frame-by-frame YIN fundamental tracker overlaid on the translucent Archive Typical Register (90–240 Hz) and ±1σ frame confidence corridor.'
+      },
+      c_mod: {
+        key: 'c_mod',
+        modalTitle: 'Modulation & Flutter FFT (4–45 Hz)',
+        modalSubtitle: 'Biomechanical cheek oscillation speed vs Institute Archive modulation averages',
+        extraLayerLabel: '3-Zone Biomechanical Bands',
+        expertIds: ['turbulence', 'wobble'],
+        percentile: modPct,
+        percentileLabel: ordinalPct(modPct) + ' percentile',
+        ciLabel: '95% CI ±9% depth',
+        anomalyTag: highTurb ? 'Peak Turbulence Event' : 'Measured Flutter',
+        scientistId: 'turbulence',
+        observation: highTurb
+          ? 'High turbulence concentration recorded at ' + Math.round(modRate * 60) + ' flaps/min, exceeding typical Institute archive averages.'
+          : 'Flutter kinematics remain well structured around ' + Math.round(modRate) + ' Hz. Dr. Turbulence noted unusually clean air-flow organization.',
+        defaultReadout: 'Peak ' + Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' flaps/min) · Depth ' + modDepthPct + '% · Tap any modulation band',
+        hotspots: modHotspots,
+        describeAtNorm: function (norm) {
+          var mHz = 4 + norm * 41;
+          var idx = clamp(Math.round(norm * Math.max(0, ms.length - 1)), 0, Math.max(0, ms.length - 1));
+          var zone = mHz < 8 ? 'Slow Stutter' : mHz < 20 ? 'Cheek Flutter' : 'Fast Rattle';
+          var mVal = Math.round(clamp(safeNum(ms[idx], 0), 0, 1) * 100);
+          var mAvg = Math.round(clamp(safeNum(bases.modMean[idx], 0.25), 0, 1) * 100);
+          return {
+            tag: mVal >= mAvg + 15 ? 'Peak Turbulence Event' : zone,
+            title: zone + ' Zone @ ' + mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' flaps/min)',
+            telemetry: mVal + '% Modulation Energy vs ' + mAvg + '% Archive Avg',
+            story: 'Laboratory Observation: At ' + Math.round(mHz * 60) + ' flaps/min (' + zone + ' regime), envelope ripple carries ' + mVal + '% relative energy against a ' + mAvg + '% archive baseline.',
+            scientistId: 'turbulence',
+            scientistQuote: pickScientistComment('turbulence', Math.round(mHz) + 'mod', idx).quote,
+            spanLo: clamp(norm - 0.08, 0, 1),
+            spanHi: clamp(norm + 0.08, 0, 1)
+          };
+        },
+        sampleAtNorm: function (norm) {
+          var idx = clamp(Math.round(norm * Math.max(0, ms.length - 1)), 0, Math.max(0, ms.length - 1));
+          var mHz = 4 + norm * 41;
+          var zone = mHz < 8 ? 'Slow Stutter' : mHz < 20 ? 'Cheek Flutter' : 'Fast Rattle';
+          var mVal = Math.round(clamp(safeNum(ms[idx], 0), 0, 1) * 100);
+          var mAvg = Math.round(clamp(safeNum(bases.modMean[idx], 0.25), 0, 1) * 100);
+          return mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' flaps/min · ' + zone + ') · Energy ' + mVal + '% vs Archive ' + mAvg + '%';
+        },
+        drillStats: [
+          { label: 'Dominant Flutter', value: Math.round(modRate) + ' Hz', sub: Math.round(modRate * 60) + ' cheek flaps/min' },
+          { label: 'Modulation Depth', value: modDepthPct + '%', sub: 'Archive median ~36% (±9% CI)' },
+          { label: 'Archive Percentile', value: ordinalPct(modPct), sub: highTurb ? 'Top quartile turbulence' : 'Balanced flutter dynamics' },
+          { label: 'Bursts Logged', value: String(bursts), sub: '4–45 Hz modulation bands' }
+        ],
+        drillNote: 'Three anatomical modulation zones are shaded: 4–8 Hz Slow Stutter (blue), 8–20 Hz Classic Cheek Flutter (emerald), and 20–45 Hz Fast Bee-Rattle (violet), compared against the dashed Archive average.'
+      },
+      c_env: {
+        key: 'c_env',
+        modalTitle: 'Blast Pressure Envelope',
+        modalSubtitle: 'Temporal pressure release curve vs Archive impulse baseline, attack peak & 0.35 burst gate',
+        extraLayerLabel: '0.35 Burst Gate Threshold',
+        expertIds: ['bottomsworth', 'pufferton'],
+        percentile: envPct,
+        percentileLabel: ordinalPct(envPct) + ' percentile',
+        ciLabel: '95% CI ±18 ms',
+        anomalyTag: crestDb >= 12 || bursts > 1 ? 'Pressure Instability Zone' : 'Clean Pressure Release',
+        scientistId: 'bottomsworth',
+        observation: crestDb >= 12
+          ? 'An abrupt ' + crestDb.toFixed(1) + ' dB pressure shockwave occurred at ' + atkMs + ' ms. Professor Bottomsworth requested additional temporal review.'
+          : bursts > 1
+          ? 'Multi-burst acoustic release exceeds typical single-pulse archive baselines.'
+          : 'Pressure attack and attenuation profiles align cleanly within calibrated Institute tolerances.',
+        defaultReadout: 'Attack ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB · T50 @ ' + Math.round(t50Norm * 100) + '% · Tap timeline to inspect',
+        hotspots: envHotspots,
+        describeAtNorm: function (norm) {
+          var idx = clamp(Math.round(norm * Math.max(0, env.length - 1)), 0, Math.max(0, env.length - 1));
+          var tMs = Math.round(norm * durSec * 1000);
+          var ampPct = Math.round(clamp(safeNum(env[idx], 0), 0, 1) * 100);
+          var archPct = Math.round(clamp(safeNum(bases.envMean[idx], 0.3), 0, 1) * 100);
+          return {
+            tag: ampPct >= 35 ? 'Pressure Instability Zone' : 'Statistical Curiosity',
+            title: 'Envelope Moment @ ' + tMs + ' ms (' + ampPct + '% pressure)',
+            telemetry: 't=' + tMs + 'ms (' + Math.round(norm * 100) + '%) · ' + ampPct + '% Pressure vs ' + archPct + '% Archive',
+            story: 'Laboratory Observation: At ' + tMs + ' ms into the release, instantaneous pressure stands at ' + ampPct + '% of maximum against an archive expectation of ' + archPct + '%.' + (ampPct >= 35 ? ' This point clears the 0.35 burst-segmentation gate.' : ''),
+            scientistId: norm < 0.35 ? 'turbulence' : 'bottomsworth',
+            scientistQuote: pickScientistComment(norm < 0.35 ? 'turbulence' : 'bottomsworth', idx + 'env', 1).quote,
+            spanLo: clamp(norm - 0.07, 0, 1),
+            spanHi: clamp(norm + 0.07, 0, 1)
+          };
+        },
+        sampleAtNorm: function (norm) {
+          var idx = clamp(Math.round(norm * Math.max(0, env.length - 1)), 0, Math.max(0, env.length - 1));
+          var tMs = Math.round(norm * durSec * 1000);
+          var ampPct = Math.round(clamp(safeNum(env[idx], 0), 0, 1) * 100);
+          var archPct = Math.round(clamp(safeNum(bases.envMean[idx], 0.3), 0, 1) * 100);
+          return 't=' + tMs + 'ms (' + Math.round(norm * 100) + '%) · Pressure ' + ampPct + '% vs Archive ' + archPct + '% · 95% CI ±18ms';
+        },
+        drillStats: [
+          { label: 'Onset Attack', value: atkMs + ' ms', sub: 'Peak RMS arrival time' },
+          { label: 'Crest Factor', value: crestDb.toFixed(1) + ' dB', sub: 'Archive mean ~9.2 dB' },
+          { label: 'Archive Percentile', value: ordinalPct(envPct), sub: 'Dynamic shockwave rank' },
+          { label: '95% Timing CI', value: '±18 ms', sub: 'Gate re-arm hysteresis' }
+        ],
+        drillNote: 'Normalized RMS pressure envelope overlaid against the shaded Institute Archive baseline impulse curve, highlighting attack surge, T50 acoustic midpoint, and the 0.35 hysteresis burst threshold.'
+      }
+    };
+  }
+
+  function drawChartHotspotsAndSelection(ctx, pad, pw, ph, w, interOpts) {
+    if (!interOpts) return;
+    var layers = interOpts.layers || {};
+    if (Array.isArray(interOpts.highlightRange) && interOpts.highlightRange.length === 2) {
+      var xLo = pad.l + clamp(interOpts.highlightRange[0], 0, 1) * pw;
+      var xHi = pad.l + clamp(interOpts.highlightRange[1], 0, 1) * pw;
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+      ctx.fillRect(xLo, pad.t, Math.max(4, xHi - xLo), ph);
+    }
+
+    if (layers.callouts !== false && Array.isArray(interOpts.hotspots)) {
+      var glyphs = ['1', '2', '3'];
+      for (var i = 0; i < interOpts.hotspots.length; i++) {
+        var hs = interOpts.hotspots[i];
+        var hx = pad.l + clamp(hs.norm, 0.04, 0.96) * pw;
+        var isAct = interOpts.activeHotspotId === hs.id;
+        var hy = pad.t + (i % 2 === 0 ? 11 : 22);
+        ctx.strokeStyle = isAct ? 'rgba(250, 204, 21, 0.8)' : 'rgba(56, 189, 248, 0.38)';
+        ctx.lineWidth = isAct ? 1.5 : 1;
+        ctx.beginPath();
+        ctx.moveTo(hx, hy + 7);
+        ctx.lineTo(hx, pad.t + ph);
+        ctx.stroke();
+
+        ctx.fillStyle = isAct ? '#FACC15' : '#0EA5E9';
+        ctx.beginPath();
+        ctx.arc(hx, hy, isAct ? 8 : 6.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#090D16';
+        ctx.font = '800 8.5px "JetBrains Mono", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(glyphs[i] || String(i + 1), hx, hy + 3);
+      }
+    }
+  }
+
+  function drawSpectrumPlot(target, feat, accent, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat || !feat.avgSpectrum) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
-    var pad = { l: 34, r: 12, t: 14, b: 24 };
+    var pad = { l: 34, r: 12, t: 24, b: 24 };
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var spec = feat.avgSpectrum;
     var n = spec.length;
     var barW = Math.max(2, pw / n - 1.5);
+    var base = (interOpts && interOpts.archiveBases) || buildArchiveBaselines(feat, interOpts && interOpts.archiveSamples);
+    var layers = (interOpts && interOpts.layers) || { archiveAvg: true, ciBand: true, callouts: true, extraLayer: true };
+
+    // Shaded 95% Archive Confidence Band
+    if (layers.ciBand !== false && base && base.specMean && base.specMean.length === n) {
+      ctx.beginPath();
+      for (var bi = 0; bi < n; bi++) {
+        var bx = pad.l + ((bi + 0.5) / n) * pw;
+        var up = clamp(base.specMean[bi] + base.specSpread[bi], 0, 1);
+        var uy = pad.t + ph - up * ph;
+        if (bi === 0) ctx.moveTo(bx, uy);
+        else ctx.lineTo(bx, uy);
+      }
+      for (var bj = n - 1; bj >= 0; bj--) {
+        var bx2 = pad.l + ((bj + 0.5) / n) * pw;
+        var lo = clamp(base.specMean[bj] - base.specSpread[bj], 0, 1);
+        var ly = pad.t + ph - lo * ph;
+        ctx.lineTo(bx2, ly);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.12)';
+      ctx.fill();
+    }
 
     var grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ph);
     grad.addColorStop(0, accent || '#60A5FA');
     grad.addColorStop(1, 'rgba(34, 197, 94, 0.25)');
 
-    ctx.fillStyle = grad;
+    var hoverIdx = interOpts && typeof interOpts.hoverNorm === 'number'
+      ? clamp(Math.floor(interOpts.hoverNorm * n), 0, n - 1)
+      : -1;
+
+    var peakIdx = 0;
+    var peakVal = -1;
     for (var i = 0; i < n; i++) {
       var val = clamp(safeNum(spec[i], 0), 0, 1);
+      if (val > peakVal) { peakVal = val; peakIdx = i; }
       var bh = Math.max(2, val * ph);
       var x = pad.l + (i / n) * pw;
+      ctx.fillStyle = i === hoverIdx ? '#38BDF8' : grad;
       ctx.fillRect(x, pad.t + ph - bh, barW, bh);
     }
 
+    // Extra Layer: 4-Band Division Markers
+    if (layers.extraLayer !== false) {
+      var divPositions = [0.27, 0.52, 0.74];
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+      ctx.setLineDash([2, 3]);
+      for (var di = 0; di < divPositions.length; di++) {
+        var dx = pad.l + divPositions[di] * pw;
+        ctx.beginPath();
+        ctx.moveTo(dx, pad.t);
+        ctx.lineTo(dx, pad.t + ph);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    // Dashed Archive Mean Line
+    if (layers.archiveAvg !== false && base && base.specMean && base.specMean.length === n) {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.68)';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (var ai = 0; ai < n; ai++) {
+        var ax = pad.l + ((ai + 0.5) / n) * pw;
+        var ay = pad.t + ph - clamp(base.specMean[ai], 0, 1) * ph;
+        if (ai === 0) ctx.moveTo(ax, ay);
+        else ctx.lineTo(ax, ay);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     var fc = feat.spectrogram && feat.spectrogram.freqCenters;
+    var peakX = pad.l + ((peakIdx + 0.5) / n) * pw;
+    var peakY = pad.t + ph - clamp(peakVal, 0, 1) * ph;
+    ctx.fillStyle = '#22C55E';
+    ctx.beginPath();
+    ctx.arc(peakX, peakY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
     var centHz = safeNum(feat.spectralCentroidHz, 240);
     if (fc && fc.length === n) {
       var centIdx = 0;
@@ -1085,42 +2154,83 @@
       ctx.setLineDash([]);
     }
 
+    drawChartHotspotsAndSelection(ctx, pad, pw, ph, w, interOpts);
+
+    if (hoverIdx >= 0) {
+      var hx = pad.l + ((hoverIdx + 0.5) / n) * pw;
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+    }
+
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     ctx.fillText('45 Hz', pad.l, h - 7);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#FDBA74';
-    ctx.fillText('Centroid ' + Math.round(centHz) + ' Hz', pad.l + pw * 0.5, h - 7);
+    ctx.fillText('Centroid ' + Math.round(centHz) + ' Hz · --- Archive Avg', pad.l + pw * 0.5, h - 7);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9CA3AF';
     ctx.fillText('4.2 kHz', pad.l + pw, h - 7);
     finishDarkPlot(p);
   }
 
-  function drawPitchContourPlot(target, feat) {
+  function drawPitchContourPlot(target, feat, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat || !feat.pitchHzArr) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
-    var pad = { l: 38, r: 12, t: 16, b: 24 };
+    var pad = { l: 38, r: 12, t: 24, b: 24 };
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var arr = feat.pitchHzArr;
-    var maxHz = 180;
+    var layers = (interOpts && interOpts.layers) || { archiveAvg: true, ciBand: true, callouts: true, extraLayer: true };
+    var maxHz = 240;
     for (var i = 0; i < arr.length; i++) {
       if (arr[i] > maxHz) maxHz = arr[i];
     }
-    maxHz = Math.min(900, Math.max(220, maxHz * 1.15));
+    maxHz = Math.min(900, Math.max(260, maxHz * 1.15));
+
+    // Archive typical pitch corridor (90-240 Hz)
+    if (layers.ciBand !== false) {
+      var yArchTop = pad.t + ph - clamp(240 / maxHz, 0, 1) * ph;
+      var yArchBot = pad.t + ph - clamp(90 / maxHz, 0, 1) * ph;
+      ctx.fillStyle = 'rgba(96, 165, 250, 0.11)';
+      ctx.fillRect(pad.l, yArchTop, pw, Math.max(4, yArchBot - yArchTop));
+      ctx.fillStyle = 'rgba(147, 197, 253, 0.55)';
+      ctx.font = '600 8.5px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('Archive Corridor 90–240 Hz', pad.l + pw - 2, Math.max(pad.t + 9, yArchTop + 10));
+    }
+
+    if (layers.archiveAvg !== false) {
+      var yMean = pad.t + ph - clamp(145 / maxHz, 0, 1) * ph;
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.58)';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yMean);
+      ctx.lineTo(pad.l + pw, yMean);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     ctx.strokeStyle = '#22C55E';
     ctx.lineWidth = 2.4;
     ctx.beginPath();
     var drawing = false;
+    var pkHz = 0;
+    var pkX = pad.l;
+    var pkY = pad.t + ph;
     for (var j = 0; j < arr.length; j++) {
       var hz = arr[j];
       var x = pad.l + (j / Math.max(1, arr.length - 1)) * pw;
       if (hz > 20) {
         var y = pad.t + ph - clamp(hz / maxHz, 0, 1) * ph;
+        if (hz > pkHz) { pkHz = hz; pkX = x; pkY = y; }
         if (!drawing) {
           ctx.moveTo(x, y);
           drawing = true;
@@ -1135,6 +2245,25 @@
     }
     ctx.stroke();
 
+    if (layers.extraLayer !== false && pkHz > 20) {
+      ctx.fillStyle = '#FACC15';
+      ctx.beginPath();
+      ctx.arc(pkX, pkY, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    drawChartHotspotsAndSelection(ctx, pad, pw, ph, w, interOpts);
+
+    if (interOpts && typeof interOpts.hoverNorm === 'number') {
+      var hx = pad.l + clamp(interOpts.hoverNorm, 0, 1) * pw;
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+    }
+
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
@@ -1145,14 +2274,28 @@
     finishDarkPlot(p);
   }
 
-  function drawModulationPlot(target, feat) {
+  function drawModulationPlot(target, feat, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat || !feat.modSpectrum) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
-    var pad = { l: 28, r: 12, t: 16, b: 24 };
+    var pad = { l: 28, r: 12, t: 24, b: 24 };
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var ms = feat.modSpectrum;
+    var base = (interOpts && interOpts.archiveBases) || buildArchiveBaselines(feat, interOpts && interOpts.archiveSamples);
+    var layers = (interOpts && interOpts.layers) || { archiveAvg: true, ciBand: true, callouts: true, extraLayer: true };
+
+    // Highlight 3 flutter zones: 4-8Hz, 8-20Hz, 20-45Hz
+    if (layers.extraLayer !== false && layers.ciBand !== false) {
+      var z1 = ((8 - 4) / 41) * pw;
+      var z2 = ((20 - 4) / 41) * pw;
+      ctx.fillStyle = 'rgba(96, 165, 250, 0.06)';
+      ctx.fillRect(pad.l, pad.t, z1, ph);
+      ctx.fillStyle = 'rgba(34, 197, 94, 0.08)';
+      ctx.fillRect(pad.l + z1, pad.t, z2 - z1, ph);
+      ctx.fillStyle = 'rgba(139, 92, 246, 0.06)';
+      ctx.fillRect(pad.l + z2, pad.t, pw - z2, ph);
+    }
 
     ctx.beginPath();
     ctx.moveTo(pad.l, pad.t + ph);
@@ -1166,6 +2309,22 @@
     ctx.fillStyle = 'rgba(139, 92, 246, 0.24)';
     ctx.fill();
 
+    // Dashed Archive Avg modulation profile
+    if (layers.archiveAvg !== false && base && base.modMean && base.modMean.length === ms.length) {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.65)';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (var mi = 0; mi < ms.length; mi++) {
+        var mx = pad.l + (mi / Math.max(1, ms.length - 1)) * pw;
+        var my = pad.t + ph - clamp(base.modMean[mi], 0, 1) * ph;
+        if (mi === 0) ctx.moveTo(mx, my);
+        else ctx.lineTo(mx, my);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     ctx.strokeStyle = '#A78BFA';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -1177,27 +2336,56 @@
     }
     ctx.stroke();
 
+    drawChartHotspotsAndSelection(ctx, pad, pw, ph, w, interOpts);
+
+    if (interOpts && typeof interOpts.hoverNorm === 'number') {
+      var hx = pad.l + clamp(interOpts.hoverNorm, 0, 1) * pw;
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+    }
+
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     ctx.fillText('4 Hz', pad.l, h - 7);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#DDD6FE';
-    ctx.fillText('Peak ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz · ' + (feat.burstCount || 1) + ' burst(s)', pad.l + pw * 0.5, h - 7);
+    ctx.fillText('Peak ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz · ' + (feat.burstCount || 1) + ' burst(s) · --- Arch', pad.l + pw * 0.5, h - 7);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9CA3AF';
     ctx.fillText('45 Hz', pad.l + pw, h - 7);
     finishDarkPlot(p);
   }
 
-  function drawEnvelopePlot(target, feat) {
+  function drawEnvelopePlot(target, feat, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat || !feat.envelope) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
-    var pad = { l: 28, r: 12, t: 16, b: 24 };
+    var pad = { l: 28, r: 12, t: 24, b: 24 };
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var env = feat.envelope;
+    var base = (interOpts && interOpts.archiveBases) || buildArchiveBaselines(feat, interOpts && interOpts.archiveSamples);
+    var layers = (interOpts && interOpts.layers) || { archiveAvg: true, ciBand: true, callouts: true, extraLayer: true };
+
+    if (layers.archiveAvg !== false && base && base.envMean && base.envMean.length > 2) {
+      ctx.strokeStyle = 'rgba(250, 204, 21, 0.58)';
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      for (var ei = 0; ei < base.envMean.length; ei++) {
+        var ex = pad.l + (ei / Math.max(1, base.envMean.length - 1)) * pw;
+        var ey = pad.t + ph - clamp(base.envMean[ei], 0, 1) * ph;
+        if (ei === 0) ctx.moveTo(ex, ey);
+        else ctx.lineTo(ex, ey);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     ctx.beginPath();
     ctx.moveTo(pad.l, pad.t + ph);
@@ -1214,13 +2402,35 @@
     ctx.strokeStyle = '#F97316';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
+    var pkIdx = 0;
+    var pkVal = -1;
     for (var k = 0; k < env.length; k++) {
+      var ev = clamp(safeNum(env[k], 0), 0, 1);
+      if (ev > pkVal) { pkVal = ev; pkIdx = k; }
       var lx = pad.l + (k / Math.max(1, env.length - 1)) * pw;
-      var ly = pad.t + ph - clamp(safeNum(env[k], 0), 0, 1) * ph;
+      var ly = pad.t + ph - ev * ph;
       if (k === 0) ctx.moveTo(lx, ly);
       else ctx.lineTo(lx, ly);
     }
     ctx.stroke();
+
+    if (layers.extraLayer !== false) {
+      var yGate = pad.t + ph - 0.35 * ph;
+      ctx.strokeStyle = 'rgba(251, 113, 133, 0.65)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yGate);
+      ctx.lineTo(pad.l + pw, yGate);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    var pkX = pad.l + (pkIdx / Math.max(1, env.length - 1)) * pw;
+    var pkY = pad.t + ph - clamp(pkVal, 0, 1) * ph;
+    ctx.fillStyle = '#FACC15';
+    ctx.beginPath();
+    ctx.arc(pkX, pkY, 4.2, 0, Math.PI * 2);
+    ctx.fill();
 
     var t50x = pad.l + clamp(safeNum(feat.t50Ratio, 0.5), 0, 1) * pw;
     ctx.strokeStyle = '#60A5FA';
@@ -1231,14 +2441,211 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
+    drawChartHotspotsAndSelection(ctx, pad, pw, ph, w, interOpts);
+
+    if (interOpts && typeof interOpts.hoverNorm === 'number') {
+      var hx = pad.l + clamp(interOpts.hoverNorm, 0, 1) * pw;
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+    }
+
     ctx.fillStyle = '#9CA3AF';
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('Attack ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms', pad.l, h - 7);
+    ctx.fillText('Attack ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms · --- Arch', pad.l, h - 7);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#93C5FD';
     ctx.fillText('T50 @ ' + Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', pad.l + pw, h - 7);
     finishDarkPlot(p);
+  }
+
+  function openChartInvestigationModal(cfg) {
+    var doc = root.document;
+    if (!doc) return;
+    var modal = doc.getElementById('labs-chart-modal');
+    if (!modal || !cfg || !cfg.meta) return;
+
+    var cm = cfg.meta;
+    var feat = cfg.feat;
+    var bases = cfg.bases;
+    var key = cfg.chartKey;
+    var layerState = { archiveAvg: true, ciBand: true, callouts: true, extraLayer: true };
+    var hoverNorm = typeof cfg.initialNorm === 'number' ? cfg.initialNorm : (cm.hotspots[0] ? cm.hotspots[0].norm : 0.35);
+    var activeHsId = cfg.initialHotspotId || (cm.hotspots[0] && cm.hotspots[0].id) || null;
+    var activeDesc = null;
+    for (var i = 0; i < cm.hotspots.length; i++) {
+      if (cm.hotspots[i].id === activeHsId) { activeDesc = cm.hotspots[i]; break; }
+    }
+    if (!activeDesc) activeDesc = cm.describeAtNorm(hoverNorm);
+
+    var titleEl = doc.getElementById('labs-cm-title');
+    var subEl = doc.getElementById('labs-cm-subtitle');
+    var layersEl = doc.getElementById('labs-cm-layers');
+    var hotspotsEl = doc.getElementById('labs-cm-hotspots');
+    var storyEl = doc.getElementById('labs-cm-story');
+    var metricsEl = doc.getElementById('labs-cm-metrics');
+    var expertsEl = doc.getElementById('labs-cm-experts');
+    var notesEl = doc.getElementById('labs-cm-notes');
+    var cvs = doc.getElementById('labs-cm-canvas');
+    var closeBtn = doc.getElementById('btn-labs-cm-close');
+
+    if (titleEl) titleEl.textContent = cm.modalTitle || 'Scientific Investigation';
+    if (subEl) subEl.textContent = (cfg.label ? cfg.label + ' — ' : '') + (cm.modalSubtitle || '');
+
+    function drawModalPlot() {
+      if (!cvs) return;
+      var opts = {
+        hoverNorm: hoverNorm,
+        archiveBases: bases,
+        layers: layerState,
+        hotspots: cm.hotspots,
+        activeHotspotId: activeHsId,
+        highlightRange: activeDesc ? [activeDesc.spanLo, activeDesc.spanHi] : null
+      };
+      if (key === 'c_spec') drawSpectrumPlot(cvs, feat, '#60A5FA', opts);
+      else if (key === 'c_pitch') drawPitchContourPlot(cvs, feat, opts);
+      else if (key === 'c_mod') drawModulationPlot(cvs, feat, opts);
+      else if (key === 'c_env') drawEnvelopePlot(cvs, feat, opts);
+    }
+
+    function updateModalStory() {
+      if (!storyEl || !activeDesc) return;
+      var sci = getScientistById(activeDesc.scientistId || cm.scientistId);
+      storyEl.innerHTML =
+        '<div class="labs-story-head">' +
+        '  <span class="labs-eyebrow">LABORATORY OBSERVATION</span>' +
+        '  <span class="labs-chart-anomaly-tag">' + esc(activeDesc.tag) + '</span>' +
+        '</div>' +
+        '<div class="labs-story-title">' + esc(activeDesc.title) + '</div>' +
+        '<p class="labs-story-narrative">' + esc(activeDesc.story) + '</p>' +
+        '<div class="labs-story-telemetry">' + esc(activeDesc.telemetry) + '</div>' +
+        '<div class="labs-chart-obs">' +
+        '  <img src="' + esc(sci.img) + '" alt="' + esc(sci.shortName) + '" />' +
+        '  <span>"' + esc(activeDesc.scientistQuote) + '" <em>— ' + esc(sci.shortName) + '</em></span>' +
+        '</div>';
+    }
+
+    if (layersEl) {
+      var layerDefs = [
+        { k: 'archiveAvg', lbl: 'Archive Average' },
+        { k: 'ciBand', lbl: '95% Confidence Band' },
+        { k: 'callouts', lbl: 'Anomaly Callouts' },
+        { k: 'extraLayer', lbl: cm.extraLayerLabel || 'Scientific Overlay' }
+      ];
+      layersEl.innerHTML = layerDefs
+        .map(function (ld) {
+          return '<button type="button" class="labs-cm-layer-btn active" data-layer="' + esc(ld.k) + '">' + esc(ld.lbl) + '</button>';
+        })
+        .join('');
+      layersEl.querySelectorAll('[data-layer]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var lk = this.getAttribute('data-layer');
+          layerState[lk] = !layerState[lk];
+          this.classList.toggle('active', layerState[lk]);
+          drawModalPlot();
+        });
+      });
+    }
+
+    if (hotspotsEl) {
+      hotspotsEl.innerHTML = cm.hotspots
+        .map(function (hs, idx) {
+          return (
+            '<button type="button" class="labs-hotspot-pill' +
+            (hs.id === activeHsId ? ' active' : '') +
+            '" data-mhs="' +
+            esc(hs.id) +
+            '"><strong>' +
+            (idx + 1) +
+            '.</strong> ' +
+            esc(hs.tag) +
+            '</button>'
+          );
+        })
+        .join('');
+      hotspotsEl.querySelectorAll('[data-mhs]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var hid = this.getAttribute('data-mhs');
+          for (var j = 0; j < cm.hotspots.length; j++) {
+            if (cm.hotspots[j].id === hid) {
+              activeHsId = hid;
+              activeDesc = cm.hotspots[j];
+              hoverNorm = cm.hotspots[j].norm;
+              break;
+            }
+          }
+          hotspotsEl.querySelectorAll('[data-mhs]').forEach(function (x) {
+            x.classList.toggle('active', x.getAttribute('data-mhs') === activeHsId);
+          });
+          updateModalStory();
+          drawModalPlot();
+        });
+      });
+    }
+
+    if (metricsEl) {
+      metricsEl.innerHTML = cm.drillStats
+        .map(function (st) {
+          return '<div class="labs-fact-box"><span>' + esc(st.label) + '</span><strong>' + esc(st.value) + '</strong><small class="labs-fact-sub">' + esc(st.sub) + '</small></div>';
+        })
+        .join('');
+    }
+
+    if (expertsEl) {
+      var expIds = Array.isArray(cm.expertIds) && cm.expertIds.length ? cm.expertIds : ['wobble', 'bottomsworth'];
+      expertsEl.innerHTML = expIds
+        .map(function (sid, idx) {
+          var q = pickScientistComment(sid, (cfg.label || '') + key + idx, idx);
+          return renderScientistCommentHtml(sid, q.quote, idx === 0 ? 'Lead Scientist Review' : 'Peer Review Note');
+        })
+        .join('');
+    }
+
+    if (notesEl) {
+      var fnSeed = hashSeed((cfg.label || '') + key);
+      notesEl.innerHTML =
+        '<div class="labs-eyebrow">LABORATORY NOTES &amp; FOOTNOTES</div>' +
+        '<p class="labs-chart-drill-note">' + esc(cm.drillNote) + '</p>' +
+        '<ul>' +
+        '  <li><sup>[1]</sup> * ' + esc(RESEARCH_FOOTNOTES[fnSeed % RESEARCH_FOOTNOTES.length]) + '</li>' +
+        '  <li><sup>[2]</sup> * ' + esc(RESEARCH_FOOTNOTES[(fnSeed + 3) % RESEARCH_FOOTNOTES.length]) + '</li>' +
+        '</ul>';
+    }
+
+    if (cvs && typeof cvs.addEventListener === 'function') {
+      cvs.onpointerdown = cvs.onpointermove = function (ev) {
+        var rect = cvs.getBoundingClientRect ? cvs.getBoundingClientRect() : null;
+        if (!rect || rect.width <= 0) return;
+        hoverNorm = clamp((ev.clientX - rect.left) / rect.width, 0, 1);
+        activeHsId = null;
+        activeDesc = cm.describeAtNorm(hoverNorm);
+        if (hotspotsEl) {
+          hotspotsEl.querySelectorAll('[data-mhs]').forEach(function (x) { x.classList.remove('active'); });
+        }
+        updateModalStory();
+        drawModalPlot();
+      };
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+    if (closeBtn) closeBtn.onclick = closeModal;
+    modal.onclick = function (ev) {
+      if (ev.target === modal) closeModal();
+    };
+
+    updateModalStory();
+    modal.classList.remove('hidden');
+    if (typeof root.requestAnimationFrame === 'function') {
+      root.requestAnimationFrame(drawModalPlot);
+    } else {
+      drawModalPlot();
+    }
   }
 
   function drawHorizontalBarsPlot(target, items) {
@@ -2554,8 +3961,8 @@
         id: rowId || 'authenticity',
         title: '🔬 Authenticity Analysis',
         score: avgScore,
-        sub: (labelA || 'Original') + ': ' + authA.authenticityScore + '% (' + authA.tier.label + ') vs ' + (labelB || 'Guess') + ': ' + authB.authenticityScore + '% (' + authB.tier.label + ')',
-        quip: 'Informational heuristic origin check (Organic vs Mouth Suspicion) — excluded from match scoring & rankings.',
+        sub: (labelA || 'Specimen A') + ': ' + authA.authenticityScore + '% (' + authA.tier.label + ') vs ' + (labelB || 'Specimen B') + ': ' + authB.authenticityScore + '% (' + authB.tier.label + ')',
+        quip: 'Informational heuristic origin check (Organic vs Mouth Suspicion) — excluded from similarity scoring & rankings.',
         forensicsKey: 'authenticity',
         status: avgTier.label,
         color: avgTier.color,
@@ -2778,8 +4185,8 @@
     return (
       '<div class="labs-acc-head">' +
       '  <div>' +
-      '    <div class="labs-eyebrow">INFORMATIONAL ORIGIN AUDIT · ZERO IMPACT ON MATCH SCORE OR WINNER</div>' +
-      '    <div class="labs-expanded-note">Independent probabilistic heuristic scan for both specimens. Rankings and Guess The Fart scores remain purely acoustic match based.</div>' +
+      '    <div class="labs-eyebrow">INFORMATIONAL ORIGIN AUDIT · ZERO IMPACT ON SIMILARITY SCORING</div>' +
+      '    <div class="labs-expanded-note">Independent probabilistic heuristic scan for both specimens. Acoustic similarity rankings remain purely spectral and temporal based.</div>' +
       '  </div>' +
       '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
       '</div>' +
@@ -2793,7 +4200,7 @@
       '</div>' +
       '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
       '<div class="labs-auth-breakdown">' + rowsHtml + '</div>' +
-      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in Guess The Fart leaderboard)</code></div>'
+      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in acoustic similarity scoring)</code></div>'
     );
   }
 
@@ -2817,12 +4224,32 @@
     var displayGauges = gauges.slice();
     displayGauges.push(buildAuthenticitySummaryRow('s_authenticity', auth));
     var label = opts.label || sound.displayName || sound.name || 'Recording';
-    var eyebrow = opts.eyebrow || 'SINGLE FART FORENSIC DOSSIER';
+    var eyebrow = opts.eyebrow || 'FARTNALYSIS REPORT · ACOUSTIC ANALYSIS';
     var noteStr =
       Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
         ? Forensics.hzToNoteName(feat.medianPitchHz)
         : 'Unvoiced Airband';
     var fieldVerdict = buildSingleFieldVerdict(sound, feat, bonus, ml, noteStr);
+    var sciComment = pickScientistComment('bottomsworth', label + '|' + prof.durationLabel, 0);
+    sciComment.label = 'Lead Laboratory Evaluation';
+    var specWobble = pickScientistComment('wobble', label + '|spec3d', 2);
+    var rareDispatch = pickRareComment(label + '|' + prof.durationLabel + '|single');
+    var archCmp = buildArchiveComparison(feat, bonus, opts.archiveSamples, label + '|' + prof.durationLabel);
+    var shareVerdict = pickShareableVerdict(label + '|' + prof.durationLabel + '|' + ml.topClass.name);
+    var chartMeta = buildFinalChartsMetadata(sound, feat, bonus, opts.archiveSamples);
+    var hoverState = { c_spec: null, c_pitch: null, c_mod: null, c_env: null };
+    var activeHotspots = {
+      c_spec: chartMeta.c_spec.hotspots[0] ? chartMeta.c_spec.hotspots[0].id : null,
+      c_pitch: chartMeta.c_pitch.hotspots[0] ? chartMeta.c_pitch.hotspots[0].id : null,
+      c_mod: chartMeta.c_mod.hotspots[0] ? chartMeta.c_mod.hotspots[0].id : null,
+      c_env: chartMeta.c_env.hotspots[0] ? chartMeta.c_env.hotspots[0].id : null
+    };
+    var activeRanges = {
+      c_spec: chartMeta.c_spec.hotspots[0] ? [chartMeta.c_spec.hotspots[0].spanLo, chartMeta.c_spec.hotspots[0].spanHi] : null,
+      c_pitch: chartMeta.c_pitch.hotspots[0] ? [chartMeta.c_pitch.hotspots[0].spanLo, chartMeta.c_pitch.hotspots[0].spanHi] : null,
+      c_mod: chartMeta.c_mod.hotspots[0] ? [chartMeta.c_mod.hotspots[0].spanLo, chartMeta.c_mod.hotspots[0].spanHi] : null,
+      c_env: chartMeta.c_env.hotspots[0] ? [chartMeta.c_env.hotspots[0].spanLo, chartMeta.c_env.hotspots[0].spanHi] : null
+    };
 
     var uid = 'lfs_' + (++gaugeUid) + '_';
     var chan = uid + 'S';
@@ -2831,10 +4258,81 @@
     var activeSlotEl = null;
 
     var compareBtnHtml = opts.onPrimaryAction
-      ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🎯 Guess This Fart') + '</button>'
+      ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🔬 Comparative Analysis') + '</button>'
       : '';
 
     var rowsHtml = renderMetricRowsHtml(displayGauges, { expandable: true });
+
+    function renderChartStoryInner(desc, fallbackSciId) {
+      if (!desc) return '';
+      var sci = getScientistById(desc.scientistId || fallbackSciId || 'wobble');
+      return (
+        '<div class="labs-story-head">' +
+        '  <span class="labs-eyebrow">LABORATORY OBSERVATION</span>' +
+        '  <span class="labs-chart-anomaly-tag">' + esc(desc.tag) + '</span>' +
+        '</div>' +
+        '<div class="labs-story-title">' + esc(desc.title) + '</div>' +
+        '<p class="labs-story-narrative">' + esc(desc.story) + '</p>' +
+        '<div class="labs-story-telemetry">' + esc(desc.telemetry) + '</div>' +
+        '<div class="labs-chart-obs">' +
+        '  <img src="' + esc(sci.img) + '" alt="' + esc(sci.shortName) + '" loading="lazy" />' +
+        '  <span>"' + esc(desc.scientistQuote) + '" <em>— ' + esc(sci.shortName) + '</em></span>' +
+        '</div>'
+      );
+    }
+
+    function renderFinalChartCardHtml(key, titleText, subText) {
+      var cm = chartMeta[key];
+      var hsList = Array.isArray(cm.hotspots) ? cm.hotspots : [];
+      var activeDesc = hsList[0] || cm.describeAtNorm(0.35);
+      var hotspotButtonsHtml = hsList
+        .map(function (hs, idx) {
+          return (
+            '<button type="button" class="labs-hotspot-pill' +
+            (hs.id === activeHotspots[key] ? ' active' : '') +
+            '" data-chart-key="' +
+            esc(key) +
+            '" data-hs-id="' +
+            esc(hs.id) +
+            '"><strong>' +
+            (idx + 1) +
+            '.</strong> ' +
+            esc(hs.tag) +
+            '</button>'
+          );
+        })
+        .join('');
+      var statsHtml = cm.drillStats
+        .map(function (st) {
+          return (
+            '<div class="labs-fact-box"><span>' + esc(st.label) + '</span><strong>' + esc(st.value) + '</strong><small class="labs-fact-sub">' + esc(st.sub) + '</small></div>'
+          );
+        })
+        .join('');
+
+      return (
+        '<div class="labs-chart-box-inner labs-chart-interactive" data-chart-card="' + esc(key) + '">' +
+        '  <div class="labs-chart-box-head"><span>' + esc(titleText) + '</span><small>' + esc(subText) + '</small></div>' +
+        '  <div class="labs-chart-meta-strip">' +
+        '    <span class="labs-chart-pill">' + esc(cm.percentileLabel) + '</span>' +
+        '    <span class="labs-chart-pill">' + esc(cm.ciLabel) + '</span>' +
+        '    <span class="labs-chart-anomaly-tag">' + esc(cm.anomalyTag) + '</span>' +
+        '  </div>' +
+        '  <div class="labs-chart-hotspots">' + hotspotButtonsHtml + '</div>' +
+        '  <canvas class="labs-2d-canvas" id="' + uid + key + '"></canvas>' +
+        '  <div class="labs-chart-readout" id="' + uid + key + '_readout">' + esc(cm.defaultReadout) + '</div>' +
+        '  <div class="labs-chart-story-box" id="' + uid + key + '_story">' + renderChartStoryInner(activeDesc, cm.scientistId) + '</div>' +
+        '  <div class="labs-chart-card-actions">' +
+        '    <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-chart-view-details-btn" data-view-chart="' + esc(key) + '">🔍 View Details</button>' +
+        '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-chart-drill-btn" data-drill="' + esc(key) + '" aria-expanded="false">🔬 Scientific Drill-Down &amp; Archive Notes</button>' +
+        '  </div>' +
+        '  <div class="labs-chart-drilldown hidden" data-drill-slot="' + esc(key) + '">' +
+        '    <div class="labs-single-facts-grid">' + statsHtml + '</div>' +
+        '    <p class="labs-chart-drill-note">' + esc(cm.drillNote) + '</p>' +
+        '  </div>' +
+        '</div>'
+      );
+    }
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -2848,7 +4346,7 @@
       buildClipTag(sound) +
       '    </div>' +
       '    <div class="labs-fn-single-actions">' +
-      '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play</button>' +
+      '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play Specimen</button>' +
       compareBtnHtml +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-share">📤 Share</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>' +
@@ -2856,7 +4354,7 @@
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       '      <button type="button" class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</button>' +
-      '      <span class="labs-hint-text">3D spectrogram above · Complete expandable analysis below</span>' +
+      '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
@@ -2877,12 +4375,13 @@
       '      </div>' +
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
+      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Spectrogram Commentary') +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMPLETE ACOUSTIC ANALYSIS</div>' +
-      '        <h3 class="labs-section-title">Acoustic Summary &amp; Expandable Telemetry</h3>' +
+      '        <div class="labs-eyebrow">ANALYSIS DASHBOARD · LABORATORY FINDINGS</div>' +
+      '        <h3 class="labs-section-title">Research Summary &amp; Expandable Telemetry</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-purple">🤖 ' + esc(ml.topClass.name) + '</span>' +
       '    </div>' +
@@ -2893,40 +4392,33 @@
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
       '    </div>' +
+      renderScientistCommentHtml(sciComment.scientistId, sciComment.quote, sciComment.label) +
+      renderRareCommentHtml(rareDispatch) +
       '    <div class="labs-single-facts-grid">' +
       '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
       '      <div class="labs-fact-box"><span>Fart Piano Key</span><strong>' + esc(noteStr) + '</strong></div>' +
       (bonus
         ? '<div class="labs-fact-box"><span>Squelch / Laundry Risk</span><strong>' + esc(bonus.wetness.wetA + '% · ' + bonus.wetness.labelA) + '</strong></div>' +
           '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Official Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
+          '<div class="labs-fact-box"><span>Acoustic Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
         : '') +
       '    </div>' +
+      renderArchiveComparisonHtml(archCmp) +
       '    <div class="labs-hint-text">Tap any of the ' + displayGauges.length + ' metrics below to expand charts, scientific commentary, stats &amp; equation inline.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
       '    <hr class="labs-analysis-divider" />' +
-      '    <div class="labs-eyebrow">CORE SPECTRAL &amp; TEMPORAL PLOTS</div>' +
+      '    <div class="labs-eyebrow">INTERACTIVE CORE SPECTRAL &amp; TEMPORAL PLOTS (TAP ANY BAR, POINT, OR HOTSPOT)</div>' +
       '    <div class="labs-single-charts-grid">' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>40-Band FFT Energy Spectrum</span><small>Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
-      '      </div>' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Pitch &amp; Frequency Sweep</span><small>32-frame F0 tracker</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_pitch"></canvas>' +
-      '      </div>' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Modulation &amp; Flutter FFT (4–45 Hz)</span><small>Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_mod"></canvas>' +
-      '      </div>' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Blast Pressure Envelope</span><small>Attack / T50 / Decay</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_env"></canvas>' +
-      '      </div>' +
+      renderFinalChartCardHtml('c_spec', '40-Band FFT Energy Spectrum', 'Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz') +
+      renderFinalChartCardHtml('c_pitch', 'Pitch & Frequency Sweep', '32-frame F0 tracker') +
+      renderFinalChartCardHtml('c_mod', 'Modulation & Flutter FFT (4–45 Hz)', 'Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%') +
+      renderFinalChartCardHtml('c_env', 'Blast Pressure Envelope', 'Attack / T50 / Decay') +
       '    </div>' +
       '  </section>' +
+      renderShareableVerdictHtml(shareVerdict, label, ml.topClass.name + ' · ' + archCmp.energyPct + 'th Energy Pct') +
+      renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single') +
       '</div>';
 
     function redrawExpandedSingle() {
@@ -2969,7 +4461,12 @@
         if (aItemEl) aItemEl.classList.add('open');
         if (aRowBtn) aRowBtn.setAttribute('aria-expanded', 'true');
         aSlotEl.classList.remove('hidden');
-        aSlotEl.innerHTML = renderAuthenticityAccordionHtml(auth);
+        var sAuthSci = pickScientistComment(DIAL_SCIENTIST_MAP.s_authenticity || 'bottomsworth', label + '|sauth', 1);
+        aSlotEl.innerHTML =
+          renderAuthenticityAccordionHtml(auth) +
+          '<div class="labs-acc-sci-slot">' +
+          renderScientistCommentHtml(sAuthSci.scientistId, sAuthSci.quote, 'Authenticity Review') +
+          '</div>';
 
         var aCloseBtn = aSlotEl.querySelector('.labs-acc-close');
         if (aCloseBtn) aCloseBtn.addEventListener('click', closeSingleRow);
@@ -3020,6 +4517,7 @@
         })
         .join('');
 
+      var repSci = pickScientistComment(DIAL_SCIENTIST_MAP[rep.id] || 'wobble', label + '|' + rep.id, 1);
       slotEl.innerHTML =
         '<div class="labs-acc-head">' +
         '  <div>' +
@@ -3031,7 +4529,10 @@
         '<div class="forensics-commentary labs-single-commentary">' + esc(rep.commentary) + '</div>' +
         '<div class="labs-single-charts-grid">' + chartsHtml + '</div>' +
         '<div class="labs-single-facts-grid">' + statsHtml + '</div>' +
-        '<div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code>' + esc(rep.formula) + '</code></div>';
+        '<div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code>' + esc(rep.formula) + '</code></div>' +
+        '<div class="labs-acc-sci-slot">' +
+        renderScientistCommentHtml(repSci.scientistId, repSci.quote, 'Specialist Metric Observation') +
+        '</div>';
 
       var closeBtn = slotEl.querySelector('.labs-acc-close');
       if (closeBtn) closeBtn.addEventListener('click', closeSingleRow);
@@ -3067,12 +4568,120 @@
       });
     }
 
+    function drawFinalPlotByKey(key) {
+      var cvs = mountEl.querySelector('#' + uid + key);
+      var iOpts = {
+        hoverNorm: hoverState[key],
+        archiveBases: chartMeta.bases,
+        archiveSamples: opts.archiveSamples,
+        hotspots: chartMeta[key] ? chartMeta[key].hotspots : null,
+        activeHotspotId: activeHotspots[key],
+        highlightRange: activeRanges[key]
+      };
+      if (key === 'c_spec') drawSpectrumPlot(cvs, feat, '#60A5FA', iOpts);
+      else if (key === 'c_pitch') drawPitchContourPlot(cvs, feat, iOpts);
+      else if (key === 'c_mod') drawModulationPlot(cvs, feat, iOpts);
+      else if (key === 'c_env') drawEnvelopePlot(cvs, feat, iOpts);
+    }
+
     function drawAllSingleCharts() {
-      drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), feat, '#60A5FA');
-      drawPitchContourPlot(mountEl.querySelector('#' + uid + 'c_pitch'), feat);
-      drawModulationPlot(mountEl.querySelector('#' + uid + 'c_mod'), feat);
-      drawEnvelopePlot(mountEl.querySelector('#' + uid + 'c_env'), feat);
+      drawFinalPlotByKey('c_spec');
+      drawFinalPlotByKey('c_pitch');
+      drawFinalPlotByKey('c_mod');
+      drawFinalPlotByKey('c_env');
       redrawExpandedSingle();
+    }
+
+    ['c_spec', 'c_pitch', 'c_mod', 'c_env'].forEach(function (chartKey) {
+      var cvs = mountEl.querySelector('#' + uid + chartKey);
+      var readEl = mountEl.querySelector('#' + uid + chartKey + '_readout');
+      var storyEl = mountEl.querySelector('#' + uid + chartKey + '_story');
+      var cm = chartMeta[chartKey];
+      if (!cvs || !cm) return;
+
+      function updateNorm(ev) {
+        var rect = cvs.getBoundingClientRect ? cvs.getBoundingClientRect() : null;
+        if (!rect || rect.width <= 0) return;
+        var norm = clamp((ev.clientX - rect.left) / rect.width, 0, 1);
+        hoverState[chartKey] = norm;
+        activeHotspots[chartKey] = null;
+        var desc = cm.describeAtNorm(norm);
+        activeRanges[chartKey] = desc ? [desc.spanLo, desc.spanHi] : null;
+        if (readEl) readEl.textContent = cm.sampleAtNorm(norm);
+        if (storyEl && desc) storyEl.innerHTML = renderChartStoryInner(desc, cm.scientistId);
+        var cardPills = mountEl.querySelectorAll('.labs-hotspot-pill[data-chart-key="' + chartKey + '"]');
+        for (var pi2 = 0; pi2 < cardPills.length; pi2++) cardPills[pi2].classList.remove('active');
+        drawFinalPlotByKey(chartKey);
+      }
+
+      if (typeof cvs.addEventListener === 'function') {
+        cvs.addEventListener('pointerdown', updateNorm);
+        cvs.addEventListener('pointermove', updateNorm);
+        cvs.addEventListener('pointerleave', function () {
+          hoverState[chartKey] = null;
+          if (readEl) readEl.textContent = cm.defaultReadout;
+          drawFinalPlotByKey(chartKey);
+        });
+      }
+    });
+
+    var hsPills = mountEl.querySelectorAll('.labs-hotspot-pill[data-chart-key][data-hs-id]');
+    for (var hsi = 0; hsi < hsPills.length; hsi++) {
+      hsPills[hsi].addEventListener('click', function () {
+        var ck = this.getAttribute('data-chart-key');
+        var hid = this.getAttribute('data-hs-id');
+        var cm = chartMeta[ck];
+        if (!cm || !Array.isArray(cm.hotspots)) return;
+        var matched = null;
+        for (var hi = 0; hi < cm.hotspots.length; hi++) {
+          if (cm.hotspots[hi].id === hid) { matched = cm.hotspots[hi]; break; }
+        }
+        if (!matched) return;
+        activeHotspots[ck] = hid;
+        activeRanges[ck] = [matched.spanLo, matched.spanHi];
+        hoverState[ck] = matched.norm;
+        var siblings = mountEl.querySelectorAll('.labs-hotspot-pill[data-chart-key="' + ck + '"]');
+        for (var si = 0; si < siblings.length; si++) {
+          siblings[si].classList.toggle('active', siblings[si].getAttribute('data-hs-id') === hid);
+        }
+        var readEl = mountEl.querySelector('#' + uid + ck + '_readout');
+        var storyEl = mountEl.querySelector('#' + uid + ck + '_story');
+        if (readEl) readEl.textContent = cm.sampleAtNorm(matched.norm);
+        if (storyEl) storyEl.innerHTML = renderChartStoryInner(matched, cm.scientistId);
+        drawFinalPlotByKey(ck);
+      });
+    }
+
+    var viewDetailsBtns = mountEl.querySelectorAll('.labs-chart-view-details-btn[data-view-chart]');
+    for (var vdi = 0; vdi < viewDetailsBtns.length; vdi++) {
+      viewDetailsBtns[vdi].addEventListener('click', function () {
+        var ck = this.getAttribute('data-view-chart');
+        if (!chartMeta[ck]) return;
+        openChartInvestigationModal({
+          chartKey: ck,
+          label: label,
+          feat: feat,
+          bases: chartMeta.bases,
+          meta: chartMeta[ck],
+          initialHotspotId: activeHotspots[ck],
+          initialNorm: hoverState[ck]
+        });
+      });
+    }
+
+    var drillBtns = mountEl.querySelectorAll('.labs-chart-drill-btn');
+    for (var dbi = 0; dbi < drillBtns.length; dbi++) {
+      drillBtns[dbi].addEventListener('click', function () {
+        var dk = this.getAttribute('data-drill');
+        var slot = mountEl.querySelector('.labs-chart-drilldown[data-drill-slot="' + dk + '"]');
+        if (!slot) return;
+        var isOpen = !slot.classList.contains('hidden');
+        slot.classList.toggle('hidden', isOpen);
+        this.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        this.textContent = isOpen
+          ? '🔬 Scientific Drill-Down & Archive Notes'
+          : '✕ Hide Scientific Drill-Down';
+      });
     }
 
     var specCanvas = mountEl.querySelector('#' + uid + 'spec3d');
@@ -3126,6 +4735,17 @@
     if (emailRepBtn) {
       emailRepBtn.addEventListener('click', function () {
         if (opts.onEmailAnalysis) opts.onEmailAnalysis(sound, [specCanvas]);
+      });
+    }
+    var singleTeamBtn = mountEl.querySelector('.labs-fn-meet-team');
+    if (singleTeamBtn && opts.onOpenTeam) {
+      singleTeamBtn.addEventListener('click', opts.onOpenTeam);
+    }
+    var singleCopyVerdictBtn = mountEl.querySelector('.labs-copy-verdict-btn');
+    if (singleCopyVerdictBtn) {
+      singleCopyVerdictBtn.addEventListener('click', function () {
+        var txt = this.getAttribute('data-verdict-copy') || shareVerdict;
+        if (opts.onCopyVerdict) opts.onCopyVerdict(txt);
       });
     }
 
@@ -3402,13 +5022,19 @@
 
     var sortLabel = (g.metrics && g.metrics.sortLabel) || 'Pitch (Hz) · Ascending';
     var rowsHtml = renderMetricRowsHtml(gauges, { expandable: false }) + renderMetricRowsHtml([authGrpRow], { expandable: true });
+    var grpComment = pickScientistComment('bottomsworth', g.name + '|' + sortLabel, 1);
+    grpComment.label = 'Conductor Acoustic Review';
+    var specWobble = pickScientistComment('wobble', g.name + '|spec3d', 0);
+    var rareDispatch = pickRareComment(g.name + '|' + sortLabel + '|group');
+    var archCmp = buildArchiveComparison(g.features, null, opts.archiveSamples || null, g.name + '|grp');
+    var shareVerdict = pickShareableVerdict(g.name + '|' + sortLabel + '|megamix');
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
       '  <section class="labs-glass-card labs-fn-header">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COHERENT MULTI-FART MEGAMIX &amp; GROUP ANALYSIS</div>' +
+      '        <div class="labs-eyebrow">MULTI-SPECIMEN MEGAMIX · RESEARCH SUMMARY</div>' +
       '        <h2 class="labs-fn-title">' + esc(g.name) + '</h2>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-green">' + g.metrics.totalDurationSec.toFixed(2) + 's Total</span>' +
@@ -3419,6 +5045,9 @@
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-share">📤 Share</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
       '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-email-report">📧 Email (Audio + PDF)</button>' +
+      '    </div>' +
+      '    <div class="labs-fn-meta-row">' +
+      '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
       '    </div>' +
       '    <div class="labs-sort-bar">' +
       '      <label class="labs-sort-field" for="' + uid + 'sortby">' +
@@ -3445,6 +5074,7 @@
       '      </div>' +
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
+      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Ensemble Topology Note') +
       '    <div class="labs-group-wave-wrap">' +
       '      <div class="labs-chart-box-head"><span>Composite Symphony Waveform</span><small>Color-coded Vault Movements in Active Order</small></div>' +
       '      <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
@@ -3466,6 +5096,9 @@
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
       '    </div>' +
+      renderScientistCommentHtml(grpComment.scientistId, grpComment.quote, grpComment.label) +
+      renderRareCommentHtml(rareDispatch) +
+      renderArchiveComparisonHtml(archCmp) +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
@@ -3474,13 +5107,17 @@
       '      <div class="labs-chart-box-inner">' +
       '        <div class="labs-chart-box-head"><span>Vault Specimen Map (Pitch × Moisture)</span><small>Spatial acoustic spread</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Classification:</strong> Spatial distribution spans ' + (g.segments || []).length + ' cataloged Vault movements. <em>(Dr. Pufferton)</em></span></div>' +
       '      </div>' +
       '      <div class="labs-chart-box-inner">' +
       '        <div class="labs-chart-box-head"><span>Combined 40-Band FFT Spectrum</span><small>Aggregate frequency energy</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid measured against Institute baseline. <em>(Dr. Wobble)</em></span></div>' +
       '      </div>' +
       '    </div>' +
       '  </section>' +
+      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Vault Movements') +
+      renderReportSignatureHtml(g.name + '|' + sortLabel + '|group') +
       '</div>';
 
     function drawGroupVisuals() {
@@ -3611,6 +5248,17 @@
         if (opts.onEmailAnalysis) opts.onEmailAnalysis(g, [specCanvas]);
       });
     }
+    var grpTeamBtn = mountEl.querySelector('.labs-fn-meet-team');
+    if (grpTeamBtn && opts.onOpenTeam) {
+      grpTeamBtn.addEventListener('click', opts.onOpenTeam);
+    }
+    var grpCopyVerdictBtn = mountEl.querySelector('.labs-copy-verdict-btn');
+    if (grpCopyVerdictBtn) {
+      grpCopyVerdictBtn.addEventListener('click', function () {
+        var txt = this.getAttribute('data-verdict-copy') || shareVerdict;
+        if (opts.onCopyVerdict) opts.onCopyVerdict(txt);
+      });
+    }
 
     var gBtns = mountEl.querySelectorAll('[data-gpreset]');
     for (var gi = 0; gi < gBtns.length; gi++) {
@@ -3643,6 +5291,19 @@
   }
 
   TootLabs.Fartnalysis = {
+    INSTITUTE: INSTITUTE,
+    TEAM: TEAM,
+    RESEARCH_FOOTNOTES: RESEARCH_FOOTNOTES,
+    SCIENTIST_COMMENTS: SCIENTIST_COMMENTS,
+    SCIENTIST_COMMENT_POOLS: SCIENTIST_COMMENT_POOLS,
+    RARE_COMMENTS: RARE_COMMENTS,
+    SHAREABLE_VERDICTS: SHAREABLE_VERDICTS,
+    pickScientistComment: pickScientistComment,
+    pickRareComment: pickRareComment,
+    pickShareableVerdict: pickShareableVerdict,
+    buildArchiveComparison: buildArchiveComparison,
+    buildFinalChartsMetadata: buildFinalChartsMetadata,
+    openChartInvestigationModal: openChartInvestigationModal,
     gaugeStatus: gaugeStatus,
     classifyAcousticProfile: classifyAcousticProfile,
     classifyAuthenticityScore: classifyAuthenticityScore,
