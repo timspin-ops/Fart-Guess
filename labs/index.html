@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124a" />
-  <script defer src="../js/dsp.js?v=20261124a"></script>
-  <script defer src="../js/audioEngine.js?v=20261124a"></script>
-  <script defer src="../js/storage.js?v=20261124a"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124a"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124a"></script>
-  <script defer src="js/labsStore.js?v=20261124a"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124a"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124a"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124a"></script>
-  <script defer src="js/labsApp.js?v=20261124a"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124b" />
+  <script defer src="../js/dsp.js?v=20261124b"></script>
+  <script defer src="../js/audioEngine.js?v=20261124b"></script>
+  <script defer src="../js/storage.js?v=20261124b"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124b"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124b"></script>
+  <script defer src="js/labsStore.js?v=20261124b"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124b"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124b"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124b"></script>
+  <script defer src="js/labsApp.js?v=20261124b"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -187,10 +187,11 @@
           </div>
         </div>
 
-        <div id="vault-filter-bar" class="labs-vault-filter-bar hidden" role="group" aria-label="Vault Specimen Filter">
-          <button type="button" class="labs-format-btn active" data-vault-filter="all">All Farts</button>
-          <button type="button" class="labs-format-btn" data-vault-filter="recorded">Recorded Real Farts</button>
-          <button type="button" class="labs-format-btn" data-vault-filter="defaults">Default Pack</button>
+        <div id="vault-filter-bar" class="labs-vault-filter-bar" role="group" aria-label="Vault Specimen Filter">
+          <button type="button" class="labs-format-btn active" data-vault-filter="all">All (0)</button>
+          <button type="button" class="labs-format-btn" data-vault-filter="recorded">🎙️ Recorded Farts (0)</button>
+          <button type="button" class="labs-format-btn" data-vault-filter="guesses">🎤 Recorded Guesses (0)</button>
+          <button type="button" class="labs-format-btn" data-vault-filter="defaults">📦 Default Farts (0)</button>
         </div>
 
         <div id="vault-chamber" class="labs-vault-chamber">
@@ -245,7 +246,7 @@
         <section class="labs-glass-card labs-detail-hero">
           <div class="labs-detail-head">
             <div>
-              <div class="labs-eyebrow">SAVED FART RECORDING</div>
+              <div class="labs-eyebrow" id="detail-sample-eyebrow">RECORDED FART SPECIMEN</div>
               <h2 class="labs-detail-title" id="detail-sample-name">Specimen</h2>
               <div class="labs-detail-meta" id="detail-sample-meta">—</div>
             </div>

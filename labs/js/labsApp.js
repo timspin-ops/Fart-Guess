@@ -924,7 +924,12 @@
     if (!stage) return;
 
     if (countEl) {
-      countEl.textContent = state.samples.length + (state.samples.length === 1 ? ' SPECIMEN' : ' SPECIMENS');
+      var buckets = getVaultBuckets();
+      var fartCount = buckets.counts.recorded + buckets.counts.defaults;
+      var guessCount = buckets.counts.guesses;
+      countEl.textContent = guessCount > 0
+        ? fartCount + (fartCount === 1 ? ' FART' : ' FARTS') + ' · ' + guessCount + (guessCount === 1 ? ' GUESS' : ' GUESSES')
+        : fartCount + (fartCount === 1 ? ' SPECIMEN' : ' SPECIMENS');
     }
     if (statusEl) {
       statusEl.textContent = 'PRESSURE SEAL · DEPRESSURIZING…';
@@ -1622,19 +1627,87 @@
     });
   }
 
-  /* ==================== VAULT CARD SHARED RENDERER ==================== */
+  /* ==================== VAULT CATEGORY BUCKETS & CARDS ==================== */
+  function upsertAttemptsIntoCache(attemptsList) {
+    if (!Array.isArray(attemptsList) || attemptsList.length === 0) return;
+    var byId = {};
+    var i;
+    for (i = 0; i < (state.allAttemptsCache || []).length; i++) {
+      var ex = state.allAttemptsCache[i];
+      if (ex && ex.id) byId[ex.id] = ex;
+    }
+    for (i = 0; i < attemptsList.length; i++) {
+      var item = attemptsList[i];
+      if (item && item.id) byId[item.id] = item;
+    }
+    var merged = Object.keys(byId).map(function (k) { return byId[k]; });
+    merged.sort(function (a, b) {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+    state.allAttemptsCache = merged;
+  }
+
+  function refreshAllAttemptsCache() {
+    if (!TootLabs.Store || typeof TootLabs.Store.loadAllAttempts !== 'function') {
+      return Promise.resolve(state.allAttemptsCache || []);
+    }
+    return TootLabs.Store.loadAllAttempts()
+      .then(function (list) {
+        state.allAttemptsCache = Array.isArray(list) ? list : [];
+        return state.allAttemptsCache;
+      })
+      .catch(function () {
+        return state.allAttemptsCache || [];
+      });
+  }
+
+  function getVaultBuckets() {
+    var recorded = [];
+    var defaults = [];
+    for (var i = 0; i < state.samples.length; i++) {
+      var s = state.samples[i];
+      if (!s) continue;
+      if (s.isBuiltIn) defaults.push(s);
+      else recorded.push(s);
+    }
+    var guesses = Array.isArray(state.allAttemptsCache) ? state.allAttemptsCache.slice() : [];
+    return {
+      recorded: recorded,
+      guesses: guesses,
+      defaults: defaults,
+      counts: {
+        all: recorded.length + guesses.length + defaults.length,
+        recorded: recorded.length,
+        guesses: guesses.length,
+        defaults: defaults.length
+      }
+    };
+  }
+
+  function setVaultFilter(filterKey) {
+    if (filterKey === 'recorded' || filterKey === 'guesses' || filterKey === 'defaults' || filterKey === 'all') {
+      state.vaultFilter = filterKey;
+    } else {
+      state.vaultFilter = 'all';
+    }
+    renderVaultView();
+  }
+
   function buildVaultCardHtml(s) {
     var st = TootLabs.Store.getSampleStats(s.id);
     var name = getSampleName(s);
+    var isDef = Boolean(s.isBuiltIn);
     var hasAudio = Boolean(s.samples && s.samples.length > 0);
     var dur = hasAudio ? (s.samples.length / (s.sampleRate || 44100)).toFixed(2) + 's' : 'Ready';
-    var dateLbl = s.isBuiltIn ? 'Default Pack' : formatDateShort(s.createdAt);
+    var dateLbl = isDef ? 'Pre-loaded Default' : formatDateShort(s.createdAt);
     var bestTxt = st.attemptCount > 0 ? st.bestScore.toFixed(1) + '%' : '—';
     var attTxt = st.attemptCount === 1 ? '1 Guess' : st.attemptCount + ' Guesses';
-    var packBadge = s.isBuiltIn ? '<span class="labs-chip labs-chip-blue labs-vc-tag">Default</span>' : '';
+    var packBadge = isDef
+      ? '<span class="labs-chip labs-chip-blue labs-vc-tag">📦 Default Fart</span>'
+      : '<span class="labs-chip labs-chip-green labs-vc-tag">🎙️ Recorded Fart</span>';
 
     return (
-      '<article class="labs-vault-card" data-open-id="' + esc(s.id) + '" tabindex="0">' +
+      '<article class="labs-vault-card ' + (isDef ? 'labs-vc-kind-default' : 'labs-vc-kind-recorded') + '" data-open-id="' + esc(s.id) + '" data-vc-kind="' + (isDef ? 'default' : 'recorded') + '" tabindex="0">' +
       '  <div class="labs-vc-top">' +
       '    <div>' +
       '      <div class="labs-vc-name">' + esc(name) + packBadge + '</div>' +
@@ -1655,6 +1728,48 @@
       '  </div>' +
       '</article>'
     );
+  }
+
+  function buildVaultGuessCardHtml(att) {
+    var parent = getSampleById(att.sampleId);
+    var parentName = parent ? getSampleName(parent) : 'Saved Fart';
+    var dur = att.samples && att.samples.length ? (att.samples.length / (att.sampleRate || 44100)).toFixed(2) + 's' : '0.00s';
+    var score = typeof att.exactScore === 'number' ? att.exactScore : 0;
+    var rank = TootLabs.Store.getRankForScore(score);
+
+    return (
+      '<article class="labs-vault-card labs-vc-kind-guess" data-open-guess-id="' + esc(att.id) + '" data-open-guess-sample="' + esc(att.sampleId || '') + '" data-vc-kind="guess" tabindex="0">' +
+      '  <div class="labs-vc-top">' +
+      '    <div>' +
+      '      <div class="labs-vc-name">' + esc(att.name || 'Recorded Guess') + '<span class="labs-chip labs-chip-orange labs-vc-tag">🎤 Recorded Guess</span></div>' +
+      '      <div class="labs-vc-date">Guess of ' + esc(parentName) + ' · ' + esc(formatDateShort(att.createdAt)) + ' · ' + dur + '</div>' +
+      '    </div>' +
+      '    <div class="labs-vc-score-block">' +
+      '      <div class="labs-vc-best-lbl">Match Score</div>' +
+      '      <span class="labs-vc-best-val" style="color:' + rank.color + '">' + score.toFixed(1) + '%</span>' +
+      '      <div class="labs-vc-rank-sub">' + esc(rank.title) + '</div>' +
+      '    </div>' +
+      '  </div>' +
+      '  <div class="labs-vc-wave-wrap">' +
+      '    <canvas class="labs-vc-wave" data-guess-wave-id="' + esc(att.id) + '"></canvas>' +
+      '  </div>' +
+      '  <div class="labs-vc-action-grid">' +
+      '    <button type="button" class="labs-vc-btn vc-play" data-vg-act="play" data-vg-id="' + esc(att.id) + '">▶ Play</button>' +
+      '    <button type="button" class="labs-vc-btn vc-analyze" data-vg-act="analyze" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '">🧪 Analyze</button>' +
+      '    <button type="button" class="labs-vc-btn vc-compare" data-vg-act="compare" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '">⚖️ Compare</button>' +
+      '  </div>' +
+      '</article>'
+    );
+  }
+
+  function findAttemptInCacheById(attId) {
+    if (!attId || !Array.isArray(state.allAttemptsCache)) return null;
+    for (var i = 0; i < state.allAttemptsCache.length; i++) {
+      if (state.allAttemptsCache[i] && state.allAttemptsCache[i].id === attId) {
+        return state.allAttemptsCache[i];
+      }
+    }
+    return null;
   }
 
   function wireVaultCards(containerEl) {
@@ -1693,7 +1808,33 @@
       });
     });
 
-    containerEl.querySelectorAll('.labs-vault-card').forEach(function (card) {
+    containerEl.querySelectorAll('[data-vg-act]').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var act = this.getAttribute('data-vg-act');
+        var attId = this.getAttribute('data-vg-id');
+        var sampleId = this.getAttribute('data-vg-sample');
+        var att = findAttemptInCacheById(attId);
+        if (!att) return;
+        var resolvedSampleId = sampleId || att.sampleId;
+
+        if (act === 'play') {
+          if (att.samples && att.samples.length > 0) {
+            try {
+              var gPlay = TootApp.Audio.playSound(att.samples, att.sampleRate || 44100, { channel: 'vault_guess_play' });
+              if (gPlay && typeof gPlay.catch === 'function') gPlay.catch(function () {});
+            } catch (e) {}
+          }
+        } else if (act === 'analyze') {
+          openFartnalysis('guess', resolvedSampleId, attId);
+        } else if (act === 'compare') {
+          var parent = getSampleById(resolvedSampleId);
+          openFartnalysis(parent ? 'comparison' : 'guess', resolvedSampleId, attId);
+        }
+      });
+    });
+
+    containerEl.querySelectorAll('.labs-vault-card[data-open-id]').forEach(function (card) {
       card.addEventListener('click', function () {
         openSampleDetail(this.getAttribute('data-open-id'));
       });
@@ -1701,6 +1842,24 @@
         if (ev.key === 'Enter' || ev.key === ' ') {
           ev.preventDefault();
           openSampleDetail(this.getAttribute('data-open-id'));
+        }
+      });
+    });
+
+    containerEl.querySelectorAll('.labs-vault-card[data-open-guess-id]').forEach(function (card) {
+      function openGuessFromCard() {
+        var attId = card.getAttribute('data-open-guess-id');
+        var sampleId = card.getAttribute('data-open-guess-sample');
+        var att = findAttemptInCacheById(attId);
+        var resolvedSampleId = sampleId || (att && att.sampleId);
+        var parent = getSampleById(resolvedSampleId);
+        openFartnalysis(parent ? 'comparison' : 'guess', resolvedSampleId, attId);
+      }
+      card.addEventListener('click', openGuessFromCard);
+      card.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          openGuessFromCard();
         }
       });
     });
@@ -1712,18 +1871,37 @@
       var id = canvases[i].getAttribute('data-wave-id');
       var sample = getSampleById(id);
       if (sample && sample.samples && sample.samples.length > 0) {
-        drawStaticWaveform(canvases[i], sample.samples, { fallbackW: 260, fallbackH: 44 });
+        drawStaticWaveform(canvases[i], sample.samples, {
+          fallbackW: 260,
+          fallbackH: 44,
+          colorA: sample.isBuiltIn ? '#60A5FA' : '#22C55E',
+          colorB: sample.isBuiltIn ? '#818CF8' : '#34D399'
+        });
       } else if (sample && typeof canvases[i].getContext === 'function') {
         var ctx = canvases[i].getContext('2d');
         var cw = canvases[i].width || 260;
         var ch = canvases[i].height || 44;
         if (ctx && typeof ctx.clearRect === 'function') {
           ctx.clearRect(0, 0, cw, ch);
-          ctx.fillStyle = '#64748B';
+          ctx.fillStyle = '#93C5FD';
           ctx.font = '600 11px "Plus Jakarta Sans", sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('Default Vault Specimen · Tap to load', cw * 0.5, ch * 0.56);
+          ctx.fillText('Pre-loaded Default · Tap Play to load', cw * 0.5, ch * 0.56);
         }
+      }
+    }
+
+    var guessCanvases = document.querySelectorAll('#' + containerId + ' canvas[data-guess-wave-id]');
+    for (var j = 0; j < guessCanvases.length; j++) {
+      var gId = guessCanvases[j].getAttribute('data-guess-wave-id');
+      var att = findAttemptInCacheById(gId);
+      if (att && att.samples && att.samples.length > 0) {
+        drawStaticWaveform(guessCanvases[j], att.samples, {
+          fallbackW: 260,
+          fallbackH: 44,
+          colorA: '#F97316',
+          colorB: '#FACC15'
+        });
       }
     }
   }
@@ -1756,18 +1934,23 @@
   function renderVaultView() {
     var grid = $('vault-grid');
     var filterBar = $('vault-filter-bar');
-    var hasBuiltIns = state.samples.some(function (s) { return Boolean(s.isBuiltIn); });
+    var buckets = getVaultBuckets();
     if (filterBar) {
-      filterBar.classList.toggle('hidden', !hasBuiltIns);
+      filterBar.classList.remove('hidden');
       var fBtns = filterBar.querySelectorAll('[data-vault-filter]');
       for (var i = 0; i < fBtns.length; i++) {
-        fBtns[i].classList.toggle('active', fBtns[i].getAttribute('data-vault-filter') === state.vaultFilter);
+        var key = fBtns[i].getAttribute('data-vault-filter');
+        fBtns[i].classList.toggle('active', key === state.vaultFilter);
+        if (key === 'all') fBtns[i].textContent = 'All (' + buckets.counts.all + ')';
+        else if (key === 'recorded') fBtns[i].textContent = '🎙️ Recorded Farts (' + buckets.counts.recorded + ')';
+        else if (key === 'guesses') fBtns[i].textContent = '🎤 Recorded Guesses (' + buckets.counts.guesses + ')';
+        else if (key === 'defaults') fBtns[i].textContent = '📦 Default Farts (' + buckets.counts.defaults + ')';
       }
     }
 
-    $('btn-vault-megamix').disabled = state.samples.length === 0 && (!state.allAttemptsCache || state.allAttemptsCache.length === 0);
+    $('btn-vault-megamix').disabled = buckets.counts.all === 0;
 
-    if (state.samples.length === 0) {
+    if (buckets.counts.all === 0) {
       grid.innerHTML =
         '<div class="labs-glass-card labs-empty-card">' +
         '  <h3>Your Fart Vault is Empty</h3>' +
@@ -1776,22 +1959,108 @@
       return;
     }
 
-    var visible = !hasBuiltIns || state.vaultFilter === 'all'
-      ? state.samples
-      : state.samples.filter(function (s) {
-          return state.vaultFilter === 'defaults' ? Boolean(s.isBuiltIn) : !s.isBuiltIn;
-        });
-
-    if (visible.length === 0) {
-      grid.innerHTML =
-        '<div class="labs-glass-card labs-empty-card">' +
-        '  <h3>No Specimens in This Filter</h3>' +
-        '  <p>' + (state.vaultFilter === 'recorded' ? 'Go to <strong>Home</strong> and tap <strong>Record New Fart</strong> to record your own.' : 'No Default Pack audio files found.') + '</p>' +
-        '</div>';
-      return;
+    function buildVaultGroupHtml(kind, chipClass, title, subtitle, count, cardsHtml) {
+      return (
+        '<section class="labs-vault-group labs-vault-group-' + kind + '" data-vault-group="' + kind + '">' +
+        '  <div class="labs-vault-group-head">' +
+        '    <div class="labs-vault-group-title-wrap">' +
+        '      <span class="labs-vault-group-title">' + title + '</span>' +
+        '      <span class="labs-vault-group-sub">' + subtitle + '</span>' +
+        '    </div>' +
+        '    <span class="labs-chip ' + chipClass + '">' + count + '</span>' +
+        '  </div>' +
+        '  <div class="labs-vault-grid">' + cardsHtml + '</div>' +
+        '</section>'
+      );
     }
 
-    grid.innerHTML = visible.map(buildVaultCardHtml).join('');
+    var filter = state.vaultFilter || 'all';
+    if (filter === 'recorded') {
+      if (buckets.recorded.length === 0) {
+        grid.innerHTML =
+          '<div class="labs-glass-card labs-empty-card">' +
+          '  <h3>No Recorded Farts Yet</h3>' +
+          '  <p>Go to <strong>Home</strong> and tap <strong>Record New Fart</strong> to record your own real fart.</p>' +
+          '</div>';
+        return;
+      }
+      grid.innerHTML = buildVaultGroupHtml(
+        'recorded',
+        'labs-chip-green',
+        '🎙️ User Recorded Farts',
+        'Real farts recorded from Home',
+        buckets.recorded.length,
+        buckets.recorded.map(buildVaultCardHtml).join('')
+      );
+    } else if (filter === 'guesses') {
+      if (buckets.guesses.length === 0) {
+        grid.innerHTML =
+          '<div class="labs-glass-card labs-empty-card">' +
+          '  <h3>No Recorded Guesses Yet</h3>' +
+          '  <p>Play <strong>Guess The Fart</strong> or <strong>Mimic Mode</strong> to log your guesses here.</p>' +
+          '</div>';
+        return;
+      }
+      grid.innerHTML = buildVaultGroupHtml(
+        'guesses',
+        'labs-chip-orange',
+        '🎤 User Recorded Guesses',
+        'Your guess & mimic recordings',
+        buckets.guesses.length,
+        buckets.guesses.map(buildVaultGuessCardHtml).join('')
+      );
+    } else if (filter === 'defaults') {
+      if (buckets.defaults.length === 0) {
+        grid.innerHTML =
+          '<div class="labs-glass-card labs-empty-card">' +
+          '  <h3>No Pre-Loaded Default Farts Found</h3>' +
+          '  <p>Add .wav or .mp3 files into <strong>VaultPreLoads/</strong> to populate the Default Pack.</p>' +
+          '</div>';
+        return;
+      }
+      grid.innerHTML = buildVaultGroupHtml(
+        'defaults',
+        'labs-chip-blue',
+        '📦 Pre-Loaded Default Farts',
+        'Built-in default specimen pack',
+        buckets.defaults.length,
+        buckets.defaults.map(buildVaultCardHtml).join('')
+      );
+    } else {
+      var sectionsHtml = '';
+      if (buckets.recorded.length > 0) {
+        sectionsHtml += buildVaultGroupHtml(
+          'recorded',
+          'labs-chip-green',
+          '🎙️ User Recorded Farts',
+          'Real farts recorded from Home',
+          buckets.recorded.length,
+          buckets.recorded.map(buildVaultCardHtml).join('')
+        );
+      }
+      if (buckets.guesses.length > 0) {
+        sectionsHtml += buildVaultGroupHtml(
+          'guesses',
+          'labs-chip-orange',
+          '🎤 User Recorded Guesses',
+          'Your guess & mimic recordings',
+          buckets.guesses.length,
+          buckets.guesses.map(buildVaultGuessCardHtml).join('')
+        );
+      }
+      if (buckets.defaults.length > 0) {
+        sectionsHtml += buildVaultGroupHtml(
+          'defaults',
+          'labs-chip-blue',
+          '📦 Pre-Loaded Default Farts',
+          'Built-in default specimen pack',
+          buckets.defaults.length,
+          buckets.defaults.map(buildVaultCardHtml).join('')
+        );
+      }
+      grid.innerHTML = sectionsHtml;
+    }
+
     wireVaultCards(grid);
     drawVaultWaveforms('vault-grid');
   }
@@ -1817,10 +2086,16 @@
     sample.features = feat;
     var prof = TootApp.DSP.describeSoundProfile(feat);
 
+    if ($('detail-sample-eyebrow')) {
+      $('detail-sample-eyebrow').textContent = sample.isBuiltIn ? '📦 PRE-LOADED DEFAULT FART' : '🎙️ USER RECORDED FART';
+    }
+    if ($('btn-detail-delete')) {
+      $('btn-detail-delete').classList.toggle('hidden', Boolean(sample.isBuiltIn));
+    }
     $('detail-specimen-id').textContent = 'SPECIMEN ID · ' + sample.id.slice(-8).toUpperCase();
     $('detail-sample-name').textContent = getSampleName(sample);
     $('detail-sample-dur').textContent = (sample.samples.length / sample.sampleRate).toFixed(2) + 's';
-    $('detail-sample-meta').textContent = formatTimeShort(sample.createdAt) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
+    $('detail-sample-meta').textContent = (sample.isBuiltIn ? 'Pre-loaded Default Pack' : formatTimeShort(sample.createdAt)) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
 
     $('detail-best-score').textContent = stats.attemptCount > 0 ? stats.bestScore.toFixed(1) + '%' : '—';
     $('detail-prev-score').textContent = typeof stats.previousScore === 'number' ? stats.previousScore.toFixed(1) + '%' : '—';
@@ -2205,7 +2480,7 @@
               '" data-pick-fart="' +
               esc(s.id) +
               '">' +
-              '<span>' + esc(getSampleName(s)) + '</span>' +
+              '<span>' + (s.isBuiltIn ? '📦 ' : '🎙️ ') + esc(getSampleName(s)) + '</span>' +
               scoreBadge +
               '</button>'
             );
@@ -2646,6 +2921,7 @@
       for (var i = outcomes.length - 1; i >= 0; i--) {
         state.guessAttempts.unshift(outcomes[i].attempt);
       }
+      upsertAttemptsIntoCache(outcomes.map(function (o) { return o.attempt; }));
       state.lastSessionResults = outcomes;
       state.lastOutcome = outcomes[0];
       state.guessTargetId = target.id;
@@ -3678,9 +3954,11 @@
           showToast('Renamed to "' + next + '"');
         });
       } else if (state.renameTarget.kind === 'guess') {
-        TootLabs.Store.renameAttempt(state.renameTarget.item, next).then(function () {
+        TootLabs.Store.renameAttempt(state.renameTarget.item, next).then(function (updated) {
+          upsertAttemptsIntoCache([updated || state.renameTarget.item]);
           renameModal.classList.add('hidden');
           renderGuessLeaderboard();
+          renderVaultView();
           if (state.view === 'detail') renderSampleDetail();
           showToast('Guesser named "' + next + '"');
         });
@@ -3700,6 +3978,7 @@
       TootLabs.Store.deleteSample(delId).then(function () {
         deleteModal.classList.add('hidden');
         state.samples = state.samples.filter(function (s) { return s.id !== delId; });
+        state.allAttemptsCache = (state.allAttemptsCache || []).filter(function (a) { return a && a.sampleId !== delId; });
         if (state.guessTargetId === delId) {
           state.guessTargetId = state.samples[0] ? state.samples[0].id : null;
           state.guessAttempts = [];
@@ -3795,6 +4074,9 @@
         } else if (targetView === 'vault') {
           renderVaultView();
           showView('vault');
+          refreshAllAttemptsCache().then(function () {
+            if (state.view === 'vault') renderVaultView();
+          });
         } else if (targetView === 'fartnalysis') {
           openFartnalysis(state.fnMode || 'original', state.fnSampleId, state.fnAttemptId);
         }
@@ -3845,6 +4127,9 @@
     $('btn-home-open-vault').addEventListener('click', function () {
       renderVaultView();
       showView('vault');
+      refreshAllAttemptsCache().then(function () {
+        if (state.view === 'vault') renderVaultView();
+      });
     });
 
     // Vault View Buttons, Filter & Airlock Door (Recording Driven From Home Only)
@@ -3852,8 +4137,7 @@
     if (vaultFilterBar) {
       vaultFilterBar.querySelectorAll('[data-vault-filter]').forEach(function (fb) {
         fb.addEventListener('click', function () {
-          state.vaultFilter = this.getAttribute('data-vault-filter') || 'all';
-          renderVaultView();
+          setVaultFilter(this.getAttribute('data-vault-filter') || 'all');
         });
       });
     }
@@ -3873,6 +4157,9 @@
     $('btn-detail-back').addEventListener('click', function () {
       renderVaultView();
       showView('vault');
+      refreshAllAttemptsCache().then(function () {
+        if (state.view === 'vault') renderVaultView();
+      });
     });
     $('btn-detail-play').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
@@ -4144,11 +4431,17 @@
     $('btn-fn-back').addEventListener('click', function () {
       renderVaultView();
       showView('vault');
+      refreshAllAttemptsCache().then(function () {
+        if (state.view === 'vault') renderVaultView();
+      });
     });
 
     $('btn-fn-go-guess').addEventListener('click', function () {
       renderVaultView();
       showView('vault');
+      refreshAllAttemptsCache().then(function () {
+        if (state.view === 'vault') renderVaultView();
+      });
     });
 
     if ($('btn-fn-team')) {
@@ -4206,9 +4499,9 @@
       openSplashModal();
     }
 
-    TootLabs.Store.loadVaultSamples()
-      .then(function (list) {
-        state.samples = list || [];
+    Promise.all([TootLabs.Store.loadVaultSamples(), refreshAllAttemptsCache()])
+      .then(function (res) {
+        state.samples = res[0] || [];
         if (state.samples.length > 0) {
           state.guessTargetId = state.samples[0].id;
           state.fnSampleId = state.samples[0].id;
@@ -4245,6 +4538,8 @@
     analyzeBlindSession: analyzeBlindSession,
     pickRandomGuessTarget: pickRandomGuessTarget,
     openFartnalysis: openFartnalysis,
+    getVaultBuckets: getVaultBuckets,
+    setVaultFilter: setVaultFilter,
     getMegamixSourceBucket: getMegamixSourceBucket,
     setGroupSource: setGroupSource,
     setRecordMode: setRecordMode,

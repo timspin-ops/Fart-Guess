@@ -5556,20 +5556,115 @@ select {
 }
 
 .labs-vault-filter-bar {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding: 4px;
+  gap: 6px;
+  padding: 6px;
+  width: 100%;
+  box-sizing: border-box;
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.84);
   border: 1px solid rgba(148, 163, 184, 0.22);
   margin: 0 0 12px;
 }
 
+.labs-vault-filter-bar .labs-format-btn {
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  padding: 7px 10px;
+}
+
+.labs-vc-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
 .labs-vc-tag {
-  margin-left: 6px;
-  font-size: 0.65rem;
-  padding: 2px 6px;
+  margin-left: 0;
+  font-size: 0.64rem;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.labs-vc-rank-sub {
+  font-size: 0.66rem;
+  color: var(--muted);
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.labs-vault-card.labs-vc-kind-recorded {
+  border-left: 3px solid rgba(34, 197, 94, 0.72);
+}
+
+.labs-vault-card.labs-vc-kind-guess {
+  border-left: 3px solid rgba(249, 115, 22, 0.78);
+}
+
+.labs-vault-card.labs-vc-kind-default {
+  border-left: 3px solid rgba(96, 165, 250, 0.72);
+}
+
+.labs-vc-btn.vc-compare {
+  border-color: rgba(34, 197, 94, 0.5);
+  color: #BBF7D0;
+}
+
+.labs-vault-group {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.labs-vault-group:last-child {
+  margin-bottom: 0;
+}
+
+.labs-vault-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.76);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.labs-vault-group-recorded .labs-vault-group-head {
+  border-left: 3px solid #22C55E;
+}
+
+.labs-vault-group-guesses .labs-vault-group-head {
+  border-left: 3px solid #F97316;
+}
+
+.labs-vault-group-defaults .labs-vault-group-head {
+  border-left: 3px solid #60A5FA;
+}
+
+.labs-vault-group-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.labs-vault-group-title {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.labs-vault-group-sub {
+  font-size: 0.72rem;
+  color: #94A3B8;
 }
 
 .labs-group-filter-bar {
@@ -5763,5 +5858,9 @@ select {
   .labs-reward-inline {
     align-items: center;
     text-align: center;
+  }
+  .labs-vault-filter-bar .labs-format-btn {
+    font-size: 0.72rem;
+    padding: 6px 8px;
   }
 }
