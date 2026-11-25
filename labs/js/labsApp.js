@@ -52,6 +52,10 @@
     prevBeforeVault: 'home',
     samples: [],
     vaultFilter: 'all',
+    vaultSelectMode: false,
+    vaultSelectedSamples: {},
+    vaultSelectedGuesses: {},
+    deleteModalAction: null,
     detailSampleId: null,
     detailAttempts: [],
     guessTargetId: null,
@@ -1887,10 +1891,146 @@
     renderVaultView();
   }
 
-  function buildVaultCardHtml(s) {
+  function getSelectedVaultIds() {
+    var recMap = {};
+    var guessMap = {};
+    for (var i = 0; i < state.samples.length; i++) {
+      var s = state.samples[i];
+      if (s && s.id && !s.isBuiltIn) recMap[s.id] = true;
+    }
+    for (var j = 0; j < (state.allAttemptsCache || []).length; j++) {
+      var a = state.allAttemptsCache[j];
+      if (a && a.id) guessMap[a.id] = true;
+    }
+    var sampleIds = Object.keys(state.vaultSelectedSamples || {}).filter(function (id) {
+      return Boolean(state.vaultSelectedSamples[id] && recMap[id]);
+    });
+    var attemptIds = Object.keys(state.vaultSelectedGuesses || {}).filter(function (id) {
+      return Boolean(state.vaultSelectedGuesses[id] && guessMap[id]);
+    });
+    return { sampleIds: sampleIds, attemptIds: attemptIds };
+  }
+
+  function clearVaultSelections() {
+    state.vaultSelectedSamples = {};
+    state.vaultSelectedGuesses = {};
+  }
+
+  function setVaultSelectMode(enabled) {
+    var next = Boolean(enabled);
+    state.vaultSelectMode = next;
+    if (!next) {
+      clearVaultSelections();
+    }
+    renderVaultView();
+    return state.vaultSelectMode;
+  }
+
+  function toggleVaultSelection(kind, id) {
+    if (kind === 'default') {
+      showToast('Built-in Default Farts always stay in your Vault.');
+      return false;
+    }
+    if (kind === 'recorded') {
+      var sample = getSampleById(id);
+      if (!sample || sample.isBuiltIn) {
+        showToast('Built-in Default Farts always stay in your Vault.');
+        return false;
+      }
+      if (state.vaultSelectedSamples[id]) delete state.vaultSelectedSamples[id];
+      else state.vaultSelectedSamples[id] = true;
+      renderVaultView();
+      return Boolean(state.vaultSelectedSamples[id]);
+    }
+    if (kind === 'guess') {
+      var att = findAttemptInCacheById(id);
+      if (!att) return false;
+      if (state.vaultSelectedGuesses[id]) delete state.vaultSelectedGuesses[id];
+      else state.vaultSelectedGuesses[id] = true;
+      renderVaultView();
+      return Boolean(state.vaultSelectedGuesses[id]);
+    }
+    return false;
+  }
+
+  function getVisibleDeletableVaultItems(buckets) {
+    var b = buckets || getVaultBuckets();
+    var f = state.vaultFilter || 'all';
+    if (f === 'defaults') return { recorded: [], guesses: [] };
+    if (f === 'recorded') return { recorded: b.recorded, guesses: [] };
+    if (f === 'guesses') return { recorded: [], guesses: b.guesses };
+    return { recorded: b.recorded, guesses: b.guesses };
+  }
+
+  function selectAllVisibleVaultItems() {
+    var vis = getVisibleDeletableVaultItems();
+    var totalVis = vis.recorded.length + vis.guesses.length;
+    if (totalVis === 0) {
+      showToast(
+        state.vaultFilter === 'defaults'
+          ? 'Built-in Default Farts always stay in your Vault.'
+          : 'No Recorded Farts or Guesses to select here.'
+      );
+      return 0;
+    }
+    var allAlreadySelected =
+      vis.recorded.every(function (s) { return Boolean(state.vaultSelectedSamples[s.id]); }) &&
+      vis.guesses.every(function (a) { return Boolean(state.vaultSelectedGuesses[a.id]); });
+
+    if (allAlreadySelected) {
+      vis.recorded.forEach(function (s) { delete state.vaultSelectedSamples[s.id]; });
+      vis.guesses.forEach(function (a) { delete state.vaultSelectedGuesses[a.id]; });
+    } else {
+      vis.recorded.forEach(function (s) { state.vaultSelectedSamples[s.id] = true; });
+      vis.guesses.forEach(function (a) { state.vaultSelectedGuesses[a.id] = true; });
+    }
+    renderVaultView();
+    var sel = getSelectedVaultIds();
+    return sel.sampleIds.length + sel.attemptIds.length;
+  }
+
+  function promptVaultDelete(sampleIds, attemptIds, headingText, copyText) {
+    var safeSampleIds = (Array.isArray(sampleIds) ? sampleIds : []).filter(function (id) {
+      var s = getSampleById(id);
+      return Boolean(s && !s.isBuiltIn);
+    });
+    var safeAttemptIds = (Array.isArray(attemptIds) ? attemptIds : []).filter(function (id) {
+      return Boolean(findAttemptInCacheById(id));
+    });
+    var total = safeSampleIds.length + safeAttemptIds.length;
+    if (total === 0) {
+      showToast('Select at least one Recorded Fart or Recorded Guess first.', true);
+      return false;
+    }
+    state.deleteModalAction = {
+      kind: 'vault_bulk',
+      sampleIds: safeSampleIds,
+      attemptIds: safeAttemptIds
+    };
+    if ($('labs-delete-heading')) {
+      $('labs-delete-heading').textContent = headingText || ('Delete ' + total + ' Vault Item' + (total === 1 ? '?' : 's?'));
+    }
+    if ($('labs-delete-copy')) {
+      if (copyText) {
+        $('labs-delete-copy').textContent = copyText;
+      } else {
+        var parts = [];
+        if (safeSampleIds.length > 0) parts.push(safeSampleIds.length + ' Recorded Fart' + (safeSampleIds.length === 1 ? '' : 's') + ' (and their guesses)');
+        if (safeAttemptIds.length > 0) parts.push(safeAttemptIds.length + ' Recorded Guess' + (safeAttemptIds.length === 1 ? '' : 'es'));
+        $('labs-delete-copy').textContent = 'Permanently delete ' + parts.join(' + ') + '? Built-in Default Farts always stay in your Vault.';
+      }
+    }
+    $('labs-delete-modal').classList.remove('hidden');
+    return true;
+  }
+
+  function buildVaultCardHtml(s, opts) {
+    opts = opts || {};
     var st = TootLabs.Store.getSampleStats(s.id);
     var name = getSampleName(s);
     var isDef = Boolean(s.isBuiltIn);
+    var inSelect = Boolean(opts.inVault && state.vaultSelectMode);
+    var isSelected = inSelect && !isDef && Boolean(state.vaultSelectedSamples && state.vaultSelectedSamples[s.id]);
     var hasAudio = Boolean(s.samples && s.samples.length > 0);
     var dur = hasAudio
       ? (s.samples.length / (s.sampleRate || 44100)).toFixed(2) + 's'
@@ -1903,13 +2043,21 @@
     var packBadge = isDef
       ? '<span class="labs-chip labs-chip-blue labs-vc-tag">📦 Default Fart</span>'
       : '<span class="labs-chip labs-chip-green labs-vc-tag">🎙️ Recorded Fart</span>';
+    var lockTag = inSelect && isDef ? '<span class="labs-chip labs-chip-blue labs-vc-lock-tag">🔒 Always Kept</span>' : '';
+    var checkHtml = inSelect && !isDef ? '<span class="labs-vc-select-check" aria-hidden="true">✓</span>' : '';
+    var cardExtraCls = inSelect
+      ? (isDef ? ' is-locked-default' : (' is-selectable' + (isSelected ? ' is-selected' : '')))
+      : '';
 
     return (
-      '<article class="labs-vault-card ' + (isDef ? 'labs-vc-kind-default' : 'labs-vc-kind-recorded') + '" data-open-id="' + esc(s.id) + '" data-vc-kind="' + (isDef ? 'default' : 'recorded') + '" tabindex="0">' +
+      '<article class="labs-vault-card ' + (isDef ? 'labs-vc-kind-default' : 'labs-vc-kind-recorded') + cardExtraCls + '" data-open-id="' + esc(s.id) + '" data-vc-kind="' + (isDef ? 'default' : 'recorded') + '" tabindex="0">' +
       '  <div class="labs-vc-top">' +
-      '    <div>' +
-      '      <div class="labs-vc-name">' + esc(name) + packBadge + '</div>' +
-      '      <div class="labs-vc-date">' + esc(dateLbl) + ' · ' + dur + ' · ' + esc(attTxt) + '</div>' +
+      '    <div class="labs-vc-top-left">' +
+      checkHtml +
+      '      <div>' +
+      '        <div class="labs-vc-name">' + esc(name) + packBadge + lockTag + '</div>' +
+      '        <div class="labs-vc-date">' + esc(dateLbl) + ' · ' + dur + ' · ' + esc(attTxt) + '</div>' +
+      '      </div>' +
       '    </div>' +
       '    <div class="labs-vc-score-block">' +
       '      <div class="labs-vc-best-lbl">Best Guess</div>' +
@@ -1928,19 +2076,27 @@
     );
   }
 
-  function buildVaultGuessCardHtml(att) {
+  function buildVaultGuessCardHtml(att, opts) {
+    opts = opts || {};
     var parent = getSampleById(att.sampleId);
     var parentName = parent ? getSampleName(parent) : 'Saved Fart';
+    var inSelect = Boolean(opts.inVault && state.vaultSelectMode);
+    var isSelected = inSelect && Boolean(state.vaultSelectedGuesses && state.vaultSelectedGuesses[att.id]);
     var dur = att.samples && att.samples.length ? (att.samples.length / (att.sampleRate || 44100)).toFixed(2) + 's' : '0.00s';
     var score = typeof att.exactScore === 'number' ? att.exactScore : 0;
     var rank = TootLabs.Store.getRankForScore(score);
+    var checkHtml = inSelect ? '<span class="labs-vc-select-check" aria-hidden="true">✓</span>' : '';
+    var cardExtraCls = inSelect ? (' is-selectable' + (isSelected ? ' is-selected' : '')) : '';
 
     return (
-      '<article class="labs-vault-card labs-vc-kind-guess" data-open-guess-id="' + esc(att.id) + '" data-open-guess-sample="' + esc(att.sampleId || '') + '" data-vc-kind="guess" tabindex="0">' +
+      '<article class="labs-vault-card labs-vc-kind-guess' + cardExtraCls + '" data-open-guess-id="' + esc(att.id) + '" data-open-guess-sample="' + esc(att.sampleId || '') + '" data-vc-kind="guess" tabindex="0">' +
       '  <div class="labs-vc-top">' +
-      '    <div>' +
-      '      <div class="labs-vc-name">' + esc(att.name || 'Recorded Guess') + '<span class="labs-chip labs-chip-orange labs-vc-tag">🎤 Recorded Guess</span></div>' +
-      '      <div class="labs-vc-date">Guess of ' + esc(parentName) + ' · ' + esc(formatDateShort(att.createdAt)) + ' · ' + dur + '</div>' +
+      '    <div class="labs-vc-top-left">' +
+      checkHtml +
+      '      <div>' +
+      '        <div class="labs-vc-name">' + esc(att.name || 'Recorded Guess') + '<span class="labs-chip labs-chip-orange labs-vc-tag">🎤 Recorded Guess</span></div>' +
+      '        <div class="labs-vc-date">Guess of ' + esc(parentName) + ' · ' + esc(formatDateShort(att.createdAt)) + ' · ' + dur + '</div>' +
+      '      </div>' +
       '    </div>' +
       '    <div class="labs-vc-score-block">' +
       '      <div class="labs-vc-best-lbl">Match Score</div>' +
@@ -1972,6 +2128,42 @@
 
   function wireVaultCards(containerEl) {
     if (!containerEl) return;
+    var isVaultGrid = containerEl.id === 'vault-grid';
+    if (isVaultGrid) {
+      containerEl.querySelectorAll('[data-vg-clear-group]').forEach(function (clearBtn) {
+        clearBtn.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          var grpKind = this.getAttribute('data-vg-clear-group');
+          var bucketsNow = getVaultBuckets();
+          if (grpKind === 'recorded' && bucketsNow.recorded.length > 0) {
+            var sIds = bucketsNow.recorded.map(function (x) { return x.id; });
+            promptVaultDelete(
+              sIds,
+              [],
+              'Delete All Recorded Farts?',
+              'Permanently delete all ' +
+                sIds.length +
+                ' Recorded Fart' +
+                (sIds.length === 1 ? '' : 's') +
+                ' and their logged guesses? Built-in Default Farts will always remain in your Vault.'
+            );
+          } else if (grpKind === 'guesses' && bucketsNow.guesses.length > 0) {
+            var gIds = bucketsNow.guesses.map(function (x) { return x.id; });
+            promptVaultDelete(
+              [],
+              gIds,
+              'Delete All Recorded Guesses?',
+              'Permanently delete all ' +
+                gIds.length +
+                ' Recorded Guess' +
+                (gIds.length === 1 ? '' : 'es') +
+                '? Recorded Farts and Default Farts will remain in your Vault.'
+            );
+          }
+        });
+      });
+    }
+
     containerEl.querySelectorAll('[data-vc-act]').forEach(function (btn) {
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
@@ -1979,6 +2171,11 @@
         var id = this.getAttribute('data-vc-id');
         var sample = getSampleById(id);
         if (!sample) return;
+
+        if (isVaultGrid && state.vaultSelectMode && act !== 'play') {
+          toggleVaultSelection(sample.isBuiltIn ? 'default' : 'recorded', id);
+          return;
+        }
 
         if (act === 'play') {
           if (sample.samples && sample.samples.length > 0) {
@@ -2014,6 +2211,12 @@
         var sampleId = this.getAttribute('data-vg-sample');
         var att = findAttemptInCacheById(attId);
         if (!att) return;
+
+        if (isVaultGrid && state.vaultSelectMode && act !== 'play') {
+          toggleVaultSelection('guess', attId);
+          return;
+        }
+
         var resolvedSampleId = sampleId || att.sampleId;
 
         if (act === 'play') {
@@ -2033,13 +2236,20 @@
     });
 
     containerEl.querySelectorAll('.labs-vault-card[data-open-id]').forEach(function (card) {
-      card.addEventListener('click', function () {
-        openSampleDetail(this.getAttribute('data-open-id'));
-      });
+      function handleCardActivate() {
+        var oid = card.getAttribute('data-open-id');
+        var cKind = card.getAttribute('data-vc-kind');
+        if (isVaultGrid && state.vaultSelectMode) {
+          toggleVaultSelection(cKind === 'default' ? 'default' : 'recorded', oid);
+          return;
+        }
+        openSampleDetail(oid);
+      }
+      card.addEventListener('click', handleCardActivate);
       card.addEventListener('keydown', function (ev) {
         if (ev.key === 'Enter' || ev.key === ' ') {
           ev.preventDefault();
-          openSampleDetail(this.getAttribute('data-open-id'));
+          handleCardActivate();
         }
       });
     });
@@ -2047,6 +2257,10 @@
     containerEl.querySelectorAll('.labs-vault-card[data-open-guess-id]').forEach(function (card) {
       function openGuessFromCard() {
         var attId = card.getAttribute('data-open-guess-id');
+        if (isVaultGrid && state.vaultSelectMode) {
+          toggleVaultSelection('guess', attId);
+          return;
+        }
         var sampleId = card.getAttribute('data-open-guess-sample');
         var att = findAttemptInCacheById(attId);
         var resolvedSampleId = sampleId || (att && att.sampleId);
@@ -2140,6 +2354,14 @@
     var grid = $('vault-grid');
     var filterBar = $('vault-filter-bar');
     var buckets = getVaultBuckets();
+    var deletableTotal = buckets.counts.recorded + buckets.counts.guesses;
+    if (deletableTotal === 0 && state.vaultSelectMode) {
+      state.vaultSelectMode = false;
+      clearVaultSelections();
+    }
+    var selIds = getSelectedVaultIds();
+    var totalSelected = selIds.sampleIds.length + selIds.attemptIds.length;
+
     if (filterBar) {
       filterBar.classList.remove('hidden');
       var fBtns = filterBar.querySelectorAll('[data-vault-filter]');
@@ -2150,6 +2372,36 @@
         else if (key === 'recorded') fBtns[i].textContent = '🎙️ Recorded Farts (' + buckets.counts.recorded + ')';
         else if (key === 'guesses') fBtns[i].textContent = '🎤 Recorded Guesses (' + buckets.counts.guesses + ')';
         else if (key === 'defaults') fBtns[i].textContent = '📦 Default Farts (' + buckets.counts.defaults + ')';
+      }
+    }
+
+    var selectToggleBtn = $('btn-vault-select');
+    if (selectToggleBtn) {
+      selectToggleBtn.disabled = deletableTotal === 0;
+      selectToggleBtn.classList.toggle('active', state.vaultSelectMode);
+      selectToggleBtn.textContent = state.vaultSelectMode ? '✕ Cancel Select' : '☑️ Select';
+    }
+
+    var bulkBar = $('vault-bulk-bar');
+    if (bulkBar) {
+      bulkBar.classList.toggle('hidden', !(state.vaultSelectMode && deletableTotal > 0));
+      var selCountEl = $('vault-select-count');
+      var delSelBtn = $('btn-vault-delete-selected');
+      var selAllBtn = $('btn-vault-select-all');
+      if (selCountEl) selCountEl.textContent = totalSelected + ' selected';
+      if (delSelBtn) {
+        delSelBtn.disabled = totalSelected === 0;
+        delSelBtn.textContent = '🗑️ Delete (' + totalSelected + ')';
+      }
+      if (selAllBtn) {
+        var visItems = getVisibleDeletableVaultItems(buckets);
+        var visTotal = visItems.recorded.length + visItems.guesses.length;
+        selAllBtn.disabled = visTotal === 0;
+        var visAllPicked =
+          visTotal > 0 &&
+          visItems.recorded.every(function (s) { return Boolean(state.vaultSelectedSamples[s.id]); }) &&
+          visItems.guesses.every(function (a) { return Boolean(state.vaultSelectedGuesses[a.id]); });
+        selAllBtn.textContent = visAllPicked ? '☐ Unselect All' : '☑️ Select All';
       }
     }
 
@@ -2165,6 +2417,10 @@
     }
 
     function buildVaultGroupHtml(kind, chipClass, title, subtitle, count, cardsHtml) {
+      var clearBtnHtml =
+        (kind === 'recorded' || kind === 'guesses') && count > 0
+          ? '<button type="button" class="labs-btn-danger labs-btn-xs labs-vg-clear-btn" data-vg-clear-group="' + kind + '">🗑️ Delete All</button>'
+          : '';
       return (
         '<section class="labs-vault-group labs-vault-group-' + kind + '" data-vault-group="' + kind + '">' +
         '  <div class="labs-vault-group-head">' +
@@ -2172,7 +2428,10 @@
         '      <span class="labs-vault-group-title">' + title + '</span>' +
         '      <span class="labs-vault-group-sub">' + subtitle + '</span>' +
         '    </div>' +
-        '    <span class="labs-chip ' + chipClass + '">' + count + '</span>' +
+        '    <div class="labs-vault-group-right">' +
+        clearBtnHtml +
+        '      <span class="labs-chip ' + chipClass + '">' + count + '</span>' +
+        '    </div>' +
         '  </div>' +
         '  <div class="labs-vault-grid">' + cardsHtml + '</div>' +
         '</section>'
@@ -2195,7 +2454,7 @@
         '🎙️ User Recorded Farts',
         'Real farts recorded from Home',
         buckets.recorded.length,
-        buckets.recorded.map(buildVaultCardHtml).join('')
+        buckets.recorded.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
       );
     } else if (filter === 'guesses') {
       if (buckets.guesses.length === 0) {
@@ -2212,7 +2471,7 @@
         '🎤 User Recorded Guesses',
         'Your guess & mimic recordings',
         buckets.guesses.length,
-        buckets.guesses.map(buildVaultGuessCardHtml).join('')
+        buckets.guesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
       );
     } else if (filter === 'defaults') {
       if (buckets.defaults.length === 0) {
@@ -2227,9 +2486,9 @@
         'defaults',
         'labs-chip-blue',
         '📦 Pre-Loaded Default Farts',
-        'Built-in default specimen pack',
+        'Built-in default specimen pack · Always kept',
         buckets.defaults.length,
-        buckets.defaults.map(buildVaultCardHtml).join('')
+        buckets.defaults.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
       );
     } else {
       var sectionsHtml = '';
@@ -2240,7 +2499,7 @@
           '🎙️ User Recorded Farts',
           'Real farts recorded from Home',
           buckets.recorded.length,
-          buckets.recorded.map(buildVaultCardHtml).join('')
+          buckets.recorded.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
         );
       }
       if (buckets.guesses.length > 0) {
@@ -2250,7 +2509,7 @@
           '🎤 User Recorded Guesses',
           'Your guess & mimic recordings',
           buckets.guesses.length,
-          buckets.guesses.map(buildVaultGuessCardHtml).join('')
+          buckets.guesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
         );
       }
       if (buckets.defaults.length > 0) {
@@ -2258,9 +2517,9 @@
           'defaults',
           'labs-chip-blue',
           '📦 Pre-Loaded Default Farts',
-          'Built-in default specimen pack',
+          'Built-in default specimen pack · Always kept',
           buckets.defaults.length,
-          buckets.defaults.map(buildVaultCardHtml).join('')
+          buckets.defaults.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
         );
       }
       grid.innerHTML = sectionsHtml;
@@ -2673,10 +2932,10 @@
 
   function createQuickFireAutoDetector(opts) {
     opts = opts || {};
-    var calibrateSec = typeof opts.calibrateSec === 'number' ? opts.calibrateSec : 0.16;
-    var minSoundMs = typeof opts.minSoundMs === 'number' ? opts.minSoundMs : 130;
-    var trailingSilenceMs = typeof opts.trailingSilenceMs === 'number' ? opts.trailingSilenceMs : 420;
-    var minElapsedSec = typeof opts.minElapsedSec === 'number' ? opts.minElapsedSec : 0.45;
+    var calibrateSec = typeof opts.calibrateSec === 'number' ? opts.calibrateSec : 0.08;
+    var minSoundMs = typeof opts.minSoundMs === 'number' ? opts.minSoundMs : 75;
+    var trailingSilenceMs = typeof opts.trailingSilenceMs === 'number' ? opts.trailingSilenceMs : 200;
+    var minElapsedSec = typeof opts.minElapsedSec === 'number' ? opts.minElapsedSec : 0.22;
 
     var phase = 'calibrating';
     var calSamples = [];
@@ -2711,7 +2970,7 @@
         var shouldStop = false;
 
         if (phase === 'calibrating') {
-          if (el >= 0.07 && r >= 0.055) {
+          if (el >= 0.04 && r >= 0.042) {
             ambientFloor = calSamples.length > 0 ? computeFloorFromSamples(calSamples, 0.008) : 0.008;
             syncThresholds();
             phase = 'capturing';
@@ -2745,7 +3004,7 @@
           }
         } else if (phase === 'capturing' && !detectedNow) {
           if (r > peakRms) peakRms = r;
-          var dynRelease = Math.max(releaseThresh, Math.min(onsetThresh * 0.72, peakRms * 0.22));
+          var dynRelease = Math.max(releaseThresh, peakRms * 0.24);
           if (r >= dynRelease) {
             activeMs += deltaMs;
             quietStreakMs = 0;
@@ -2842,18 +3101,22 @@
     }
   }
 
-  function renderQuickFireDots(activeIdx, recActive) {
+  function renderQuickFireDots(activeIdx, recActive, rawCaptures) {
     var dotsEl = $('qf-progress-dots');
     if (!dotsEl) return;
     var total = state.qfDeck.length || state.qfCount || 5;
     var html = [];
     for (var i = 0; i < total; i++) {
       var res = state.qfResults[i];
+      var raw = rawCaptures && rawCaptures[i];
       var cls = 'labs-qf-dot';
       var lbl = String(i + 1);
       if (res) {
         cls += res.missed ? ' is-missed' : ' is-done';
         lbl = res.missed ? '✕' : Math.round(res.exactScore) + '%';
+      } else if (raw) {
+        cls += raw.missed ? ' is-missed' : ' is-done';
+        lbl = raw.missed ? '✕' : '✓';
       } else if (i === activeIdx) {
         cls += recActive ? ' is-rec' : ' is-active';
       }
@@ -3295,12 +3558,12 @@
           }
           var sr = target.sampleRate || 44100;
           var targetDur = target.samples.length / sr;
-          var recWindowSec = Math.max(4.5, Math.min(8.0, targetDur + 3.8));
+          var recWindowSec = Math.max(3.2, Math.min(6.0, targetDur + 2.4));
           var detector = createQuickFireAutoDetector({
-            calibrateSec: 0.16,
-            minSoundMs: 130,
-            trailingSilenceMs: 420,
-            minElapsedSec: 0.45
+            calibrateSec: 0.08,
+            minSoundMs: 75,
+            trailingSilenceMs: 200,
+            minElapsedSec: 0.22
           });
           return new Promise(function (resolve) {
             var settled = false;
@@ -3315,22 +3578,17 @@
               resolve(res);
             }
 
-            function triggerStop(isAutoCut) {
+            function triggerStop() {
               if (stopRequested || settled) return;
               stopRequested = true;
               TootApp.Audio.stopRecording()
-                .then(function (res) {
-                  if (isAutoCut && !fastMode && res && res.ok && TootLabs.AudioFx && typeof TootLabs.AudioFx.playAutoDetectStopBeep === 'function') {
-                    TootLabs.AudioFx.playAutoDetectStopBeep();
-                  }
-                  done(res);
-                })
+                .then(done)
                 .catch(function () {
                   done({ ok: false, reason: 'stop_failed' });
                 });
             }
 
-            state.qfStopCurrentRec = function () { triggerStop(false); };
+            state.qfStopCurrentRec = triggerStop;
 
             TootApp.Audio.startRecording({
               maxDurationSec: recWindowSec,
@@ -3349,10 +3607,10 @@
                   if (stageBanner) stageBanner.classList.add('is-detected');
                   if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
                   if (badgeEl) badgeEl.textContent = '🟢 FART DETECTED — CAPTURING…';
-                  if (subEl) subEl.textContent = 'Keep going — mic auto-stops & advances once you finish!';
+                  if (subEl) subEl.textContent = 'Keep going — auto-cuts right when you finish!';
                 }
                 if (det.shouldStop) {
-                  triggerStop(true);
+                  triggerStop();
                 }
               },
               onAutoStop: done
@@ -3362,12 +3620,66 @@
           });
         }
 
+        function scoreAllQuickFireCaptures(captures) {
+          var scored = [];
+          for (var c = 0; c < captures.length; c++) {
+            var entry = captures[c];
+            var target = entry.target;
+            var capRes = entry.capRes;
+            if (!target.features || !target.features.spectrogram) {
+              target.features = TootApp.DSP.extractFeatures(target.samples, target.sampleRate || 44100);
+            }
+            if (!capRes || !capRes.ok || !capRes.clippedSamples || capRes.clippedSamples.length === 0) {
+              scored.push({
+                index: entry.index,
+                target: target,
+                guessSound: null,
+                cmpRes: null,
+                exactScore: 0,
+                rank: TootLabs.Store.getRankForScore(0),
+                metrics: null,
+                missed: true
+              });
+            } else {
+              var gSr = capRes.sampleRate || 44100;
+              var gSamples = capRes.clippedSamples;
+              var gFeat = TootApp.DSP.extractFeatures(gSamples, gSr);
+              var guessObj = {
+                id: 'qf_g_' + entry.index + '_' + Date.now(),
+                name: 'Mimic #' + (entry.index + 1),
+                sampleRate: gSr,
+                samples: gSamples,
+                features: gFeat
+              };
+              var cmpRes = TootApp.DSP.compareSounds(target.features, gFeat);
+              var exactScore = TootLabs.Store.computeExactScore(cmpRes);
+              var rRank = TootLabs.Store.getRankForScore(exactScore);
+              var rMetrics = buildComparisonChipMetrics(target, guessObj, cmpRes, { skipAuth: true });
+              scored.push({
+                index: entry.index,
+                target: target,
+                guessSound: guessObj,
+                cmpRes: cmpRes,
+                exactScore: exactScore,
+                rank: rRank,
+                metrics: rMetrics,
+                missed: false
+              });
+            }
+          }
+          state.qfResults = scored;
+          return scored;
+        }
+
+        var rawCaptures = [];
+
         function runRound(idx) {
           if (gen !== state.qfGen || !state.qfActive) return Promise.resolve(state.qfResults);
           if (idx >= readyDeck.length) {
             state.qfActive = false;
             state.qfStopCurrentRec = null;
             if (doneBtn) doneBtn.classList.add('hidden');
+            scoreAllQuickFireCaptures(rawCaptures);
             if (fastMode) {
               state.qfPhase = 'results';
               renderQuickFirePane({ animate: false });
@@ -3398,12 +3710,9 @@
 
           var target = readyDeck[idx];
           state.qfIndex = idx;
-          if (!target.features || !target.features.spectrogram) {
-            target.features = TootApp.DSP.extractFeatures(target.samples, target.sampleRate || 44100);
-          }
 
           if (counterEl) counterEl.textContent = 'FART ' + (idx + 1) + ' OF ' + readyDeck.length;
-          renderQuickFireDots(idx, false);
+          renderQuickFireDots(idx, false, rawCaptures);
           if (stageBanner) {
             stageBanner.classList.remove('is-recording', 'is-detected', 'is-scoring');
             stageBanner.classList.add('is-listening');
@@ -3411,29 +3720,30 @@
           if (phaseWordEl) phaseWordEl.textContent = '🔊 LISTEN';
           if (badgeEl) badgeEl.textContent = 'FART #' + (idx + 1) + ' OF ' + readyDeck.length + ' · AUDIO PLAYING';
           if (titleEl) titleEl.textContent = getSampleName(target);
-          if (subEl) subEl.textContent = 'Hands-free: mic turns ON automatically right after playback';
+          if (subEl) subEl.textContent = 'Hands-free: mic snaps ON right after playback';
           if (timerBar && timerBar.style) timerBar.style.width = '0%';
           if (doneBtn) doneBtn.classList.add('hidden');
 
-          return waitMs(fastMode ? 8 : 420)
+          var preWaitMs = idx === 0 ? (fastMode ? 8 : 220) : 0;
+          return waitMs(preWaitMs)
             .then(function () {
               if (gen !== state.qfGen || !state.qfActive) return null;
               return playTargetForRound(target);
             })
             .then(function () {
               if (gen !== state.qfGen || !state.qfActive) return null;
-              return waitMs(fastMode ? 5 : 180);
+              return waitMs(fastMode ? 5 : 90);
             })
             .then(function () {
               if (gen !== state.qfGen || !state.qfActive) return null;
-              renderQuickFireDots(idx, true);
+              renderQuickFireDots(idx, true, rawCaptures);
               if (stageBanner) {
                 stageBanner.classList.remove('is-listening', 'is-detected', 'is-scoring');
                 stageBanner.classList.add('is-recording');
               }
               if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
               if (badgeEl) badgeEl.textContent = '🔴 MIC ON · AUTO-DETECT ARMED';
-              if (subEl) subEl.textContent = 'Make your fart now — mic auto-stops when done (or tap Next Fart)';
+              if (subEl) subEl.textContent = 'Make your fart now — auto-cuts when done (or tap Next Fart)';
               if (timerBar && timerBar.style) timerBar.style.width = '0%';
               if (doneBtn) doneBtn.classList.remove('hidden');
               return captureMimicForRound(target, idx);
@@ -3443,59 +3753,32 @@
               if (doneBtn) doneBtn.classList.add('hidden');
               state.qfStopCurrentRec = null;
 
+              var missed = !capRes || !capRes.ok || !capRes.clippedSamples || capRes.clippedSamples.length === 0;
+              rawCaptures.push({
+                index: idx,
+                target: target,
+                capRes: capRes,
+                missed: missed
+              });
+
               if (stageBanner) {
                 stageBanner.classList.remove('is-listening', 'is-recording', 'is-detected');
                 stageBanner.classList.add('is-scoring');
               }
               if (timerBar && timerBar.style) timerBar.style.width = '100%';
 
-              if (!capRes || !capRes.ok || !capRes.clippedSamples || capRes.clippedSamples.length === 0) {
-                var zeroRank = TootLabs.Store.getRankForScore(0);
-                state.qfResults.push({
-                  index: idx,
-                  target: target,
-                  guessSound: null,
-                  cmpRes: null,
-                  exactScore: 0,
-                  rank: zeroRank,
-                  metrics: null,
-                  missed: true
-                });
+              if (missed) {
                 if (phaseWordEl) phaseWordEl.textContent = '⚠️ MISSED';
-                if (badgeEl) badgeEl.textContent = 'TOO QUIET · ROUND #' + (idx + 1);
-                if (subEl) subEl.textContent = 'Logged 0% — firing next fart automatically!';
+                if (badgeEl) badgeEl.textContent = 'TOO QUIET · NEXT FART!';
+                if (subEl) subEl.textContent = 'No hangup — firing next specimen!';
               } else {
-                var gSr = capRes.sampleRate || 44100;
-                var gSamples = capRes.clippedSamples;
-                var gFeat = TootApp.DSP.extractFeatures(gSamples, gSr);
-                var guessObj = {
-                  id: 'qf_g_' + idx + '_' + Date.now(),
-                  name: 'Mimic #' + (idx + 1),
-                  sampleRate: gSr,
-                  samples: gSamples,
-                  features: gFeat
-                };
-                var cmpRes = TootApp.DSP.compareSounds(target.features, gFeat);
-                var exactScore = TootLabs.Store.computeExactScore(cmpRes);
-                var rRank = TootLabs.Store.getRankForScore(exactScore);
-                var rMetrics = buildComparisonChipMetrics(target, guessObj, cmpRes);
-                state.qfResults.push({
-                  index: idx,
-                  target: target,
-                  guessSound: guessObj,
-                  cmpRes: cmpRes,
-                  exactScore: exactScore,
-                  rank: rRank,
-                  metrics: rMetrics,
-                  missed: false
-                });
-                if (phaseWordEl) phaseWordEl.textContent = '✓ LOCKED!';
-                if (badgeEl) badgeEl.textContent = 'ROUND #' + (idx + 1) + ' · ' + exactScore.toFixed(1) + '%';
-                if (subEl) subEl.textContent = (rRank.title || rRank.name || 'Scored') + ' — firing next fart!';
+                if (phaseWordEl) phaseWordEl.textContent = '⚡ NEXT!';
+                if (badgeEl) badgeEl.textContent = 'CAPTURED #' + (idx + 1) + ' · KEEP ROLLING!';
+                if (subEl) subEl.textContent = idx + 1 >= readyDeck.length ? 'Calculating gauntlet results…' : 'Firing next fart immediately!';
               }
 
-              renderQuickFireDots(idx + 1, false);
-              return waitMs(fastMode ? 8 : 550).then(function () {
+              renderQuickFireDots(idx + 1, false, rawCaptures);
+              return waitMs(fastMode ? 8 : 140).then(function () {
                 return runRound(idx + 1);
               });
             });
@@ -4421,8 +4704,8 @@
     return entry;
   }
 
-  function buildComparisonChipMetrics(targetSound, attemptSound, res) {
-    var Forensics = root.TootApp && root.TootApp.Forensics;
+  function buildComparisonChipMetrics(targetSound, attemptSound, res, opts) {
+    opts = opts || {};
     var fA = targetSound.features || TootApp.DSP.extractFeatures(targetSound.samples, targetSound.sampleRate);
     var fB = attemptSound.features || TootApp.DSP.extractFeatures(attemptSound.samples, attemptSound.sampleRate);
     var bpA = fA.bandProfile || [0.25, 0.25, 0.25, 0.25];
@@ -4436,8 +4719,9 @@
     var mlSim = Math.round(Math.max(0, Math.min(100, (tBd.mfccMeanScore || 0.5) * 34 + (tBd.mfccMacroScore || 0.5) * 28 + (tBd.gridCorr || 0.5) * 20 + (oBd.coreIdentity || 0.5) * 18)));
     var eBd = (res.breakdown && res.breakdown.envelope) || {};
     var timingScore = Math.round(Math.max(0, Math.min(100, (eBd.lagScore || res.envelopeScore || 50) * (eBd.lagScore <= 1 ? 100 : 1))));
-    var authA = TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(targetSound) : null;
-    var authB = TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(attemptSound) : null;
+    var skipAuth = Boolean(opts.skipAuth);
+    var authA = !skipAuth && TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(targetSound) : null;
+    var authB = !skipAuth && TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeAuthenticityAnalysis === 'function' ? TootLabs.Fartnalysis.computeAuthenticityAnalysis(attemptSound) : null;
     return {
       overall: Math.round(TootLabs.Store.computeExactScore(res)),
       timing: timingScore,
@@ -5713,19 +5997,93 @@
     });
 
     $('btn-labs-delete-cancel').addEventListener('click', function () {
+      state.deleteModalAction = null;
       deleteModal.classList.add('hidden');
     });
 
     $('btn-labs-delete-confirm').addEventListener('click', function () {
-      var delId = state.detailSampleId;
-      if (!delId) {
-        deleteModal.classList.add('hidden');
+      var action = state.deleteModalAction;
+      state.deleteModalAction = null;
+      if (action && action.kind === 'vault_bulk') {
+        var sampleIds = (action.sampleIds || []).slice();
+        var attemptIds = (action.attemptIds || []).slice();
+        var sampleSet = {};
+        sampleIds.forEach(function (id) { sampleSet[id] = true; });
+        var attemptSet = {};
+        attemptIds.forEach(function (id) { attemptSet[id] = true; });
+        var standaloneAttemptIds = attemptIds.filter(function (aid) {
+          var att = findAttemptInCacheById(aid);
+          return att && !sampleSet[att.sampleId];
+        });
+
+        Promise.resolve()
+          .then(function () {
+            return sampleIds.length > 0 ? TootLabs.Store.deleteSamplesBatch(sampleIds, state.samples) : true;
+          })
+          .then(function () {
+            return standaloneAttemptIds.length > 0 ? TootLabs.Store.deleteAttemptsBatch(standaloneAttemptIds) : true;
+          })
+          .then(function () {
+            deleteModal.classList.add('hidden');
+            state.samples = state.samples.filter(function (s) {
+              return s && (s.isBuiltIn || !sampleSet[s.id]);
+            });
+            state.allAttemptsCache = (state.allAttemptsCache || []).filter(function (a) {
+              return a && !attemptSet[a.id] && !sampleSet[a.sampleId];
+            });
+            sampleIds.forEach(function (id) { delete state.vaultSelectedSamples[id]; });
+            attemptIds.forEach(function (id) { delete state.vaultSelectedGuesses[id]; });
+            if (sampleSet[state.guessTargetId]) {
+              state.guessTargetId = state.samples[0] ? state.samples[0].id : null;
+              state.guessAttempts = [];
+              state.pendingGuess = null;
+            }
+            if (sampleSet[state.fnSampleId]) {
+              state.fnSampleId = state.samples[0] ? state.samples[0].id : null;
+              state.fnAttempts = [];
+              state.fnAttemptId = null;
+            } else {
+              state.fnAttempts = (state.fnAttempts || []).filter(function (a) { return a && !attemptSet[a.id]; });
+              if (attemptSet[state.fnAttemptId]) {
+                var sortedLeft = sortAttemptsByScore(state.fnAttempts);
+                state.fnAttemptId = sortedLeft[0] ? sortedLeft[0].id : null;
+              }
+            }
+            if (sampleSet[state.detailSampleId]) {
+              state.detailSampleId = null;
+              state.detailAttempts = [];
+              if (state.view === 'detail') showView('vault');
+            }
+            renderHomeView();
+            renderVaultView();
+            if (state.view === 'fartnalysis') renderFartnalysisView();
+            if (state.view === 'guess') renderGuessView();
+            var parts = [];
+            if (sampleIds.length > 0) parts.push(sampleIds.length + ' recording' + (sampleIds.length === 1 ? '' : 's'));
+            if (standaloneAttemptIds.length > 0) parts.push(standaloneAttemptIds.length + ' guess' + (standaloneAttemptIds.length === 1 ? '' : 'es'));
+            showToast(parts.length > 0 ? 'Deleted ' + parts.join(' & ') + ' from Vault' : 'Updated Vault');
+          });
         return;
       }
-      TootLabs.Store.deleteSample(delId).then(function () {
+
+      var delId = (action && action.sampleId) || state.detailSampleId;
+      var targetSample = getSampleById(delId);
+      if (!delId || (targetSample && targetSample.isBuiltIn)) {
         deleteModal.classList.add('hidden');
+        if (targetSample && targetSample.isBuiltIn) {
+          showToast('Built-in Default Farts always stay in your Vault.');
+        }
+        return;
+      }
+      TootLabs.Store.deleteSample(delId, state.samples).then(function (ok) {
+        deleteModal.classList.add('hidden');
+        if (!ok) {
+          showToast('Built-in Default Farts always stay in your Vault.');
+          return;
+        }
         state.samples = state.samples.filter(function (s) { return s.id !== delId; });
         state.allAttemptsCache = (state.allAttemptsCache || []).filter(function (a) { return a && a.sampleId !== delId; });
+        delete state.vaultSelectedSamples[delId];
         if (state.guessTargetId === delId) {
           state.guessTargetId = state.samples[0] ? state.samples[0].id : null;
           state.guessAttempts = [];
@@ -5911,13 +6269,32 @@
       });
     });
 
-    // Vault View Buttons, Filter & Airlock Door (Recording Driven From Home Only)
+    // Vault View Buttons, Filter, Selection & Airlock Door (Recording Driven From Home Only)
     var vaultFilterBar = $('vault-filter-bar');
     if (vaultFilterBar) {
       vaultFilterBar.querySelectorAll('[data-vault-filter]').forEach(function (fb) {
         fb.addEventListener('click', function () {
           setVaultFilter(this.getAttribute('data-vault-filter') || 'all');
         });
+      });
+    }
+    if ($('btn-vault-select')) {
+      $('btn-vault-select').addEventListener('click', function () {
+        setVaultSelectMode(!state.vaultSelectMode);
+      });
+    }
+    if ($('btn-vault-select-all')) {
+      $('btn-vault-select-all').addEventListener('click', selectAllVisibleVaultItems);
+    }
+    if ($('btn-vault-delete-selected')) {
+      $('btn-vault-delete-selected').addEventListener('click', function () {
+        var sel = getSelectedVaultIds();
+        promptVaultDelete(sel.sampleIds, sel.attemptIds);
+      });
+    }
+    if ($('btn-vault-select-done')) {
+      $('btn-vault-select-done').addEventListener('click', function () {
+        setVaultSelectMode(false);
       });
     }
     $('btn-vault-megamix').addEventListener('click', function () {
@@ -5989,7 +6366,9 @@
     });
     $('btn-detail-delete').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
-      if (!sample) return;
+      if (!sample || sample.isBuiltIn) return;
+      state.deleteModalAction = { kind: 'single_sample', sampleId: sample.id };
+      if ($('labs-delete-heading')) $('labs-delete-heading').textContent = 'Delete Fart?';
       $('labs-delete-copy').textContent = 'Permanently delete "' + getSampleName(sample) + '" and all guesses against it?';
       $('labs-delete-modal').classList.remove('hidden');
     });
@@ -6534,6 +6913,10 @@
     openFartnalysis: openFartnalysis,
     getVaultBuckets: getVaultBuckets,
     setVaultFilter: setVaultFilter,
+    setVaultSelectMode: setVaultSelectMode,
+    toggleVaultSelection: toggleVaultSelection,
+    selectAllVisibleVaultItems: selectAllVisibleVaultItems,
+    promptVaultDelete: promptVaultDelete,
     getMegamixSourceBucket: getMegamixSourceBucket,
     setGroupSource: setGroupSource,
     setRecordMode: setRecordMode,

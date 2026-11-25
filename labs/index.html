@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124k" />
-  <script defer src="../js/dsp.js?v=20261124k"></script>
-  <script defer src="../js/audioEngine.js?v=20261124k"></script>
-  <script defer src="../js/storage.js?v=20261124k"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124k"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124k"></script>
-  <script defer src="js/labsStore.js?v=20261124k"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124k"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124k"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124k"></script>
-  <script defer src="js/labsApp.js?v=20261124k"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124l" />
+  <script defer src="../js/dsp.js?v=20261124l"></script>
+  <script defer src="../js/audioEngine.js?v=20261124l"></script>
+  <script defer src="../js/storage.js?v=20261124l"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124l"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124l"></script>
+  <script defer src="js/labsStore.js?v=20261124l"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124l"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124l"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124l"></script>
+  <script defer src="js/labsApp.js?v=20261124l"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -183,6 +183,7 @@
             <h2 class="labs-section-heading">Your Fart Vault</h2>
           </div>
           <div class="labs-vault-top-btns">
+            <button type="button" id="btn-vault-select" class="labs-btn-ghost labs-btn-sm">☑️ Select</button>
             <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
             <button type="button" id="btn-vault-reseal" class="labs-btn-ghost labs-btn-sm" title="Close and re-open Vault airlock">🔒 Re-Seal</button>
           </div>
@@ -193,6 +194,18 @@
           <button type="button" class="labs-format-btn" data-vault-filter="recorded">🎙️ Recorded Farts (0)</button>
           <button type="button" class="labs-format-btn" data-vault-filter="guesses">🎤 Recorded Guesses (0)</button>
           <button type="button" class="labs-format-btn" data-vault-filter="defaults">📦 Default Farts (0)</button>
+        </div>
+
+        <div id="vault-bulk-bar" class="labs-glass-card labs-vault-bulk-bar hidden" aria-label="Vault Selection Actions">
+          <div class="labs-vault-bulk-info">
+            <span id="vault-select-count" class="labs-vault-sel-count">0 selected</span>
+            <span class="labs-vault-sel-note">Default Farts always stay in Vault</span>
+          </div>
+          <div class="labs-vault-bulk-actions">
+            <button type="button" id="btn-vault-select-all" class="labs-btn-ghost labs-btn-xs">☑️ Select All</button>
+            <button type="button" id="btn-vault-delete-selected" class="labs-btn-danger labs-btn-xs" disabled>🗑️ Delete (0)</button>
+            <button type="button" id="btn-vault-select-done" class="labs-btn-ghost labs-btn-xs">✕ Done</button>
+          </div>
         </div>
 
         <div id="vault-chamber" class="labs-vault-chamber">
@@ -614,11 +627,11 @@
 
             <div id="qf-briefing-box" class="labs-qf-briefing">
               <div class="labs-eyebrow">DR. TURBULENCE'S RAPID-GAUNTLET PROTOCOL · 100% AUTOMATIC</div>
-              <p class="labs-qf-briefing-copy">No button juggling mid-toot! A.S.S. v4.2 plays each specimen, automatically opens your mic, locks onto your sonic recreation, shuts the mic OFF when you finish, and fires the next fart — all hands-free until the grand laboratory tally.</p>
+              <p class="labs-qf-briefing-copy">Hardly a breath between rounds! A.S.S. v4.2 blasts each specimen, snaps open your mic, locks onto your mimicry, cuts off the instant you finish, and fires the next fart nonstop until the grand tally.</p>
               <div class="labs-qf-flow-steps">
                 <div class="labs-qf-flow-pill is-listen"><strong>1. 🔊 LISTEN</strong><span>Specimen plays automatically</span></div>
                 <div class="labs-qf-flow-pill is-guess"><strong>2. 🎤 GUESS!</strong><span>Mic opens ON its own</span></div>
-                <div class="labs-qf-flow-pill is-auto"><strong>3. 🟢 AUTO-NEXT</strong><span>Mic closes &amp; advances!</span></div>
+                <div class="labs-qf-flow-pill is-auto"><strong>3. ⚡ INSTANT NEXT</strong><span>Auto-cutoff &amp; next fart!</span></div>
               </div>
               <div class="labs-qf-briefing-tip">
                 <span>🛠️ <strong>Manual Override:</strong> Noisy room or auto-detect didn't trip? Tap <strong>⏭ Next Fart</strong> anytime during <strong>GUESS</strong> to advance manually.</span>

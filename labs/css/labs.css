@@ -6309,6 +6309,115 @@ select {
   color: #94A3B8;
 }
 
+/* Vault Select Mode, Bulk Delete Bar & Always-Kept Defaults */
+#btn-vault-select.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: rgba(56, 189, 248, 0.65);
+  color: #E0F2FE;
+}
+
+.labs-vault-bulk-bar {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.92));
+}
+
+.labs-vault-bulk-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.labs-vault-sel-count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #E0F2FE;
+}
+
+.labs-vault-sel-note {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #93C5FD;
+}
+
+.labs-vault-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.labs-vault-group-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.labs-vg-clear-btn {
+  white-space: nowrap;
+}
+
+.labs-vault-card.is-selectable {
+  cursor: pointer;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.labs-vault-card.is-selected {
+  border-color: #38BDF8;
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.16), rgba(15, 23, 42, 0.92));
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.45), 0 8px 22px rgba(2, 6, 23, 0.45);
+}
+
+.labs-vault-card.is-locked-default {
+  opacity: 0.76;
+  cursor: not-allowed;
+}
+
+.labs-vc-top-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.labs-vc-select-check {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 7px;
+  border: 1.5px solid rgba(148, 163, 184, 0.55);
+  background: rgba(15, 23, 42, 0.85);
+  color: transparent;
+  font-size: 0.76rem;
+  font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.labs-vault-card.is-selected .labs-vc-select-check {
+  background: #38BDF8;
+  border-color: #7DD3FC;
+  color: #082F49;
+}
+
+.labs-vc-lock-tag {
+  font-size: 0.62rem;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
 .labs-group-filter-bar {
   padding: 10px 12px;
   margin-bottom: 12px;

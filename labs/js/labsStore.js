@@ -716,6 +716,91 @@
       });
   }
 
+  function reconcileMetaFromAttempts(attemptsList) {
+    var meta = loadMeta();
+    var remaining = Array.isArray(attemptsList) ? attemptsList : [];
+    var sum = 0;
+    var bySample = {};
+    for (var i = 0; i < remaining.length; i++) {
+      var att = remaining[i];
+      if (!att) continue;
+      var sc = typeof att.exactScore === 'number' && Number.isFinite(att.exactScore) ? att.exactScore : 0;
+      sum += sc;
+      if (att.sampleId) {
+        if (!bySample[att.sampleId]) bySample[att.sampleId] = [];
+        bySample[att.sampleId].push(att);
+      }
+    }
+    meta.totalChallenges = remaining.length;
+    meta.scoreSum = Math.round(sum * 10) / 10;
+
+    var sKeys = Object.keys(meta.samples || {});
+    for (var k = 0; k < sKeys.length; k++) {
+      var sid = sKeys[k];
+      var rec = meta.samples[sid];
+      if (!rec) continue;
+      var list = bySample[sid] || [];
+      list.sort(function (a, b) {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+      rec.attemptCount = list.length;
+      if (list.length === 0) {
+        rec.bestScore = 0;
+        rec.latestScore = null;
+        rec.previousScore = null;
+        rec.lastAttemptAt = null;
+      } else {
+        var best = 0;
+        for (var j = 0; j < list.length; j++) {
+          var val = typeof list[j].exactScore === 'number' ? list[j].exactScore : 0;
+          if (val > best) best = val;
+        }
+        rec.bestScore = best;
+        rec.latestScore = typeof list[0].exactScore === 'number' ? list[0].exactScore : null;
+        rec.previousScore = list.length >= 2 && typeof list[1].exactScore === 'number' ? list[1].exactScore : null;
+        rec.lastAttemptAt = list[0].createdAt || null;
+      }
+    }
+    persistMeta();
+    return meta;
+  }
+
+  function deleteAttemptsBatch(attemptIds) {
+    var ids = (Array.isArray(attemptIds) ? attemptIds : [attemptIds]).filter(Boolean);
+    if (ids.length === 0) return Promise.resolve(true);
+    ids.forEach(function (id) {
+      memoryAttempts.delete(id);
+    });
+    var dbDeleteP = openAttemptsDB()
+      .then(function (db) {
+        return new Promise(function (resolve) {
+          var tx = db.transaction(ATTEMPTS_STORE, 'readwrite');
+          var store = tx.objectStore(ATTEMPTS_STORE);
+          ids.forEach(function (id) {
+            store.delete(id);
+          });
+          tx.oncomplete = function () { resolve(true); };
+          tx.onerror = function () { resolve(true); };
+        });
+      })
+      .catch(function () {
+        return true;
+      });
+    return dbDeleteP
+      .then(function () { return loadAllAttempts(); })
+      .then(function (remaining) {
+        reconcileMetaFromAttempts(remaining);
+        return true;
+      })
+      .catch(function () {
+        return true;
+      });
+  }
+
+  function deleteAttempt(attemptId) {
+    return deleteAttemptsBatch(attemptId ? [attemptId] : []);
+  }
+
   function loadAllAttempts() {
     return openAttemptsDB()
       .then(function (db) {
@@ -1012,19 +1097,63 @@
     });
   }
 
-  function deleteSample(sampleId) {
+  function isProtectedBuiltInId(sampleId, samplesList) {
+    if (!sampleId) return true;
+    var str = String(sampleId);
+    if (str.indexOf('preload_') === 0) return true;
+    if (Array.isArray(samplesList)) {
+      for (var i = 0; i < samplesList.length; i++) {
+        if (samplesList[i] && samplesList[i].id === str && samplesList[i].isBuiltIn) {
+          return true;
+        }
+      }
+    }
+    if (Array.isArray(preloadCatalogCache)) {
+      for (var j = 0; j < preloadCatalogCache.length; j++) {
+        if (preloadCatalogCache[j] && preloadCatalogCache[j].id === str) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function deleteSamplesBatch(sampleIds, samplesList) {
+    var ids = (Array.isArray(sampleIds) ? sampleIds : [sampleIds])
+      .filter(Boolean)
+      .filter(function (id) { return !isProtectedBuiltInId(id, samplesList); });
+    if (ids.length === 0) return Promise.resolve(false);
+
     var storage = root.TootApp && root.TootApp.Storage;
     var meta = loadMeta();
-    if (meta.samples[sampleId]) {
-      delete meta.samples[sampleId];
-      persistMeta();
-    }
-    return Promise.all([
-      storage ? storage.deleteCustomSound(sampleId) : Promise.resolve(true),
-      deleteAttemptsForSample(sampleId)
-    ]).then(function () {
-      return true;
+    var ops = [];
+    ids.forEach(function (sampleId) {
+      if (meta.samples[sampleId]) {
+        delete meta.samples[sampleId];
+      }
+      if (storage && typeof storage.deleteCustomSound === 'function') {
+        ops.push(storage.deleteCustomSound(sampleId));
+      }
+      ops.push(deleteAttemptsForSample(sampleId));
     });
+    persistMeta();
+
+    return Promise.all(ops)
+      .then(function () { return loadAllAttempts(); })
+      .then(function (remaining) {
+        reconcileMetaFromAttempts(remaining);
+        return true;
+      })
+      .catch(function () {
+        return true;
+      });
+  }
+
+  function deleteSample(sampleId, samplesList) {
+    if (isProtectedBuiltInId(sampleId, samplesList)) {
+      return Promise.resolve(false);
+    }
+    return deleteSamplesBatch([sampleId], samplesList);
   }
 
   function recordChallengeResult(soundA, attemptSound, result, opts) {
@@ -1515,6 +1644,9 @@
     saveNewSpecimen: saveNewSpecimen,
     renameSample: renameSample,
     deleteSample: deleteSample,
+    deleteSamplesBatch: deleteSamplesBatch,
+    deleteAttempt: deleteAttempt,
+    deleteAttemptsBatch: deleteAttemptsBatch,
     recordChallengeResult: recordChallengeResult,
     renameAttempt: renameAttempt,
     composeMultiFartTrack: composeMultiFartTrack,
