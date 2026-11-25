@@ -107,7 +107,7 @@
     activeRecStopper: null,
     activeRecCanceller: null,
     recordingKind: null,
-    recordMode: 'auto',
+    recordMode: 'manual',
     inlineSpecA: null,
     inlineSpecB: null,
     revealSpecA: null,
@@ -3290,7 +3290,10 @@
     var calibrateSec = typeof opts.calibrateSec === 'number' ? opts.calibrateSec : 0.08;
     var minSoundMs = typeof opts.minSoundMs === 'number' ? opts.minSoundMs : 75;
     var trailingSilenceMs = typeof opts.trailingSilenceMs === 'number' ? opts.trailingSilenceMs : 200;
+    var interBurstSilenceMs = typeof opts.interBurstSilenceMs === 'number' ? opts.interBurstSilenceMs : 380;
+    var expectedBursts = Math.max(1, parseInt(opts.expectedBursts, 10) || 1);
     var minElapsedSec = typeof opts.minElapsedSec === 'number' ? opts.minElapsedSec : 0.22;
+    var releasePeakRatio = typeof opts.releasePeakRatio === 'number' ? opts.releasePeakRatio : 0.30;
 
     var phase = 'calibrating';
     var calSamples = [];
@@ -3298,6 +3301,7 @@
     var onsetThresh = 0.020;
     var releaseThresh = 0.012;
     var onsetFrames = 0;
+    var burstsDetected = 0;
     var peakRms = 0;
     var activeMs = 0;
     var quietStreakMs = 0;
@@ -3330,6 +3334,7 @@
             syncThresholds();
             phase = 'capturing';
             detectedNow = true;
+            burstsDetected = 1;
             peakRms = r;
             activeMs = deltaMs;
             quietStreakMs = 0;
@@ -3348,6 +3353,7 @@
             if (onsetFrames >= 2 || r >= onsetThresh * 1.8) {
               phase = 'capturing';
               detectedNow = true;
+              burstsDetected = 1;
               peakRms = r;
               activeMs += deltaMs;
               quietStreakMs = 0;
@@ -3359,14 +3365,18 @@
           }
         } else if (phase === 'capturing' && !detectedNow) {
           if (r > peakRms) peakRms = r;
-          var dynRelease = Math.max(releaseThresh, peakRms * 0.24);
+          var dynRelease = Math.max(releaseThresh, peakRms * releasePeakRatio);
           if (r >= dynRelease) {
+            if (quietStreakMs >= 55 && r >= onsetThresh) {
+              burstsDetected++;
+            }
             activeMs += deltaMs;
             quietStreakMs = 0;
           } else {
             quietStreakMs += deltaMs;
           }
-          if (activeMs >= minSoundMs && quietStreakMs >= trailingSilenceMs && el >= minElapsedSec) {
+          var effectiveSilenceMs = burstsDetected < expectedBursts ? interBurstSilenceMs : trailingSilenceMs;
+          if (activeMs >= minSoundMs && quietStreakMs >= effectiveSilenceMs && el >= minElapsedSec) {
             phase = 'stopped';
             shouldStop = true;
           }
@@ -3645,10 +3655,10 @@
         btn.addEventListener('click', function () {
           var r = state.qfResults[parseInt(this.getAttribute('data-qf-play-both'), 10)];
           if (r && r.target && r.target.samples && r.guessSound && r.guessSound.samples && TootApp.Audio.playSimultaneous) {
-            TootApp.Audio.playSimultaneous(
+            TootApp.Audio.playSimultaneous([
               { samples: r.target.samples, sampleRate: r.target.sampleRate || 44100, channel: 'qf_a' },
               { samples: r.guessSound.samples, sampleRate: r.guessSound.sampleRate || 44100, channel: 'qf_b' }
-            );
+            ]);
           }
         });
       });
@@ -3914,11 +3924,16 @@
           var sr = target.sampleRate || 44100;
           var targetDur = target.samples.length / sr;
           var recWindowSec = Math.max(3.2, Math.min(6.0, targetDur + 2.4));
+          var tFeat = target.features || (TootApp.DSP && TootApp.DSP.extractFeatures(target.samples, sr));
+          var expectedBursts = Math.max(1, Math.min(4, (tFeat && tFeat.burstCount) || 1));
           var detector = createQuickFireAutoDetector({
-            calibrateSec: 0.08,
-            minSoundMs: 75,
-            trailingSilenceMs: 200,
-            minElapsedSec: 0.22
+            calibrateSec: 0.06,
+            minSoundMs: 65,
+            trailingSilenceMs: 110,
+            interBurstSilenceMs: expectedBursts >= 2 ? 380 : 110,
+            expectedBursts: expectedBursts,
+            minElapsedSec: 0.16,
+            releasePeakRatio: 0.30
           });
           return new Promise(function (resolve) {
             var settled = false;
@@ -4088,7 +4103,7 @@
             })
             .then(function () {
               if (gen !== state.qfGen || !state.qfActive) return null;
-              return waitMs(fastMode ? 5 : 90);
+              return waitMs(fastMode ? 5 : 40);
             })
             .then(function () {
               if (gen !== state.qfGen || !state.qfActive) return null;
@@ -4134,7 +4149,7 @@
               }
 
               renderQuickFireDots(idx + 1, false, rawCaptures);
-              return waitMs(fastMode ? 8 : 140).then(function () {
+              return waitMs(fastMode ? 8 : 35).then(function () {
                 return runRound(idx + 1);
               });
             });

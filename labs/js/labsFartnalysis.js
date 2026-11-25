@@ -5237,7 +5237,6 @@
         '  <div class="labs-chart-hotspots">' + hotspotButtonsHtml + '</div>' +
         '  <canvas class="labs-2d-canvas" id="' + uid + key + '"></canvas>' +
         '  <div class="labs-chart-readout" id="' + uid + key + '_readout">' + esc(cm.defaultReadout) + '</div>' +
-        '  <div class="labs-chart-story-box" id="' + uid + key + '_story">' + renderChartStoryInner(activeDesc, cm.scientistId) + '</div>' +
         '  <div class="labs-chart-card-actions">' +
         '    <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-chart-view-details-btn" data-view-chart="' + esc(key) + '">🔍 Laboratory Notes</button>' +
         '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-chart-drill-btn" data-drill="' + esc(key) + '" aria-expanded="false">🔬 Archive Comparison &amp; Archive Notes</button>' +
@@ -5310,12 +5309,19 @@
       rowsHtml +
       '    </div>' +
       '    <hr class="labs-analysis-divider" />' +
-      '    <div class="labs-eyebrow">INTERACTIVE SPECTRAL &amp; TEMPORAL PLOTS (SELECT ANY BAR, POINT, OR MARKER)</div>' +
-      '    <div class="labs-single-charts-grid">' +
+      '    <div class="labs-sub-disclosure labs-bottom-charts-disclosure">' +
+      '      <button type="button" class="labs-sub-disclosure-btn" aria-expanded="false">' +
+      '        <span>📈 Interactive Spectral &amp; Temporal Plots (4)</span>' +
+      '        <span class="labs-disclosure-chev" aria-hidden="true">▸</span>' +
+      '      </button>' +
+      '      <div class="labs-sub-disclosure-body hidden">' +
+      '        <div class="labs-single-charts-grid">' +
       renderFinalChartCardHtml('c_spec', 'Spectral Distribution Map (40-Band FFT)', 'Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz') +
       renderFinalChartCardHtml('c_pitch', 'Primary Resonance Profile', '32-frame F0 tracker') +
       renderFinalChartCardHtml('c_mod', 'Airflow Modulation FFT (4–45 Hz)', 'Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%') +
       renderFinalChartCardHtml('c_env', 'Pressure Release Envelope', 'Attack / T50 / Decay') +
+      '        </div>' +
+      '      </div>' +
       '    </div>' +
       '  </section>' +
       renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single') +
@@ -5323,6 +5329,19 @@
       '</div>';
 
     wireArchiveToggles(mountEl);
+    wireSubDisclosures(mountEl);
+    var bottomChartsBtn = mountEl.querySelector('.labs-bottom-charts-disclosure .labs-sub-disclosure-btn');
+    if (bottomChartsBtn) {
+      bottomChartsBtn.addEventListener('click', function () {
+        if (this.getAttribute('aria-expanded') === 'true') {
+          if (typeof root.requestAnimationFrame === 'function') {
+            root.requestAnimationFrame(drawAllSingleCharts);
+          } else {
+            drawAllSingleCharts();
+          }
+        }
+      });
+    }
 
     function redrawExpandedSingle() {
       if (!activeDialId || !activeSlotEl) return;
@@ -5502,7 +5521,6 @@
     ['c_spec', 'c_pitch', 'c_mod', 'c_env'].forEach(function (chartKey) {
       var cvs = mountEl.querySelector('#' + uid + chartKey);
       var readEl = mountEl.querySelector('#' + uid + chartKey + '_readout');
-      var storyEl = mountEl.querySelector('#' + uid + chartKey + '_story');
       var cm = chartMeta[chartKey];
       if (!cvs || !cm) return;
 
@@ -5515,7 +5533,6 @@
         var desc = cm.describeAtNorm(norm);
         activeRanges[chartKey] = desc ? [desc.spanLo, desc.spanHi] : null;
         if (readEl) readEl.textContent = cm.sampleAtNorm(norm);
-        if (storyEl && desc) storyEl.innerHTML = renderChartStoryInner(desc, cm.scientistId);
         var cardPills = mountEl.querySelectorAll('.labs-hotspot-pill[data-chart-key="' + chartKey + '"]');
         for (var pi2 = 0; pi2 < cardPills.length; pi2++) cardPills[pi2].classList.remove('active');
         drawFinalPlotByKey(chartKey);
@@ -5552,9 +5569,7 @@
           siblings[si].classList.toggle('active', siblings[si].getAttribute('data-hs-id') === hid);
         }
         var readEl = mountEl.querySelector('#' + uid + ck + '_readout');
-        var storyEl = mountEl.querySelector('#' + uid + ck + '_story');
         if (readEl) readEl.textContent = cm.sampleAtNorm(matched.norm);
-        if (storyEl) storyEl.innerHTML = renderChartStoryInner(matched, cm.scientistId);
         drawFinalPlotByKey(ck);
       });
     }
@@ -6012,18 +6027,24 @@
       rowsHtml +
       '    </div>' +
       '    <hr class="labs-analysis-divider" />' +
-      '    <div class="labs-single-charts-grid">' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Archive Specimen Constellation (Pitch × Turbulence)</span><small>Tap node to inspect specimen</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
-      '        <div class="labs-chart-live-bar" id="' + uid + 'c_map_live">Select any constellation node to inspect specimen telemetry.</div>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Observation:</strong> Constellation spans ' + (g.segments || []).length + ' cataloged archive specimens — Dr. Pufferton verified full structural indexing. <em>(Dr. Pufferton)</em></span></div>' +
-      '      </div>' +
-      '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Spectral Distribution Map (Combined 40-Band FFT)</span><small>Tap band to inspect energy</small></div>' +
-      '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
-      '        <div class="labs-chart-live-bar" id="' + uid + 'c_spec_live">Tap or drag across spectrum bars to inspect frequency energy.</div>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid exhibits unusual modal discipline across all constituent emissions. <em>(Dr. Wobble)</em></span></div>' +
+      '    <div class="labs-sub-disclosure labs-bottom-charts-disclosure">' +
+      '      <button type="button" class="labs-sub-disclosure-btn" aria-expanded="false">' +
+      '        <span>📈 Interactive Ensemble Plots (2)</span>' +
+      '        <span class="labs-disclosure-chev" aria-hidden="true">▸</span>' +
+      '      </button>' +
+      '      <div class="labs-sub-disclosure-body hidden">' +
+      '        <div class="labs-single-charts-grid">' +
+      '          <div class="labs-chart-box-inner">' +
+      '            <div class="labs-chart-box-head"><span>Archive Specimen Constellation (Pitch × Turbulence)</span><small>Tap node to inspect specimen</small></div>' +
+      '            <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
+      '            <div class="labs-chart-live-bar" id="' + uid + 'c_map_live">Select any constellation node to inspect specimen telemetry.</div>' +
+      '          </div>' +
+      '          <div class="labs-chart-box-inner">' +
+      '            <div class="labs-chart-box-head"><span>Spectral Distribution Map (Combined 40-Band FFT)</span><small>Tap band to inspect energy</small></div>' +
+      '            <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '            <div class="labs-chart-live-bar" id="' + uid + 'c_spec_live">Tap or drag across spectrum bars to inspect frequency energy.</div>' +
+      '          </div>' +
+      '        </div>' +
       '      </div>' +
       '    </div>' +
       '  </section>' +
@@ -6032,6 +6053,19 @@
       '</div>';
 
     wireArchiveToggles(mountEl);
+    wireSubDisclosures(mountEl);
+    var grpBottomChartsBtn = mountEl.querySelector('.labs-bottom-charts-disclosure .labs-sub-disclosure-btn');
+    if (grpBottomChartsBtn) {
+      grpBottomChartsBtn.addEventListener('click', function () {
+        if (this.getAttribute('aria-expanded') === 'true') {
+          if (typeof root.requestAnimationFrame === 'function') {
+            root.requestAnimationFrame(drawGroupVisuals);
+          } else {
+            drawGroupVisuals();
+          }
+        }
+      });
+    }
 
     var grpMapSelIdx = null;
     var grpSpecHover = null;
