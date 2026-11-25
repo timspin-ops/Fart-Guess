@@ -944,7 +944,20 @@
     ctx.restore();
   }
 
-  function drawChart(canvas, drawType, soundA, soundB, result) {
+  function computeCmpWitnessPerception(distM, radiusM, panicPct, feat) {
+    var d = clamp(safeNum(distM, 2.2), 0.3, 14.0);
+    var rNom = clamp(safeNum(radiusM, 4.5), 1.8, 14.0);
+    var crest = safeNum(feat && feat.crestFactorDb, 8);
+    var baseDb = clamp(54 + (panicPct || 45) * 0.28 + Math.max(0, crest - 6) * 1.1, 50, 86);
+    var dropoff = 20 * Math.log10(Math.max(0.5, d) / 0.5) * 0.78;
+    var estDb = Math.round(clamp(baseDb - dropoff, 22, 86));
+    var audPct = Math.round(clamp(100 * Math.exp(-Math.pow(d / Math.max(2.0, rNom * 0.95), 1.45)), 5, 100));
+    var lowpassHz = Math.round(clamp(4200 * Math.exp(-0.22 * Math.max(0, d - 0.6)), 260, 4200));
+    var gain = Number(clamp(Math.pow(audPct / 100, 0.72) * 0.96, 0.05, 0.98).toFixed(3));
+    return { distM: Number(d.toFixed(2)), estDb: estDb, audibilityPct: audPct, lowpassHz: lowpassHz, gain: gain };
+  }
+
+  function drawChart(canvas, drawType, soundA, soundB, result, interactState) {
     var setup = setupCanvas(canvas);
     var ctx = setup.ctx;
     var w = setup.w;
@@ -952,6 +965,8 @@
     var fA = soundA.features;
     var fB = soundB.features;
     var bd = (result && result.breakdown) || {};
+
+    function paintCore() {
 
     if (drawType === 'radar') {
       var axes = [
@@ -2139,11 +2154,71 @@
       ctx.beginPath();
       ctx.arc(cx, cy, 4, 0, Math.PI * 2);
       ctx.fill();
+
+      if (interactState && interactState.witness && typeof interactState.witness.dxM === 'number') {
+        var wx = clamp(cx + (interactState.witness.dxM / maxMeters) * maxR, 18, w - 18);
+        var wy = clamp(cy + (interactState.witness.dyM / maxMeters) * maxR, 24, h - 20);
+        var wd = Math.hypot(interactState.witness.dxM, interactState.witness.dyM);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(wx, wy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(56,189,248,0.22)';
+        ctx.beginPath();
+        ctx.arc(wx, wy, 13, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(wx, wy, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.textAlign = wx > w * 0.68 ? 'right' : 'left';
+        ctx.fillText('Witness ' + wd.toFixed(1) + 'm', wx + (wx > w * 0.68 ? -14 : 14), wy + 3);
+      }
+
       ctx.textAlign = 'center';
       ctx.fillStyle = '#60a5fa';
       ctx.fillText('A Radius: ' + fmt(bonus.social.a.radiusM, 1) + 'm', w * 0.22, 18);
       ctx.fillStyle = '#fb7185';
       ctx.fillText('B Radius: ' + fmt(bonus.social.b.radiusM, 1) + 'm', w * 0.78, 18);
+    }
+    }
+
+    paintCore();
+
+    if (interactState) {
+      if (drawType === 'radar' && typeof interactState.selectedIdx === 'number') {
+        var rCx = w * 0.5, rCy = h * 0.53, rR = Math.max(40, Math.min(w, h) * 0.33);
+        var sAng = -Math.PI / 2 + (interactState.selectedIdx * 2 * Math.PI) / 5;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(rCx, rCy);
+        ctx.lineTo(rCx + Math.cos(sAng) * rR, rCy + Math.sin(sAng) * rR);
+        ctx.stroke();
+      } else if (
+        drawType !== 'shockwaveRings' &&
+        drawType !== 'wetnessGauge' &&
+        typeof interactState.hoverNorm === 'number'
+      ) {
+        var hx = clamp(interactState.hoverNorm * w, 24, w - 14);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(hx, 14);
+        ctx.lineTo(hx, h - 18);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
     }
   }
 
@@ -2154,8 +2229,88 @@
     for (var i = 0; i < canvases.length; i++) {
       var c = canvases[i];
       var drawType = c.getAttribute('data-draw-type');
-      drawChart(c, drawType, ctxData.soundA, ctxData.soundB, ctxData.result);
+      drawChart(c, drawType, ctxData.soundA, ctxData.soundB, ctxData.result, c._fInterState);
     }
+  }
+
+  function describeCmpChartInteraction(drawType, nx, ny, soundA, soundB, result) {
+    var fA = soundA.features || {};
+    var fB = soundB.features || {};
+    var bonus = computeBonusMetrics(fA, fB);
+    var tA = (nx * safeNum(fA.duration, 0)).toFixed(2) + 's';
+    var tB = (nx * safeNum(fB.duration, 0)).toFixed(2) + 's';
+    if (drawType === 'radar') {
+      var axes = [
+        'Lifetime: ' + result.durationScore + '%',
+        'Resonance: ' + result.pitchScore + '%',
+        'Modulation: ' + result.modulationScore + '%',
+        'Spectral Timbre: ' + result.timbreScore + '%',
+        'Pressure Envelope: ' + result.envelopeScore + '%'
+      ];
+      return { selectedIdx: clamp(Math.floor(nx * 5), 0, 4), text: 'Selected Axis — ' + axes[clamp(Math.floor(nx * 5), 0, 4)] };
+    }
+    if (drawType === 'synthesisBars') {
+      var labels = ['Arithmetic Mean', 'Harmonic Geometric Balance', 'Envelope Crest Match', 'Final Blended Confidence'];
+      var idxS = clamp(Math.floor(ny * labels.length), 0, labels.length - 1);
+      return { selectedIdx: idxS, text: 'Composite Term: ' + labels[idxS] };
+    }
+    if (drawType === 'avgSpectrumEQ' || drawType === 'modSpectrum' || drawType === 'mfccFingerprint') {
+      if (drawType === 'modSpectrum') {
+        var mHz = Math.round(4 + nx * 41);
+        return { hoverNorm: nx, text: 'Modulation Frequency: ' + mHz + ' Hz (' + (mHz * 60) + ' cyc/m) — compare periodic peaks.' };
+      }
+      if (drawType === 'mfccFingerprint') {
+        var cIdx = clamp(Math.floor(nx * 12), 0, 11) + 1;
+        return { hoverNorm: nx, text: 'Cepstral Coefficient C' + cIdx + ': A=' + safeNum(fA.mfccMean && fA.mfccMean[cIdx - 1], 0).toFixed(2) + ' vs B=' + safeNum(fB.mfccMean && fB.mfccMean[cIdx - 1], 0).toFixed(2) };
+      }
+      var sHz = Math.round(45 * Math.pow(4200 / 45, nx));
+      var bIdx = clamp(Math.round(nx * 39), 0, 39);
+      return { hoverNorm: nx, text: 'Frequency: ' + sHz + ' Hz · A=' + Math.round(safeNum(fA.avgSpectrum && fA.avgSpectrum[bIdx], 0) * 100) + '% vs B=' + Math.round(safeNum(fB.avgSpectrum && fB.avgSpectrum[bIdx], 0) * 100) + '%' };
+    }
+    if (drawType === 'doppelgangerBars') {
+      var di = clamp(Math.floor(ny * bonus.acoustics.items.length), 0, bonus.acoustics.items.length - 1);
+      var it = bonus.acoustics.items[di];
+      return { hoverNorm: nx, text: it.emoji + ' ' + it.name + ': A=' + Math.round(bonus.acoustics.affinitiesA[di]) + '% vs B=' + Math.round(bonus.acoustics.affinitiesB[di]) + '%' };
+    }
+    if (drawType === 'harmonicSpace') {
+      var bestI = 0, bestD = Infinity;
+      var itemsH = bonus.acoustics.items;
+      var lMin = Math.log2(50), lMax = Math.log2(1600);
+      for (var k = 0; k < itemsH.length; k++) {
+        var xN = clamp((Math.log2(itemsH[k].freq) - lMin) / (lMax - lMin), 0, 1);
+        var yN = 1 - clamp(itemsH[k].flat, 0, 0.9) / 0.9;
+        var dd = Math.hypot(nx - xN, ny - yN);
+        if (dd < bestD) { bestD = dd; bestI = k; }
+      }
+      var hi = itemsH[bestI];
+      return { hoverNorm: clamp((Math.log2(hi.freq) - lMin) / (lMax - lMin), 0, 1), text: hi.emoji + ' ' + hi.name + ' (' + hi.freq + ' Hz): A=' + Math.round(bonus.acoustics.affinitiesA[bestI]) + '% vs B=' + Math.round(bonus.acoustics.affinitiesB[bestI]) + '%' };
+    }
+    if (drawType === 'alibiMatrix') {
+      var cats = [
+        'Canine Mask: A=' + Math.round(bonus.social.a.dogBlame) + '% vs B=' + Math.round(bonus.social.b.dogBlame) + '%',
+        'Upholstery Mask: A=' + Math.round(bonus.social.a.leatherChair) + '% vs B=' + Math.round(bonus.social.b.leatherChair) + '%',
+        'Footwear Mask: A=' + Math.round(bonus.social.a.shoeScuff) + '% vs B=' + Math.round(bonus.social.b.shoeScuff) + '%'
+      ];
+      return { hoverNorm: nx, text: cats[clamp(Math.floor(nx * 3), 0, 2)] };
+    }
+    if (drawType === 'wetnessGauge') {
+      return { text: 'Turbulence Index — A: ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ') vs B: ' + bonus.wetness.wetB + '% (' + bonus.wetness.labelB + ')' };
+    }
+    if (drawType === 'pitchTrajectory' || drawType === 'pitchHistAndInterval') {
+      var pIdx = clamp(Math.round(nx * 31), 0, 31);
+      var hzA = Math.round(safeNum(fA.pitchHzArr && fA.pitchHzArr[pIdx], 0));
+      var hzB = Math.round(safeNum(fB.pitchHzArr && fB.pitchHzArr[pIdx], 0));
+      return { hoverNorm: nx, text: 'Frame ' + (pIdx + 1) + ' (' + Math.round(nx * 100) + '%): A=' + (hzA > 0 ? hzA + ' Hz' : 'Unvoiced') + ' vs B=' + (hzB > 0 ? hzB + ' Hz' : 'Unvoiced') };
+    }
+    if (drawType === 'fluxTimeSeries') {
+      var fIdx = clamp(Math.round(nx * Math.max(0, (bonus.wetness.fluxSeriesA || []).length - 1)), 0, Math.max(0, (bonus.wetness.fluxSeriesA || []).length - 1));
+      return { hoverNorm: nx, text: 'Phase ' + Math.round(nx * 100) + '% — Spectral Flux A=' + safeNum(bonus.wetness.fluxSeriesA[fIdx], 0).toFixed(3) + ' vs B=' + safeNum(bonus.wetness.fluxSeriesB[fIdx], 0).toFixed(3) };
+    }
+    var envIdx = clamp(Math.round(nx * Math.max(0, (fA.envelope || []).length - 1)), 0, Math.max(0, (fA.envelope || []).length - 1));
+    return {
+      hoverNorm: nx,
+      text: 'Trace @ ' + Math.round(nx * 100) + '% (A ' + tA + ' / B ' + tB + ') · Envelope A=' + Math.round(safeNum(fA.envelope && fA.envelope[envIdx], 0) * 100) + '% vs B=' + Math.round(safeNum(fB.envelope && fB.envelope[envIdx], 0) * 100) + '%'
+    };
   }
 
   function renderForensicsDrawer(drawerEl, key, soundA, soundB, result, onSelectTab, onClose, opts) {
@@ -2201,6 +2356,8 @@
           '  <canvas class="forensics-canvas" data-draw-type="' +
           esc(ch.drawType) +
           '"></canvas>' +
+          '  <div class="labs-chart-controls"></div>' +
+          '  <div class="labs-chart-live-bar">Tap or drag the chart above to inspect live values.</div>' +
           '</div>'
         );
       })
@@ -2236,6 +2393,27 @@
     var closeInHeader = isInline
       ? '<button type="button" class="btn btn-ghost btn-sm btn-close-forensics" title="Close">✕ Close</button>'
       : '';
+
+    var statsBlockHtml = isInline
+      ? '<div class="labs-sub-disclosure">' +
+        '  <button type="button" class="labs-sub-disclosure-btn" aria-expanded="false">' +
+        '    <span>📊 Individual Telemetry Metrics &amp; Equation (' + (report.stats || []).length + ')</span>' +
+        '    <span class="labs-disclosure-chev" aria-hidden="true">▸</span>' +
+        '  </button>' +
+        '  <div class="labs-sub-disclosure-body hidden">' +
+        '    <div class="forensics-stats-grid">' + statsHtml + '</div>' +
+        '    <div class="forensics-formula-bar"><span class="formula-tag">EQUATION</span> <code>' + esc(report.formula) + '</code></div>' +
+        '  </div>' +
+        '</div>'
+      : '<div class="forensics-stats-grid">' +
+        statsHtml +
+        '</div>' +
+        '<div class="forensics-formula-bar">' +
+        '  <span class="formula-tag">EQUATION</span>' +
+        '  <code>' +
+        esc(report.formula) +
+        '</code>' +
+        '</div>';
 
     drawerEl.innerHTML =
       '<div class="forensics-drawer">' +
@@ -2274,16 +2452,22 @@
       '<div class="forensics-charts-grid">' +
       chartsHtml +
       '</div>' +
-      '<div class="forensics-stats-grid">' +
-      statsHtml +
-      '</div>' +
-      '<div class="forensics-formula-bar">' +
-      '  <span class="formula-tag">EQUATION</span>' +
-      '  <code>' +
-      esc(report.formula) +
-      '</code>' +
-      '</div>' +
+      statsBlockHtml +
       '</div>';
+
+    var discBtns = drawerEl.querySelectorAll('.labs-sub-disclosure-btn');
+    for (var dbi = 0; dbi < discBtns.length; dbi++) {
+      discBtns[dbi].addEventListener('click', function () {
+        var box = this.parentElement;
+        var body = box ? box.querySelector('.labs-sub-disclosure-body') : null;
+        if (!body) return;
+        var willOpen = body.classList.contains('hidden');
+        body.classList.toggle('hidden', !willOpen);
+        this.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        var ch = this.querySelector('.labs-disclosure-chev');
+        if (ch) ch.textContent = willOpen ? '▾' : '▸';
+      });
+    }
 
     drawerEl._forensicsCtx = {
       key: report.key,
@@ -2309,6 +2493,116 @@
     }
 
     redrawDrawer(drawerEl);
+
+    // Wire interactive pointer inspection & witness simulator across all Comparison charts
+    var bonusCmp = computeBonusMetrics(soundA.features, soundB.features);
+    var AudioMod = root.TootApp && root.TootApp.Audio;
+    var fCanvases = drawerEl.querySelectorAll('.forensics-canvas');
+    for (var fi = 0; fi < fCanvases.length; fi++) {
+      (function (fc) {
+        var dt = fc.getAttribute('data-draw-type');
+        var card = fc.closest ? fc.closest('.forensics-chart-card') : fc.parentElement;
+        var liveEl = card ? card.querySelector('.labs-chart-live-bar') : null;
+        var ctrlEl = card ? card.querySelector('.labs-chart-controls') : null;
+        fc.classList.add('labs-interactive-drag');
+
+        if (dt === 'shockwaveRings') {
+          fc.setAttribute('data-witness-canvas', '1');
+          var initD = Number(Math.min(bonusCmp.social.a.radiusM * 0.55, 2.2).toFixed(2));
+          fc._fInterState = { witness: { dxM: Number((initD * 0.78).toFixed(2)), dyM: Number((-initD * 0.62).toFixed(2)) } };
+          function updateCmpWitnessUI() {
+            var wSt = fc._fInterState.witness;
+            var d = Math.hypot(wSt.dxM, wSt.dyM);
+            var pA = computeCmpWitnessPerception(d, bonusCmp.social.a.radiusM, bonusCmp.social.a.panicPct, soundA.features);
+            var pB = computeCmpWitnessPerception(d, bonusCmp.social.b.radiusM, bonusCmp.social.b.panicPct, soundB.features);
+            drawChart(fc, dt, soundA, soundB, result, fc._fInterState);
+            if (liveEl) {
+              liveEl.textContent =
+                'Witness @ ' + d.toFixed(1) + 'm: Specimen A ~' + pA.estDb + ' dB (' + pA.audibilityPct + '%) vs Specimen B ~' + pB.estDb + ' dB (' + pB.audibilityPct + '%) · LPF ' + pA.lowpassHz + ' Hz';
+            }
+          }
+          if (ctrlEl) {
+            ctrlEl.innerHTML =
+              '<div class="labs-witness-controls">' +
+              '  <div class="labs-witness-presets">' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="1.0">1m Chamber</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="3.0">3m Desk</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="6.0">6m Hall</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="11.0">11m Far</button>' +
+              '  </div>' +
+              '  <div class="labs-witness-presets">' +
+              '    <button type="button" class="labs-btn labs-btn-blue labs-btn-xs labs-witness-audition-a">🔊 Hear A at Witness</button>' +
+              '    <button type="button" class="labs-btn labs-btn-purple labs-btn-xs labs-witness-audition-b">🔊 Hear B at Witness</button>' +
+              '  </div>' +
+              '</div>';
+            ctrlEl.querySelectorAll('.labs-witness-preset').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var td = parseFloat(this.getAttribute('data-wdist')) || 2.5;
+                fc._fInterState.witness = { dxM: Number((td * 0.78).toFixed(2)), dyM: Number((-td * 0.62).toFixed(2)) };
+                updateCmpWitnessUI();
+              });
+            });
+            var audA = ctrlEl.querySelector('.labs-witness-audition-a');
+            if (audA) {
+              audA.addEventListener('click', function () {
+                var d = Math.hypot(fc._fInterState.witness.dxM, fc._fInterState.witness.dyM);
+                var pA = computeCmpWitnessPerception(d, bonusCmp.social.a.radiusM, bonusCmp.social.a.panicPct, soundA.features);
+                if (AudioMod && typeof AudioMod.playSound === 'function') {
+                  AudioMod.playSound(soundA.samples, soundA.sampleRate, { channel: 'cmp_witness_a', gain: pA.gain, lowpassHz: pA.lowpassHz });
+                }
+              });
+            }
+            var audB = ctrlEl.querySelector('.labs-witness-audition-b');
+            if (audB) {
+              audB.addEventListener('click', function () {
+                var d = Math.hypot(fc._fInterState.witness.dxM, fc._fInterState.witness.dyM);
+                var pB = computeCmpWitnessPerception(d, bonusCmp.social.b.radiusM, bonusCmp.social.b.panicPct, soundB.features);
+                if (AudioMod && typeof AudioMod.playSound === 'function') {
+                  AudioMod.playSound(soundB.samples, soundB.sampleRate, { channel: 'cmp_witness_b', gain: pB.gain, lowpassHz: pB.lowpassHz });
+                }
+              });
+            }
+          }
+          var dragW = false;
+          function moveWitnessXY(clientX, clientY) {
+            var rect = typeof fc.getBoundingClientRect === 'function' ? fc.getBoundingClientRect() : null;
+            var cw = rect && rect.width > 10 ? rect.width : fc.width || 320;
+            var ch = rect && rect.height > 10 ? rect.height : fc.height || 195;
+            var maxR = Math.max(36, Math.min(cw, ch) * 0.40);
+            var dx = (((rect ? clientX - rect.left : cw * 0.5) - cw * 0.5) / maxR) * 14;
+            var dy = (((rect ? clientY - rect.top : ch * 0.5) - ch * 0.52) / maxR) * 14;
+            if (Math.hypot(dx, dy) < 0.35) { dx = 0.35; dy = 0; }
+            fc._fInterState.witness = { dxM: clamp(dx, -12.5, 12.5), dyM: clamp(dy, -12.5, 12.5) };
+            updateCmpWitnessUI();
+          }
+          fc.addEventListener('pointerdown', function (ev) { dragW = true; moveWitnessXY(ev.clientX, ev.clientY); });
+          fc.addEventListener('pointermove', function (ev) { if (dragW) moveWitnessXY(ev.clientX, ev.clientY); });
+          fc.addEventListener('pointerup', function () { dragW = false; });
+          fc.addEventListener('pointercancel', function () { dragW = false; });
+          fc.addEventListener('click', function (ev) { moveWitnessXY(ev.clientX, ev.clientY); });
+          updateCmpWitnessUI();
+          return;
+        }
+
+        var dragC = false;
+        function inspectCmpXY(clientX, clientY) {
+          var rect = typeof fc.getBoundingClientRect === 'function' ? fc.getBoundingClientRect() : null;
+          var cw = rect && rect.width > 10 ? rect.width : fc.width || 320;
+          var ch = rect && rect.height > 10 ? rect.height : fc.height || 195;
+          var nx = clamp(rect ? (clientX - rect.left) / cw : 0.5, 0, 1);
+          var ny = clamp(rect ? (clientY - rect.top) / ch : 0.5, 0, 1);
+          var info = describeCmpChartInteraction(dt, nx, ny, soundA, soundB, result);
+          fc._fInterState = info;
+          drawChart(fc, dt, soundA, soundB, result, info);
+          if (liveEl && info && info.text) liveEl.textContent = info.text;
+        }
+        fc.addEventListener('pointerdown', function (ev) { dragC = true; inspectCmpXY(ev.clientX, ev.clientY); });
+        fc.addEventListener('pointermove', function (ev) { if (dragC || ev.pointerType === 'mouse') inspectCmpXY(ev.clientX, ev.clientY); });
+        fc.addEventListener('pointerup', function () { dragC = false; });
+        fc.addEventListener('pointercancel', function () { dragC = false; });
+        fc.addEventListener('click', function (ev) { inspectCmpXY(ev.clientX, ev.clientY); });
+      })(fCanvases[fi]);
+    }
   }
 
   TootApp.Forensics = {

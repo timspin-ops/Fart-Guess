@@ -187,7 +187,22 @@
       var gain = ctx.createGain();
       gain.gain.value = typeof opts.gain === 'number' ? opts.gain : 0.95;
 
-      source.connect(gain);
+      var filterNode = null;
+      if (
+        typeof opts.lowpassHz === 'number' &&
+        opts.lowpassHz > 0 &&
+        opts.lowpassHz < 20000 &&
+        typeof ctx.createBiquadFilter === 'function'
+      ) {
+        filterNode = ctx.createBiquadFilter();
+        filterNode.type = 'lowpass';
+        filterNode.frequency.value = Math.max(80, Math.min(20000, opts.lowpassHz));
+        filterNode.Q.value = typeof opts.filterQ === 'number' ? opts.filterQ : 0.7;
+        source.connect(filterNode);
+        filterNode.connect(gain);
+      } else {
+        source.connect(gain);
+      }
       gain.connect(ctx.destination);
 
       var durationSec = audioBuf.duration;

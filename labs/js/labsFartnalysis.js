@@ -306,6 +306,193 @@
     };
   }
 
+  function analyzeSpectrogram3D(feat) {
+    var f = feat || {};
+    var spec = f.spectrogram;
+    var dur = safeNum(spec && spec.duration, safeNum(f.duration, 0));
+    var bp = f.bandProfile || [0.25, 0.25, 0.25, 0.25];
+    var subPct = Math.round(safeNum(bp[0], 0) * 100);
+    var midPct = Math.round((safeNum(bp[1], 0) + safeNum(bp[2], 0)) * 100);
+    var highPct = Math.round(safeNum(bp[3], 0) * 100);
+    var centroidHz = Math.round(safeNum(f.spectralCentroidHz, safeNum(f.medianPitchHz, 220)));
+
+    var peakVal = -1;
+    var peakFrame = 0;
+    var peakBand = 0;
+    var activeCells = 0;
+    var frames = spec && spec.frames ? spec.frames : 0;
+    var bands = spec && spec.freqBands ? spec.freqBands : 0;
+    var grid = spec && spec.grid ? spec.grid : null;
+    if (grid && frames > 0 && bands > 0) {
+      for (var t = 0; t < frames; t++) {
+        for (var b = 0; b < bands; b++) {
+          var v = safeNum(grid[t * bands + b], 0);
+          if (v > 0.25) activeCells++;
+          if (v > peakVal) {
+            peakVal = v;
+            peakFrame = t;
+            peakBand = b;
+          }
+        }
+      }
+    }
+
+    var peakFreqHz = centroidHz;
+    if (peakVal > 0 && spec && spec.freqCenters && spec.freqCenters[peakBand] > 0) {
+      peakFreqHz = Math.round(spec.freqCenters[peakBand]);
+    } else if (f.medianPitchHz > 0) {
+      peakFreqHz = Math.round(f.medianPitchHz);
+    }
+
+    var peakTimePct =
+      peakVal > 0 && frames > 1
+        ? Math.round((peakFrame / (frames - 1)) * 100)
+        : Math.round(clamp(safeNum(f.peakTimeRatio, 0.35), 0, 1) * 100);
+    var peakTimeSec = dur > 0 ? Number(((peakTimePct / 100) * dur).toFixed(2)) : 0;
+    var densityPct =
+      grid && frames * bands > 0 ? Math.round((activeCells / (frames * bands)) * 100) : 35;
+
+    var dominantBand =
+      subPct >= midPct && subPct >= highPct
+        ? 'sub-bass (<150 Hz at ' + subPct + '% energy)'
+        : highPct >= midPct
+          ? 'upper aperture (>1.2 kHz at ' + highPct + '% energy)'
+          : 'mid-band core (150 Hz–1.2 kHz at ' + midPct + '% energy)';
+
+    var temporalShape =
+      peakTimePct <= 28
+        ? 'front-loaded onset ridge at ' + peakTimeSec.toFixed(2) + 's (' + peakTimePct + '% of trace)'
+        : peakTimePct >= 68
+          ? 'late-phase surge peaking at ' + peakTimeSec.toFixed(2) + 's (' + peakTimePct + '% into emission)'
+          : 'central pressure crest at ' + peakTimeSec.toFixed(2) + 's (' + peakTimePct + '% span)';
+
+    var bursts = f.burstCount || 1;
+    var trend = safeNum(f.pitchTrend, 0);
+    var ridgeContour =
+      bursts >= 3
+        ? bursts + ' discrete multi-crest peaks'
+        : bursts === 2
+          ? 'dual-ridge separation'
+          : trend >= 0.12
+            ? 'upward frequency climb'
+            : trend <= -0.12
+              ? 'downward thermal pitch fade'
+              : safeNum(f.spectralFlatness, 0) > 0.45
+                ? 'broad, low-Q broadband dispersion'
+                : 'focused harmonic spine';
+
+    return {
+      dur: dur,
+      peakFreqHz: peakFreqHz,
+      peakTimeSec: peakTimeSec,
+      peakTimePct: peakTimePct,
+      subPct: subPct,
+      midPct: midPct,
+      highPct: highPct,
+      centroidHz: centroidHz,
+      densityPct: densityPct,
+      dominantBand: dominantBand,
+      temporalShape: temporalShape,
+      ridgeContour: ridgeContour
+    };
+  }
+
+  function buildSingle3DSpectrogramCommentary(feat) {
+    var m = analyzeSpectrogram3D(feat);
+    return (
+      'The 3D surface peaks at ' + m.peakFreqHz + ' Hz during a ' + m.temporalShape +
+      ', with ' + m.dominantBand + ' and a spectral centroid of ' + m.centroidHz + ' Hz. ' +
+      'Terrain morphology exhibits a ' + m.ridgeContour + ' occupying ' + m.densityPct + '% active time-frequency area.'
+    );
+  }
+
+  function buildComparison3DSpectrogramCommentary(featA, featB, labelA, labelB) {
+    var a = analyzeSpectrogram3D(featA);
+    var b = analyzeSpectrogram3D(featB);
+    var nameA = String(labelA || 'Specimen A').slice(0, 26);
+    var nameB = String(labelB || 'Specimen B').slice(0, 26);
+    var freqDiff = Math.abs(a.peakFreqHz - b.peakFreqHz);
+    var timeDiff = Math.abs(a.peakTimePct - b.peakTimePct);
+    var alignTxt =
+      freqDiff <= 35 && timeDiff <= 18
+        ? 'Peak ridges align closely in both frequency and phase timing.'
+        : 'Surfaces diverge by ' + freqDiff + ' Hz in peak ridge height and ' + timeDiff + '% in temporal crest timing.';
+    return (
+      nameA + ' crests at ' + a.peakFreqHz + ' Hz (' + a.peakTimePct + '% span, ' + a.ridgeContour + '), while ' +
+      nameB + ' peaks at ' + b.peakFreqHz + ' Hz (' + b.peakTimePct + '% span, ' + b.ridgeContour + '). ' + alignTxt
+    );
+  }
+
+  function buildGroup3DSpectrogramCommentary(groupObj) {
+    var g = groupObj || {};
+    var m = analyzeSpectrogram3D(g.features || {});
+    var met = g.metrics || {};
+    var segCount = (g.segments && g.segments.length) || met.count || 0;
+    var spanOct = safeNum(met.pitchSpanOctaves, 0).toFixed(2);
+    return (
+      'Composite ' + segCount + '-specimen surface spans ' + spanOct + ' octaves across ' + m.dur.toFixed(2) +
+      's, cresting at ' + m.peakFreqHz + ' Hz (' + m.peakTimePct + '% elapsed) with ' + m.dominantBand + '.'
+    );
+  }
+
+  function renderCollapsibleStatsHtml(statsHtml, formulaText, count, labelPrefix, formulaTag) {
+    var cntText = typeof count === 'number' && count > 0 ? ' (' + count + ')' : '';
+    var titleTxt = (labelPrefix || 'Individual Telemetry Metrics & Equation') + cntText;
+    return (
+      '<div class="labs-sub-disclosure">' +
+      '  <button type="button" class="labs-sub-disclosure-btn" aria-expanded="false">' +
+      '    <span>📊 ' + esc(titleTxt) + '</span>' +
+      '    <span class="labs-disclosure-chev" aria-hidden="true">▸</span>' +
+      '  </button>' +
+      '  <div class="labs-sub-disclosure-body hidden">' +
+      statsHtml +
+      (formulaText
+        ? '<div class="labs-formula-strip"><span class="formula-tag">' + esc(formulaTag || 'EQUATION') + '</span> <code>' + esc(formulaText) + '</code></div>'
+        : '') +
+      '  </div>' +
+      '</div>'
+    );
+  }
+
+  function wireSubDisclosures(rootEl) {
+    if (!rootEl) return;
+    var btns = rootEl.querySelectorAll('.labs-sub-disclosure-btn');
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i]._labsBound) continue;
+      btns[i]._labsBound = true;
+      btns[i].addEventListener('click', function () {
+        var box = this.parentElement;
+        var body = box ? box.querySelector('.labs-sub-disclosure-body') : null;
+        if (!body) return;
+        var isHidden = body.classList.contains('hidden');
+        body.classList.toggle('hidden', !isHidden);
+        this.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+        var chev = this.querySelector('.labs-disclosure-chev');
+        if (chev) chev.textContent = isHidden ? '▾' : '▸';
+      });
+    }
+  }
+
+  function wireArchiveToggles(mountEl) {
+    if (!mountEl) return;
+    var btns = mountEl.querySelectorAll('.labs-archive-toggle');
+    for (var i = 0; i < btns.length; i++) {
+      if (btns[i]._labsBound) continue;
+      btns[i]._labsBound = true;
+      btns[i].addEventListener('click', function () {
+        var card = this.parentElement;
+        var body = card ? card.querySelector('.labs-archive-cmp-body') : null;
+        if (!body) return;
+        var willOpen = body.classList.contains('hidden');
+        body.classList.toggle('hidden', !willOpen);
+        if (card) card.classList.toggle('is-collapsed', !willOpen);
+        this.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        var chev = this.querySelector('.labs-disclosure-chev');
+        if (chev) chev.textContent = willOpen ? '▾' : '▸';
+      });
+    }
+  }
+
   function renderArchiveComparisonHtml(archCmp) {
     if (!archCmp) return '';
     var sci = getScientistById(archCmp.scientistId || 'pufferton');
@@ -315,28 +502,33 @@
       })
       .join('');
     return (
-      '<section class="labs-archive-cmp-card" aria-label="Archive Comparison">' +
-      '  <div class="labs-archive-cmp-head">' +
-      '    <div>' +
-      '      <div class="labs-eyebrow">ARCHIVE OBSERVATION · HISTORICAL COMPARISON</div>' +
-      '      <div class="labs-archive-headline">' + esc(archCmp.energyLine) + '</div>' +
+      '<section class="labs-archive-cmp-card is-collapsed" aria-label="Archive Comparison">' +
+      '  <button type="button" class="labs-archive-toggle" aria-expanded="false">' +
+      '    <span class="labs-archive-toggle-left">' +
+      '      <span class="labs-eyebrow">ARCHIVE OBSERVATION · HISTORICAL COMPARISON</span>' +
+      '      <span class="labs-archive-headline">' + esc(archCmp.energyLine) + '</span>' +
+      '    </span>' +
+      '    <span class="labs-archive-toggle-right">' +
+      '      <span class="labs-chip labs-chip-blue">' + archCmp.energyPct + 'th Percentile</span>' +
+      '      <span class="labs-disclosure-chev" aria-hidden="true">▸</span>' +
+      '    </span>' +
+      '  </button>' +
+      '  <div class="labs-archive-cmp-body hidden">' +
+      '    <div class="labs-archive-meter-track"><div class="labs-archive-meter-fill" style="width:' + archCmp.energyPct + '%"></div></div>' +
+      '    <div class="labs-archive-pills">' + pillsHtml + '</div>' +
+      '    <div class="labs-chart-obs">' +
+      '      <img src="' + esc(sci.img) + '" alt="' + esc(sci.shortName) + '" loading="lazy" />' +
+      '      <span><strong>Archive Classification:</strong> "' + esc(archCmp.quote) + '" <em>— ' + esc(sci.shortName) + '</em></span>' +
       '    </div>' +
-      '    <span class="labs-chip labs-chip-blue">' + archCmp.energyPct + 'th Percentile</span>' +
-      '  </div>' +
-      '  <div class="labs-archive-meter-track"><div class="labs-archive-meter-fill" style="width:' + archCmp.energyPct + '%"></div></div>' +
-      '  <div class="labs-archive-pills">' + pillsHtml + '</div>' +
-      '  <div class="labs-chart-obs">' +
-      '    <img src="' + esc(sci.img) + '" alt="' + esc(sci.shortName) + '" loading="lazy" />' +
-      '    <span><strong>Archive Classification:</strong> "' + esc(archCmp.quote) + '" <em>— ' + esc(sci.shortName) + '</em></span>' +
       '  </div>' +
       '</section>'
     );
   }
 
-  function renderShareableVerdictHtml(verdictText, specimenTitle, pctLabel) {
+  function renderShareableVerdictHtml(verdictText, specimenTitle, pctLabel, actionBtnsHtml) {
     var chief = getScientistById('bottomsworth');
     return (
-      '<section class="labs-glass-card labs-share-verdict-card" aria-label="Official Laboratory Verdict">' +
+      '<section class="labs-glass-card labs-share-verdict-card" aria-label="Official Laboratory Verdict and Share Options">' +
       '  <div class="labs-sv-top">' +
       '    <div class="labs-sv-seal">' +
       '      <img src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
@@ -345,9 +537,12 @@
       '        <div class="labs-sv-spec">' + esc(specimenTitle) + (pctLabel ? ' · ' + esc(pctLabel) : '') + '</div>' +
       '      </div>' +
       '    </div>' +
-      '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-copy-verdict-btn" data-verdict-copy="' + esc(verdictText) + '">📋 Copy Verdict</button>' +
       '  </div>' +
       '  <div class="labs-sv-headline">' + esc(verdictText) + '</div>' +
+      '  <div class="labs-bottom-share-actions">' +
+      (actionBtnsHtml || '') +
+      '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-copy-verdict-btn" data-verdict-copy="' + esc(verdictText) + '">📋 Copy Verdict</button>' +
+      '  </div>' +
       '  <div class="labs-sv-footer">' +
       '    <span>' + esc(INSTITUTE.subtitle) + '</span>' +
       '    <span>Certified via ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
@@ -801,7 +996,7 @@
       0
     );
     cmpComment.label = 'Comparative Match Review';
-    var specWobble = pickScientistComment('wobble', (labelA || '') + '|' + (labelB || '') + '|spec3d', 1);
+    var specWobbleQuote = buildComparison3DSpectrogramCommentary(featA, featB, labelA, labelB);
     var rareDispatch = pickRareComment((labelA || '') + '|' + (labelB || '') + '|cmp');
     var archCmp = buildArchiveComparison(
       featA,
@@ -812,6 +1007,13 @@
     var shareVerdict = pickShareableVerdict(
       (labelA || '') + '|' + (labelB || '') + '|' + exactScore.toFixed(1)
     );
+    var cmpBottomActionsHtml =
+      (opts.onShareOrEmail || opts.onEmailAnalysis || opts.onShare
+        ? '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-cmp-share">📤 Share / Email</button>'
+        : '') +
+      (opts.onDownloadPdf
+        ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>'
+        : '');
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -822,7 +1024,6 @@
       '        <h2 class="labs-fn-title">' + esc(labelA) + ' <span class="labs-vs-arrow">vs</span> ' + esc(labelB) + '</h2>' +
       '      </div>' +
       '      <div class="labs-fn-right-cluster">' +
-      headerBtnsHtml +
       '        <div class="labs-fn-score-chip">' +
       '          <span class="labs-fn-score-val">' + exactScore.toFixed(1) + '%</span>' +
       '          <span class="labs-fn-score-lbl">REPRODUCTION FIDELITY</span>' +
@@ -832,8 +1033,17 @@
       '    <div class="labs-fn-meta-row">' +
       twinBadgeHtml +
       '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
-      '      <span class="labs-hint-text">3D Spectral Distribution above · Expandable Laboratory Notes below</span>' +
       '    </div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · LABORATORY VERDICT</span>' +
+      '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Aligned Profile')) + '</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(cmpVerdict) + '</p>' +
+      cmpTipsHtml +
+      '    </div>' +
+      renderScientistCommentHtml(cmpComment.scientistId, cmpComment.quote, cmpComment.label) +
+      renderRareCommentHtml(rareDispatch) +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
       '    <div class="labs-spec-bay-head">' +
@@ -881,36 +1091,28 @@
       '        <canvas class="labs-spec-canvas labs-fn-canvas-b"></canvas>' +
       '      </div>' +
       '    </div>' +
-      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, 'Research Note · 3D Spectrogram') +
+      renderScientistCommentHtml('wobble', specWobbleQuote, '3D Spectrogram Telemetry Commentary') +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY · COMPARATIVE ANALYSIS</div>' +
-      '        <h3 class="labs-section-title">Comparative Acoustic Assessment &amp; Official Findings</h3>' +
+      '        <div class="labs-eyebrow">TELEMETRY DOMAINS · COMPARATIVE ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Comparative Telemetry Breakdown</h3>' +
       '      </div>' +
-      '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Telemetry Suites</span>' +
+      '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Suites</span>' +
       '    </div>' +
-      '    <div class="labs-verdict-banner">' +
-      '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · LABORATORY VERDICT</span>' +
-      '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Aligned Profile')) + '</span>' +
-      '      </div>' +
-      '      <p class="labs-verdict-text">' + esc(cmpVerdict) + '</p>' +
-      cmpTipsHtml +
-      '    </div>' +
-      renderScientistCommentHtml(cmpComment.scientistId, cmpComment.quote, cmpComment.label) +
-      renderRareCommentHtml(rareDispatch) +
       humorStripHtml +
       renderArchiveComparisonHtml(archCmp) +
-      '    <div class="labs-hint-text">Select any telemetry domain below to inspect interactive FFT plots, observed variance statistics &amp; governing equations.</div>' +
+      '    <div class="labs-hint-text">Select any telemetry domain below to inspect interactive plots; detailed metrics stay collapsed until opened.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Reproduction Fidelity') +
       renderReportSignatureHtml((labelA || '') + '|' + (labelB || '') + '|cmp') +
+      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Reproduction Fidelity', cmpBottomActionsHtml) +
       '</div>';
+
+    wireArchiveToggles(mountEl);
 
     // Initialize 3D Spectrograms
     var canvasA = mountEl.querySelector('.labs-fn-canvas-a');
@@ -974,6 +1176,8 @@
           '<div class="labs-acc-sci-slot">' +
           renderScientistCommentHtml(authSci.scientistId, authSci.quote, 'Authenticity Review') +
           '</div>';
+        wireSubDisclosures(slotEl);
+        wireAuthChartInteraction(slotEl, authA, authB, labelA, labelB);
         var closeAuthBtn = slotEl.querySelector('.labs-acc-close');
         if (closeAuthBtn) closeAuthBtn.addEventListener('click', closeActiveRow);
         var drawAuthNow = function () {
@@ -1212,7 +1416,7 @@
         if (specB) specB.resize();
         if (activeRowId === 'authenticity' && activeMountEl) {
           var authCanvas = activeMountEl.querySelector('canvas[data-auth-chart]');
-          if (authCanvas) drawAuthenticityPlot(authCanvas, authA, authB, labelA, labelB);
+          if (authCanvas) drawAuthenticityPlot(authCanvas, authA, authB, labelA, labelB, typeof authCanvas._labsSelIdx === 'number' ? { selectedIdx: authCanvas._labsSelIdx } : null);
         } else if (Forensics && activeMountEl && activeForensicsKey) {
           Forensics.redrawDrawer(activeMountEl);
         }
@@ -2691,7 +2895,7 @@
     }
   }
 
-  function drawHorizontalBarsPlot(target, items) {
+  function drawHorizontalBarsPlot(target, items, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !items || items.length === 0) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -2701,6 +2905,7 @@
     var padB = 10;
     var pw = Math.max(40, w - padL - padR);
     var rowH = (h - padT - padB) / items.length;
+    var selIdx = interOpts && typeof interOpts.selectedIdx === 'number' ? interOpts.selectedIdx : -1;
 
     ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
     for (var i = 0; i < items.length; i++) {
@@ -2708,16 +2913,26 @@
       var cy = padT + i * rowH + rowH * 0.5;
       var barH = Math.min(14, Math.max(7, rowH * 0.52));
       var pct = clamp(safeNum(it.pct, 0), 0, 100);
+      if (i === selIdx) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+        ctx.fillRect(4, padT + i * rowH + 1, w - 8, Math.max(10, rowH - 2));
+      }
 
-      ctx.fillStyle = '#D1D5DB';
+      ctx.fillStyle = i === selIdx ? '#F8FAFC' : '#D1D5DB';
       ctx.textAlign = 'right';
       ctx.fillText(String(it.label || '').slice(0, 18), padL - 8, cy + 3.5);
 
       ctx.fillStyle = 'rgba(55, 65, 81, 0.55)';
       ctx.fillRect(padL, cy - barH * 0.5, pw, barH);
 
+      var fillW = Math.max(2, (pct / 100) * pw);
       ctx.fillStyle = it.color || '#60A5FA';
-      ctx.fillRect(padL, cy - barH * 0.5, Math.max(2, (pct / 100) * pw), barH);
+      ctx.fillRect(padL, cy - barH * 0.5, fillW, barH);
+      if (i === selIdx) {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.4;
+        ctx.strokeRect(padL, cy - barH * 0.5, fillW, barH);
+      }
 
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'left';
@@ -2726,7 +2941,7 @@
     finishDarkPlot(p);
   }
 
-  function drawMfcc13Plot(target, feat) {
+  function drawMfcc13Plot(target, feat, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -2736,6 +2951,7 @@
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var midY = pad.t + ph * 0.5;
+    var selIdx = interOpts && typeof interOpts.selectedIdx === 'number' ? interOpts.selectedIdx : -1;
 
     var maxAbs = 1;
     for (var i = 0; i < n; i++) {
@@ -2755,8 +2971,14 @@
       var x = pad.l + k * colW + colW * 0.16;
       var bw = Math.max(4, colW * 0.68);
       ctx.fillStyle = val >= 0 ? '#60A5FA' : '#FB7185';
-      if (barH >= 0) ctx.fillRect(x, midY - barH, bw, Math.max(2, barH));
-      else ctx.fillRect(x, midY, bw, Math.max(2, -barH));
+      var ry = barH >= 0 ? midY - barH : midY;
+      var rh = Math.max(2, Math.abs(barH));
+      ctx.fillRect(x, ry, bw, rh);
+      if (k === selIdx) {
+        ctx.strokeStyle = '#FACC15';
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(x, ry, bw, rh);
+      }
     }
 
     ctx.fillStyle = '#9CA3AF';
@@ -2772,7 +2994,7 @@
     finishDarkPlot(p);
   }
 
-  function drawCumulativeEnergyPlot(target, feat) {
+  function drawCumulativeEnergyPlot(target, feat, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !feat || !feat.envelope) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -2819,10 +3041,30 @@
       ctx.fillText(mk.label, mx, pad.t + 11 + m * 12);
     }
     ctx.setLineDash([]);
+
+    if (interOpts && typeof interOpts.hoverNorm === 'number') {
+      var hn = clamp(interOpts.hoverNorm, 0, 1);
+      var idxH = Math.round(hn * Math.max(0, cum.length - 1));
+      var fracH = total > 0 ? cum[idxH] / total : 0;
+      var hx = pad.l + hn * pw;
+      var hy = pad.t + ph - fracH * ph;
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+      ctx.fillStyle = '#38BDF8';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.stroke();
+    }
     finishDarkPlot(p);
   }
 
-  function drawSeriesPlot(target, values, opts) {
+  function drawSeriesPlot(target, values, opts, interOpts) {
     opts = opts || {};
     var p = setupDarkPlot(target, 195);
     if (!p || !values || values.length === 0) return finishDarkPlot(p);
@@ -2872,6 +3114,25 @@
       ctx.setLineDash([]);
     }
 
+    if (interOpts && typeof interOpts.hoverNorm === 'number') {
+      var hn = clamp(interOpts.hoverNorm, 0, 1);
+      var idxH = Math.round(hn * Math.max(0, values.length - 1));
+      var hx = pad.l + hn * pw;
+      var hy = pad.t + ph - clamp(safeNum(values[idxH], 0) / maxV, 0, 1) * ph;
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(hx, pad.t);
+      ctx.lineTo(hx, pad.t + ph);
+      ctx.stroke();
+      ctx.fillStyle = '#38BDF8';
+      ctx.beginPath();
+      ctx.arc(hx, hy, 4.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.stroke();
+    }
+
     ctx.fillStyle = '#D1D5DB';
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
@@ -2879,7 +3140,42 @@
     finishDarkPlot(p);
   }
 
-  function drawBlastZonePlot(target, radiusM, panicPct) {
+  function computeWitnessPerception(distM, radiusM, panicPct, feat) {
+    var d = clamp(safeNum(distM, 2.2), 0.3, 13.0);
+    var rNom = clamp(safeNum(radiusM, 4.5), 1.8, 13.0);
+    var crest = safeNum(feat && feat.crestFactorDb, 8);
+    var baseDb = clamp(54 + (panicPct || 45) * 0.28 + Math.max(0, crest - 6) * 1.1, 50, 86);
+    var dropoff = 20 * Math.log10(Math.max(0.5, d) / 0.5) * 0.78;
+    var estDb = Math.round(clamp(baseDb - dropoff, 22, 86));
+    var audibilityPct = Math.round(clamp(100 * Math.exp(-Math.pow(d / Math.max(2.0, rNom * 0.95), 1.45)), 5, 100));
+    var lowpassHz = Math.round(clamp(4200 * Math.exp(-0.22 * Math.max(0, d - 0.6)), 260, 4200));
+    var gain = Number(clamp(Math.pow(audibilityPct / 100, 0.72) * 0.96, 0.05, 0.98).toFixed(3));
+    var zoneLabel =
+      d <= 2.2
+        ? 'Inside 2.2m Chamber'
+        : d <= rNom
+          ? 'Within Audible Perimeter'
+          : d <= rNom * 1.35
+            ? 'Perimeter Threshold'
+            : 'Sub-Audible Floor';
+    var whatHeard =
+      lowpassHz >= 1800
+        ? 'Full spectral clarity — onset transient and upper harmonics clearly discernible.'
+        : lowpassHz >= 750
+          ? 'Mid-band attenuation; core pitch remains distinct while upper air hiss softens.'
+          : 'Low-frequency sustain only; high-frequency air contour absorbed over distance.';
+    return {
+      distM: Number(d.toFixed(2)),
+      estDb: estDb,
+      audibilityPct: audibilityPct,
+      lowpassHz: lowpassHz,
+      gain: gain,
+      zoneLabel: zoneLabel,
+      whatHeard: whatHeard
+    };
+  }
+
+  function drawBlastZonePlot(target, radiusM, panicPct, witnessState) {
     var p = setupDarkPlot(target, 195);
     if (!p) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -2888,6 +3184,16 @@
     var maxR = Math.min(w, h) * 0.42;
     var rEvent = clamp((safeNum(radiusM, 4) / 13.0) * maxR, 14, maxR);
     var rElevator = (2.2 / 13.0) * maxR;
+
+    var guideM = [2, 5, 10];
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+    ctx.lineWidth = 1;
+    for (var gi = 0; gi < guideM.length; gi++) {
+      var gr = (guideM[gi] / 13.0) * maxR;
+      ctx.beginPath();
+      ctx.arc(cx, cy, gr, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
     ctx.setLineDash([4, 4]);
@@ -2907,16 +3213,49 @@
     ctx.arc(cx, cy, 4.5, 0, Math.PI * 2);
     ctx.fill();
 
+    if (witnessState && typeof witnessState.dxM === 'number' && typeof witnessState.dyM === 'number') {
+      var wx = clamp(cx + (witnessState.dxM / 13.0) * maxR, 18, w - 18);
+      var wy = clamp(cy + (witnessState.dyM / 13.0) * maxR, 24, h - 20);
+      var distM = Math.hypot(witnessState.dxM, witnessState.dyM);
+
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(wx, wy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+      ctx.beginPath();
+      ctx.arc(wx, wy, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#38BDF8';
+      ctx.beginPath();
+      ctx.arc(wx, wy, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      ctx.font = '700 10px "JetBrains Mono", monospace';
+      ctx.fillStyle = '#E0F2FE';
+      ctx.textAlign = wx > w * 0.68 ? 'right' : 'left';
+      ctx.fillText('Witness ' + distM.toFixed(1) + 'm', wx + (wx > w * 0.68 ? -14 : 14), wy + 3.5);
+    }
+
     ctx.font = '700 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#FECDD3';
     ctx.fillText('Propagation Radius ' + safeNum(radiusM, 4).toFixed(1) + 'm · Disruption ' + Math.round(panicPct || 50) + '%', cx, 16);
     ctx.fillStyle = '#9CA3AF';
-    ctx.fillText('Dashed boundary = 2.2m Standard Acoustic Chamber', cx, h - 7);
+    ctx.fillText(witnessState ? 'Drag or tap canvas to reposition Witness · Dashed box = 2.2m Chamber' : 'Dashed boundary = 2.2m Standard Acoustic Chamber', cx, h - 7);
     finishDarkPlot(p);
   }
 
-  function drawTwinMapPlot(target, bonus) {
+  function drawTwinMapPlot(target, bonus, interOpts) {
     var p = setupDarkPlot(target, 195);
     if (!p || !bonus) return finishDarkPlot(p);
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -2926,23 +3265,40 @@
     var items = bonus.acoustics.items || [];
     var logMin = Math.log2(50);
     var logMax = Math.log2(1600);
+    var selIdx = interOpts && typeof interOpts.selectedIdx === 'number' ? interOpts.selectedIdx : -1;
+
+    var sx = pad.l + clamp((Math.log2(clamp(bonus.acoustics.detailA.effFreq, 50, 1600)) - logMin) / (logMax - logMin), 0, 1) * pw;
+    var sy = pad.t + ph - clamp(bonus.acoustics.detailA.flat, 0, 1) * ph;
 
     for (var i = 0; i < items.length; i++) {
       var it = items[i];
       var x = pad.l + clamp((Math.log2(it.freq) - logMin) / (logMax - logMin), 0, 1) * pw;
       var y = pad.t + ph - clamp(it.flat, 0, 1) * ph;
-      ctx.fillStyle = '#FACC15';
+      if (i === selIdx) {
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.65)';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle = i === selIdx ? '#38BDF8' : '#FACC15';
       ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.arc(x, y, i === selIdx ? 6 : 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#9CA3AF';
-      ctx.font = '600 9px "Plus Jakarta Sans", sans-serif';
+      if (i === selIdx) {
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+      }
+      ctx.fillStyle = i === selIdx ? '#E0F2FE' : '#9CA3AF';
+      ctx.font = (i === selIdx ? '700 ' : '600 ') + '9px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = x > w * 0.72 ? 'right' : 'left';
-      ctx.fillText(it.short, x + (x > w * 0.72 ? -7 : 7), y + 3);
+      ctx.fillText(it.short, x + (x > w * 0.72 ? -8 : 8), y + 3);
     }
 
-    var sx = pad.l + clamp((Math.log2(clamp(bonus.acoustics.detailA.effFreq, 50, 1600)) - logMin) / (logMax - logMin), 0, 1) * pw;
-    var sy = pad.t + ph - clamp(bonus.acoustics.detailA.flat, 0, 1) * ph;
     ctx.fillStyle = '#22C55E';
     ctx.beginPath();
     ctx.arc(sx, sy, 7.5, 0, Math.PI * 2);
@@ -2958,28 +3314,28 @@
     finishDarkPlot(p);
   }
 
-  function drawSingleChartType(target, chartType, sound, feat, bonus, ml) {
+  function drawSingleChartType(target, chartType, sound, feat, bonus, ml, interOpts) {
     if (!feat) return;
-    if (chartType === 's_spectrum') return drawSpectrumPlot(target, feat, '#60A5FA');
-    if (chartType === 's_pitch') return drawPitchContourPlot(target, feat);
-    if (chartType === 's_mod') return drawModulationPlot(target, feat);
-    if (chartType === 's_envelope') return drawEnvelopePlot(target, feat);
-    if (chartType === 's_mfcc13') return drawMfcc13Plot(target, feat);
-    if (chartType === 's_energy_cum') return drawCumulativeEnergyPlot(target, feat);
+    if (chartType === 's_spectrum') return drawSpectrumPlot(target, feat, '#60A5FA', interOpts);
+    if (chartType === 's_pitch') return drawPitchContourPlot(target, feat, interOpts);
+    if (chartType === 's_mod') return drawModulationPlot(target, feat, interOpts);
+    if (chartType === 's_envelope') return drawEnvelopePlot(target, feat, interOpts);
+    if (chartType === 's_mfcc13') return drawMfcc13Plot(target, feat, interOpts);
+    if (chartType === 's_energy_cum') return drawCumulativeEnergyPlot(target, feat, interOpts);
     if (chartType === 's_centroid_contour') {
-      return drawSeriesPlot(target, feat.centroidContour || [], { stroke: '#60A5FA', fill: 'rgba(96, 165, 250, 0.2)', caption: 'Spectral Brightness Evolution Across Event' });
+      return drawSeriesPlot(target, feat.centroidContour || [], { stroke: '#60A5FA', fill: 'rgba(96, 165, 250, 0.2)', caption: 'Spectral Brightness Evolution Across Event' }, interOpts);
     }
     if (chartType === 's_onset_zoom') {
       var env = feat.envelope || [];
       var half = env.slice ? env.slice(0, Math.max(8, Math.floor(env.length * 0.5))) : env;
-      return drawSeriesPlot(target, half, { stroke: '#22C55E', fill: 'rgba(34, 197, 94, 0.24)', maxVal: 1.0, caption: 'Initial Attack Surge (First 50% of Event)' });
+      return drawSeriesPlot(target, half, { stroke: '#22C55E', fill: 'rgba(34, 197, 94, 0.24)', maxVal: 1.0, caption: 'Initial Attack Surge (First 50% of Event)' }, interOpts);
     }
     if (chartType === 's_burst_gate') {
-      return drawSeriesPlot(target, feat.envelope || [], { stroke: '#F97316', fill: 'rgba(249, 115, 22, 0.2)', maxVal: 1.0, threshA: 0.35, caption: 'Envelope vs 0.35 Burst Gate Threshold (' + (feat.burstCount || 1) + ' bursts)' });
+      return drawSeriesPlot(target, feat.envelope || [], { stroke: '#F97316', fill: 'rgba(249, 115, 22, 0.2)', maxVal: 1.0, threshA: 0.35, caption: 'Envelope vs 0.35 Burst Gate Threshold (' + (feat.burstCount || 1) + ' bursts)' }, interOpts);
     }
     if (chartType === 's_flux') {
       var fx = bonus && bonus.wetness ? bonus.wetness.fluxSeriesA : [];
-      return drawSeriesPlot(target, fx, { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.25)', caption: 'Instantaneous Spectral Flux (Turbulence Driver)' });
+      return drawSeriesPlot(target, fx, { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.25)', caption: 'Instantaneous Spectral Flux (Turbulence Driver)' }, interOpts);
     }
     if (chartType === 's_4band') {
       var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
@@ -2988,7 +3344,7 @@
         { label: '150-450Hz Mid-Low Resonance', pct: safeNum(bp[1], 0) * 100, color: '#22C55E' },
         { label: '450-1.2kHz Mid-Upper', pct: safeNum(bp[2], 0) * 100, color: '#F97316' },
         { label: '1.2k-4.2kHz Upper Aperture', pct: safeNum(bp[3], 0) * 100, color: '#FB7185' }
-      ]);
+      ], interOpts);
     }
     if (chartType === 's_mod3band') {
       var mb = feat.modBands || [0.34, 0.33, 0.33];
@@ -2996,7 +3352,7 @@
         { label: '2-8Hz Slow Oscillation', pct: safeNum(mb[0], 0) * 100, color: '#60A5FA' },
         { label: '8-20Hz Primary Flutter', pct: safeNum(mb[1], 0) * 100, color: '#22C55E' },
         { label: '20-45Hz High-Rate Modulation', pct: safeNum(mb[2], 0) * 100, color: '#8B5CF6' }
-      ]);
+      ], interOpts);
     }
     if (chartType === 's_attack_decay') {
       var dur = Math.max(0.05, safeNum(feat.duration, 0.5));
@@ -3007,7 +3363,7 @@
         { label: 'Attack Rise', pct: atkPct, color: '#FACC15' },
         { label: 'Core Sustain', pct: sustPct, color: '#22C55E' },
         { label: 'Decay Tail', pct: decPct, color: '#60A5FA' }
-      ]);
+      ], interOpts);
     }
     if (chartType === 's_squelch_mix') {
       var dA = bonus && bonus.wetness ? bonus.wetness.detailA : { md: 0.2, flux: 0.1, squelchBand: 0.2 };
@@ -3015,7 +3371,7 @@
         { label: 'Modulation Depth', pct: clamp(safeNum(dA.md, 0) / 0.65, 0, 1) * 100, color: '#22C55E' },
         { label: 'Spectral Flux', pct: clamp(safeNum(dA.flux, 0) / 0.22, 0, 1) * 100, color: '#8B5CF6' },
         { label: 'Turbulence Band', pct: clamp(safeNum(dA.squelchBand, 0), 0, 1) * 100, color: '#F97316' }
-      ]);
+      ], interOpts);
     }
     if (chartType === 's_twin_bars' && bonus) {
       var its = bonus.acoustics.items || [];
@@ -3024,25 +3380,27 @@
         target,
         its.map(function (it, idx) {
           return { label: it.emoji + ' ' + it.short, pct: safeNum(affs[idx], 0), color: idx === bonus.acoustics.detailA.bestIdx ? '#22C55E' : '#60A5FA' };
-        })
+        }),
+        interOpts
       );
     }
-    if (chartType === 's_twin_map') return drawTwinMapPlot(target, bonus);
-    if (chartType === 's_blast_map') return drawBlastZonePlot(target, bonus ? bonus.social.a.radiusM : 4.5, bonus ? bonus.social.a.panicPct : 50);
+    if (chartType === 's_twin_map') return drawTwinMapPlot(target, bonus, interOpts);
+    if (chartType === 's_blast_map') return drawBlastZonePlot(target, bonus ? bonus.social.a.radiusM : 4.5, bonus ? bonus.social.a.panicPct : 50, interOpts && interOpts.witness ? interOpts.witness : null);
     if (chartType === 's_alibi_bars' && bonus) {
       var soc = bonus.social.a;
       return drawHorizontalBarsPlot(target, [
         { label: 'Mechanical Floor Resonance', pct: soc.dogBlame, color: '#22C55E' },
         { label: 'Footwear Friction Transient', pct: soc.shoeScuff, color: '#60A5FA' },
         { label: 'Pneumatic Chair Compression', pct: soc.leatherChair, color: '#F97316' }
-      ]);
+      ], interOpts);
     }
     if (chartType === 's_ml_probs' && ml) {
       return drawHorizontalBarsPlot(
         target,
         ml.classes.map(function (c) {
           return { label: c.emoji + ' ' + c.name, pct: c.prob, color: c.color };
-        })
+        }),
+        interOpts
       );
     }
     if (chartType === 's_wall_atten') {
@@ -3053,7 +3411,333 @@
         { label: 'Partition Wall Boundary', pct: clamp(penBase * (0.52 + lowPct * 0.35), 10, 95), color: '#F97316' },
         { label: 'Corridor Boundary', pct: clamp(penBase * (0.34 + lowPct * 0.28), 5, 85), color: '#60A5FA' },
         { label: 'Lower Deck Chamber', pct: clamp(penBase * (0.24 + safeNum(feat.bandProfile ? feat.bandProfile[0] : 0.2, 0.2) * 0.5), 4, 78), color: '#22C55E' }
-      ]);
+      ], interOpts);
+    }
+  }
+
+  var BARRIER_PROFILES = [
+    { label: 'Open Chamber', cutoffHz: 4200, gain: 0.94, dbLoss: 0 },
+    { label: 'Partition Wall', cutoffHz: 420, gain: 0.46, dbLoss: 11 },
+    { label: 'Solid Door', cutoffHz: 260, gain: 0.28, dbLoss: 16 },
+    { label: 'Floor Below', cutoffHz: 155, gain: 0.17, dbLoss: 21 }
+  ];
+
+  function bindPointerScrub(canvas, onUpdate, opts) {
+    if (!canvas || canvas._labsPointerBound) return;
+    canvas._labsPointerBound = true;
+    canvas.classList.add('labs-interactive-drag');
+    var dragging = false;
+    var stopDrag = function () { dragging = false; };
+    var handleXY = function (clientX, clientY) {
+      var rect = typeof canvas.getBoundingClientRect === 'function' ? canvas.getBoundingClientRect() : null;
+      var w = rect && rect.width > 10 ? rect.width : canvas.width || 320;
+      var h = rect && rect.height > 10 ? rect.height : canvas.height || 195;
+      var lx = rect ? clientX - rect.left : w * 0.5;
+      var ly = rect ? clientY - rect.top : h * 0.5;
+      onUpdate(clamp(lx / w, 0, 1), clamp(ly / h, 0, 1), w, h);
+    };
+    canvas.addEventListener('pointerdown', function (ev) {
+      dragging = true;
+      handleXY(ev.clientX, ev.clientY);
+    });
+    canvas.addEventListener('pointermove', function (ev) {
+      if (dragging || (opts && opts.hoverMove && ev.pointerType === 'mouse')) {
+        handleXY(ev.clientX, ev.clientY);
+      }
+    });
+    canvas.addEventListener('pointerup', stopDrag);
+    canvas.addEventListener('pointercancel', stopDrag);
+    canvas.addEventListener('pointerleave', stopDrag);
+    canvas.addEventListener('click', function (ev) {
+      handleXY(ev.clientX, ev.clientY);
+    });
+  }
+
+  function describeSingleBarInspect(chartType, idx, feat, bonus, ml) {
+    if (chartType === 's_4band') {
+      var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
+      var bNames = ['Sub-Bass (45–150 Hz)', 'Mid-Low Resonance (150–450 Hz)', 'Mid-Upper (450–1.2 kHz)', 'Upper Aperture (>1.2 kHz)'];
+      return bNames[idx] + ': ' + Math.round(safeNum(bp[idx], 0) * 100) + '% of total spectral energy.';
+    }
+    if (chartType === 's_mod3band') {
+      var mb = feat.modBands || [0.34, 0.33, 0.33];
+      var mNames = ['2–8 Hz Slow Oscillation', '8–20 Hz Primary Flutter', '20–45 Hz High-Rate Modulation'];
+      return mNames[idx] + ': ' + Math.round(safeNum(mb[idx], 0) * 100) + '% modulation power share.';
+    }
+    if (chartType === 's_attack_decay') {
+      var dur = Math.max(0.05, safeNum(feat.duration, 0.5));
+      var atkPct = Math.round(clamp((safeNum(feat.attackSec, 0.1) / dur) * 100, 1, 95));
+      var decPct = Math.round(clamp((safeNum(feat.decaySec, 0.2) / dur) * 100, 1, 95));
+      var sustPct = Math.round(clamp(100 - atkPct - decPct * 0.5, 5, 95));
+      var aNames = ['Attack Rise: ' + atkPct + '% (' + Math.round(safeNum(feat.attackSec, 0) * 1000) + ' ms)', 'Core Sustain: ' + sustPct + '% amplitude hold', 'Decay Tail: ' + decPct + '% (' + Math.round(safeNum(feat.decaySec, 0) * 1000) + ' ms)'];
+      return aNames[idx] || aNames[0];
+    }
+    if (chartType === 's_squelch_mix') {
+      var dA = bonus && bonus.wetness ? bonus.wetness.detailA : { md: 0.2, flux: 0.1, squelchBand: 0.2 };
+      var sVals = [
+        'Modulation Depth: ' + Math.round(clamp(safeNum(dA.md, 0) / 0.65, 0, 1) * 100) + '%',
+        'Spectral Flux: ' + Math.round(clamp(safeNum(dA.flux, 0) / 0.22, 0, 1) * 100) + '%',
+        'Turbulence Band: ' + Math.round(clamp(safeNum(dA.squelchBand, 0), 0, 1) * 100) + '%'
+      ];
+      return sVals[idx] || sVals[0];
+    }
+    if (chartType === 's_twin_bars' && bonus) {
+      var its = bonus.acoustics.items || [];
+      var affs = bonus.acoustics.affinitiesA || [];
+      var it = its[clamp(idx, 0, Math.max(0, its.length - 1))];
+      return it ? it.emoji + ' ' + it.name + ': ' + Math.round(safeNum(affs[idx], 0)) + '% structural affinity.' : '';
+    }
+    if (chartType === 's_alibi_bars' && bonus) {
+      var soc = bonus.social.a;
+      var cItems = [
+        'Mechanical Floor Resonance: ' + Math.round(soc.dogBlame) + '% masking fit',
+        'Footwear Friction Transient: ' + Math.round(soc.shoeScuff) + '% masking fit',
+        'Pneumatic Chair Compression: ' + Math.round(soc.leatherChair) + '% masking fit'
+      ];
+      return cItems[idx] || cItems[0];
+    }
+    if (chartType === 's_ml_probs' && ml) {
+      var cl = ml.classes[clamp(idx, 0, Math.max(0, ml.classes.length - 1))];
+      return cl ? cl.emoji + ' ' + cl.name + ': ' + cl.prob + '% Softmax posterior.' : '';
+    }
+    if (chartType === 's_wall_atten') {
+      var br = BARRIER_PROFILES[clamp(idx, 0, BARRIER_PROFILES.length - 1)];
+      var lowPct = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25) : 0.4;
+      var penBase = clamp(45 + lowPct * 55, 25, 99);
+      var scales = [1, 0.52 + lowPct * 0.35, 0.34 + lowPct * 0.28, 0.24 + safeNum(feat.bandProfile ? feat.bandProfile[0] : 0.2, 0.2) * 0.5];
+      var pct = Math.round(clamp(penBase * (scales[idx] || 1), 4, 99));
+      return br.label + ': ' + pct + '% transmission · -' + br.dbLoss + ' dB · LPF ' + br.cutoffHz + ' Hz';
+    }
+    return '';
+  }
+
+  function bindSingleChartInteractions(slotEl, sound, feat, bonus, ml, Audio) {
+    if (!slotEl) return;
+    var canvases = slotEl.querySelectorAll('canvas[data-schart]');
+    var barCounts = { s_4band: 4, s_mod3band: 3, s_attack_decay: 3, s_squelch_mix: 3, s_twin_bars: bonus ? bonus.acoustics.items.length : 8, s_alibi_bars: 3, s_ml_probs: ml ? ml.classes.length : 6, s_wall_atten: 4 };
+
+    for (var i = 0; i < canvases.length; i++) {
+      (function (canvas) {
+        var cType = canvas.getAttribute('data-schart');
+        var box = canvas.closest ? canvas.closest('.labs-chart-box-inner') : canvas.parentElement;
+        var liveEl = box ? box.querySelector('.labs-chart-live-bar') : null;
+        var ctrlEl = box ? box.querySelector('.labs-chart-controls') : null;
+        var stateObj = canvas._labsInterState || {};
+        canvas._labsInterState = stateObj;
+
+        if (cType === 's_blast_map') {
+          var radM = bonus && bonus.social ? bonus.social.a.radiusM : 4.5;
+          var pPct = bonus && bonus.social ? bonus.social.a.panicPct : 50;
+          if (!stateObj.witness) {
+            var initD = Number(Math.min(radM * 0.55, 2.2).toFixed(2));
+            stateObj.witness = { dxM: Number((initD * 0.78).toFixed(2)), dyM: Number((-initD * 0.62).toFixed(2)) };
+          }
+          canvas.setAttribute('data-witness-canvas', '1');
+          function refreshWitnessUI() {
+            var wSt = stateObj.witness;
+            var d = Math.hypot(wSt.dxM, wSt.dyM);
+            var perc = computeWitnessPerception(d, radM, pPct, feat);
+            drawSingleChartType(canvas, cType, sound, feat, bonus, ml, { witness: wSt });
+            if (liveEl) {
+              liveEl.textContent =
+                'Witness @ ' + perc.distM.toFixed(1) + 'm (' + perc.zoneLabel + '): ~' + perc.estDb +
+                ' dB · ' + perc.audibilityPct + '% audible · LPF ' + perc.lowpassHz + ' Hz — ' + perc.whatHeard;
+            }
+          }
+          if (ctrlEl) {
+            ctrlEl.innerHTML =
+              '<div class="labs-witness-controls">' +
+              '  <div class="labs-witness-presets">' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="1.0">1m Chamber</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="3.0">3m Desk</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="6.0">6m Hall</button>' +
+              '    <button type="button" class="labs-mini-chip labs-witness-preset" data-wdist="11.0">11m Far</button>' +
+              '  </div>' +
+              '  <button type="button" class="labs-btn labs-btn-blue labs-btn-xs labs-witness-audition-btn">🔊 Hear What Witness Hears</button>' +
+              '</div>';
+            ctrlEl.querySelectorAll('.labs-witness-preset').forEach(function (btn) {
+              btn.addEventListener('click', function () {
+                var targetD = parseFloat(this.getAttribute('data-wdist')) || 2.5;
+                stateObj.witness = { dxM: Number((targetD * 0.78).toFixed(2)), dyM: Number((-targetD * 0.62).toFixed(2)) };
+                refreshWitnessUI();
+              });
+            });
+            var audBtn = ctrlEl.querySelector('.labs-witness-audition-btn');
+            if (audBtn) {
+              audBtn.addEventListener('click', function () {
+                var perc = computeWitnessPerception(Math.hypot(stateObj.witness.dxM, stateObj.witness.dyM), radM, pPct, feat);
+                if (Audio && typeof Audio.playSound === 'function') {
+                  Audio.playSound(sound.samples, sound.sampleRate, {
+                    channel: 'witness_sim',
+                    gain: perc.gain,
+                    lowpassHz: perc.lowpassHz
+                  });
+                }
+              });
+            }
+          }
+          bindPointerScrub(canvas, function (nx, ny, w, h) {
+            var maxR = Math.min(w, h) * 0.42;
+            var dx = ((nx * w - w * 0.5) / Math.max(10, maxR)) * 13.0;
+            var dy = ((ny * h - h * 0.52) / Math.max(10, maxR)) * 13.0;
+            var mag = Math.hypot(dx, dy);
+            if (mag < 0.35) { dx = 0.35; dy = 0; }
+            stateObj.witness = { dxM: clamp(dx, -11.5, 11.5), dyM: clamp(dy, -11.5, 11.5) };
+            refreshWitnessUI();
+          }, { hoverMove: false });
+          refreshWitnessUI();
+          return;
+        }
+
+        if (cType === 's_wall_atten') {
+          if (typeof stateObj.selectedIdx !== 'number') stateObj.selectedIdx = 1;
+          function refreshBarrierUI() {
+            var idx = clamp(stateObj.selectedIdx, 0, BARRIER_PROFILES.length - 1);
+            drawSingleChartType(canvas, cType, sound, feat, bonus, ml, { selectedIdx: idx });
+            if (liveEl) liveEl.textContent = describeSingleBarInspect(cType, idx, feat, bonus, ml);
+            if (ctrlEl) {
+              ctrlEl.querySelectorAll('.labs-barrier-preset').forEach(function (b, bIdx) {
+                b.classList.toggle('active', bIdx === idx);
+              });
+            }
+          }
+          if (ctrlEl) {
+            ctrlEl.innerHTML =
+              '<div class="labs-witness-controls">' +
+              '  <div class="labs-witness-presets">' +
+              BARRIER_PROFILES.map(function (bp, bIdx) {
+                return '<button type="button" class="labs-mini-chip labs-barrier-preset' + (bIdx === stateObj.selectedIdx ? ' active' : '') + '" data-bidx="' + bIdx + '">' + esc(bp.label) + '</button>';
+              }).join('') +
+              '  </div>' +
+              '  <button type="button" class="labs-btn labs-btn-blue labs-btn-xs labs-barrier-audition-btn">🔊 Audition Through Barrier</button>' +
+              '</div>';
+            ctrlEl.querySelectorAll('.labs-barrier-preset').forEach(function (b) {
+              b.addEventListener('click', function () {
+                stateObj.selectedIdx = parseInt(this.getAttribute('data-bidx'), 10) || 0;
+                refreshBarrierUI();
+              });
+            });
+            var bAudBtn = ctrlEl.querySelector('.labs-barrier-audition-btn');
+            if (bAudBtn) {
+              bAudBtn.addEventListener('click', function () {
+                var bp = BARRIER_PROFILES[clamp(stateObj.selectedIdx, 0, BARRIER_PROFILES.length - 1)];
+                if (Audio && typeof Audio.playSound === 'function') {
+                  Audio.playSound(sound.samples, sound.sampleRate, {
+                    channel: 'barrier_sim',
+                    gain: bp.gain,
+                    lowpassHz: bp.cutoffHz
+                  });
+                }
+              });
+            }
+          }
+          bindPointerScrub(canvas, function (_nx, ny) {
+            stateObj.selectedIdx = clamp(Math.floor(ny * BARRIER_PROFILES.length), 0, BARRIER_PROFILES.length - 1);
+            refreshBarrierUI();
+          }, { hoverMove: false });
+          refreshBarrierUI();
+          return;
+        }
+
+        if (barCounts[cType]) {
+          var cnt = barCounts[cType];
+          bindPointerScrub(canvas, function (_nx, ny) {
+            var idx = clamp(Math.floor(ny * cnt), 0, cnt - 1);
+            stateObj.selectedIdx = idx;
+            drawSingleChartType(canvas, cType, sound, feat, bonus, ml, stateObj);
+            if (liveEl) liveEl.textContent = describeSingleBarInspect(cType, idx, feat, bonus, ml);
+          }, { hoverMove: true });
+          return;
+        }
+
+        if (cType === 's_mfcc13') {
+          bindPointerScrub(canvas, function (nx) {
+            var idx = clamp(Math.floor(nx * 13), 0, 12);
+            stateObj.selectedIdx = idx;
+            drawSingleChartType(canvas, cType, sound, feat, bonus, ml, stateObj);
+            var val = feat.mfccMean ? safeNum(feat.mfccMean[idx], 0) : 0;
+            if (liveEl) liveEl.textContent = 'Cepstral Coefficient C' + (idx + 1) + ': ' + val.toFixed(2) + ' (spectral filterbank shape weight).';
+          }, { hoverMove: true });
+          return;
+        }
+
+        if (cType === 's_twin_map' && bonus) {
+          bindPointerScrub(canvas, function (nx, ny, w, h) {
+            var pad = { l: 34, r: 16, t: 16, b: 24 };
+            var pw = w - pad.l - pad.r;
+            var ph = h - pad.t - pad.b;
+            var px = nx * w;
+            var py = ny * h;
+            var its = bonus.acoustics.items || [];
+            var affs = bonus.acoustics.affinitiesA || [];
+            var logMin = Math.log2(50);
+            var logMax = Math.log2(1600);
+            var bestIdx = 0;
+            var bestDist = Infinity;
+            for (var k = 0; k < its.length; k++) {
+              var ix = pad.l + clamp((Math.log2(its[k].freq) - logMin) / (logMax - logMin), 0, 1) * pw;
+              var iy = pad.t + ph - clamp(its[k].flat, 0, 1) * ph;
+              var dd = Math.hypot(px - ix, py - iy);
+              if (dd < bestDist) { bestDist = dd; bestIdx = k; }
+            }
+            stateObj.selectedIdx = bestIdx;
+            drawSingleChartType(canvas, cType, sound, feat, bonus, ml, stateObj);
+            var selItem = its[bestIdx];
+            if (liveEl && selItem) {
+              liveEl.textContent = selItem.emoji + ' ' + selItem.name + ' (' + selItem.freq + ' Hz · flatness ' + selItem.flat.toFixed(2) + ') — ' + Math.round(safeNum(affs[bestIdx], 0)) + '% analogue affinity.';
+            }
+          }, { hoverMove: false });
+          return;
+        }
+
+        // Spectrum, Pitch, Modulation, Envelope, Cumulative Energy, Centroid, Flux, Onset, Burst Gate
+        bindPointerScrub(canvas, function (nx) {
+          stateObj.hoverNorm = nx;
+          drawSingleChartType(canvas, cType, sound, feat, bonus, ml, stateObj);
+          if (!liveEl) return;
+          var durS = safeNum(feat.duration, 0);
+          var tAt = (nx * durS).toFixed(2) + 's';
+          if (cType === 's_spectrum') {
+            var hz = Math.round(45 * Math.pow(4200 / 45, nx));
+            var bins = feat.avgSpectrum || [];
+            var bIdx = clamp(Math.round(nx * Math.max(0, bins.length - 1)), 0, Math.max(0, bins.length - 1));
+            liveEl.textContent = 'Frequency: ' + hz + ' Hz · Relative Energy: ' + Math.round(safeNum(bins[bIdx], 0) * 100) + '%';
+          } else if (cType === 's_mod') {
+            var mHz = Math.round(4 + nx * 41);
+            var mSpec = feat.modSpectrum || [];
+            var mIdx = clamp(Math.round(nx * Math.max(0, mSpec.length - 1)), 0, Math.max(0, mSpec.length - 1));
+            liveEl.textContent = 'Modulation Band: ' + mHz + ' Hz (' + (mHz * 60) + ' cyc/m) · Magnitude: ' + Math.round(safeNum(mSpec[mIdx], 0) * 100) + '%';
+          } else if (cType === 's_pitch') {
+            var pArr = feat.pitchHzArr || [];
+            var pIdx = clamp(Math.round(nx * Math.max(0, pArr.length - 1)), 0, Math.max(0, pArr.length - 1));
+            var pVal = safeNum(pArr[pIdx], 0);
+            liveEl.textContent = 't = ' + tAt + ' (' + Math.round(nx * 100) + '%) · F0: ' + (pVal > 0 ? Math.round(pVal) + ' Hz' : 'Unvoiced/Transition');
+          } else if (cType === 's_energy_cum') {
+            var envArr = feat.envelope || [];
+            var tot = 0, sub = 0, targetK = clamp(Math.round(nx * Math.max(0, envArr.length - 1)), 0, Math.max(0, envArr.length - 1));
+            for (var ei = 0; ei < envArr.length; ei++) {
+              var e2 = safeNum(envArr[ei], 0) * safeNum(envArr[ei], 0);
+              tot += e2;
+              if (ei <= targetK) sub += e2;
+            }
+            liveEl.textContent = 't = ' + tAt + ' (' + Math.round(nx * 100) + '%) · Cumulative Acoustic Energy: ' + (tot > 0 ? Math.round((sub / tot) * 100) : 0) + '%';
+          } else if (cType === 's_centroid_contour') {
+            var cc = feat.centroidContour || [];
+            var cIdx = clamp(Math.round(nx * Math.max(0, cc.length - 1)), 0, Math.max(0, cc.length - 1));
+            liveEl.textContent = 't = ' + tAt + ' · Spectral Brightness Offset: ' + safeNum(cc[cIdx], 0).toFixed(2);
+          } else if (cType === 's_flux') {
+            var flx = bonus && bonus.wetness ? bonus.wetness.fluxSeriesA : [];
+            var fIdx = clamp(Math.round(nx * Math.max(0, flx.length - 1)), 0, Math.max(0, flx.length - 1));
+            liveEl.textContent = 't = ' + tAt + ' · Instantaneous Spectral Flux: ' + safeNum(flx[fIdx], 0).toFixed(3);
+          } else {
+            var env = feat.envelope || [];
+            var lim = cType === 's_onset_zoom' ? Math.max(8, Math.floor(env.length * 0.5)) : env.length;
+            var eIdx = clamp(Math.round(nx * Math.max(0, lim - 1)), 0, Math.max(0, lim - 1));
+            var tShow = cType === 's_onset_zoom' ? (nx * durS * 0.5).toFixed(2) + 's' : tAt;
+            liveEl.textContent = 't = ' + tShow + ' · Instantaneous Amplitude: ' + Math.round(safeNum(env[eIdx], 0) * 100) + '%';
+          }
+        }, { hoverMove: true });
+      })(canvases[i]);
     }
   }
 
@@ -4144,7 +4828,7 @@
     };
   }
 
-  function drawAuthenticityPlot(target, authA, authB, labelA, labelB) {
+  function drawAuthenticityPlot(target, authA, authB, labelA, labelB, interOpts) {
     var p = setupDarkPlot(target, 215);
     if (!p || !authA || !authA.breakdown) return;
     var ctx = p.ctx;
@@ -4161,6 +4845,7 @@
     var plotW = Math.max(40, w - padL - padR);
     var plotH = Math.max(40, h - padT - padB);
     var rowStep = plotH / Math.max(1, items.length);
+    var selIdx = interOpts && typeof interOpts.selectedIdx === 'number' ? interOpts.selectedIdx : -1;
 
     // Reference vertical grid lines at 20%, 40%, 60%, 80%, 100%
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
@@ -4181,7 +4866,11 @@
     for (var i = 0; i < items.length; i++) {
       var row = items[i];
       var yMid = padT + i * rowStep + rowStep / 2;
-      ctx.fillStyle = row.polarity === 'overall' ? '#F8FAFC' : '#CBD5E1';
+      if (i === selIdx) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+        ctx.fillRect(4, padT + i * rowStep + 1, w - 8, Math.max(10, rowStep - 2));
+      }
+      ctx.fillStyle = i === selIdx || row.polarity === 'overall' ? '#F8FAFC' : '#CBD5E1';
       ctx.font = (row.polarity === 'overall' ? '700 ' : '600 ') + '10px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'right';
       ctx.fillText(row.name.slice(0, 22), padL - 8, yMid + 3.5);
@@ -4231,6 +4920,29 @@
     }
 
     finishDarkPlot(p);
+  }
+
+  function wireAuthChartInteraction(slotEl, authA, authB, labelA, labelB) {
+    if (!slotEl || !authA || !authA.breakdown) return;
+    var canvas = slotEl.querySelector('canvas[data-auth-chart]');
+    var liveEl = slotEl.querySelector('.labs-auth-live-bar');
+    if (!canvas) return;
+    var items = authA.breakdown;
+    bindPointerScrub(canvas, function (_nx, ny, _w, h) {
+      var padT = 18, padB = 18;
+      var plotH = Math.max(40, h - padT - padB);
+      var yPx = clamp(ny * h - padT, 0, plotH - 0.1);
+      var idx = clamp(Math.floor((yPx / plotH) * items.length), 0, items.length - 1);
+      canvas._labsSelIdx = idx;
+      drawAuthenticityPlot(canvas, authA, authB, labelA, labelB, { selectedIdx: idx });
+      var rA = items[idx];
+      var rB = authB && authB.breakdown ? authB.breakdown[idx] : null;
+      if (liveEl && rA) {
+        liveEl.textContent = rB
+          ? rA.name + ' — ' + (labelA || 'A') + ': ' + rA.score + '% (' + rA.status + ') vs ' + (labelB || 'B') + ': ' + rB.score + '% (' + rB.status + ')'
+          : rA.name + ': ' + rA.score + '% (' + rA.status + ') — ' + rA.explanation;
+      }
+    }, { hoverMove: true });
   }
 
   function renderAuthenticityGaugeHtml(auth, tagLabel) {
@@ -4341,12 +5053,17 @@
       '</div>' +
       renderAuthenticityGaugeHtml(auth, 'SPECIMEN ORIGIN TELEMETRY') +
       '<div class="labs-chart-box-inner" style="margin:12px 0">' +
-      '  <div class="labs-chart-box-head"><span>Authenticity Indicator Matrix</span><small>Heuristic DSP signals (0–100%)</small></div>' +
+      '  <div class="labs-chart-box-head"><span>Authenticity Indicator Matrix</span><small>Tap or drag rows to inspect indicators</small></div>' +
       '  <canvas class="labs-2d-canvas" data-auth-chart="single" style="height:220px"></canvas>' +
+      '  <div class="labs-chart-live-bar labs-auth-live-bar">Select any indicator bar above to inspect its acoustic basis.</div>' +
       '</div>' +
-      '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
-      renderAuthenticityBreakdownRowsHtml(auth.breakdown) +
-      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Authenticity = 100 * sum(w_i * OrganicTrait_i); Confidence = Consensus(7) + Duration + SNR (Excluded From Fidelity Index)</code></div>'
+      renderCollapsibleStatsHtml(
+        renderAuthenticityBreakdownRowsHtml(auth.breakdown),
+        'Authenticity = 100 * sum(w_i * OrganicTrait_i); Confidence = Consensus(7) + Duration + SNR (Excluded From Fidelity Index)',
+        (auth.breakdown || []).length,
+        'Detailed Breakdown (7 Indicators + Overall)',
+        'HEURISTIC ENGINE'
+      )
     );
   }
 
@@ -4386,12 +5103,17 @@
       '  <div class="labs-auth-cmp-col">' + renderAuthenticityGaugeHtml(authB, 'SPECIMEN B · ' + labelB) + '</div>' +
       '</div>' +
       '<div class="labs-chart-box-inner" style="margin:12px 0">' +
-      '  <div class="labs-chart-box-head"><span>Side-by-Side Authenticity Telemetry</span><small>Blue: ' + esc(labelA) + ' · Rose: ' + esc(labelB) + '</small></div>' +
+      '  <div class="labs-chart-box-head"><span>Side-by-Side Authenticity Telemetry</span><small>Blue: ' + esc(labelA) + ' · Rose: ' + esc(labelB) + ' · Tap rows to inspect</small></div>' +
       '  <canvas class="labs-2d-canvas" data-auth-chart="compare" style="height:220px"></canvas>' +
+      '  <div class="labs-chart-live-bar labs-auth-live-bar">Select any row above to compare specimen A vs specimen B telemetry.</div>' +
       '</div>' +
-      '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
-      '<div class="labs-auth-breakdown">' + rowsHtml + '</div>' +
-      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in Reproduction Fidelity)</code></div>'
+      renderCollapsibleStatsHtml(
+        '<div class="labs-auth-breakdown">' + rowsHtml + '</div>',
+        'Pure DSP indicators only · Informational laboratory telemetry (0% weight in Reproduction Fidelity)',
+        (authA.breakdown || []).length,
+        'Detailed Breakdown (7 Indicators + Overall)',
+        'HEURISTIC ENGINE'
+      )
     );
   }
 
@@ -4423,10 +5145,13 @@
     var fieldVerdict = buildSingleFieldVerdict(sound, feat, bonus, ml, noteStr);
     var sciComment = pickScientistComment('bottomsworth', label + '|' + prof.durationLabel, 0);
     sciComment.label = 'Lead Laboratory Evaluation';
-    var specWobble = pickScientistComment('wobble', label + '|spec3d', 2);
+    var specWobbleQuote = buildSingle3DSpectrogramCommentary(feat);
     var rareDispatch = pickRareComment(label + '|' + prof.durationLabel + '|single');
     var archCmp = buildArchiveComparison(feat, bonus, opts.archiveSamples, label + '|' + prof.durationLabel);
     var shareVerdict = pickShareableVerdict(label + '|' + prof.durationLabel + '|' + ml.topClass.name);
+    var singleBottomActionsHtml =
+      '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-share">📤 Share / Email</button>' +
+      '<button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>';
     var chartMeta = buildFinalChartsMetadata(sound, feat, bonus, opts.archiveSamples);
     var hoverState = { c_spec: null, c_pitch: null, c_mod: null, c_env: null };
     var activeHotspots = {
@@ -4539,19 +5264,23 @@
       '    <div class="labs-fn-single-actions">' +
       '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play Specimen</button>' +
       compareBtnHtml +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-share">📤 Share / Email</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>' +
-      '    </div>' +
-      '    <div class="labs-fn-meta-row">' +
-      '      <button type="button" class="labs-twin-pill labs-s-ml-cue">🤖 ML Profile: <strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name) + '</strong> (' + ml.confidence + '% confidence)</button>' +
       '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
       '    </div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ACOUSTIC PROFILE SUMMARY</span>' +
+      '        <span class="labs-verdict-grade">' + esc(Math.round(safeNum(feat.modRateHz, 0)) + ' Hz Modulation') + '</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
+      '    </div>' +
+      renderScientistCommentHtml(sciComment.scientistId, sciComment.quote, sciComment.label) +
+      renderRareCommentHtml(rareDispatch) +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
       '    <div class="labs-spec-bay-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">3D TIME-FREQUENCY TOPOLOGY</div>' +
-      '        <h3 class="labs-section-title">Interactive 3D Spectrogram — ' + esc(label) + '</h3>' +
+      '        <h3 class="labs-section-title">' + esc(label) + '</h3>' +
       '      </div>' +
       '      <div class="labs-spec-actions">' +
       '        <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play2">▶ Play &amp; Sweep</button>' +
@@ -4565,36 +5294,18 @@
       '      </div>' +
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
-      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Spectrogram Commentary') +
+      renderScientistCommentHtml('wobble', specWobbleQuote, '3D Spectrogram Telemetry Commentary') +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">INSTITUTE REPORT · LABORATORY FINDINGS</div>' +
-      '        <h3 class="labs-section-title">Executive Research Summary &amp; Telemetry</h3>' +
+      '        <div class="labs-eyebrow">TELEMETRY DOMAINS · LABORATORY FINDINGS</div>' +
+      '        <h3 class="labs-section-title">Telemetry Diagnostics &amp; Interactive Plots</h3>' +
       '      </div>' +
-      '      <span class="labs-chip labs-chip-purple">🤖 ' + esc(ml.topClass.name) + '</span>' +
-      '    </div>' +
-      '    <div class="labs-verdict-banner">' +
-      '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ACOUSTIC PROFILE SUMMARY</span>' +
-      '        <span class="labs-verdict-grade">' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' · ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz Modulation') + '</span>' +
-      '      </div>' +
-      '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
-      '    </div>' +
-      renderScientistCommentHtml(sciComment.scientistId, sciComment.quote, sciComment.label) +
-      renderRareCommentHtml(rareDispatch) +
-      '    <div class="labs-single-facts-grid">' +
-      '      <div class="labs-fact-box"><span>Computational Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
-      '      <div class="labs-fact-box"><span>Primary Resonance Profile</span><strong>' + esc(noteStr) + '</strong></div>' +
-      (bonus
-        ? '<div class="labs-fact-box"><span>Hydro-Acoustic Turbulence</span><strong>' + esc(bonus.wetness.wetA + '% · ' + bonus.wetness.labelA) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Reference Analogue</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Environmental Masking</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
-        : '') +
+      '      <span class="labs-chip labs-chip-blue">' + displayGauges.length + ' Metrics</span>' +
       '    </div>' +
       renderArchiveComparisonHtml(archCmp) +
-      '    <div class="labs-hint-text">Select any of the ' + displayGauges.length + ' metrics below to inspect plots, laboratory observations &amp; acoustic equations inline.</div>' +
+      '    <div class="labs-hint-text">Select any telemetry card to inspect interactive charts; individual metric readouts stay collapsed inside until opened.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
@@ -4607,20 +5318,22 @@
       renderFinalChartCardHtml('c_env', 'Pressure Release Envelope', 'Attack / T50 / Decay') +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, label, 'Acoustic Profile · ' + archCmp.energyPct + 'th Energy Pct') +
       renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single') +
+      renderShareableVerdictHtml(shareVerdict, label, archCmp.energyPct + 'th Energy Percentile', singleBottomActionsHtml) +
       '</div>';
+
+    wireArchiveToggles(mountEl);
 
     function redrawExpandedSingle() {
       if (!activeDialId || !activeSlotEl) return;
       if (activeDialId === 's_authenticity') {
         var authCanvas = activeSlotEl.querySelector('canvas[data-auth-chart]');
-        if (authCanvas) drawAuthenticityPlot(authCanvas, auth);
+        if (authCanvas) drawAuthenticityPlot(authCanvas, auth, null, null, null, typeof authCanvas._labsSelIdx === 'number' ? { selectedIdx: authCanvas._labsSelIdx } : null);
         return;
       }
       var canvases = activeSlotEl.querySelectorAll('canvas[data-schart]');
       for (var i = 0; i < canvases.length; i++) {
-        drawSingleChartType(canvases[i], canvases[i].getAttribute('data-schart'), sound, feat, bonus, ml);
+        drawSingleChartType(canvases[i], canvases[i].getAttribute('data-schart'), sound, feat, bonus, ml, canvases[i]._labsInterState);
       }
     }
 
@@ -4657,6 +5370,8 @@
           '<div class="labs-acc-sci-slot">' +
           renderScientistCommentHtml(sAuthSci.scientistId, sAuthSci.quote, 'Authenticity Review') +
           '</div>';
+        wireSubDisclosures(aSlotEl);
+        wireAuthChartInteraction(aSlotEl, auth);
 
         var aCloseBtn = aSlotEl.querySelector('.labs-acc-close');
         if (aCloseBtn) aCloseBtn.addEventListener('click', closeSingleRow);
@@ -4694,6 +5409,8 @@
             '<div class="labs-chart-box-inner">' +
             '  <div class="labs-chart-box-head"><span>' + esc(ch.title) + '</span><small>' + esc(ch.sub) + '</small></div>' +
             '  <canvas class="labs-2d-canvas" data-schart="' + esc(ch.drawType) + '"></canvas>' +
+            '  <div class="labs-chart-controls"></div>' +
+            '  <div class="labs-chart-live-bar">Tap or drag the chart above to inspect live values.</div>' +
             '</div>'
           );
         })
@@ -4718,14 +5435,21 @@
         '</div>' +
         '<div class="forensics-commentary labs-single-commentary">' + esc(rep.commentary) + '</div>' +
         '<div class="labs-single-charts-grid">' + chartsHtml + '</div>' +
-        '<div class="labs-single-facts-grid">' + statsHtml + '</div>' +
-        '<div class="labs-formula-strip"><span class="formula-tag">EQUATION</span> <code>' + esc(rep.formula) + '</code></div>' +
+        renderCollapsibleStatsHtml(
+          '<div class="labs-single-facts-grid">' + statsHtml + '</div>',
+          rep.formula,
+          (rep.stats || []).length,
+          'Individual Telemetry Metrics & Equation',
+          'EQUATION'
+        ) +
         '<div class="labs-acc-sci-slot">' +
         renderScientistCommentHtml(repSci.scientistId, repSci.quote, 'Specialist Metric Observation') +
         '</div>';
+      wireSubDisclosures(slotEl);
 
       var closeBtn = slotEl.querySelector('.labs-acc-close');
       if (closeBtn) closeBtn.addEventListener('click', closeSingleRow);
+      bindSingleChartInteractions(slotEl, sound, feat, bonus, ml, Audio);
 
       if (typeof root.requestAnimationFrame === 'function') {
         root.requestAnimationFrame(function () {
@@ -4748,13 +5472,6 @@
         } else {
           openSingleRow(did);
         }
-      });
-    }
-
-    var mlCue = mountEl.querySelector('.labs-s-ml-cue');
-    if (mlCue) {
-      mlCue.addEventListener('click', function () {
-        openSingleRow('s_ml');
       });
     }
 
@@ -5117,7 +5834,7 @@
     }
   }
 
-  function drawConstellationPlot(canvas, groupObj) {
+  function drawConstellationPlot(canvas, groupObj, selectedIdx) {
     var p = setupDarkPlot(canvas, 200);
     if (!p || !groupObj || !groupObj.segments) return;
     var ctx = p.ctx, w = p.w, h = p.h;
@@ -5127,6 +5844,7 @@
     var segs = groupObj.segments;
     var logMin = Math.log2(45);
     var logMax = Math.log2(1600);
+    var sel = typeof selectedIdx === 'number' ? selectedIdx : -1;
 
     for (var i = 0; i < segs.length; i++) {
       var sg = segs[i];
@@ -5135,16 +5853,22 @@
       var cx = pad.l + lx * pw;
       var cy = pad.t + ph - ly * ph;
 
+      if (i === sel) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.fillStyle = sg.color;
       ctx.beginPath();
-      ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+      ctx.arc(cx, cy, i === sel ? 8.5 : 7, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = i === sel ? '#38BDF8' : '#FFFFFF';
+      ctx.lineWidth = i === sel ? 2.2 : 1.4;
       ctx.stroke();
 
-      ctx.fillStyle = '#E5E7EB';
-      ctx.font = '600 10px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = i === sel ? '#F8FAFC' : '#E5E7EB';
+      ctx.font = (i === sel ? '700 ' : '600 ') + '10px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = cx > w * 0.72 ? 'right' : 'left';
       ctx.fillText(sg.name.slice(0, 16), cx + (cx > w * 0.72 ? -10 : 10), cy + 3);
     }
@@ -5210,10 +5934,13 @@
     var rowsHtml = renderMetricRowsHtml(gauges, { expandable: false }) + renderMetricRowsHtml([authGrpRow], { expandable: true });
     var grpComment = pickScientistComment('bottomsworth', g.name + '|' + sortLabel, 1);
     grpComment.label = 'Conductor Acoustic Review';
-    var specWobble = pickScientistComment('wobble', g.name + '|spec3d', 0);
+    var specWobbleQuote = buildGroup3DSpectrogramCommentary(g);
     var rareDispatch = pickRareComment(g.name + '|' + sortLabel + '|group');
     var archCmp = buildArchiveComparison(g.features, null, opts.archiveSamples || null, g.name + '|grp');
     var shareVerdict = pickShareableVerdict(g.name + '|' + sortLabel + '|megamix');
+    var groupBottomActionsHtml =
+      '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-share">📤 Share / Email</button>' +
+      '<button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>';
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
@@ -5228,10 +5955,6 @@
       '    <div class="labs-fn-single-actions">' +
       '      <button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-g-play">▶ Play Combined Track</button>' +
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-stop">⏹ Stop</button>' +
-      '      <button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-share">📤 Share / Email</button>' +
-      '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>' +
-      '    </div>' +
-      '    <div class="labs-fn-meta-row">' +
       '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
       '    </div>' +
       '    <div class="labs-sort-bar">' +
@@ -5244,6 +5967,15 @@
       '        <button type="button" class="labs-dir-btn' + (sortDir === 'desc' ? ' active' : '') + '" data-gdir="desc">↓ Descending</button>' +
       '      </div>' +
       '    </div>' +
+      '    <div class="labs-verdict-banner">' +
+      '      <div class="labs-verdict-banner-head">' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ENSEMBLE CONDUCTOR ASSESSMENT</span>' +
+      '        <span class="labs-verdict-grade">Archive Mastered · 44.1 kHz</span>' +
+      '      </div>' +
+      '      <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
+      '    </div>' +
+      renderScientistCommentHtml(grpComment.scientistId, grpComment.quote, grpComment.label) +
+      renderRareCommentHtml(rareDispatch) +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
       '    <div class="labs-spec-bay-head">' +
@@ -5259,30 +5991,22 @@
       '      </div>' +
       '    </div>' +
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
-      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Ensemble Topology Note') +
+      renderScientistCommentHtml('wobble', specWobbleQuote, '3D Ensemble Topology Commentary') +
       '    <div class="labs-group-wave-wrap">' +
-      '      <div class="labs-chart-box-head"><span>Composite Acoustic Profile Waveform</span><small>Color-coded Archive Specimens in Sequence</small></div>' +
+      '      <div class="labs-chart-box-head"><span>Composite Acoustic Profile Waveform</span><small>Tap waveform to seek &amp; audition sequence</small></div>' +
       '      <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
+      '      <div class="labs-chart-live-bar" id="' + uid + 'c_wave_live">Tap anywhere on waveform to seek to that specimen.</div>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY · COMPOSITE ANALYSIS</div>' +
+      '        <div class="labs-eyebrow">TELEMETRY DOMAINS · COMPOSITE ANALYSIS</div>' +
       '        <h3 class="labs-section-title">Ensemble Telemetry &amp; Specimen Order</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-blue">' + esc(sortLabel) + '</span>' +
       '    </div>' +
       '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
-      '    <div class="labs-verdict-banner">' +
-      '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ENSEMBLE CONDUCTOR ASSESSMENT</span>' +
-      '        <span class="labs-verdict-grade">Archive Mastered · 44.1 kHz</span>' +
-      '      </div>' +
-      '      <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
-      '    </div>' +
-      renderScientistCommentHtml(grpComment.scientistId, grpComment.quote, grpComment.label) +
-      renderRareCommentHtml(rareDispatch) +
       renderArchiveComparisonHtml(archCmp) +
       '    <div class="labs-metric-list">' +
       rowsHtml +
@@ -5290,28 +6014,35 @@
       '    <hr class="labs-analysis-divider" />' +
       '    <div class="labs-single-charts-grid">' +
       '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Archive Specimen Constellation (Pitch × Turbulence)</span><small>Spatial acoustic distribution</small></div>' +
+      '        <div class="labs-chart-box-head"><span>Archive Specimen Constellation (Pitch × Turbulence)</span><small>Tap node to inspect specimen</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
+      '        <div class="labs-chart-live-bar" id="' + uid + 'c_map_live">Select any constellation node to inspect specimen telemetry.</div>' +
       '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Observation:</strong> Constellation spans ' + (g.segments || []).length + ' cataloged archive specimens — Dr. Pufferton verified full structural indexing. <em>(Dr. Pufferton)</em></span></div>' +
       '      </div>' +
       '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Spectral Distribution Map (Combined 40-Band FFT)</span><small>Aggregate frequency energy</small></div>' +
+      '        <div class="labs-chart-box-head"><span>Spectral Distribution Map (Combined 40-Band FFT)</span><small>Tap band to inspect energy</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
+      '        <div class="labs-chart-live-bar" id="' + uid + 'c_spec_live">Tap or drag across spectrum bars to inspect frequency energy.</div>' +
       '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid exhibits unusual modal discipline across all constituent emissions. <em>(Dr. Wobble)</em></span></div>' +
       '      </div>' +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Archive Specimens') +
       renderReportSignatureHtml(g.name + '|' + sortLabel + '|group') +
+      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Archive Specimens', groupBottomActionsHtml) +
       '</div>';
+
+    wireArchiveToggles(mountEl);
+
+    var grpMapSelIdx = null;
+    var grpSpecHover = null;
 
     function drawGroupVisuals() {
       drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, lastProg);
-      drawConstellationPlot(mountEl.querySelector('#' + uid + 'c_map'), g);
-      drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), g.features, '#22C55E');
+      drawConstellationPlot(mountEl.querySelector('#' + uid + 'c_map'), g, grpMapSelIdx);
+      drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), g.features, '#22C55E', grpSpecHover != null ? { hoverNorm: grpSpecHover } : null);
       if (authGrpOpen && authGrpSlotEl) {
         var ac = authGrpSlotEl.querySelector('canvas[data-auth-chart]');
-        if (ac) drawAuthenticityPlot(ac, authGrp);
+        if (ac) drawAuthenticityPlot(ac, authGrp, null, null, null, typeof ac._labsSelIdx === 'number' ? { selectedIdx: ac._labsSelIdx } : null);
       }
     }
 
@@ -5348,6 +6079,8 @@
           authGrp,
           'Heuristic origin evaluation computed across the combined multi-specimen composite track and movement spectrum (informational only).'
         );
+        wireSubDisclosures(slotEl);
+        wireAuthChartInteraction(slotEl, authGrp);
         var closeBtn = slotEl.querySelector('.labs-acc-close');
         if (closeBtn) closeBtn.addEventListener('click', closeGroupAuthRow);
         if (typeof root.requestAnimationFrame === 'function') {
@@ -5461,6 +6194,70 @@
       });
     }
 
+    var grpWaveCanvas = mountEl.querySelector('#' + uid + 'c_wave');
+    var grpWaveLive = mountEl.querySelector('#' + uid + 'c_wave_live');
+    if (grpWaveCanvas) {
+      bindPointerScrub(grpWaveCanvas, function (nx) {
+        var seekSec = nx * g.totalDur;
+        lastProg = nx;
+        pausedAtSec = seekSec;
+        drawSegmentedWaveform(grpWaveCanvas, g, nx);
+        if (spec) spec.setPlayhead(nx);
+        var segs = g.segments || [];
+        var hitSeg = null;
+        for (var si = 0; si < segs.length; si++) {
+          if (seekSec >= segs[si].startSec && seekSec <= segs[si].endSec) { hitSeg = segs[si]; break; }
+        }
+        if (grpWaveLive) {
+          grpWaveLive.textContent = hitSeg
+            ? 'Seeked to ' + seekSec.toFixed(2) + 's — Specimen: ' + hitSeg.name + ' (' + Math.round(hitSeg.pitchHz) + ' Hz)'
+            : 'Seeked to ' + seekSec.toFixed(2) + 's / ' + g.totalDur.toFixed(2) + 's';
+        }
+      }, { hoverMove: false });
+    }
+
+    var grpMapCanvas = mountEl.querySelector('#' + uid + 'c_map');
+    var grpMapLive = mountEl.querySelector('#' + uid + 'c_map_live');
+    if (grpMapCanvas && (g.segments || []).length > 0) {
+      bindPointerScrub(grpMapCanvas, function (nx, ny, w, h) {
+        var pad = { l: 38, r: 16, t: 18, b: 26 };
+        var pw = w - pad.l - pad.r;
+        var ph = h - pad.t - pad.b;
+        var px = nx * w, py = ny * h;
+        var segs = g.segments || [];
+        var logMin = Math.log2(45), logMax = Math.log2(1600);
+        var bestI = 0, bestD = Infinity;
+        for (var si = 0; si < segs.length; si++) {
+          var sg = segs[si];
+          var sx = pad.l + clamp((Math.log2(clamp(sg.pitchHz || 140, 45, 1600)) - logMin) / (logMax - logMin), 0, 1) * pw;
+          var sy = pad.t + ph - clamp((sg.wetnessPct || 25) / 100, 0, 1) * ph;
+          var dd = Math.hypot(px - sx, py - sy);
+          if (dd < bestD) { bestD = dd; bestI = si; }
+        }
+        grpMapSelIdx = bestI;
+        drawConstellationPlot(grpMapCanvas, g, bestI);
+        var selSg = segs[bestI];
+        if (grpMapLive && selSg) {
+          grpMapLive.textContent = '#' + (bestI + 1) + ' ' + selSg.name + ': ' + Math.round(selSg.pitchHz || 0) + ' Hz · ' + selSg.durationSec.toFixed(2) + 's · Turbulence ' + Math.round(selSg.wetnessPct || 0) + '%';
+        }
+      }, { hoverMove: false });
+    }
+
+    var grpSpecCanvas = mountEl.querySelector('#' + uid + 'c_spec');
+    var grpSpecLive = mountEl.querySelector('#' + uid + 'c_spec_live');
+    if (grpSpecCanvas && g.features) {
+      bindPointerScrub(grpSpecCanvas, function (nx) {
+        grpSpecHover = nx;
+        drawSpectrumPlot(grpSpecCanvas, g.features, '#22C55E', { hoverNorm: nx });
+        var hz = Math.round(45 * Math.pow(4200 / 45, nx));
+        var bins = g.features.avgSpectrum || [];
+        var bIdx = clamp(Math.round(nx * Math.max(0, bins.length - 1)), 0, Math.max(0, bins.length - 1));
+        if (grpSpecLive) {
+          grpSpecLive.textContent = 'Ensemble Frequency: ' + hz + ' Hz · Mean Normalized Energy: ' + Math.round(safeNum(bins[bIdx], 0) * 100) + '%';
+        }
+      }, { hoverMove: true });
+    }
+
     var shareGrpBtn = mountEl.querySelector('.labs-g-share');
     if (shareGrpBtn) {
       shareGrpBtn.addEventListener('click', function () {
@@ -5532,6 +6329,9 @@
     pickRareComment: pickRareComment,
     pickShareableVerdict: pickShareableVerdict,
     buildArchiveComparison: buildArchiveComparison,
+    buildSingle3DSpectrogramCommentary: buildSingle3DSpectrogramCommentary,
+    buildComparison3DSpectrogramCommentary: buildComparison3DSpectrogramCommentary,
+    buildGroup3DSpectrogramCommentary: buildGroup3DSpectrogramCommentary,
     buildFinalChartsMetadata: buildFinalChartsMetadata,
     openChartInvestigationModal: openChartInvestigationModal,
     gaugeStatus: gaugeStatus,

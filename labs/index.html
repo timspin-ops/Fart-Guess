@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124m" />
-  <script defer src="../js/dsp.js?v=20261124m"></script>
-  <script defer src="../js/audioEngine.js?v=20261124m"></script>
-  <script defer src="../js/storage.js?v=20261124m"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124m"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124m"></script>
-  <script defer src="js/labsStore.js?v=20261124m"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124m"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124m"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124m"></script>
-  <script defer src="js/labsApp.js?v=20261124m"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124o" />
+  <script defer src="../js/dsp.js?v=20261124o"></script>
+  <script defer src="../js/audioEngine.js?v=20261124o"></script>
+  <script defer src="../js/storage.js?v=20261124o"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124o"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124o"></script>
+  <script defer src="js/labsStore.js?v=20261124o"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124o"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124o"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124o"></script>
+  <script defer src="js/labsApp.js?v=20261124o"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -716,8 +716,7 @@
             <h2 class="labs-section-heading">Fartnalysis Report</h2>
           </div>
           <div class="labs-vault-top-btns">
-            <button type="button" id="btn-fn-team" class="labs-btn-ghost labs-btn-sm">🏛️ Meet The Team</button>
-            <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Back to Archive</button>
+            <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Back</button>
           </div>
         </div>
 
@@ -821,24 +820,10 @@
         <span id="labs-an-pct" class="labs-an-pct">0%</span>
       </div>
 
-      <div class="labs-an-scanner" aria-hidden="true">
-        <div class="labs-an-scanline"></div>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
-        <span class="labs-an-eq-bar"></span>
+      <div class="labs-an-scope-stage" aria-hidden="true">
+        <canvas id="labs-an-spec-canvas" class="labs-an-spec-canvas"></canvas>
+        <canvas id="labs-an-annot-canvas" class="labs-an-annot-canvas"></canvas>
+        <div id="labs-an-scope-badge" class="labs-an-scope-badge">3D SCAN · CALIBRATING</div>
       </div>
 
       <div class="labs-an-progress-track">

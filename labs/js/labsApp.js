@@ -50,7 +50,10 @@
     view: 'home',
     prevNonTeamView: 'home',
     prevBeforeVault: 'home',
+    prevBeforeFartnalysis: 'home',
     samples: [],
+    analysisSpec3d: null,
+    analysisScopeRaf: null,
     vaultFilter: 'all',
     vaultSelectMode: false,
     vaultSelectedSamples: {},
@@ -689,6 +692,21 @@
     }
     state.analysisTimers = [];
     state.analysisDoneCb = null;
+    if (state.analysisScopeRaf && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(state.analysisScopeRaf);
+    }
+    state.analysisScopeRaf = null;
+    if (state.analysisSpec3d && typeof state.analysisSpec3d.destroy === 'function') {
+      state.analysisSpec3d.destroy();
+    }
+    state.analysisSpec3d = null;
+    var annotCanvas = $('labs-an-annot-canvas');
+    if (annotCanvas && typeof annotCanvas.getContext === 'function') {
+      try {
+        var actx = annotCanvas.getContext('2d');
+        if (actx) actx.clearRect(0, 0, annotCanvas.width || 320, annotCanvas.height || 196);
+      } catch (e) {}
+    }
     var overlay = $('labs-analysis-overlay');
     var consensusEl = $('labs-an-consensus');
     if (consensusEl) consensusEl.classList.add('hidden');
@@ -830,6 +848,327 @@
     });
   }
 
+  function buildFallbackAnalysisSpectrogram() {
+    var tf = 32;
+    var fb = 24;
+    var grid = [];
+    var freqsHz = [];
+    var timesSec = [];
+    for (var f = 0; f < fb; f++) freqsHz.push(55 + f * 75);
+    for (var t = 0; t < tf; t++) {
+      timesSec.push((t / (tf - 1)) * 0.85);
+      var nt = t / (tf - 1);
+      var env = Math.exp(-Math.pow((nt - 0.34) / 0.24, 2));
+      var row = [];
+      for (var b = 0; b < fb; b++) {
+        var nf = b / (fb - 1);
+        var ridge1 = Math.exp(-Math.pow((nf - (0.20 + 0.08 * Math.sin(nt * 7))) / 0.14, 2));
+        var ridge2 = 0.52 * Math.exp(-Math.pow((nf - 0.52) / 0.16, 2));
+        var ripple = 0.08 * Math.sin(nt * 18 + nf * 9);
+        row.push(Math.max(0.02, Math.min(1, env * (ridge1 + ridge2) + ripple)));
+      }
+      grid.push(row);
+    }
+    return { timeFrames: tf, freqBins: fb, timesSec: timesSec, freqsHz: freqsHz, grid: grid };
+  }
+
+  function extractSpectrogramAnchors(sample, spec) {
+    var feat = (sample && sample.features) || {};
+    var grid = (spec && spec.grid) || [];
+    var rows = grid.length || 1;
+    var cols = (grid[0] && grid[0].length) || 1;
+    var bestR = Math.floor(rows * 0.35);
+    var bestC = Math.floor(cols * 0.22);
+    var bestVal = -1;
+    for (var r = 0; r < rows; r++) {
+      var row = grid[r] || [];
+      for (var c = 0; c < row.length; c++) {
+        if (row[c] > bestVal) {
+          bestVal = row[c];
+          bestR = r;
+          bestC = c;
+        }
+      }
+    }
+    var freqs = (spec && spec.freqsHz) || [];
+    var times = (spec && spec.timesSec) || [];
+    var peakHz = Math.round(freqs[bestC] || feat.pitchHz || feat.fundamentalHz || 110);
+    var centHz = Math.round(feat.spectralCentroidHz || feat.centroidHz || peakHz * 1.8);
+    var peakSec = Number(times[bestR] || ((bestR / Math.max(1, rows - 1)) * 0.8));
+    var crestDb = Number(feat.crestFactorDb || 12.4);
+    var px = -1 + 2 * (bestR / Math.max(1, rows - 1));
+    var pz = -1 + 2 * (bestC / Math.max(1, cols - 1));
+    var py = 0.92;
+    return {
+      peakX: px,
+      peakY: py,
+      peakZ: pz,
+      onsetX: Math.max(-0.92, px - 0.28),
+      onsetZ: pz,
+      tailX: Math.min(0.92, px + 0.56),
+      harmZ: Math.min(0.88, pz + 0.44),
+      turbX: Math.min(0.82, px + 0.22),
+      turbZ: Math.min(0.82, pz + 0.28),
+      peakHz: peakHz,
+      centHz: centHz,
+      peakSec: peakSec,
+      crestDb: crestDb
+    };
+  }
+
+  function startAnalysisScope(sample) {
+    var specCanvas = $('labs-an-spec-canvas');
+    var annotCanvas = $('labs-an-annot-canvas');
+    var badgeEl = $('labs-an-scope-badge');
+    var Spectrogram3D = TootApp && TootApp.Spectrogram3D;
+    if (!specCanvas || !annotCanvas) return null;
+
+    var featSpec = sample && sample.features && sample.features.spectrogram;
+    var specData = (featSpec && featSpec.grid && featSpec.grid.length > 1) ? featSpec : buildFallbackAnalysisSpectrogram();
+    var anchors = extractSpectrogramAnchors(sample, specData);
+
+    var spec3d = null;
+    if (Spectrogram3D) {
+      try {
+        spec3d = new Spectrogram3D(specCanvas, {
+          spectrogram: specData,
+          colormap: 'plasma',
+          azimuth: 0.60,
+          elevation: 0.50,
+          zoom: 1.04
+        });
+        state.analysisSpec3d = spec3d;
+      } catch (e) {
+        spec3d = null;
+      }
+    }
+
+    var views = [
+      {
+        az: 0.62, el: 0.52, zoom: 1.04, mode: '3D SURFACE SCAN',
+        pins: [
+          { x: anchors.peakX, y: anchors.peakY, z: anchors.peakZ, label: 'F0 PEAK · ' + anchors.peakHz + ' Hz', dx: 46, dy: -26, color: '#38BDF8', arrow: true, pulse: true },
+          { x: anchors.onsetX, y: 0.34, z: anchors.onsetZ, label: 'T=' + anchors.peakSec.toFixed(2) + 's', dx: -48, dy: 24, color: '#22C55E', arrow: true }
+        ]
+      },
+      {
+        az: 0.12, el: 0.18, zoom: 1.12, mode: 'PRESSURE CREST PROFILE',
+        pins: [
+          { x: anchors.peakX, y: anchors.peakY, z: anchors.peakZ, label: 'CREST ' + anchors.crestDb.toFixed(1) + ' dB', dx: 44, dy: -20, color: '#FACC15', arrow: true, pulse: true },
+          { x: anchors.onsetX, y: 0.18, z: anchors.onsetZ, label: 'VALVE RELEASE', dx: -46, dy: -24, color: '#38BDF8', arrow: true }
+        ]
+      },
+      {
+        az: 0.02, el: 1.38, zoom: 1.05, mode: 'HARMONIC RIDGE LOCK',
+        pins: [
+          { x: anchors.peakX, y: anchors.peakY, z: anchors.peakZ, label: 'FUNDAMENTAL · ' + anchors.peakHz + ' Hz', dx: 40, dy: -24, color: '#A78BFA', arrow: true, pulse: true },
+          { x: anchors.turbX, y: 0.56, z: anchors.harmZ, label: 'HARMONIC RIDGE', dx: -44, dy: 26, color: '#34D399', arrow: true }
+        ]
+      },
+      {
+        az: -0.68, el: 0.44, zoom: 1.08, mode: 'SPECTRAL TURBULENCE MAP',
+        pins: [
+          { x: anchors.turbX, y: 0.64, z: anchors.turbZ, label: 'CENTROID · ' + anchors.centHz + ' Hz', dx: 42, dy: -24, color: '#F472B6', arrow: true, pulse: true },
+          { x: anchors.tailX, y: 0.24, z: anchors.onsetZ, label: 'TURBULENCE ZONE', dx: -46, dy: 22, color: '#38BDF8', arrow: true }
+        ]
+      },
+      {
+        az: 0.94, el: 0.34, zoom: 1.08, mode: 'DECAY TAIL INTEGRAL',
+        pins: [
+          { x: anchors.peakX, y: anchors.peakY, z: anchors.peakZ, label: 'IMPULSE MAX', dx: -46, dy: -22, color: '#38BDF8', arrow: true },
+          { x: anchors.tailX, y: 0.18, z: anchors.onsetZ, label: 'DECAY ENVELOPE', dx: 36, dy: -26, color: '#22C55E', arrow: true, pulse: true }
+        ]
+      },
+      {
+        az: 0.52, el: 0.50, zoom: 1.04, mode: 'A.S.S. v4.2 TELEMETRY LOCK',
+        pins: [
+          { x: anchors.peakX, y: anchors.peakY, z: anchors.peakZ, label: anchors.peakHz + ' Hz · LOCKED', dx: 42, dy: -24, color: '#4ADE80', arrow: true, pulse: true },
+          { x: anchors.turbX, y: 0.58, z: anchors.harmZ, label: 'MODEL VERIFIED', dx: -46, dy: 24, color: '#7DD3FC', arrow: true }
+        ]
+      }
+    ];
+
+    var curViewIdx = 0;
+    var stageSwitchAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    var targetPose = views[0];
+    var isComplete = false;
+    var stopped = false;
+
+    function drawArrowHead(ctx, fromX, fromY, toX, toY, color) {
+      var ang = Math.atan2(toY - fromY, toX - fromX);
+      var len = 6.5;
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(toX - len * Math.cos(ang - 0.45), toY - len * Math.sin(ang - 0.45));
+      ctx.lineTo(toX - len * Math.cos(ang + 0.45), toY - len * Math.sin(ang + 0.45));
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function drawFrame(nowTs) {
+      if (stopped) return;
+      var tNow = typeof nowTs === 'number' ? nowTs : (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
+      var sec = tNow * 0.001;
+      var stageElapsed = Math.max(0, tNow - stageSwitchAt);
+      var sweep01 = isComplete ? null : ((sec * 0.55) % 1);
+
+      if (spec3d && !spec3d._destroyed) {
+        var tgtAz = targetPose.az + Math.sin(sec * 0.85) * 0.14;
+        var tgtEl = targetPose.el + Math.cos(sec * 0.65) * 0.05;
+        spec3d.azimuth += (tgtAz - spec3d.azimuth) * 0.08;
+        spec3d.elevation += (tgtEl - spec3d.elevation) * 0.08;
+        spec3d.zoom += (targetPose.zoom - spec3d.zoom) * 0.08;
+        spec3d.playhead = sweep01;
+        spec3d.render();
+      }
+
+      if (badgeEl) {
+        var azDeg = spec3d ? Math.round((spec3d.azimuth * 180) / Math.PI) : Math.round((targetPose.az * 180) / Math.PI);
+        var elDeg = spec3d ? Math.round((spec3d.elevation * 180) / Math.PI) : Math.round((targetPose.el * 180) / Math.PI);
+        badgeEl.textContent = (isComplete ? 'VERIFIED · ' : targetPose.mode + ' · ') + 'AZ ' + azDeg + '° EL ' + elDeg + '°';
+      }
+
+      if (typeof annotCanvas.getContext === 'function') {
+        var rect = typeof annotCanvas.getBoundingClientRect === 'function' ? annotCanvas.getBoundingClientRect() : null;
+        var cw = rect && rect.width > 20 ? rect.width : 360;
+        var ch = rect && rect.height > 20 ? rect.height : 196;
+        var dpr = Math.min(2, root.devicePixelRatio || 1);
+        var tw = Math.round(cw * dpr);
+        var th = Math.round(ch * dpr);
+        if (annotCanvas.width !== tw || annotCanvas.height !== th) {
+          annotCanvas.width = tw;
+          annotCanvas.height = th;
+        }
+        var ctx = annotCanvas.getContext('2d');
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.clearRect(0, 0, cw, ch);
+
+          // HUD corner calibration brackets
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.36)';
+          ctx.lineWidth = 1.25;
+          var br = 10;
+          ctx.beginPath();
+          ctx.moveTo(8, 8 + br); ctx.lineTo(8, 8); ctx.lineTo(8 + br, 8);
+          ctx.moveTo(cw - 8 - br, 8); ctx.lineTo(cw - 8, 8); ctx.lineTo(cw - 8, 8 + br);
+          ctx.moveTo(8, ch - 8 - br); ctx.lineTo(8, ch - 8); ctx.lineTo(8 + br, ch - 8);
+          ctx.moveTo(cw - 8 - br, ch - 8); ctx.lineTo(cw - 8, ch - 8); ctx.lineTo(cw - 8, ch - 8 - br);
+          ctx.stroke();
+
+          if (spec3d && typeof spec3d._project === 'function' && spec3d._projCache) {
+            var fadeAlpha = Math.min(1, stageElapsed / 240);
+            ctx.save();
+            ctx.globalAlpha = fadeAlpha;
+
+            // Optional transient curve guide on Stage 4 (decay trace) or baseline on Stage 1
+            if (curViewIdx === 4 || curViewIdx === 1) {
+              var pStart = spec3d._project(anchors.peakX, anchors.peakY, anchors.peakZ);
+              var pEnd = spec3d._project(curViewIdx === 1 ? anchors.peakX : anchors.tailX, 0.08, curViewIdx === 1 ? anchors.peakZ : anchors.onsetZ);
+              if (Number.isFinite(pStart.x) && Number.isFinite(pEnd.x)) {
+                ctx.save();
+                ctx.setLineDash([4, 3]);
+                ctx.strokeStyle = curViewIdx === 1 ? 'rgba(250, 204, 21, 0.72)' : 'rgba(34, 197, 94, 0.75)';
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.moveTo(pStart.x, pStart.y);
+                ctx.lineTo(pEnd.x, pEnd.y);
+                ctx.stroke();
+                ctx.restore();
+              }
+            }
+
+            var pins = targetPose.pins || [];
+            ctx.font = '700 10px "JetBrains Mono", monospace';
+            for (var pi = 0; pi < pins.length; pi++) {
+              var pin = pins[pi];
+              var pt = spec3d._project(pin.x, pin.y, pin.z);
+              if (!pt || !Number.isFinite(pt.x) || !Number.isFinite(pt.y)) continue;
+
+              // Target reticle
+              var pulseR = pin.pulse ? 6 + 3.2 * (0.5 + 0.5 * Math.sin(sec * 6.0 + pi)) : 5;
+              ctx.strokeStyle = pin.color;
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, pulseR, 0, Math.PI * 2);
+              ctx.stroke();
+
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, 2.4, 0, Math.PI * 2);
+              ctx.fillStyle = pin.color;
+              ctx.fill();
+
+              // Keep label box clamped inside canvas
+              var twTxt = ctx.measureText(pin.label).width;
+              var boxW = twTxt + 12;
+              var boxH = 18;
+              var lx = Math.max(10 + boxW * 0.5, Math.min(cw - 10 - boxW * 0.5, pt.x + pin.dx));
+              var ly = Math.max(28, Math.min(ch - 14, pt.y + pin.dy));
+
+              if (pin.arrow) {
+                var edgeX = lx < pt.x ? lx + boxW * 0.5 : lx - boxW * 0.5;
+                var ang = Math.atan2(pt.y - ly, pt.x - edgeX);
+                var tipX = pt.x - Math.cos(ang) * (pulseR + 2);
+                var tipY = pt.y - Math.sin(ang) * (pulseR + 2);
+                ctx.strokeStyle = pin.color;
+                ctx.lineWidth = 1.25;
+                ctx.beginPath();
+                ctx.moveTo(edgeX, ly);
+                ctx.lineTo(tipX, tipY);
+                ctx.stroke();
+                drawArrowHead(ctx, edgeX, ly, tipX, tipY, pin.color);
+              }
+
+              ctx.fillStyle = 'rgba(6, 11, 22, 0.88)';
+              ctx.fillRect(lx - boxW * 0.5, ly - boxH * 0.5, boxW, boxH);
+              ctx.strokeStyle = pin.color;
+              ctx.lineWidth = 1;
+              ctx.strokeRect(lx - boxW * 0.5, ly - boxH * 0.5, boxW, boxH);
+              ctx.fillStyle = '#F8FAFC';
+              ctx.textAlign = 'center';
+              ctx.fillText(pin.label, lx, ly + 3.5);
+            }
+            ctx.restore();
+          }
+        }
+      }
+
+      if (typeof requestAnimationFrame === 'function') {
+        state.analysisScopeRaf = requestAnimationFrame(drawFrame);
+      }
+    }
+
+    if (typeof requestAnimationFrame === 'function') {
+      state.analysisScopeRaf = requestAnimationFrame(drawFrame);
+    } else {
+      drawFrame(0);
+    }
+
+    return {
+      setStage: function (idx) {
+        curViewIdx = idx % views.length;
+        targetPose = views[curViewIdx];
+        stageSwitchAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      },
+      setComplete: function () {
+        isComplete = true;
+        targetPose = views[views.length - 1];
+        stageSwitchAt = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      },
+      destroy: function () {
+        stopped = true;
+        if (state.analysisScopeRaf && typeof cancelAnimationFrame === 'function') {
+          cancelAnimationFrame(state.analysisScopeRaf);
+        }
+        state.analysisScopeRaf = null;
+        if (state.analysisSpec3d && typeof state.analysisSpec3d.destroy === 'function') {
+          state.analysisSpec3d.destroy();
+        }
+        state.analysisSpec3d = null;
+      }
+    };
+  }
+
   function runAnalysisSequence(opts, onComplete) {
     clearAnalysisSequence();
     opts = opts || {};
@@ -856,6 +1195,7 @@
 
     var stages = pickAnalysisStages(opts.context, { isSolo: Boolean(opts.isSolo) });
     var finished = false;
+    var scopeCtrl = null;
 
     function finishNow(immediate) {
       if (finished) return;
@@ -867,6 +1207,7 @@
       state.analysisDoneCb = null;
 
       if (immediate) {
+        if (scopeCtrl) scopeCtrl.destroy();
         if (consensusEl) consensusEl.classList.add('hidden');
         overlay.classList.add('hidden');
         overlay.classList.remove('fading-out');
@@ -874,6 +1215,7 @@
         return;
       }
 
+      if (scopeCtrl) scopeCtrl.setComplete();
       if (TootLabs.AudioFx && typeof TootLabs.AudioFx.playAnalysisComplete === 'function') {
         TootLabs.AudioFx.playAnalysisComplete();
       }
@@ -884,6 +1226,7 @@
       var fadeTimer = setTimeout(function () {
         overlay.classList.add('fading-out');
         var endTimer = setTimeout(function () {
+          if (scopeCtrl) scopeCtrl.destroy();
           overlay.classList.add('hidden');
           overlay.classList.remove('fading-out');
           if (consensusEl) consensusEl.classList.add('hidden');
@@ -903,6 +1246,7 @@
     if (barEl) barEl.style.width = '0%';
     stagesEl.innerHTML = '';
     overlay.classList.remove('hidden', 'fading-out');
+    scopeCtrl = startAnalysisScope(opts.sample || null);
 
     var elapsed = 0;
     for (var sIdx = 0; sIdx < stages.length; sIdx++) {
@@ -910,6 +1254,7 @@
         var rowEl = null;
         var startTimer = setTimeout(function () {
           if (finished) return;
+          if (scopeCtrl) scopeCtrl.setStage(index);
           rowEl = document.createElement('li');
           rowEl.className = 'labs-an-stage' + (stage.rare ? ' rare' : '') + (stage.scientist ? ' scientist' : '');
           rowEl.innerHTML =
@@ -1282,6 +1627,9 @@
     if (viewKey === 'vault' && prevView && prevView !== 'vault' && prevView !== 'detail' && prevView !== 'team') {
       state.prevBeforeVault = prevView;
     }
+    if (viewKey === 'fartnalysis' && prevView && prevView !== 'fartnalysis' && prevView !== 'team') {
+      state.prevBeforeFartnalysis = prevView === 'vault' || prevView === 'detail' ? 'vault' : prevView === 'guess' ? 'guess' : 'home';
+    }
     state.view = viewKey;
 
     var brandSub = $('labs-brand-sub');
@@ -1539,6 +1887,7 @@
         runAnalysisSequence(
           {
             context: 'specimen',
+            sample: saved,
             title: 'ANALYZING RECORDING',
             subtitle: 'Cataloging "' + getSampleName(saved) + '" in Bio-Acoustic Vault'
           },
@@ -3696,6 +4045,7 @@
               runAnalysisSequence(
                 {
                   context: 'quickfire',
+                  sample: readyDeck[0],
                   title: 'EVALUATING RAPID-SEQUENCE TRIALS',
                   subtitle: 'Computing reproduction fidelity across ' + state.qfResults.length + ' captures via A.S.S. v4.2…',
                   count: state.qfResults.length
@@ -4791,6 +5141,7 @@
         {
           context: 'comparison',
           isSolo: outcomes.length === 1,
+          sample: target,
           title: 'ANALYZING RESULTS',
           subtitle: subtitleLabel || ('Comparing ' + outcomes.length + (outcomes.length === 1 ? ' guess' : ' guesses') + ' against ' + getSampleName(target))
         },
@@ -6663,11 +7014,20 @@
     });
 
     $('btn-fn-back').addEventListener('click', function () {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      var dest = state.prevBeforeFartnalysis || 'home';
+      if (dest === 'vault') {
+        renderVaultView();
+        showView('vault');
+        refreshAllAttemptsCache().then(function () {
+          if (state.view === 'vault') renderVaultView();
+        });
+      } else if (dest === 'guess') {
+        showView('guess');
+        renderGuessView();
+      } else {
+        renderHomeView();
+        showView('home');
+      }
     });
 
     $('btn-fn-go-guess').addEventListener('click', function () {
@@ -6678,9 +7038,6 @@
       });
     });
 
-    if ($('btn-fn-team')) {
-      $('btn-fn-team').addEventListener('click', openTeamView);
-    }
     if ($('btn-team-back')) {
       $('btn-team-back').addEventListener('click', function () {
         var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
