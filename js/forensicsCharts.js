@@ -4,28 +4,28 @@
   var TootApp = (root.TootApp = root.TootApp || {});
 
   var CRITERIA_META = [
-    { key: 'overall', label: '🧪 Master Score', shortLabel: 'Overall' },
-    { key: 'duration', label: '⏱️ Duration', shortLabel: 'Duration' },
-    { key: 'pitch', label: '🎵 Pitch & Sweep', shortLabel: 'Pitch' },
-    { key: 'modulation', label: '🫧 Flutter & Bursts', shortLabel: 'Flutter' },
-    { key: 'timbre', label: '🎨 Timbre & MFCC', shortLabel: 'Timbre' },
-    { key: 'envelope', label: '📈 Blast Envelope', shortLabel: 'Envelope' },
-    { key: 'wetness', label: '💦 Squelch Index', shortLabel: 'Squelch' },
-    { key: 'acoustics', label: '🌩️ Sound Twin', shortLabel: 'Twin' },
-    { key: 'social', label: '🛋️ Elevator Alibi', shortLabel: 'Alibi' }
+    { key: 'overall', label: '🧪 Laboratory Assessment', shortLabel: 'Assessment' },
+    { key: 'duration', label: '⏱️ Emission Lifetime', shortLabel: 'Lifetime' },
+    { key: 'pitch', label: '📡 Primary Resonance', shortLabel: 'Resonance' },
+    { key: 'modulation', label: '🫧 Oscillation Cadence', shortLabel: 'Cadence' },
+    { key: 'timbre', label: '🎨 Spectral Distribution', shortLabel: 'Spectral' },
+    { key: 'envelope', label: '📈 Pressure Release', shortLabel: 'Pressure' },
+    { key: 'wetness', label: '💧 Hydro-Acoustic Flux', shortLabel: 'Hydro Flux' },
+    { key: 'acoustics', label: '🔊 Reference Analogue', shortLabel: 'Analogue' },
+    { key: 'social', label: '📐 Propagation & Masking', shortLabel: 'Propagation' }
   ];
 
   var NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   var ACOUSTIC_TWINS = [
-    { name: 'Rolling Thunder', short: 'Thunder', emoji: '⛈️', freq: 68, flat: 0.14, mod: 0.16 },
-    { name: 'Harbor Foghorn', short: 'Foghorn', emoji: '🚢', freq: 96, flat: 0.18, mod: 0.14 },
-    { name: 'Boot Stuck In Mud', short: 'Mud Boot', emoji: '🥾', freq: 128, flat: 0.28, mod: 0.52 },
-    { name: 'Cold-Start Chainsaw', short: 'Chainsaw', emoji: '🪚', freq: 180, flat: 0.30, mod: 0.45 },
-    { name: 'Panicked Goose', short: 'Goose', emoji: '🪿', freq: 265, flat: 0.26, mod: 0.34 },
-    { name: 'Deflating Balloon', short: 'Balloon', emoji: '🎈', freq: 370, flat: 0.22, mod: 0.26 },
-    { name: 'Wet Flip-Flop', short: 'Flip-Flop', emoji: '🩴', freq: 500, flat: 0.24, mod: 0.20 },
-    { name: 'Leaky Steam Valve', short: 'Steam Valve', emoji: '💨', freq: 1150, flat: 0.72, mod: 0.14 }
+    { name: 'Low-Frequency Thunderfront', short: 'Thunderfront', emoji: '⛈️', freq: 68, flat: 0.14, mod: 0.16 },
+    { name: 'Maritime Foghorn', short: 'Foghorn', emoji: '🚢', freq: 96, flat: 0.18, mod: 0.14 },
+    { name: 'Viscous Clay Extraction', short: 'Clay Suction', emoji: '🥾', freq: 128, flat: 0.28, mod: 0.52 },
+    { name: 'Two-Stroke Exhaust Manifold', short: 'Manifold', emoji: '🔧', freq: 180, flat: 0.30, mod: 0.45 },
+    { name: 'Anseriformes Vocalization', short: 'Waterfowl', emoji: '🔊', freq: 265, flat: 0.26, mod: 0.34 },
+    { name: 'Pressurized Elastomer Vent', short: 'Elastomer', emoji: '🎈', freq: 370, flat: 0.22, mod: 0.26 },
+    { name: 'Damped Percussive Membrane', short: 'Membrane', emoji: '🥁', freq: 500, flat: 0.24, mod: 0.20 },
+    { name: 'High-Pressure Steam Aperture', short: 'Steam Vent', emoji: '💨', freq: 1150, flat: 0.72, mod: 0.14 }
   ];
 
   function clamp(v, lo, hi) {
@@ -121,12 +121,12 @@
     );
     var label =
       pct < 24
-        ? 'Desert Dry Puff'
+        ? 'Arid Laminar Profile'
         : pct < 46
-        ? 'Dry Gravel Sputter'
+        ? 'Low-Flux Particulate'
         : pct < 70
-        ? 'Bubbly Swamp Gurgle'
-        : 'Hazard-Tape Squelcher';
+        ? 'Elevated Fluid Turbulence'
+        : 'High-Flux Hydro-Acoustic Event';
     return {
       pct: pct,
       label: label,
@@ -208,13 +208,13 @@
 
     var verdict;
     if (panicPct >= 75 && shoeScuff < 45 && leatherChair < 55) {
-      verdict = 'ZERO ALIBI — Leave the elevator immediately.';
+      verdict = 'Minimal environmental masking available within enclosed volume.';
     } else if (shoeScuff >= dogBlame && shoeScuff >= leatherChair) {
-      verdict = 'Drag a sneaker loudly across the floor (' + shoeScuff + '% cover).';
+      verdict = 'Highest spectral overlap with transient footwear friction (' + shoeScuff + '% affinity).';
     } else if (leatherChair >= dogBlame) {
-      verdict = 'Blame a squeaky vinyl office chair (' + leatherChair + '% cover).';
+      verdict = 'Highest spectral overlap with synthetic upholstery compression (' + leatherChair + '% affinity).';
     } else {
-      verdict = 'Maintain eye contact and blame the family dog (' + dogBlame + '% cover).';
+      verdict = 'Highest low-band overlap with ambient canine vocalization (' + dogBlame + '% affinity).';
     }
 
     return {
@@ -321,18 +321,18 @@
       var deltaMs = Math.round(d.deltaSec * 1000);
       var deltaTag =
         Math.abs(deltaMs) < 35
-          ? 'Uncanny stopwatch discipline — valve closure matched within ±' + Math.abs(deltaMs) + ' ms.'
+          ? 'Exceptional temporal discipline — emission termination aligned within ±' + Math.abs(deltaMs) + ' ms.'
           : deltaMs > 0
-          ? 'Sound B kept honking for +' + deltaMs + ' ms of pure bonus awkwardness (' + fmt((d.d2 / d.d1 - 1) * 100, 0) + '% longer).'
-          : 'Stage fright! Sound B pinched off ' + Math.abs(deltaMs) + ' ms too early (' + fmt((1 - d.d2 / d.d1) * 100, 0) + '% shorter).';
+          ? 'Comparative recording extended +' + deltaMs + ' ms beyond Reference Specimen (' + fmt((d.d2 / d.d1 - 1) * 100, 0) + '% longer lifetime).'
+          : 'Comparative recording terminated ' + Math.abs(deltaMs) + ' ms prior to Reference Specimen (' + fmt((1 - d.d2 / d.d1) * 100, 0) + '% shorter lifetime).';
       return {
         key: 'duration',
-        badgeCode: 'DOC-01 // CHRONO-EXPULSION',
-        title: 'Chronometric Discharge & Valve Closure Audit',
-        subtitle: 'Quantifies absolute emission length, T10–T90 energy burn rate, and awkward lingering seconds.',
+        badgeCode: 'DOC-01 // EMISSION LIFETIME',
+        title: 'Emission Lifetime & Temporal Discharge Audit',
+        subtitle: 'Quantifies absolute emission lifetime, T10–T90 acoustic energy burn rate, and temporal observed variance.',
         weightLabel: 'Weight: 14%',
         score: res.durationScore,
-        commentary: 'Institute Ruling: ' + deltaTag + ' Scored with power-law ratio exponent (1.25) so human timing quirks stay fair.',
+        commentary: 'Research Note: ' + deltaTag + ' Evaluated with power-law ratio exponent (1.25).',
         formula:
           'DurationScore = 100 × (min(' +
           fmt(d.d1, 3) +
@@ -344,24 +344,24 @@
           res.durationScore +
           '%',
         stats: [
-          { label: 'Target Duration (A)', value: fmt(d.d1, 2) + 's', sub: nameA },
-          { label: 'Guess Duration (B)', value: fmt(d.d2, 2) + 's', sub: nameB },
-          { label: 'Temporal Delta (B−A)', value: (deltaMs >= 0 ? '+' : '') + deltaMs + ' ms', sub: fmt(d.durationRatio * 100, 1) + '% length ratio' },
-          { label: 'Peak Attack Timing', value: fmt(fA.attackSec, 2) + 's vs ' + fmt(fB.attackSec, 2) + 's', sub: 'Time to maximum cheek blast' },
-          { label: 'T50 Midpoint Burn', value: fmt(fA.t50Ratio * 100, 0) + '% vs ' + fmt(fB.t50Ratio * 100, 0) + '%', sub: 'Where half the gas left the room' },
-          { label: 'Decay Tail Window', value: fmt(fA.decaySec, 2) + 's vs ' + fmt(fB.decaySec, 2) + 's', sub: 'Post-peak fading sputter' }
+          { label: 'Reference Lifetime (A)', value: fmt(d.d1, 2) + 's', sub: nameA },
+          { label: 'Comparative Lifetime (B)', value: fmt(d.d2, 2) + 's', sub: nameB },
+          { label: 'Observed Variance (B−A)', value: (deltaMs >= 0 ? '+' : '') + deltaMs + ' ms', sub: fmt(d.durationRatio * 100, 1) + '% lifetime ratio' },
+          { label: 'Peak Onset Latency', value: fmt(fA.attackSec, 2) + 's vs ' + fmt(fB.attackSec, 2) + 's', sub: 'Time to maximum acoustic output' },
+          { label: 'T50 Midpoint Burn', value: fmt(fA.t50Ratio * 100, 0) + '% vs ' + fmt(fB.t50Ratio * 100, 0) + '%', sub: '50% cumulative energy coordinate' },
+          { label: 'Attenuation Tail', value: fmt(fA.decaySec, 2) + 's vs ' + fmt(fB.decaySec, 2) + 's', sub: 'Post-peak pressure decay window' }
         ],
         charts: [
           {
             id: 'realTimeOverlap',
-            title: 'Shared Wall-Clock Timeline (Real Seconds)',
-            subtitle: 'Plots A and B in true seconds — hatched amber zone shows excess or missing overhang',
+            title: 'Synchronized Wall-Clock Timeline (Seconds)',
+            subtitle: 'Plots Specimen A and Recording B in absolute time — shaded band denotes temporal variance',
             drawType: 'realTimeOverlap'
           },
           {
             id: 'cumulativeBurn',
-            title: 'Cumulative Acoustic Burn Curve (T10 / T50 / T90)',
-            subtitle: 'Normalized 0% → 100% energy discharge curve across each clip',
+            title: 'Cumulative Acoustic Energy Integral (T10 / T50 / T90)',
+            subtitle: 'Normalized 0% → 100% pressure discharge progression across each specimen',
             drawType: 'cumulativeBurn'
           }
         ]
@@ -372,18 +372,18 @@
       var p = bd.pitch || {};
       var vA = Math.round(safeNum(fA.voicedRatio, 0) * 100);
       var vB = Math.round(safeNum(fB.voicedRatio, 0) * 100);
-      var noteA = p.refUnvoiced ? 'Unvoiced / Airy' : Math.round(fA.medianPitchHz) + ' Hz • ' + hzToNoteName(fA.medianPitchHz);
-      var noteB = p.userUnvoiced ? 'Unvoiced / Airy' : Math.round(fB.medianPitchHz) + ' Hz • ' + hzToNoteName(fB.medianPitchHz);
+      var noteA = p.refUnvoiced ? 'Unvoiced / Broadband' : Math.round(fA.medianPitchHz) + ' Hz • ' + hzToNoteName(fA.medianPitchHz);
+      var noteB = p.userUnvoiced ? 'Unvoiced / Broadband' : Math.round(fB.medianPitchHz) + ' Hz • ' + hzToNoteName(fB.medianPitchHz);
       var intervalStr =
         p.semitoneDiff != null
           ? (fB.medianPitchHz >= fA.medianPitchHz ? '+' : '−') + fmt(p.semitoneDiff, 2) + ' st'
           : p.refUnvoiced && p.userUnvoiced
-          ? 'Both Airy'
-          : 'Tone vs Air Mismatch';
+          ? 'Both Broadband'
+          : 'Voiced vs Unvoiced Variance';
 
       var sweepLabel =
         safeNum(p.polarityMul, 1) < 1
-          ? 'COLLISION (×0.28)'
+          ? 'OPPOSED SLOPE (×0.28)'
           : 'ALIGNED (×1.00)';
 
       var pitchModeFormula;
@@ -400,41 +400,41 @@
 
       var pitchComment =
         safeNum(p.polarityMul, 1) < 1
-          ? 'Question-Mark vs Sad-Trombone Collision! One sound bends UP like a nervous question while the other deflates DOWN — triggering the ×0.28 Sweep Polarity Penalty.'
+          ? 'Contour Polarity Divergence: One recording exhibits an ascending trajectory while the comparative trajectory descends, activating the ×0.28 sweep polarity coefficient.'
           : p.refUnvoiced !== p.userUnvoiced
-          ? 'Crosswind vs Storm Discrepancy: One specimen stayed silent-and-breezy while the other blasted a pitched ' + (noteA.split('•')[0]) + ' vs ' + (noteB.split('•')[0]) + ' pressure front.'
+          ? 'Voicing Regime Variance: One recording remained unvoiced broadband dispersion while the other sustained coherent fundamental resonance (' + (noteA.split('•')[0]) + ' vs ' + (noteB.split('•')[0]) + ').'
           : p.semitoneDiff != null && p.semitoneDiff < 2.2
-          ? 'Eerily Locked Pitch! Within ' + fmt(p.semitoneDiff, 2) + ' semitones — calibrated closely enough to fool local Doppler radar.'
-          : 'Frequency Offset Alert: Separated by ' + (p.semitoneDiff != null ? fmt(p.semitoneDiff, 2) + ' semitones' : 'spectral air-vent register') + ' on the Fart Scale.';
+          ? 'High-Precision Resonance Convergence: Primary resonance locked within ' + fmt(p.semitoneDiff, 2) + ' semitones across reference frames.'
+          : 'Frequency Variance Logged: Specimens separated by ' + (p.semitoneDiff != null ? fmt(p.semitoneDiff, 2) + ' semitones' : 'spectral register dispersion') + '.';
 
       return {
         key: 'pitch',
-        badgeCode: 'DOC-02 // GLOTTAL-TONAL',
-        title: 'Fundamental Musical Note & Sweep Polarimetry',
-        subtitle: 'Tracks your toot like an opera singer (45–650 Hz), locks it to a piano key, and catches rising vs. deflating bends.',
+        badgeCode: 'DOC-02 // PRIMARY RESONANCE',
+        title: 'Primary Resonance Profile & Sweep Polarimetry',
+        subtitle: 'Tracks fundamental frequency F0 (45–650 Hz), musical harmonic alignment, and trajectory polarity.',
         weightLabel: 'Weight: 26%',
         score: res.pitchScore,
-        commentary: pitchComment,
+        commentary: 'Laboratory Observation: ' + pitchComment,
         formula: pitchModeFormula,
         stats: [
-          { label: 'Target Piano Note (A)', value: noteA, sub: vA + '% voiced frames' },
-          { label: 'Guess Piano Note (B)', value: noteB, sub: vB + '% voiced frames' },
-          { label: 'Musical Interval (|Δ|)', value: intervalStr, sub: p.semitoneDiff != null ? '±7.5 st tolerance scale' : 'Spectral fallback active' },
-          { label: 'Glissando Bend (P10–P90)', value: fmt(fA.pitchRangeSemitones, 1) + ' vs ' + fmt(fB.pitchRangeSemitones, 1) + ' st', sub: 'How wild the pitch wobbles' },
-          { label: 'Centroid Sweep (Δ Oct)', value: (p.ct1 >= 0 ? '+' : '') + fmt(p.ct1, 2) + ' vs ' + (p.ct2 >= 0 ? '+' : '') + fmt(p.ct2, 2), sub: 'Last-third minus first-third' },
-          { label: 'Sweep Polarity Guard', value: sweepLabel, sub: (p.oppCent || p.oppPitch) ? 'Opposite slope detected' : 'Contour directions compatible' }
+          { label: 'Reference Resonance (A)', value: noteA, sub: vA + '% voiced frames' },
+          { label: 'Comparative Resonance (B)', value: noteB, sub: vB + '% voiced frames' },
+          { label: 'Semitone Variance (|Δ|)', value: intervalStr, sub: p.semitoneDiff != null ? '±7.5 st tolerance scale' : 'Spectral centroid mode' },
+          { label: 'Excursion Span (P10–P90)', value: fmt(fA.pitchRangeSemitones, 1) + ' vs ' + fmt(fB.pitchRangeSemitones, 1) + ' st', sub: 'Intra-event pitch modulation span' },
+          { label: 'Centroid Sweep (Δ Oct)', value: (p.ct1 >= 0 ? '+' : '') + fmt(p.ct1, 2) + ' vs ' + (p.ct2 >= 0 ? '+' : '') + fmt(p.ct2, 2), sub: 'Terminal-third minus onset-third' },
+          { label: 'Trajectory Polarity', value: sweepLabel, sub: (p.oppCent || p.oppPitch) ? 'Opposite slope detected' : 'Contour directions compatible' }
         ],
         charts: [
           {
             id: 'pitchTrajectory',
             title: 'Log-Hz F0 Trajectory & Centroid Contour (45–650+ Hz)',
-            subtitle: 'Solid + circles = voiced F0 track • Dashed = brightness centroid • Piano gridlines',
+            subtitle: 'Solid + markers = voiced F0 track • Dashed = spectral centroid • Equal-temperament grid',
             drawType: 'pitchTrajectory'
           },
           {
             id: 'pitchHistAndInterval',
-            title: 'Voiced Pitch Histogram & Semitone Deviation Ruler',
-            subtitle: 'Left: frame distribution by Hz • Right: musical interval ruler (−12 to +12 semitones)',
+            title: 'Voiced Resonance Histogram & Semitone Deviation Ruler',
+            subtitle: 'Left: frame distribution by Hz • Right: interval variance scale (−12 to +12 semitones)',
             drawType: 'pitchHistAndInterval'
           }
         ]
@@ -447,37 +447,37 @@
       var mrB = safeNum(fB.modRateHz, 0);
       var mdA = safeNum(fA.modDepth, 0);
       var mdB = safeNum(fB.modDepth, 0);
-      var bpmA = Math.round(mrA * 60);
-      var bpmB = Math.round(mrB * 60);
+      var cpmA = Math.round(mrA * 60);
+      var cpmB = Math.round(mrB * 60);
 
-      var regimeA = fA.burstCount >= 3 ? 'Staccato Motorcycle' : mdA >= 0.35 ? 'High Cheek Flutter' : mdA < 0.16 ? 'Smooth Trombone' : 'Mild Ripple';
-      var regimeB = fB.burstCount >= 3 ? 'Staccato Motorcycle' : mdB >= 0.35 ? 'High Cheek Flutter' : mdB < 0.16 ? 'Smooth Trombone' : 'Mild Ripple';
+      var regimeA = fA.burstCount >= 3 ? 'Staccato Multi-Burst' : mdA >= 0.35 ? 'Elevated Oscillation' : mdA < 0.16 ? 'Laminar Continuous' : 'Moderate Modulation';
+      var regimeB = fB.burstCount >= 3 ? 'Staccato Multi-Burst' : mdB >= 0.35 ? 'Elevated Oscillation' : mdB < 0.16 ? 'Laminar Continuous' : 'Moderate Modulation';
 
       return {
         key: 'modulation',
-        badgeCode: 'DOC-03 // FLAP-OSCILLATION',
-        title: 'Cheek-Flutter BPM & Sputter Gate Audit',
-        subtitle: 'Measures exact gluteal oscillation speed in Beats-Per-Minute (yes, seriously) and counts distinct bursts.',
+        badgeCode: 'DOC-03 // OSCILLATION CADENCE',
+        title: 'Airflow Oscillation Cadence & Impulse Segmentation',
+        subtitle: 'Quantifies periodic envelope modulation velocity (cycles/min) and discrete impulse segmentation count.',
         weightLabel: 'Weight: 18%',
         score: res.modulationScore,
         commentary:
-          'Cheek Biomechanics Memo: Sound A flaps like a "' +
+          'Field Observation: Reference A operates in a "' +
           regimeA +
-          '" (' +
+          '" regime (' +
           fA.burstCount +
           ' burst' +
           (fA.burstCount === 1 ? '' : 's') +
           ', ' +
-          bpmA +
-          ' flaps/min), whereas Sound B runs like a "' +
+          cpmA +
+          ' cycles/min), while Comparative B registers "' +
           regimeB +
           '" (' +
           fB.burstCount +
           ' burst' +
           (fB.burstCount === 1 ? '' : 's') +
           ', ' +
-          bpmB +
-          ' flaps/min).',
+          cpmB +
+          ' cycles/min).',
         formula:
           'ModScore = 0.35×Depth(' +
           Math.round(m.depthMatch) +
@@ -491,24 +491,24 @@
           res.modulationScore +
           '%',
         stats: [
-          { label: 'Flap Speed (A)', value: Math.round(mrA) + ' Hz', sub: bpmA + ' cheek flaps / min' },
-          { label: 'Flap Speed (B)', value: Math.round(mrB) + ' Hz', sub: bpmB + ' cheek flaps / min' },
-          { label: 'Wobble Depth CV', value: Math.round(mdA * 100) + '% vs ' + Math.round(mdB * 100) + '%', sub: 'std(env) / mean(env)' },
-          { label: 'Sputter Burst Count', value: fA.burstCount + ' vs ' + fB.burstCount, sub: 'Peak >0.35 / Re-arm <0.18' },
-          { label: 'Spectral Flux Chaos', value: fmt(fA.spectralFlux, 3) + ' vs ' + fmt(fB.spectralFlux, 3), sub: 'Texture mutation rate' },
-          { label: 'Flutter Classification', value: regimeA.split(' ')[0] + ' vs ' + regimeB.split(' ')[0], sub: 'Kinematic vibration style' }
+          { label: 'Cadence Rate (A)', value: Math.round(mrA) + ' Hz', sub: cpmA + ' oscillation cycles/min' },
+          { label: 'Cadence Rate (B)', value: Math.round(mrB) + ' Hz', sub: cpmB + ' oscillation cycles/min' },
+          { label: 'Modulation Depth CV', value: Math.round(mdA * 100) + '% vs ' + Math.round(mdB * 100) + '%', sub: 'std(env) / mean(env)' },
+          { label: 'Impulse Segments', value: fA.burstCount + ' vs ' + fB.burstCount, sub: 'Gate >0.35 / Re-arm <0.18' },
+          { label: 'Spectral Flux Rate', value: fmt(fA.spectralFlux, 3) + ' vs ' + fmt(fB.spectralFlux, 3), sub: 'Inter-frame mutation rate' },
+          { label: 'Regime Classification', value: regimeA.split(' ')[0] + ' vs ' + regimeB.split(' ')[0], sub: 'Kinematic vibration profile' }
         ],
         charts: [
           {
             id: 'modSpectrum',
-            title: '4–45 Hz Flutter Modulation FFT Spectrum',
-            subtitle: 'Slow Stutter (4–8 Hz) • Classic Cheek Flutter (8–20 Hz) • Fast Bee-Buzz (20–45 Hz)',
+            title: '4–45 Hz Airflow Modulation FFT Spectrum',
+            subtitle: 'Low Cadence (4–8 Hz) • Mid Oscillation (8–20 Hz) • Rapid Oscillation (20–45 Hz)',
             drawType: 'modSpectrum'
           },
           {
             id: 'burstAndModBands',
-            title: '3-Band Flutter Share & Schmitt-Trigger Burst Gates',
-            subtitle: 'Top: band share • Bottom: smoothed envelopes vs Burst (0.35) & Valley (0.18) thresholds',
+            title: '3-Band Modulation Distribution & Hysteresis Gates',
+            subtitle: 'Top: band distribution • Bottom: envelopes vs Burst (0.35) & Valley (0.18) thresholds',
             drawType: 'burstAndModBands'
           }
         ]
@@ -521,21 +521,21 @@
       var zcrFlatAvg = 0.5 * safeNum(t.flatMatch, 0) + 0.5 * safeNum(zcrScore, 0);
       var clothVerdict =
         fB.spectralCentroidHz < fA.spectralCentroidHz * 0.72
-          ? 'Guess sounds muffled through thick winter jeans compared to open-air Target.'
+          ? 'Comparative recording exhibits pronounced low-pass cavity damping relative to Reference A.'
           : fB.spectralCentroidHz > fA.spectralCentroidHz * 1.35
-          ? 'Guess packs sharper high-frequency hiss — noticeably less upholstery muffling than Target.'
-          : 'Astonishingly close resonance coloring — similar upholstery absorption profile!';
+          ? 'Comparative recording carries elevated high-frequency dispersion relative to Reference A.'
+          : 'Spectral distribution and cavity damping coefficients show tight cross-specimen alignment.';
       return {
         key: 'timbre',
-        badgeCode: 'DOC-04 // RESONANCE-MFCC',
-        title: 'Acoustic Resonance, 12-D MFCC & Spectral Residual Map',
-        subtitle: 'Deconstructs flatulent tone color across 40 Bark bands, 12 cepstral fingerprints, 3 temporal acts, and 2,240 STFT cells.',
-        weightLabel: 'Weight: 28% (Highest)',
+        badgeCode: 'DOC-04 // SPECTRAL DISTRIBUTION',
+        title: 'Spectral Distribution Map, 12-D MFCC & Residual Surface',
+        subtitle: 'Deconstructs harmonic coloration across 40 log bands, 12 cepstral dimensions, 3 temporal phases, and 2,240 STFT cells.',
+        weightLabel: 'Weight: 28% (Primary)',
         score: res.timbreScore,
         commentary:
-          'Upholstery & Cavity Report: ' +
+          'Research Note: ' +
           clothVerdict +
-          ' Centroids sit at ' +
+          ' Spectral centroids stand at ' +
           Math.round(fA.spectralCentroidHz) +
           ' Hz (A) vs ' +
           Math.round(fB.spectralCentroidHz) +
@@ -557,29 +557,29 @@
           res.timbreScore +
           '%',
         stats: [
-          { label: 'Brightness Centroid', value: Math.round(fA.spectralCentroidHz) + ' vs ' + Math.round(fB.spectralCentroidHz) + ' Hz', sub: 'Sub-bass warmth vs bright rasp' },
-          { label: 'Noisiness (Flatness)', value: fmt(fA.spectralFlatness, 2) + ' vs ' + fmt(fB.spectralFlatness, 2), sub: '0=pure buzz • 1=white air hiss' },
-          { label: 'MFCC Distance (12-D)', value: fmt(t.dMean, 2), sub: Math.round(t.mfccMeanScore) + '% cepstral score' },
-          { label: '3-Act Macro MFCC Dist', value: fmt(t.dMacro, 2), sub: Math.round(t.mfccMacroScore) + '% onset/mid/tail score' },
-          { label: '4-Band EQ Match', value: Math.round(t.bandProfileScore) + '%', sub: 'Sub / Body / Honk / Hiss L1 match' },
-          { label: 'STFT Grid Pearson r', value: Math.round(t.gridCorr) + '%', sub: 'Normalized 56×40 pixel correlation' }
+          { label: 'Spectral Centroid', value: Math.round(fA.spectralCentroidHz) + ' vs ' + Math.round(fB.spectralCentroidHz) + ' Hz', sub: 'Low-band weight vs upper energy' },
+          { label: 'Spectral Flatness', value: fmt(fA.spectralFlatness, 2) + ' vs ' + fmt(fB.spectralFlatness, 2), sub: '0=harmonic reed • 1=broadband air' },
+          { label: 'MFCC Distance (12-D)', value: fmt(t.dMean, 2), sub: Math.round(t.mfccMeanScore) + '% cepstral alignment' },
+          { label: '3-Phase Macro MFCC Dist', value: fmt(t.dMacro, 2), sub: Math.round(t.mfccMacroScore) + '% onset/mid/tail score' },
+          { label: '4-Band EQ Alignment', value: Math.round(t.bandProfileScore) + '%', sub: 'Sub / Mid-Low / Upper / Air L1 match' },
+          { label: 'STFT Grid Pearson r', value: Math.round(t.gridCorr) + '%', sub: 'Normalized 56×40 cell correlation' }
         ],
         charts: [
           {
             id: 'avgSpectrumEQ',
-            title: '40-Band Log-Frequency Resonance Curve (45–4200 Hz)',
-            subtitle: 'Mean spectral magnitude across Sub-Thunder, Mud Rumble, Harsh Rasp & Steam Hiss zones',
+            title: 'Spectral Distribution Map (40 Log Bands, 45–4200 Hz)',
+            subtitle: 'Mean energy across Sub-Bass, Low-Mid Resonance, Upper Midrange & Broadband Air',
             drawType: 'avgSpectrumEQ'
           },
           {
             id: 'mfccFingerprint',
             title: '12-D MFCC Cepstral Fingerprint & 4-Band Energy Split',
-            subtitle: 'Top: DCT cepstral coefficients C1–C12 • Bottom: energy share per frequency band',
+            subtitle: 'Top: DCT cepstral coefficients C1–C12 • Bottom: energy distribution per band',
             drawType: 'mfccFingerprint'
           },
           {
             id: 'specDiffHeatmap',
-            title: '56×40 Time-Frequency Spectral Residual Map (Spectrogram A − B)',
+            title: '56×40 Time-Frequency Spectral Residual Map (Specimen A − B)',
             subtitle: 'Time (left→right) × Frequency (bottom→top): Dark = match • Cyan = stronger in A • Magenta = stronger in B',
             drawType: 'specDiffHeatmap',
             fullSpan: true
@@ -594,25 +594,25 @@
       var shiftMs = Math.round((bestLag / 64) * Math.max(fB.duration, 0.02) * 1000);
       var shiftText =
         bestLag === 0
-          ? '0 bins (Already Phase-Locked)'
+          ? '0 bins (Phase-Aligned)'
           : (bestLag > 0 ? '+' : '') + bestLag + ' bins (~' + (shiftMs >= 0 ? '+' : '') + shiftMs + ' ms)';
       return {
         key: 'envelope',
-        badgeCode: 'DOC-05 // SHOCKWAVE-DYNAMICS',
-        title: 'Lag-Compensated Blast Envelope & Crest Factor Forensics',
-        subtitle: 'Slides Sound B across ±6 normalized time bins so we score shockwave shape fairly even if someone hit Record late.',
+        badgeCode: 'DOC-05 // PRESSURE RELEASE',
+        title: 'Lag-Compensated Pressure Release & Crest Dynamics',
+        subtitle: 'Cross-correlates Comparative B across ±6 normalized time bins to isolate structural pressure geometry from trigger offset.',
         weightLabel: 'Weight: 14%',
         score: res.envelopeScore,
         commentary:
-          'Shockwave Forensics: After shifting Guess B by ' +
+          'Pressure Release Assessment: After aligning Comparative B by ' +
           shiftText +
-          ' to align detonation peaks, contour correlation hit ' +
+          ', normalized contour correlation reached ' +
           Math.round(envLag.bestCorr) +
-          '%. Crest factors measure ' +
+          '%. Crest output measured ' +
           fmt(fA.crestFactorDb, 1) +
           ' dB (A) vs ' +
           fmt(fB.crestFactorDb, 1) +
-          ' dB (B) punchiness.',
+          ' dB (B).',
         formula:
           'BestLag[' +
           bestLag +
@@ -624,24 +624,24 @@
           res.envelopeScore +
           '%',
         stats: [
-          { label: 'Optimal Lag Shift', value: bestLag === 0 ? '0 bins' : (bestLag > 0 ? '+' : '') + bestLag + ' bins', sub: shiftText },
-          { label: 'Aligned Pearson r', value: Math.round(envLag.bestCorr) + '%', sub: 'Contour shape linear correlation' },
-          { label: 'Aligned L1 Proximity', value: Math.round(envLag.bestL1) + '%', sub: 'Shaded envelope area agreement' },
-          { label: 'Crest Factor (Pop dB)', value: fmt(fA.crestFactorDb, 1) + ' vs ' + fmt(fB.crestFactorDb, 1) + ' dB', sub: 'Higher = sharper explosive snap' },
-          { label: 'Peak Blast Position', value: Math.round(fA.peakTimeRatio * 100) + '% vs ' + Math.round(fB.peakTimeRatio * 100) + '%', sub: 'Normalized location of max amplitude' },
-          { label: 'Energy T90 Exhaustion', value: Math.round(fA.t90Ratio * 100) + '% vs ' + Math.round(fB.t90Ratio * 100) + '%', sub: 'Clip point reaching 90% total energy' }
+          { label: 'Optimal Lag Offset', value: bestLag === 0 ? '0 bins' : (bestLag > 0 ? '+' : '') + bestLag + ' bins', sub: shiftText },
+          { label: 'Aligned Pearson r', value: Math.round(envLag.bestCorr) + '%', sub: 'Linear pressure contour correlation' },
+          { label: 'Aligned L1 Fit', value: Math.round(envLag.bestL1) + '%', sub: 'Normalized envelope area overlap' },
+          { label: 'Crest Output (dB)', value: fmt(fA.crestFactorDb, 1) + ' vs ' + fmt(fB.crestFactorDb, 1) + ' dB', sub: 'Peak-to-RMS energy ratio' },
+          { label: 'Peak Energy Position', value: Math.round(fA.peakTimeRatio * 100) + '% vs ' + Math.round(fB.peakTimeRatio * 100) + '%', sub: 'Normalized max amplitude coordinate' },
+          { label: 'T90 Energy Depletion', value: Math.round(fA.t90Ratio * 100) + '% vs ' + Math.round(fB.t90Ratio * 100) + '%', sub: 'Coordinate reaching 90% cumulative energy' }
         ],
         charts: [
           {
             id: 'alignedEnvelope',
             title: 'Optimal Lag-Aligned Pressure Contour (64 Bins)',
-            subtitle: 'Cyan = Reference A • Solid Magenta = Aligned B • Dotted = Unaligned B • Amber tint = L1 gap',
+            subtitle: 'Cyan = Reference A • Solid Magenta = Aligned B • Dotted = Unaligned B • Shaded = Observed Variance',
             drawType: 'alignedEnvelope'
           },
           {
             id: 'lagCurve',
             title: '±6-Bin Lag Cross-Correlation Sweep',
-            subtitle: 'Combined score & shape correlation across every candidate time-shift tested',
+            subtitle: 'Combined score & linear correlation across every evaluated phase shift',
             drawType: 'lagCurve'
           }
         ]
@@ -651,25 +651,25 @@
     if (key === 'wetness') {
       var w = bonus.wetness;
       var wetDiff = Math.abs(w.wetA - w.wetB);
-      var wetJoke =
+      var wetNote =
         w.wetA >= 65 && w.wetB >= 65
-          ? 'Dual Moisture Hazard! Both recordings exhibit heavy turbulent bubble-flux — recommend checking laundry.'
+          ? 'Both specimens exhibit elevated hydro-acoustic turbulence and vigorous fluid-boundary micro-modulation.'
           : wetDiff <= 15
-          ? 'Viscosity Twins! Both A (' + w.labelA + ') and B (' + w.labelB + ') agree within ' + wetDiff + ' wetness points.'
+          ? 'Closely aligned hydro-acoustic profile: both Specimen A (' + w.labelA + ') and B (' + w.labelB + ') agree within ' + wetDiff + ' index points.'
           : w.wetB > w.wetA
-          ? 'Warning: Guess B is ' + wetDiff + '% more turbulent/bubbly ("' + w.labelB + '") than target "' + w.labelA + '".'
-          : 'Dry Imitation: Target had "' + w.labelA + '" squelch, while Guess played it too dry ("' + w.labelB + '").';
+          ? 'Comparative B demonstrates ' + wetDiff + '% higher spectral flux turbulence (' + w.labelB + ') than Reference A (' + w.labelA + ').'
+          : 'Reference A carries ' + wetDiff + '% greater mid-band fluid modulation (' + w.labelA + ') than Comparative B (' + w.labelB + ').';
 
       return {
         key: 'wetness',
-        badgeCode: 'DOC-06 // HYDRO-ACOUSTIC RISK',
-        title: 'Squelch Index, Acoustic Wetness & Bubble Turbulence Meter',
-        subtitle: 'Combines frame-to-frame spectral flux explosions, flutter modulation depth, and mid-frequency squelch resonance.',
-        weightLabel: 'Bonus Humor Lab',
+        badgeCode: 'DOC-06 // HYDRO-ACOUSTIC FLUX',
+        title: 'Hydro-Acoustic Turbulence & Spectral Flux Index',
+        subtitle: 'Combines frame-to-frame spectral flux transients, modulation depth, and mid-frequency resonance concentration.',
+        weightLabel: 'Supplementary Module',
         score: w.matchScore,
-        commentary: 'Laundry Advisory: ' + wetJoke,
+        commentary: 'Research Observation: ' + wetNote,
         formula:
-          'WetnessIndex = 22×min(1, ModDepth/0.65) + 46×min(1, Flux/0.22) + 22×MidSquelch + BurstBonus | A=' +
+          'HydroFluxIndex = 22×min(1, ModDepth/0.65) + 46×min(1, Flux/0.22) + 22×MidBand + BurstBonus | A=' +
           w.wetA +
           '% vs B=' +
           w.wetB +
@@ -677,24 +677,24 @@
           w.matchScore +
           '%)',
         stats: [
-          { label: 'Target Squelch (A)', value: w.wetA + '%', sub: w.labelA },
-          { label: 'Guess Squelch (B)', value: w.wetB + '%', sub: w.labelB },
-          { label: 'Viscosity Agreement', value: w.matchScore + '%', sub: wetDiff + ' pt wetness gap' },
-          { label: 'Turbulence Flux (A/B)', value: fmt(fA.spectralFlux, 3) + ' vs ' + fmt(fB.spectralFlux, 3), sub: 'Transient splat volatility' },
-          { label: 'Mid-Band Gurgle Share', value: Math.round(w.detailA.squelchBand * 100) + '% vs ' + Math.round(w.detailB.squelchBand * 100) + '%', sub: '150–1200 Hz wet formant weight' },
-          { label: 'Cheek Tremor Depth', value: Math.round(w.detailA.md * 100) + '% vs ' + Math.round(w.detailB.md * 100) + '%', sub: 'Amplitude bubble depth' }
+          { label: 'Reference Flux (A)', value: w.wetA + '%', sub: w.labelA },
+          { label: 'Comparative Flux (B)', value: w.wetB + '%', sub: w.labelB },
+          { label: 'Observed Variance', value: w.matchScore + '%', sub: wetDiff + ' pt index separation' },
+          { label: 'Turbulence Flux (A/B)', value: fmt(fA.spectralFlux, 3) + ' vs ' + fmt(fB.spectralFlux, 3), sub: 'Inter-frame transient volatility' },
+          { label: 'Mid-Band Share', value: Math.round(w.detailA.squelchBand * 100) + '% vs ' + Math.round(w.detailB.squelchBand * 100) + '%', sub: '150–1200 Hz formant concentration' },
+          { label: 'Modulation Depth', value: Math.round(w.detailA.md * 100) + '% vs ' + Math.round(w.detailB.md * 100) + '%', sub: 'Envelope amplitude variance' }
         ],
         charts: [
           {
             id: 'wetnessGauge',
-            title: 'Dual Hydro-Acoustic Squelch Gauges',
-            subtitle: 'Left Dial: Sound A (' + w.labelA + ') • Right Dial: Sound B (' + w.labelB + ')',
+            title: 'Dual Hydro-Acoustic Turbulence Gauges',
+            subtitle: 'Left Gauge: Specimen A (' + w.labelA + ') • Right Gauge: Recording B (' + w.labelB + ')',
             drawType: 'wetnessGauge'
           },
           {
             id: 'fluxTimeSeries',
-            title: 'Per-Frame Bubble Turbulence & Splat Flux Timeline',
-            subtitle: 'Spikes indicate sudden frame-to-frame squelch / pocket-burst events across time',
+            title: 'Per-Frame Spectral Flux & Turbulence Timeline',
+            subtitle: 'Peaks mark rapid frame-to-frame spectral transition events over time',
             drawType: 'fluxTimeSeries'
           }
         ]
@@ -703,18 +703,14 @@
 
     if (key === 'acoustics') {
       var ac = bonus.acoustics;
-      var twinJoke =
+      var twinNote =
         ac.twinA.name === ac.twinB.name
-          ? 'Unbelievable Convergence! Both sounds map closest to "' + ac.twinA.emoji + ' ' + ac.twinA.name + '"!'
-          : 'Species Identity Crisis: Sound A channels a "' +
-            ac.twinA.emoji +
-            ' ' +
+          ? 'Taxonomic convergence achieved: both specimens map nearest to "' + ac.twinA.name + '" within the Institute acoustic reference atlas.'
+          : 'Taxonomic divergence observed: Reference A aligns with "' +
             ac.twinA.name +
             '" (~' +
             Math.round(ac.detailA.effFreq) +
-            ' Hz), whereas Guess B sounds like a "' +
-            ac.twinB.emoji +
-            ' ' +
+            ' Hz), whereas Comparative B aligns with "' +
             ac.twinB.name +
             '" (~' +
             Math.round(ac.detailB.effFreq) +
@@ -722,41 +718,41 @@
 
       return {
         key: 'acoustics',
-        badgeCode: 'DOC-07 // ACOUSTIC DOPPELGÄNGER',
-        title: 'Everyday Object Doppelgänger & Sonic Twin Matcher',
-        subtitle: 'Computes pitch, noisiness, and flutter affinity against 8 scientifically calibrated non-human noisemakers.',
-        weightLabel: 'Bonus Humor Lab',
+        badgeCode: 'DOC-07 // REFERENCE ANALOGUE',
+        title: 'Acoustic Reference Analogue Classification Matrix',
+        subtitle: 'Computes pitch, flatness, and modulation affinity against 8 calibrated environmental and mechanical acoustic prototypes.',
+        weightLabel: 'Supplementary Module',
         score: ac.matchScore,
-        commentary: 'Wild & Weather Twin Match: ' + twinJoke,
+        commentary: 'Archive Observation: ' + twinNote,
         formula:
-          'Affinity(Twin) = 100 × exp(−(|Δoct|/1.15 + |ΔFlat|×1.4 + |ΔMod|×0.75)) | Twin A: ' +
+          'Affinity(Ref) = 100 × exp(−(|Δoct|/1.15 + |ΔFlat|×1.4 + |ΔMod|×0.75)) | Ref A: ' +
           ac.twinA.short +
           ' (' +
           ac.topScoreA +
-          '%) vs Twin B: ' +
+          '%) vs Ref B: ' +
           ac.twinB.short +
           ' (' +
           ac.topScoreB +
           '%)',
         stats: [
-          { label: 'Target Twin (A)', value: ac.twinA.emoji + ' ' + ac.twinA.short, sub: ac.topScoreA + '% similarity (~' + ac.twinA.freq + ' Hz)' },
-          { label: 'Guess Twin (B)', value: ac.twinB.emoji + ' ' + ac.twinB.short, sub: ac.topScoreB + '% similarity (~' + ac.twinB.freq + ' Hz)' },
-          { label: 'Twin Profile Overlap', value: ac.matchScore + '%', sub: 'Shared 8-class acoustic signature' },
-          { label: 'Effective Tone Freq', value: Math.round(ac.detailA.effFreq) + ' vs ' + Math.round(ac.detailB.effFreq) + ' Hz', sub: 'Pitch or unvoiced centroid' },
-          { label: 'Buzz vs Airiness', value: fmt(ac.detailA.flat, 2) + ' vs ' + fmt(ac.detailB.flat, 2), sub: 'Flatness along acoustic texture axis' },
-          { label: 'Acoustic Biome', value: ac.detailA.effFreq < 130 ? 'Thunder / Mud Swamp' : ac.detailA.effFreq < 400 ? 'Chainsaw / Wildlife' : 'Balloon / Steam Vent', sub: 'Environmental twin zone' }
+          { label: 'Reference Analogue (A)', value: ac.twinA.short, sub: ac.topScoreA + '% affinity (~' + ac.twinA.freq + ' Hz)' },
+          { label: 'Comparative Analogue (B)', value: ac.twinB.short, sub: ac.topScoreB + '% affinity (~' + ac.twinB.freq + ' Hz)' },
+          { label: 'Vector Overlap', value: ac.matchScore + '%', sub: 'Shared 8-class taxonomic distribution' },
+          { label: 'Effective Resonance', value: Math.round(ac.detailA.effFreq) + ' vs ' + Math.round(ac.detailB.effFreq) + ' Hz', sub: 'F0 or broadband centroid' },
+          { label: 'Spectral Flatness', value: fmt(ac.detailA.flat, 2) + ' vs ' + fmt(ac.detailB.flat, 2), sub: 'Harmonic vs dispersion axis' },
+          { label: 'Acoustic Regime', value: ac.detailA.effFreq < 130 ? 'Barometric Sub-Bass' : ac.detailA.effFreq < 400 ? 'Resonant Manifold' : 'High Aperture Dispersion', sub: 'Primary frequency classification' }
         ],
         charts: [
           {
             id: 'doppelgangerBars',
-            title: '8-Archetype Wild & Weather Affinity Breakdown',
-            subtitle: 'Thunder • Foghorn • Mud Boot • Chainsaw • Goose • Balloon • Flip-Flop • Steam Valve',
+            title: '8-Prototype Environmental Affinity Distribution',
+            subtitle: 'Thunderfront • Foghorn • Clay Suction • Manifold • Waterfowl • Elastomer • Membrane • Steam Vent',
             drawType: 'doppelgangerBars'
           },
           {
             id: 'harmonicSpace',
-            title: '2D Sonic Noisemaker Map (Frequency Hz × Airiness)',
-            subtitle: 'Plots A (Cyan) & B (Magenta) among 8 calibrated reference objects',
+            title: '2D Acoustic Taxonomy Plane (Frequency Hz × Spectral Flatness)',
+            subtitle: 'Plots Specimen A (Cyan) & Recording B (Magenta) relative to 8 calibrated prototypes',
             drawType: 'harmonicSpace'
           }
         ]
@@ -769,41 +765,41 @@
       var sB = soc.b;
       return {
         key: 'social',
-        badgeCode: 'DOC-08 // ELEVATOR ALIBI',
-        title: 'Plausible Deniability, Dog-Blame & Elevator Blast Radius',
-        subtitle: 'Calculates optimal social excuses (shoe scuff, vinyl chair, innocent Labrador) and estimated awkwardness radius.',
-        weightLabel: 'Bonus Humor Lab',
+        badgeCode: 'DOC-08 // PROPAGATION & MASKING',
+        title: 'Confined-Space Propagation & Environmental Masking Model',
+        subtitle: 'Models spectral masking affinity against benign room acoustics (footwear, upholstery, ambient canine) and estimated propagation perimeter.',
+        weightLabel: 'Supplementary Module',
         score: soc.matchScore,
-        commentary: 'Sound A Cover Strategy: ' + sA.verdict + ' | Sound B Cover Strategy: ' + sB.verdict,
+        commentary: 'Field Observation — Specimen A: ' + sA.verdict + ' | Specimen B: ' + sB.verdict,
         formula:
-          'BlastRadius(m) = 1.8 + 10.5 × PanicIdx | Sound A=' +
+          'PropagationRadius(m) = 1.8 + 10.5 × NoticeabilityIdx | Specimen A=' +
           fmt(sA.radiusM, 1) +
           'm (' +
           sA.panicPct +
-          '% panic) vs Sound B=' +
+          '% noticeability) vs B=' +
           fmt(sB.radiusM, 1) +
           'm (' +
           sB.panicPct +
-          '% panic)',
+          '% noticeability)',
         stats: [
-          { label: 'Blast Radius (A vs B)', value: fmt(sA.radiusM, 1) + 'm vs ' + fmt(sB.radiusM, 1) + 'm', sub: 'Audible awkwardness zone' },
-          { label: 'Blame the Dog (%)', value: sA.dogBlame + '% vs ' + sB.dogBlame + '%', sub: 'Works best on low bass rumbles' },
-          { label: 'Shoe-Scuff Alibi (%)', value: sA.shoeScuff + '% vs ' + sB.shoeScuff + '%', sub: 'Credible only for short pops/hisses' },
-          { label: 'Vinyl Chair Creak (%)', value: sA.leatherChair + '% vs ' + sB.leatherChair + '%', sub: 'Mid-tone faux-leather squeak cover' },
-          { label: 'Room Panic Level', value: sA.panicPct + '% vs ' + sB.panicPct + '%', sub: 'Crest pop + duration intimidation' },
-          { label: 'Alibi Match', value: soc.matchScore + '%', sub: 'Similarity of social cover risk' }
+          { label: 'Propagation Radius (A/B)', value: fmt(sA.radiusM, 1) + 'm vs ' + fmt(sB.radiusM, 1) + 'm', sub: 'Estimated open-air reach' },
+          { label: 'Canine Vocal Overlap', value: sA.dogBlame + '% vs ' + sB.dogBlame + '%', sub: 'Low-frequency resonance overlap' },
+          { label: 'Footwear Friction Overlap', value: sA.shoeScuff + '% vs ' + sB.shoeScuff + '%', sub: 'Transient upper-band overlap' },
+          { label: 'Upholstery Compression', value: sA.leatherChair + '% vs ' + sB.leatherChair + '%', sub: 'Mid-band leather/vinyl overlap' },
+          { label: 'Ambient Noticeability', value: sA.panicPct + '% vs ' + sB.panicPct + '%', sub: 'Crest & duration saliency index' },
+          { label: 'Propagation Parity', value: soc.matchScore + '%', sub: 'Environmental profile similarity' }
         ],
         charts: [
           {
             id: 'alibiMatrix',
-            title: 'Social Cover-Story Plausibility Matrix (%)',
-            subtitle: 'Compares Dog Blame, Vinyl Chair, Shoe Scuff & Public Panic between A and B',
+            title: 'Environmental Masking Affinity Matrix (%)',
+            subtitle: 'Compares Canine, Upholstery, Footwear & Noticeability coefficients between A and B',
             drawType: 'alibiMatrix'
           },
           {
             id: 'shockwaveRings',
-            title: 'Estimated Elevator Audible Blast Radius (Meters)',
-            subtitle: 'Top-down propagation rings (2m, 5m, 10m, 14m) showing social danger perimeter',
+            title: 'Estimated Acoustic Propagation Radius (Meters)',
+            subtitle: 'Top-down dispersion contours (2m, 5m, 10m, 14m) across enclosed space boundaries',
             drawType: 'shockwaveRings'
           }
         ]
@@ -814,68 +810,64 @@
     var ov = bd.overall || {};
     var capNote = [];
     if (ov.coreCapApplied) {
-      capNote.push('Core Identity Cap triggered (0.5×Pitch + 0.5×Timbre = ' + fmt(ov.coreIdentity, 1) + '% < 45%)');
+      capNote.push('Core Identity Guard engaged (0.5×Pitch + 0.5×Timbre = ' + fmt(ov.coreIdentity, 1) + '% < 45%)');
     }
     if (ov.minKeyCapApplied) {
-      capNote.push('Bottleneck Guard triggered (min key metric = ' + fmt(ov.minKey, 1) + '% < 25%)');
+      capNote.push('Bottleneck Guard engaged (min key metric = ' + fmt(ov.minKey, 1) + '% < 25%)');
     }
-    var capStr = capNote.length > 0 ? capNote.join(' • ') : 'No anti-inflation caps triggered — genuinely well-rounded cheek work!';
+    var capStr = capNote.length > 0 ? capNote.join(' • ') : 'All five primary telemetry domains satisfied convergence thresholds without scalar capping.';
 
     return {
       key: 'overall',
       badgeCode: 'DOC-00 // ISO-FART-9000',
-      title: 'Master Acoustic Synthesis & Hybrid Eigen-Score Dossier',
-      subtitle: 'Over-engineers a simple fart by fusing 5 acoustic pillars (60% arithmetic + 40% geometric) with anti-flattery caps.',
-      weightLabel: 'Composite Score',
+      title: 'Laboratory Assessment & Hybrid Eigen-Fidelity Index',
+      subtitle: 'Integrates five core telemetry vectors (60% arithmetic mean + 40% geometric mean) with non-compensatory bounds.',
+      weightLabel: 'Composite Fidelity',
       score: res.overall,
       commentary:
-        'Lab Verdict ("' +
+        'Scientific Consensus (' +
         res.title +
-        '", Grade ' +
+        ', Grade ' +
         res.grade +
-        '): Arithmetic=' +
+        '): Arithmetic Mean=' +
         fmt(ov.weightedArith, 1) +
-        '%, Geometric=' +
+        '%, Geometric Mean=' +
         fmt(ov.weightedGeom, 1) +
         '%. ' +
         capStr +
-        ' (P.S. Acoustic Twins: ' +
-        bonus.acoustics.twinA.emoji +
-        ' ' +
+        ' (Reference Analogues: ' +
         bonus.acoustics.twinA.short +
         ' vs ' +
-        bonus.acoustics.twinB.emoji +
-        ' ' +
         bonus.acoustics.twinB.short +
         '.)',
       formula:
-        'Overall = 0.60×Arith(' +
+        'Fidelity = 0.60×Arith(' +
         fmt(ov.weightedArith, 1) +
         '%) + 0.40×Geom(' +
         fmt(ov.weightedGeom, 1) +
         '%) = ' +
         fmt(ov.uncappedOverall, 1) +
         '%' +
-        (ov.coreCapApplied || ov.minKeyCapApplied ? ' → Capped to ' + res.overall + '%' : ' → ' + res.overall + '%'),
+        (ov.coreCapApplied || ov.minKeyCapApplied ? ' → Bounded to ' + res.overall + '%' : ' → ' + res.overall + '%'),
       stats: [
-        { label: 'Weighted Arithmetic (60%)', value: fmt(ov.weightedArith, 1) + '%', sub: 'Linear sum of 5 pillars' },
-        { label: 'Weighted Geometric (40%)', value: fmt(ov.weightedGeom, 1) + '%', sub: 'Penalizes glaring mismatches' },
-        { label: 'Core Identity Avg', value: fmt(ov.coreIdentity, 1) + '%', sub: '0.5×Pitch + 0.5×Timbre (Cap < 45%)' },
-        { label: 'Min Key Criterion', value: fmt(ov.minKey, 1) + '%', sub: 'Pitch/Timbre/Flutter floor (< 25%)' },
-        { label: 'Squelch Index (A vs B)', value: bonus.wetness.wetA + '% vs ' + bonus.wetness.wetB + '%', sub: bonus.wetness.labelA + ' / ' + bonus.wetness.labelB },
-        { label: 'Acoustic Grade', value: res.grade + ' • ' + res.overall + '%', sub: res.title }
+        { label: 'Weighted Arithmetic (60%)', value: fmt(ov.weightedArith, 1) + '%', sub: 'Linear aggregate of 5 domains' },
+        { label: 'Weighted Geometric (40%)', value: fmt(ov.weightedGeom, 1) + '%', sub: 'Penalizes cross-domain variance' },
+        { label: 'Core Identity Avg', value: fmt(ov.coreIdentity, 1) + '%', sub: '0.5×Resonance + 0.5×Spectral (Cap < 45%)' },
+        { label: 'Min Key Criterion', value: fmt(ov.minKey, 1) + '%', sub: 'Resonance/Spectral/Cadence floor (< 25%)' },
+        { label: 'Hydro-Acoustic Flux (A/B)', value: bonus.wetness.wetA + '% vs ' + bonus.wetness.wetB + '%', sub: bonus.wetness.labelA + ' / ' + bonus.wetness.labelB },
+        { label: 'Classification Grade', value: res.grade + ' • ' + res.overall + '%', sub: res.title }
       ],
       charts: [
         {
           id: 'radar',
-          title: '5-Axis Gastro-Acoustic Compliance Radar',
-          subtitle: 'Polygonal symmetry vs 100% clone boundary',
+          title: '5-Axis Acoustic Fidelity Compliance Radar',
+          subtitle: 'Polygonal parity symmetry relative to 100% reference boundary',
           drawType: 'radar'
         },
         {
           id: 'synthesisBars',
-          title: 'Weighted Contribution & Fusion Architecture',
-          subtitle: 'How each criterion’s weight contributes + Arithmetic vs Geometric convergence',
+          title: 'Weighted Domain Contribution & Fusion Architecture',
+          subtitle: 'Individual domain weighting + Arithmetic vs Geometric convergence',
           drawType: 'synthesisBars'
         }
       ]
@@ -963,11 +955,11 @@
 
     if (drawType === 'radar') {
       var axes = [
-        { label: 'Duration (14%)', score: result.durationScore },
-        { label: 'Pitch (26%)', score: result.pitchScore },
-        { label: 'Flutter (18%)', score: result.modulationScore },
-        { label: 'Timbre (28%)', score: result.timbreScore },
-        { label: 'Envelope (14%)', score: result.envelopeScore }
+        { label: 'Lifetime (14%)', score: result.durationScore },
+        { label: 'Resonance (26%)', score: result.pitchScore },
+        { label: 'Cadence (18%)', score: result.modulationScore },
+        { label: 'Spectral (28%)', score: result.timbreScore },
+        { label: 'Pressure (14%)', score: result.envelopeScore }
       ];
       var cx = w * 0.5;
       var cy = h * 0.53;
@@ -1044,14 +1036,14 @@
     if (drawType === 'synthesisBars') {
       var ov = bd.overall || { weightedArith: result.overall, weightedGeom: result.overall };
       var rows = [
-        { name: 'Duration × 14%', val: result.durationScore * 0.14, max: 14, col: '#60a5fa', txt: fmt(result.durationScore * 0.14, 1) + ' / 14 pts' },
-        { name: 'Pitch × 26%', val: result.pitchScore * 0.26, max: 26, col: '#34d399', txt: fmt(result.pitchScore * 0.26, 1) + ' / 26 pts' },
-        { name: 'Timbre × 28%', val: result.timbreScore * 0.28, max: 28, col: '#fb7185', txt: fmt(result.timbreScore * 0.28, 1) + ' / 28 pts' },
-        { name: 'Flutter × 18%', val: result.modulationScore * 0.18, max: 18, col: '#facc15', txt: fmt(result.modulationScore * 0.18, 1) + ' / 18 pts' },
-        { name: 'Envelope × 14%', val: result.envelopeScore * 0.14, max: 14, col: '#38bdf8', txt: fmt(result.envelopeScore * 0.14, 1) + ' / 14 pts' },
+        { name: 'Lifetime × 14%', val: result.durationScore * 0.14, max: 14, col: '#60a5fa', txt: fmt(result.durationScore * 0.14, 1) + ' / 14 pts' },
+        { name: 'Resonance × 26%', val: result.pitchScore * 0.26, max: 26, col: '#34d399', txt: fmt(result.pitchScore * 0.26, 1) + ' / 26 pts' },
+        { name: 'Spectral × 28%', val: result.timbreScore * 0.28, max: 28, col: '#fb7185', txt: fmt(result.timbreScore * 0.28, 1) + ' / 28 pts' },
+        { name: 'Cadence × 18%', val: result.modulationScore * 0.18, max: 18, col: '#facc15', txt: fmt(result.modulationScore * 0.18, 1) + ' / 18 pts' },
+        { name: 'Pressure × 14%', val: result.envelopeScore * 0.14, max: 14, col: '#38bdf8', txt: fmt(result.envelopeScore * 0.14, 1) + ' / 14 pts' },
         { name: 'Arith Mean (60%)', val: ov.weightedArith, max: 100, col: '#94a3b8', txt: fmt(ov.weightedArith, 1) + '%' },
         { name: 'Geom Mean (40%)', val: ov.weightedGeom, max: 100, col: '#c084fc', txt: fmt(ov.weightedGeom, 1) + '%' },
-        { name: 'FINAL OVERALL', val: result.overall, max: 100, col: scoreColor(result.overall), txt: result.overall + '%' }
+        { name: 'FIDELITY SCORE', val: result.overall, max: 100, col: scoreColor(result.overall), txt: result.overall + '%' }
       ];
       var padL = 112;
       var padR = 82;
@@ -1479,9 +1471,9 @@
       ctx.font = '9px ui-monospace, SFMono-Regular, Menlo, monospace';
       ctx.fillStyle = 'rgba(148,163,184,0.85)';
       ctx.textAlign = 'center';
-      ctx.fillText('Stutter', (hzToModX(4) + hzToModX(8)) * 0.5, padT + 11);
-      ctx.fillText('Cheek Flutter', (hzToModX(8) + hzToModX(20)) * 0.5, padT + 11);
-      ctx.fillText('Fast Rattle', (hzToModX(20) + hzToModX(45)) * 0.5, padT + 11);
+      ctx.fillText('Low Cadence', (hzToModX(4) + hzToModX(8)) * 0.5, padT + 11);
+      ctx.fillText('Mid Oscillation', (hzToModX(8) + hzToModX(20)) * 0.5, padT + 11);
+      ctx.fillText('Rapid Osc.', (hzToModX(20) + hzToModX(45)) * 0.5, padT + 11);
 
       function modPts(spec) {
         var pts = [];
@@ -1503,7 +1495,7 @@
       var plotW = w - padL - padR;
       var bandsA = fA.modBands || [0.34, 0.33, 0.33];
       var bandsB = fB.modBands || [0.34, 0.33, 0.33];
-      var bNames = ['2–8 Hz Stutter', '8–20 Hz Flutter', '20–45 Hz Rattle'];
+      var bNames = ['2–8 Hz Low', '8–20 Hz Mid', '20–45 Hz Rapid'];
 
       var topH = splitY - 22;
       var gW = plotW / 3;
@@ -1671,7 +1663,7 @@
       var bH = h - bTop - 20;
       var bA = fA.bandProfile || [0.25, 0.25, 0.25, 0.25];
       var bB = fB.bandProfile || [0.25, 0.25, 0.25, 0.25];
-      var labels4 = ['Sub-Thunder', 'Mud Rumble', 'Harsh Rasp', 'Air/Steam'];
+      var labels4 = ['Sub-Bass', 'Mid-Low', 'Upper-Mid', 'Air Dispersion'];
       var g4W = plotW / 4;
       var b4W = Math.min(20, g4W * 0.28);
       for (var b4 = 0; b4 < 4; b4++) {
@@ -2024,9 +2016,9 @@
           { pos: 1, label: '1.6kHz' }
         ],
         [
-          { pos: 0, label: 'Pure' },
-          { pos: 0.5, label: 'Buzzy' },
-          { pos: 1, label: 'Hiss' }
+          { pos: 0, label: 'Harmonic' },
+          { pos: 0.5, label: 'Mixed' },
+          { pos: 1, label: 'Broadband' }
         ]
       );
 
@@ -2058,10 +2050,10 @@
 
     if (drawType === 'alibiMatrix') {
       var cats = [
-        { label: 'Blame Dog', a: bonus.social.a.dogBlame, b: bonus.social.b.dogBlame },
-        { label: 'Leather Chair', a: bonus.social.a.leatherChair, b: bonus.social.b.leatherChair },
-        { label: 'Shoe Scuff', a: bonus.social.a.shoeScuff, b: bonus.social.b.shoeScuff },
-        { label: 'Room Panic', a: bonus.social.a.panicPct, b: bonus.social.b.panicPct }
+        { label: 'Canine', a: bonus.social.a.dogBlame, b: bonus.social.b.dogBlame },
+        { label: 'Upholstery', a: bonus.social.a.leatherChair, b: bonus.social.b.leatherChair },
+        { label: 'Footwear', a: bonus.social.a.shoeScuff, b: bonus.social.b.shoeScuff },
+        { label: 'Noticeability', a: bonus.social.a.panicPct, b: bonus.social.b.panicPct }
       ];
       var padL = 42;
       var padR = 16;
@@ -2149,9 +2141,9 @@
       ctx.fill();
       ctx.textAlign = 'center';
       ctx.fillStyle = '#60a5fa';
-      ctx.fillText('A Blast: ' + fmt(bonus.social.a.radiusM, 1) + 'm', w * 0.22, 18);
+      ctx.fillText('A Radius: ' + fmt(bonus.social.a.radiusM, 1) + 'm', w * 0.22, 18);
       ctx.fillStyle = '#fb7185';
-      ctx.fillText('B Blast: ' + fmt(bonus.social.b.radiusM, 1) + 'm', w * 0.78, 18);
+      ctx.fillText('B Radius: ' + fmt(bonus.social.b.radiusM, 1) + 'm', w * 0.78, 18);
     }
   }
 

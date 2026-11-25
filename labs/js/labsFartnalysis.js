@@ -8,7 +8,7 @@
   var INSTITUTE = {
     name: 'TOOT MATCH LABS',
     subtitle: 'Institute of Acoustic Flatulence Research',
-    tagline: 'Advancing The Science Of Gastrointestinal Acoustics Since 2026',
+    tagline: 'Advancing the scientific understanding of gastrointestinal acoustics.',
     aiAcronym: 'A.S.S.',
     aiName: 'Acoustic Similarity System',
     aiVersion: 'v4.2'
@@ -32,7 +32,7 @@
       title: 'Director of Pressure Dynamics',
       img: 'img/team/turbulence.png',
       initials: 'AT',
-      bio: 'Dr. Turbulence specializes in pressure release events and airflow behaviour. Many of the laboratory\'s turbulence and thunder quotient models were developed under her leadership.',
+      bio: 'Dr. Turbulence specializes in pressure release events and airflow behaviour. Many of the laboratory\'s turbulence and energy output telemetry models were developed under her leadership.',
       specialities: ['Pressure Mapping', 'Turbulence Analysis', 'Flow Dynamics']
     },
     {
@@ -42,7 +42,7 @@
       title: 'Senior Spectrogram Scientist',
       img: 'img/team/wobble.png',
       initials: 'PW',
-      bio: 'Dr. Wobble is responsible for much of the laboratory\'s frequency and resonance research. Her work focuses on identifying unique harmonic signatures.',
+      bio: 'Dr. Wobble is responsible for much of the laboratory\'s frequency and resonance research. Her work focuses on identifying unique harmonic signatures across multi-band spectrograms.',
       specialities: ['Spectrogram Analysis', 'Frequency Mapping', 'Resonance Studies']
     },
     {
@@ -52,8 +52,8 @@
       title: 'Director of Computational Acoustics',
       img: 'img/team/flatley.png',
       initials: 'MF',
-      bio: 'Dr. Flatley leads development of comparison algorithms and machine learning systems. His models analyze thousands of acoustic events each year.',
-      specialities: ['Machine Learning', 'Similarity Analysis', 'Pattern Recognition']
+      bio: 'Dr. Flatley leads development of comparison algorithms and machine learning systems. His models evaluate thousands of acoustic specimens each year with strict mathematical rigor.',
+      specialities: ['Machine Learning', 'Reproduction Fidelity', 'Pattern Recognition']
     },
     {
       id: 'pufferton',
@@ -62,131 +62,128 @@
       title: 'Chief Archive Curator',
       img: 'img/team/pufferton.png',
       initials: 'WP',
-      bio: 'Dr. Pufferton maintains the Institute Archive and oversees preservation of historically significant recordings.',
-      specialities: ['Classification', 'Data Archiving', 'Research Preservation']
+      bio: 'Dr. Pufferton maintains the Institute Archive and oversees long-term classification and preservation of historically significant acoustic recordings.',
+      specialities: ['Archive Classification', 'Data Archiving', 'Research Preservation']
     }
   ];
 
   var RESEARCH_FOOTNOTES = [
-    'Findings validated three times; nobody volunteered for a fourth listening session.',
-    'No leather office chairs were falsely accused during the preparation of this report.',
-    'Confidence intervals widen noticeably whenever someone in the room insists it was their shoe.',
-    'All microphones were sanitized acoustically and spiritually following specimen capture.',
-    'Additional grant funding has been denied by the Ethics Committee for the fourth consecutive quarter.',
-    'Coffee consumption spiked 340% during spectral classification.',
-    'Blaming the family dog remains statistically unsupported by our harmonic telemetry.',
-    'Elevator occupancy risk estimates assume poor ventilation and zero eye contact.',
-    'Peer review remains heated; two fellows are no longer speaking over whether that sounded like sleet or gumbo mud.',
-    'Archive comparison yielded results our interns are still trying to process.',
-    'Recorded strictly in the interest of gastrointestinal truth, not personal pride.',
-    'National Weather Service Doppler radar in Seattle briefly flagged our test booth as an isolated microburst.',
-    'Boots used for wet-mud reference calibration remain missing somewhere behind Building C.',
-    'Emotional Mood Classifier readings ("Zen vs. Hostile") carry a ±12% tolerance after spicy lunches.'
+    'Findings successfully reproduced.',
+    'Additional review remains ongoing.',
+    'Archive correlation exceeded expectations.',
+    'The research team remains intrigued.',
+    'Statistical confidence remains favourable.',
+    'Laboratory debate continues.',
+    'Coffee consumption increased during analysis.',
+    'Further funding has been requested.',
+    'Spectral calibration tolerances verified against reference standards.',
+    'All telemetry modules executed deterministically under controlled conditions.',
+    'Long-term archive indexing remains under peer review.',
+    'Supplemental harmonic measurements appended to the Institute record.'
   ];
 
   var SCIENTIST_COMMENT_POOLS = {
     bottomsworth: [
-      'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.',
-      'I have devoted thirty years to barometric and bio-acoustic physics, and frankly this specimen just rewrote Chapter Four.',
-      'Do not apologize for this recording. Frame the spectrogram and hang it next to the barometer.',
-      'The low-pressure surge here reminds me of a November squall rolling unexpectedly off Puget Sound.',
-      'Between weather-front rumble and pure attitude, this specimen scored off the charts for sheer dramatic timing.',
-      'An astonishing display of aerodynamic commitment. My monocle fogged up twice.',
-      'This profile warrants urgent Senate testimony, or at least a very serious apology to the couch cushions.',
-      'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.',
-      'The mood telemetry reads strangely aggressive — like a territorial badger defending the living-room recliner.',
-      'Yet when played at half volume, the tail decay becomes surprisingly serene, almost like a porch screen door relaxing shut.',
-      'The laboratory remains cautiously optimistic, though everyone has cracked a window just in case.'
+      'This profile deserves additional study.',
+      'This finding may become archive worthy.',
+      'The science appears unusually cooperative today.',
+      'A fascinating acoustic specimen.',
+      'I believe we are observing something notable.',
+      'This recording exceeds expectations.',
+      'The Institute will wish to examine this emission lifetime under formal review.',
+      'Every harmonic transition exhibits remarkable scientific discipline.',
+      'This pressure release trajectory warrants inclusion in the quarterly journal.',
+      'A distinguished contribution to the study of gastrointestinal acoustics.'
     ],
     turbulence: [
-      'Pressure release dynamics hit like a microburst slamming into a tin carport roof.',
-      'That transient attack velocity struck the microphone like a sudden hailstorm with zero weather advisory.',
-      'Textbook turbulent vortex shedding — the kind usually clocked behind coastal gale fronts or swamp airboats.',
-      'Strong airflow organization detected. Whatever structural valve held that back deserves a congressional medal.',
-      'Moisture flux telemetry resembles pulling a drenched rubber wellington boot out of ankle-deep bog mud.',
-      'Peak pressure sustained for far longer than polite society or local barometers generally budget for.',
-      'Started like a lazy Sunday hammock breeze, then panicked halfway through into an aggressive diesel backfire.',
-      'Aerodynamically restless: high-frequency gusts colliding straight into thick marshmallow mud resistance.',
-      'My pressure rig mistook the onset for a tire blowing out on gravel at forty miles per hour.',
-      'Smooth laminar onset followed by chaotic swamp-bubble flutter — nature truly refuses to compromise.'
+      'Pressure behaviour exceeded model expectations.',
+      'An unusually balanced airflow event.',
+      'The turbulence profile remains remarkably stable.',
+      'This pressure curve developed exactly as predicted.',
+      'Flow transition boundaries remained coherent across the entire emission lifetime.',
+      'Acoustic energy output accelerated cleanly into the primary release phase.',
+      'Sub-150 Hz pressure propagation aligns closely with theoretical projections.',
+      'Turbulent shear attenuation occurred without unexpected instability.',
+      'Envelope symmetry across the primary impulse remains scientifically noteworthy.',
+      'Measured pressure gradients confirm disciplined aerodynamic boundary conditions.'
     ],
     wobble: [
-      'The resonance trajectory bends like a storm front hitting a mountain ridge — thrillingly unstable.',
-      'Several low-frequency ridges stacked up like cumulonimbus thunderheads on July radar.',
-      'I zoomed in on the spectrogram for twenty minutes and forgot to eat lunch.',
-      'The emotional curve shifted from calm Zen afternoon sigh straight into hostile lawnmower territory in 0.4 seconds.',
-      'A dazzling tremor in the 14 Hz register — sounds like a wet flip-flop slapping dock planks in a stiff crosswind.',
-      'That pitch sweep bends upward like a rhetorical question even the producer did not see coming.',
-      'Strange thermal shimmer at the tail end, reminiscent of steam whistling sideways out of a radiator valve.',
-      'At high magnification the surface ripples look less like air and more like thick pancake batter bubbling on a griddle.',
-      'Unusually serene mid-band glide — surprisingly soothing if you ignore the blast radius.',
-      'Cleanly etched contour lines; Dr. Flatley tried to print them on a weather map.'
+      'This spectrogram has character.',
+      'I am particularly interested in this harmonic structure.',
+      'The resonance profile appears unusually disciplined.',
+      'Several frequencies have my full attention.',
+      'Overtones across the primary resonance profile exhibit rare spectral coherence.',
+      'The 40-band spectral distribution map reveals exceptional structural clarity.',
+      'Harmonic inflection boundaries align cleanly with reference spectral baselines.',
+      'I have annotated this frequency concentration for secondary spectral inspection.',
+      'The transition between fundamental harmonics and broadband dispersion is compelling.',
+      'Upper-band resonance decay remains remarkably consistent across active frames.'
     ],
     flatley: [
-      'My neural clustering model looked at this waveform, paused for three seconds, and checked the Doppler radar.',
-      'The similarity algorithms are unusually excited, which is the closest our software gets to smiling.',
-      'This recording sits four standard deviations from normal human politeness — right where my dataset loves it.',
-      'Even after running 10,000 Monte Carlo simulations, the computer still mutters "check the weather forecast" under its breath.',
-      'Mood telemetry flagged this clip as "Passive-Aggressive Thunder" with 94% statistical confidence.',
-      'Statistically speaking, this sample occupies the wild database shelf somewhere between "Flood Warning" and "Stuck Tire in Mud."',
-      'Computational confidence just hit 99%. Either this is peak acoustic chaos or the laptop needs fresh air.',
-      'The classifier initially filed this under "Small Outboard Engine Cold-Starting in November Mist" before correcting itself.',
-      'Zero predictability in the tail sputter — pure wild Markov-chain mayhem from millisecond one.',
-      'The algorithm cannot stop replaying the peak transient. Frankly, I need to revoke its headphone privileges.'
+      'The machine learning system is unexpectedly confident.',
+      'Our clustering models found this scientifically interesting.',
+      'The comparison engine remains highly convinced.',
+      'Computational curiosity levels have increased.',
+      'Multi-dimensional cepstral projections converged earlier than model predictions.',
+      'Reproduction fidelity vectors align cleanly across all 22 telemetry features.',
+      'Statistical separation within the cosine manifold remains unusually decisive.',
+      'Our deterministic classification pipeline assigned high posterior certainty.',
+      'Observed variance across the 3-phase macro vector stayed well within bounds.',
+      'The computational suite flagged this specimen for elevated research priority.'
     ],
     pufferton: [
-      'The Vault has stored four thousand specimens, and none arrived with quite this much diplomatic immunity.',
-      'I am filing this under "Historical Treasures Not Suitable For Thanksgiving Dinner."',
-      'Cataloged between a coastal foghorn log and "Tractor Tire Escaping a Muddy Rut." Truly rare company.',
-      'Handle with cotton gloves: future meteorologists and anthropologists alike will argue over what caused this.',
-      'Feels uncannily serene for the first half-second before turning violently chaotic — museum-grade mood whiplash.',
-      'I nearly dropped my clipboard indexing this one. Pure Hall-of-Fame wilderness acoustics.',
-      'If this specimen were weather, school buses would be delayed two hours purely out of caution.',
-      'Stored in Vault Drawer 19B alongside an angry goose recording and a suspiciously damp hiking boot.',
-      'Remarkably well-preserved waveform edges — like amber, if amber could clear a waiting room.',
-      'A priceless addition to the permanent archive — preferably kept behind triple-paned airtight glass.'
+      'The archive contains few comparable examples.',
+      'This recording has preservation potential.',
+      'A valuable addition to the Institute collection.',
+      'Historically speaking, this is uncommon.',
+      'I have cross-referenced this acoustic artifact against five decades of records.',
+      'Preservation standards recommend immediate cataloging in the permanent collection.',
+      'Few archived specimens demonstrate such consistent harmonic documentation.',
+      'Long-term archival indexing has been initiated for this acoustic profile.',
+      'Comparable waveforms appear in only a small fraction of historical holdings.',
+      'Future researchers will find this specimen instructive for comparative reference.'
     ]
   };
 
   var SCIENTIST_COMMENTS = [
-    { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'A remarkably self-assured turbulence profile. I have given it a standing ovation from my desk.' },
-    { scientistId: 'wobble', label: 'Mood & Radar Note', quote: 'The emotional curve shifted from calm Zen afternoon sigh straight into hostile lawnmower territory in 0.4 seconds.' },
-    { scientistId: 'flatley', label: 'Statistical Observation', quote: 'My neural clustering model looked at this waveform, paused for three seconds, and checked the Doppler radar.' },
-    { scientistId: 'turbulence', label: 'Weather Front Note', quote: 'Pressure release dynamics hit like a microburst slamming into a tin carport roof.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'Cataloged between a coastal foghorn log and "Tractor Tire Escaping a Muddy Rut." Truly rare company.' },
-    { scientistId: 'bottomsworth', label: 'Scientific Recommendation', quote: 'Technically illegal in three cramped elevators, yet acoustically a triumph of human determination.' },
-    { scientistId: 'turbulence', label: 'Field Observation', quote: 'Moisture flux telemetry resembles pulling a drenched rubber wellington boot out of ankle-deep bog mud.' },
-    { scientistId: 'wobble', label: 'Storm Telemetry Note', quote: 'Several low-frequency ridges stacked up like cumulonimbus thunderheads on July radar.' },
-    { scientistId: 'flatley', label: 'Computational Note', quote: 'Mood telemetry flagged this clip as "Passive-Aggressive Thunder" with 94% statistical confidence.' },
-    { scientistId: 'pufferton', label: 'Archive Classification', quote: 'Stored in Vault Drawer 19B alongside an angry goose recording and a suspiciously damp hiking boot.' }
+    { scientistId: 'bottomsworth', label: 'Peer Review Comment', quote: 'This profile deserves additional study.' },
+    { scientistId: 'turbulence', label: 'Field Observation', quote: 'Pressure behaviour exceeded model expectations.' },
+    { scientistId: 'wobble', label: 'Research Note', quote: 'I am particularly interested in this harmonic structure.' },
+    { scientistId: 'flatley', label: 'Laboratory Observation', quote: 'Our clustering models found this scientifically interesting.' },
+    { scientistId: 'pufferton', label: 'Archive Observation', quote: 'The archive contains few comparable examples.' },
+    { scientistId: 'bottomsworth', label: 'Laboratory Observation', quote: 'A fascinating acoustic specimen.' },
+    { scientistId: 'turbulence', label: 'Research Note', quote: 'An unusually balanced airflow event.' },
+    { scientistId: 'wobble', label: 'Peer Review Observation', quote: 'The resonance profile appears unusually disciplined.' },
+    { scientistId: 'flatley', label: 'Research Note', quote: 'The machine learning system is unexpectedly confident.' },
+    { scientistId: 'pufferton', label: 'Archive Note', quote: 'This recording has preservation potential.' }
   ];
 
   var RARE_COMMENTS = [
-    'Laboratory dispute erupted: Dr. Wobble classifies this as "Category-3 Bog Suction," while Bottomsworth calls it a dry plains thunderclap.',
-    'Emergency decaf revoked — entire peer-review panel switched to double espresso for this recording.',
-    'Building maintenance just called asking why all five acoustic sensors registered a sudden barometric cold front.',
-    'National Weather Service phoned the lab to ask whether an unlogged squall line just formed inside Conference Room B.',
-    'Additional grant funding formally requested strictly to reconstruct how one emission achieved "Relaxing Spa Wind" and "Angry Chainsaw" simultaneously.',
-    'Vault indexing delayed: Dr. Pufferton is wiping tears of academic pride off his glasses.',
-    'Mood Board deadlock: two fellows insist this recording feels peaceful and meditative; three others hid under their desks.',
-    'Mud-calibration team confirmed identical acoustic drag to losing a left rain boot in spring pasture clay.',
-    'Several senior fellows requested a second listen and immediately opened two windows and a patio door.',
-    'Unanimous committee memo: this recording has officially crossed from comedy into meteorological history.'
+    'Laboratory disagreement detected.',
+    'Additional peer review required.',
+    'Several scientists requested a second opinion.',
+    'Archive retrieval taking longer than expected.',
+    'Unexpected resonance behaviour observed.',
+    'Further funding has been requested.',
+    'Coffee consumption increased during analysis.',
+    'Committee consensus paused pending supplemental spectrogram inspection.',
+    'Archival cross-reference triggered secondary verification protocol.',
+    'Laboratory instruments recalibrated following elevated harmonic activity.'
   ];
 
   var SHAREABLE_VERDICTS = [
-    'Archive Worthy. Honestly, Put It In The Louvre.',
-    'Scientifically Remarkable (Yet Socially Unforgivable).',
-    'Professor Bottomsworth Requested A Standing Ovation.',
-    'Category-4 Weather Event Without A Forecast.',
-    'Aerodynamic Excellence Achieved Without A Permit.',
-    'Equal Parts Swamp Mud Suction & Unapologetic Physics.',
-    'Acoustically Ambitious. Windows Open Recommended.',
-    'Certified Research Material — Keep Away From Elevators.',
-    'Passed Peer Review (Barely Kept A Straight Face).',
-    'Strangely Relaxing Until The Surprise Hailstorm Finish.',
-    'Hostile Mood Telemetry Confirmed — Check Nearest Exit.',
-    'Doppler Radar Mistook This For A Passing Cold Front.'
+    'Archive Worthy',
+    'Research Grade',
+    'Acoustically Significant',
+    'Scientifically Remarkable',
+    'Exceptional Resonance Event',
+    'High Research Interest',
+    'Noteworthy Acoustic Artifact',
+    'Suitable For Peer Review',
+    'Candidate For Long-Term Preservation',
+    'Distinguished Acoustic Specimen',
+    'Priority Archive Classification',
+    'Verified Laboratory Benchmark'
   ];
 
   var DIAL_SCIENTIST_MAP = {
@@ -258,7 +255,7 @@
     if (!text) return '';
     return (
       '<div class="labs-rare-comment" role="note">' +
-      '  <span class="labs-rare-tag">RARE LABORATORY DISPATCH</span>' +
+      '  <span class="labs-rare-tag">LABORATORY EVENT</span>' +
       '  <span class="labs-rare-text">' + esc(text) + '</span>' +
       '</div>'
     );
@@ -288,16 +285,16 @@
     var wet = bonus && bonus.wetness ? bonus.wetness.wetA : 32;
 
     var energyPct = percentileAgainstArchive(crest + modDepth * 4.5, archiveSamples, 'crestFactorDb', 9.2, 3.1);
-    var energyLine = 'More energetic than ' + energyPct + '% of archived samples.';
+    var energyLine = 'Acoustic energy output exceeds ' + energyPct + '% of archived specimens.';
     var tags = [];
-    if (modDepth >= 0.42) tags.push('Above average turbulence.');
-    else tags.push('Controlled laminar flow.');
-    if (safeNum(f.pitchRangeSemitones, 0) >= 4.0 || cent >= 360 || cent <= 115) tags.push('Rare resonance distribution.');
-    else tags.push('Disciplined harmonic structure.');
-    if (atk <= 0.055 || (f.burstCount || 1) >= 2) tags.push('Uncommon pressure release signature.');
-    else tags.push('Balanced pressure release profile.');
-    if (energyPct >= 62 || wet >= 55) tags.push('Acoustically distinctive.');
-    if (energyPct >= 72 || dur >= 0.9 || (f.burstCount || 1) >= 3) tags.push('Potential archive candidate.');
+    if (modDepth >= 0.42) tags.push('Elevated airflow turbulence.');
+    else tags.push('Disciplined laminar flow.');
+    if (safeNum(f.pitchRangeSemitones, 0) >= 4.0 || cent >= 360 || cent <= 115) tags.push('Uncommon spectral distribution.');
+    else tags.push('Coherent harmonic structure.');
+    if (atk <= 0.055 || (f.burstCount || 1) >= 2) tags.push('Distinctive pressure release onset.');
+    else tags.push('Balanced pressure release contour.');
+    if (energyPct >= 62 || wet >= 55) tags.push('High research interest.');
+    if (energyPct >= 72 || dur >= 0.9 || (f.burstCount || 1) >= 3) tags.push('Candidate for preservation.');
 
     var puff = pickScientistComment('pufferton', seedStr || 'archive', 1);
     return {
@@ -318,10 +315,10 @@
       })
       .join('');
     return (
-      '<section class="labs-archive-cmp-card" aria-label="Institute Archive Comparison">' +
+      '<section class="labs-archive-cmp-card" aria-label="Archive Comparison">' +
       '  <div class="labs-archive-cmp-head">' +
       '    <div>' +
-      '      <div class="labs-eyebrow">INSTITUTE ARCHIVE COMPARISON</div>' +
+      '      <div class="labs-eyebrow">ARCHIVE OBSERVATION · HISTORICAL COMPARISON</div>' +
       '      <div class="labs-archive-headline">' + esc(archCmp.energyLine) + '</div>' +
       '    </div>' +
       '    <span class="labs-chip labs-chip-blue">' + archCmp.energyPct + 'th Percentile</span>' +
@@ -339,12 +336,12 @@
   function renderShareableVerdictHtml(verdictText, specimenTitle, pctLabel) {
     var chief = getScientistById('bottomsworth');
     return (
-      '<section class="labs-glass-card labs-share-verdict-card" aria-label="Official Shareable Laboratory Verdict">' +
+      '<section class="labs-glass-card labs-share-verdict-card" aria-label="Official Laboratory Verdict">' +
       '  <div class="labs-sv-top">' +
       '    <div class="labs-sv-seal">' +
       '      <img src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
       '      <div>' +
-      '        <div class="labs-eyebrow">TOOT MATCH LABS · RESEARCH VERDICT</div>' +
+      '        <div class="labs-eyebrow">TOOT MATCH LABS · OFFICIAL LABORATORY VERDICT</div>' +
       '        <div class="labs-sv-spec">' + esc(specimenTitle) + (pctLabel ? ' · ' + esc(pctLabel) : '') + '</div>' +
       '      </div>' +
       '    </div>' +
@@ -373,7 +370,7 @@
       .join('');
 
     return (
-      '<section class="labs-glass-card labs-report-signature" aria-label="Laboratory Certification and Research Footnotes">' +
+      '<section class="labs-glass-card labs-report-signature" aria-label="Laboratory Certification and Academic Footnotes">' +
       '  <div class="labs-sig-top">' +
       '    <div class="labs-sig-reviewer">' +
       '      <img class="labs-sig-portrait" src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
@@ -391,9 +388,9 @@
       '      <button type="button" class="labs-btn-ghost labs-btn-sm labs-fn-meet-team">🏛️ Meet The Team</button>' +
       '    </div>' +
       '  </div>' +
-      '  <p class="labs-sig-disclaimer">"This report has been generated using proprietary acoustic analysis techniques and may contain traces of excessive scientific enthusiasm."</p>' +
+      '  <p class="labs-sig-disclaimer">"This Institute Report has been generated using deterministic acoustic telemetry protocols in pursuit of advancing the scientific understanding of gastrointestinal acoustics."</p>' +
       '  <div class="labs-footnotes">' +
-      '    <div class="labs-eyebrow">RESEARCH FOOTNOTES</div>' +
+      '    <div class="labs-eyebrow">ACADEMIC FOOTNOTES</div>' +
       '    <ul>' + notesHtml + '</ul>' +
       '  </div>' +
       '</section>'
@@ -513,8 +510,8 @@
     var neighborScore = bonus ? Math.round(clamp(safeNum(bonus.social.matchScore, 50), 0, 100)) : Math.round(safeNum(res.envelopeScore, 50));
 
     var deltaMs = Math.round((safeNum(fB.duration, 0) - safeNum(fA.duration, 0)) * 1000);
-    var bpmA = Math.round(safeNum(fA.modRateHz, 0) * 60);
-    var bpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
+    var cpmA = Math.round(safeNum(fA.modRateHz, 0) * 60);
+    var cpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
     var oppSlope = pBd.oppCent || pBd.oppPitch || safeNum(pBd.polarityMul, 1) < 1;
     var refFreq = formatHzLabel(fA);
     var guessFreq = formatHzLabel(fB);
@@ -523,140 +520,140 @@
     var centB = safeNum(fB.spectralCentroidHz, 220);
 
     var pitchQuip = oppSlope
-      ? 'Storm-Front vs Rapid-Deflation Collision! One rises like an oncoming gale while the other drops downhill (×0.28 sweep penalty).'
+      ? 'Opposing frequency trajectory detected across active frames (×0.28 trajectory polarity factor applied).'
       : pBd.refUnvoiced !== pBd.userUnvoiced
-      ? 'Crosswind vs Storm mismatch: one stayed silent-and-breezy while the other blasted a full pitched wave.'
+      ? 'Regime mismatch: one specimen exhibited broadband airflow dispersion while the other sustained harmonic voicing.'
       : safeNum(res.pitchScore, 0) >= 82
-      ? 'Eerily locked on target! Practically oscillating at the exact same barometric core.'
-      : 'Frequency offset logged between ' + refFreq + ' and ' + guessFreq + ' across the spectral band.';
+      ? 'Primary resonance trajectories converged tightly across active measurement frames.'
+      : 'Observed variance between ' + refFreq + ' and ' + guessFreq + ' across primary resonance bands.';
 
     var durQuip =
       Math.abs(deltaMs) < 35
-        ? 'Uncanny stopwatch valve discipline — both pinched off within ±' + Math.abs(deltaMs) + 'ms.'
+        ? 'High temporal precision — emission lifetime aligned within ±' + Math.abs(deltaMs) + 'ms.'
         : deltaMs > 0
-        ? 'Recording B kept resonating for +' + deltaMs + 'ms longer than Specimen A.'
-        : 'Specimen B truncated ' + Math.abs(deltaMs) + 'ms earlier than Reference A.';
+        ? 'Recording B sustained +' + deltaMs + 'ms longer emission lifetime than Reference Specimen A.'
+        : 'Recording B terminated ' + Math.abs(deltaMs) + 'ms prior to Reference Specimen A.';
 
     var envQuip =
       lagBins === 0
-        ? 'Detonation peaks arrived phase-locked without needing lag compensation.'
-        : 'Aligned Recording B by ' + (lagBins > 0 ? '+' : '') + lagBins + ' time bins for temporal fairness.';
+        ? 'Pressure release maxima arrived phase-aligned without lag compensation.'
+        : 'Synchronized Recording B by ' + (lagBins > 0 ? '+' : '') + lagBins + ' time bins for shape parity calibration.';
 
     var timbreQuip =
       centB < centA * 0.72
-        ? 'Recording B exhibits dense upholstery attenuation compared to open-air Reference A.'
+        ? 'Recording B exhibits elevated low-pass cavity damping relative to Reference A.'
         : centB > centA * 1.35
-        ? 'Recording B packs sharper high-end air hiss — less cushion damping than Reference A.'
-        : 'Astonishingly close upholstery damping and cheek resonance coloring.';
+        ? 'Recording B shows elevated upper-harmonic dispersion relative to Reference A.'
+        : 'Spectral distribution contours align closely across harmonic resonance bands.';
 
     var rawList = [
       {
         id: 'tone',
-        title: '📡 Core Pitch & Frequency Sweep',
+        title: '📡 Primary Resonance Profile',
         score: Math.round(clamp(safeNum(res.pitchScore, 0), 0, 100)),
         sub: refFreq + ' vs ' + guessFreq,
         quip: pitchQuip,
         forensicsKey: 'pitch',
-        note: 'Tracks fundamental F0 (45–650 Hz), checks whether mood telemetry bends anxiously upward or deflates downward.'
+        note: 'Tracks fundamental F0 trajectory (45–650 Hz) and evaluates ascending versus descending sweep polarity.'
       },
       {
         id: 'duration',
-        title: '⏱️ Chrono-Expulsion (Duration)',
+        title: '⏱️ Emission Lifetime',
         score: Math.round(clamp(safeNum(res.durationScore, 0), 0, 100)),
         sub: safeNum(fA.duration, 0).toFixed(2) + 's vs ' + safeNum(fB.duration, 0).toFixed(2) + 's',
         quip: durQuip,
         forensicsKey: 'duration',
-        note: 'Quantifies absolute emission length, T50 half-gas burn point, and lingering awkward seconds.'
+        note: 'Quantifies absolute emission lifetime, T50 cumulative energy burn point, and observed variance.'
       },
       {
         id: 'pressure',
-        title: '📈 Blast Shockwave & Pressure',
+        title: '📈 Pressure Release Potential',
         score: Math.round(clamp(safeNum(res.envelopeScore, 0), 0, 100)),
         sub: 'Peak ' + Math.round(safeNum(fA.crestFactorDb, 0)) + ' vs ' + Math.round(safeNum(fB.crestFactorDb, 0)) + ' dB',
         quip: envQuip,
         forensicsKey: 'envelope',
-        note: 'Slides shockwave curves across ±6 bins so late Record presses never ruin an honest impression.'
+        note: 'Cross-correlates pressure envelopes across ±6 bins to isolate contour alignment from trigger offset.'
       },
       {
         id: 'resonance',
-        title: '🎨 Upholstery Resonance & MFCC',
+        title: '🎨 Spectral Distribution Map & MFCC',
         score: Math.round(clamp(safeNum(res.timbreScore, 0), 0, 100)),
         sub: Math.round(centA) + ' vs ' + Math.round(centB) + ' Hz',
         quip: timbreQuip,
         forensicsKey: 'timbre',
-        note: 'Computes 13-band MFCC vocal-tract fingerprints to catch muffled denim vs sharp open-air snap.'
+        note: 'Evaluates 13-band MFCC cepstral fingerprints, 4-band energy distribution, and STFT grid parity.'
       },
       {
         id: 'thunder',
-        title: '⚡ Sub-Bass Thunder Quotient',
+        title: '⚡ Acoustic Energy Output (Sub-Bass)',
         score: thunderScore,
         sub: Math.round(safeNum(bpA[0], 0) * 100) + '% vs ' + Math.round(safeNum(bpB[0], 0) * 100) + '% sub-bass',
-        quip: safeNum(bpA[0], 0) + safeNum(bpB[0], 0) >= 0.7 ? 'Dual window-rattling thunderclap — drywalls and barometers stand no chance.' : 'Lighter mid-band snap without heavy rolling thunder.',
+        quip: safeNum(bpA[0], 0) + safeNum(bpB[0], 0) >= 0.7 ? 'Substantial 45–150 Hz low-frequency acoustic energy concentration confirmed.' : 'Moderate mid-band energy distribution without dominant sub-bass concentration.',
         forensicsKey: 'overall',
-        note: 'Quantifies 45–150 Hz room-shaking rumble combined with explosive crest slam.'
+        note: 'Quantifies 45–150 Hz sub-bass energy release paired with transient crest factor.'
       },
       {
         id: 'turbulence',
-        title: '🫧 Cheek-Flutter BPM & Turbulence',
+        title: '🫧 Oscillation Cadence & Turbulence',
         score: Math.round(clamp(safeNum(res.modulationScore, 0), 0, 100)),
-        sub: bpmA + ' vs ' + bpmB + ' flaps/min (' + Math.round(safeNum(fA.modRateHz, 0)) + '/' + Math.round(safeNum(fB.modRateHz, 0)) + ' Hz)',
-        quip: 'Measured exact gluteal oscillation at ' + bpmA + ' vs ' + bpmB + ' cheek flaps/min (yes, seriously).',
+        sub: cpmA + ' vs ' + cpmB + ' cycles/min (' + Math.round(safeNum(fA.modRateHz, 0)) + '/' + Math.round(safeNum(fB.modRateHz, 0)) + ' Hz)',
+        quip: 'Measured periodic envelope oscillation at ' + cpmA + ' vs ' + cpmB + ' cycles/min.',
         forensicsKey: 'modulation',
-        note: 'Analyzes 4–45 Hz modulation FFT spectrum across Slow Stutter, Classic Cheek Flutter, and Fast Bee-Buzz.'
+        note: 'Analyzes 4–45 Hz modulation FFT spectrum across low, mid, and rapid oscillatory regimes.'
       },
       {
         id: 'acoustic_conf',
-        title: '🧪 Master Eigen-Score Confidence',
+        title: '🧪 Reproduction Fidelity Assessment',
         score: acousticConf,
-        sub: 'Grade ' + (res.grade || 'B') + ' · ' + (res.title || 'Solid Attempt'),
-        quip: oBd.coreCapApplied ? 'Anti-flattery cap intervened to stop generous pitch/timbre drift.' : 'No anti-inflation caps triggered — genuinely well-rounded cheek work!',
+        sub: 'Grade ' + (res.grade || 'B') + ' · ' + (res.title || 'Aligned Profile'),
+        quip: oBd.coreCapApplied ? 'Non-compensatory core identity bound applied to preserve classification integrity.' : 'All primary telemetry domains cleared convergence thresholds cleanly.',
         forensicsKey: 'overall',
-        note: 'Over-engineers a fart score by fusing 5 weighted pillars (60% arithmetic + 40% geometric) with anti-flattery caps.'
+        note: 'Fuses five weighted telemetry domains (60% arithmetic + 40% geometric) with boundary safeguards.'
       },
       {
         id: 'ml_conf',
-        title: '🤖 ML Archetype Convergence',
+        title: '🤖 Computational Model Convergence',
         score: mlConfidence,
         sub: 'MFCC ' + Math.round(safeNum(tBd.mfccMeanScore, 0) * 100) + '% · Grid ' + Math.round(safeNum(tBd.gridCorr, 0) * 100) + '%',
-        quip: 'Cross-checked 13 cepstral dimensions locally — zero cloud servers bothered.',
+        quip: 'Evaluated 13 cepstral dimensions deterministically on local device instrumentation.',
         forensicsKey: 'timbre',
-        note: 'Deterministic cepstral feature engine comparing 3-act spectral evolution and STFT surface similarity.'
+        note: 'Deterministic feature engine comparing 3-phase spectral macro-evolution and STFT cell correlation.'
       },
       {
         id: 'rhythmic',
-        title: '🥁 Sputter Cadence & Bursts',
+        title: '🥁 Impulse Segmentation & Cadence',
         score: rhythmicScore,
         sub: (fA.burstCount || 1) + ' vs ' + (fB.burstCount || 1) + ' burst(s)',
-        quip: (fA.burstCount || 1) === (fB.burstCount || 1) ? 'Synchronized burst phrasing — identical impulse choreography.' : 'Cadence diverged: ' + (fA.burstCount || 1) + ' sputter(s) vs ' + (fB.burstCount || 1) + '.',
+        quip: (fA.burstCount || 1) === (fB.burstCount || 1) ? 'Synchronized impulse segmentation — identical discrete burst choreography.' : 'Segmentation variance: ' + (fA.burstCount || 1) + ' impulse(s) vs ' + (fB.burstCount || 1) + '.',
         forensicsKey: 'modulation',
-        note: 'Counts discrete bursts clearing the 0.35 envelope gate like a sputtering 2-stroke engine.'
+        note: 'Counts discrete acoustic impulses exceeding the 0.35 normalized envelope gate.'
       },
       {
         id: 'harmonic',
-        title: '💨 Tonal Core vs Stealth Crosswind',
+        title: '💨 Harmonic Structure vs Dispersion',
         score: harmonicScore,
         sub: 'Flatness ' + safeNum(fA.spectralFlatness, 0).toFixed(2) + ' vs ' + safeNum(fB.spectralFlatness, 0).toFixed(2),
-        quip: safeNum(fA.spectralFlatness, 0) > 0.45 && safeNum(fB.spectralFlatness, 0) > 0.45 ? 'Matched stealth crosswinds — maximum plausible office deniability.' : 'Balances dense thunder rumble against chaotic air turbulence.',
+        quip: safeNum(fA.spectralFlatness, 0) > 0.45 && safeNum(fB.spectralFlatness, 0) > 0.45 ? 'Synchronized broadband laminar dispersion across both specimens.' : 'Evaluates harmonic reed periodicity against turbulent airflow dispersion.',
         forensicsKey: 'pitch',
-        note: 'Separates aggressive foghorn booms from innocent AC-vent background gusts.'
+        note: 'Separates tonal periodic harmonics from broadband unvoiced aerodynamic release.'
       },
       {
         id: 'moisture',
-        title: '💦 Squelch Index & Laundry Risk',
+        title: '💧 Hydro-Acoustic Turbulence Profile',
         score: moistureScore,
-        sub: bonus ? bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ') vs ' + bonus.wetness.wetB + '%' : 'Squelch parity',
-        quip: bonus ? (bonus.wetness.wetA >= 65 || bonus.wetness.wetB >= 65 ? 'Laundry Advisory: Heavy turbulent bubble-flux detected!' : 'Viscosity match: "' + bonus.wetness.labelA + '" vs "' + bonus.wetness.labelB + '".') : 'Evaluates spectral flux splat volatility.',
+        sub: bonus ? bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ') vs ' + bonus.wetness.wetB + '%' : 'Turbulence parity',
+        quip: bonus ? (bonus.wetness.wetA >= 65 || bonus.wetness.wetB >= 65 ? 'Research Note: Elevated fluid-boundary spectral flux volatility observed.' : 'Turbulence alignment: "' + bonus.wetness.labelA + '" vs "' + bonus.wetness.labelB + '".') : 'Evaluates frame-to-frame spectral flux volatility.',
         forensicsKey: 'wetness',
-        note: 'Measures frame-to-frame micro-gurgling flux and advises whether laundry inspection is warranted.'
+        note: 'Measures inter-frame spectral flux transients and mid-band resonance modulation.'
       },
       {
         id: 'neighbor',
-        title: '🛋️ Elevator Alibi & Blast Radius',
+        title: '📐 Acoustic Propagation & Masking',
         score: neighborScore,
-        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm blast' : 'Propagation zone',
-        quip: bonus ? 'Best Excuse (B): ' + bonus.social.b.verdict : 'Models confined-space elevator panic radius.',
+        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm radius' : 'Propagation zone',
+        quip: bonus ? 'Masking Model (B): ' + bonus.social.b.verdict : 'Models confined-space acoustic propagation radius.',
         forensicsKey: 'social',
-        note: 'Calculates audible awkwardness perimeter and ranks Dog-Blame, Sneaker Scuff, and Vinyl Chair excuses.'
+        note: 'Computes estimated propagation perimeter and environmental spectral masking overlap.'
       }
     ];
 
@@ -704,14 +701,14 @@
       var sameTwin = bonus.acoustics.twinA.name === bonus.acoustics.twinB.name;
       rowItems.push({
         id: 'acoustics',
-        title: '🎺 Cheek Resonance & Sound Twin',
+        title: '📡 Reference Acoustic Analogue',
         score: twinScore,
-        sub: bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.short,
+        sub: bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.short,
         quip: sameTwin
-          ? 'Unbelievable convergence — both mapped to a "' + bonus.acoustics.twinA.name + '"!'
-          : 'Identity crisis: A channels a "' + bonus.acoustics.twinA.name + '" while B sounds like a "' + bonus.acoustics.twinB.name + '".',
+          ? 'Taxonomic convergence: both specimens align nearest with "' + bonus.acoustics.twinA.name + '".'
+          : 'Taxonomic separation: Reference A aligns with "' + bonus.acoustics.twinA.name + '" while Recording B maps toward "' + bonus.acoustics.twinB.name + '".',
         forensicsKey: 'acoustics',
-        note: 'Compares pitch, noisiness, and flutter affinity against 8 scientifically calibrated non-human noisemakers.',
+        note: 'Evaluates pitch, flatness, and modulation affinity against eight calibrated environmental prototypes.',
         status: twinSt.label,
         color: twinSt.color,
         tone: twinSt.tone
@@ -721,7 +718,7 @@
 
     var cmpVerdict = root.TootLabs.Store
       ? root.TootLabs.Store.buildScientificVerdict(soundA, soundB, result, exactScore)
-      : result.summaryLine || 'Acoustic parity calculated.';
+      : result.summaryLine || 'Reproduction fidelity calibrated.';
     var cmpTipsHtml =
       result.tips && result.tips.length > 0
         ? '<ul class="labs-verdict-tips">' +
@@ -740,18 +737,18 @@
     var humorStripHtml = bonus
       ? '<div class="labs-humor-strip">' +
         '  <div class="labs-humor-tile">' +
-        '    <div class="labs-humor-tile-head">💦 Laundry Advisory</div>' +
+        '    <div class="labs-humor-tile-head">💧 Hydro-Acoustic Field Observation</div>' +
         '    <div class="labs-humor-tile-stat">' + esc(bonus.wetness.wetA + '% ' + bonus.wetness.labelA + ' vs ' + bonus.wetness.wetB + '% ' + bonus.wetness.labelB) + '</div>' +
         '    <div class="labs-humor-tile-body">' + esc(wetRep ? wetRep.commentary : '') + '</div>' +
         '  </div>' +
         '  <div class="labs-humor-tile">' +
-        '    <div class="labs-humor-tile-head">🎺 Acoustic Doppelgänger</div>' +
-        '    <div class="labs-humor-tile-stat">' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.name) + '</div>' +
+        '    <div class="labs-humor-tile-head">📡 Reference Analogue Classification</div>' +
+        '    <div class="labs-humor-tile-stat">' + esc(bonus.acoustics.twinA.name + ' vs ' + bonus.acoustics.twinB.name) + '</div>' +
         '    <div class="labs-humor-tile-body">' + esc(twinRep ? twinRep.commentary : '') + '</div>' +
         '  </div>' +
         '  <div class="labs-humor-tile">' +
-        '    <div class="labs-humor-tile-head">🛋️ Elevator Alibi &amp; Blast Zone</div>' +
-        '    <div class="labs-humor-tile-stat">' + esc(bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm audible radius') + '</div>' +
+        '    <div class="labs-humor-tile-head">📐 Confined-Space Propagation Note</div>' +
+        '    <div class="labs-humor-tile-stat">' + esc(bonus.social.a.radiusM.toFixed(1) + 'm vs ' + bonus.social.b.radiusM.toFixed(1) + 'm propagation radius') + '</div>' +
         '    <div class="labs-humor-tile-body">' + esc(socRep ? socRep.commentary : '') + '</div>' +
         '  </div>' +
         '</div>'
@@ -771,12 +768,12 @@
     var rowsHtml = renderMetricRowsHtml(rowItems, { expandable: true, includeFkey: true });
 
     var twinBadgeHtml = bonus
-      ? '<button type="button" class="labs-twin-pill" data-open-fkey="acoustics" title="Inspect Acoustic Twins &amp; Cheek Resonance">' +
-        '  <span>Cheek Resonance Twin:</span> ' +
+      ? '<button type="button" class="labs-twin-pill" data-open-fkey="acoustics" title="Inspect Reference Analogue Classification">' +
+        '  <span>Reference Analogue:</span> ' +
         '  <strong>' +
-        esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short) +
+        esc(bonus.acoustics.twinA.short) +
         '</strong> vs <strong>' +
-        esc(bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.short) +
+        esc(bonus.acoustics.twinB.short) +
         '</strong> (' +
         bonus.acoustics.matchScore +
         '%)</button>'
@@ -821,28 +818,28 @@
       '  <section class="labs-glass-card labs-fn-header">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMPARISON FORENSICS SUITE · SCIENTIFIC REVIEW</div>' +
+      '        <div class="labs-eyebrow">INSTITUTE REPORT · COMPARATIVE ACOUSTIC ASSESSMENT</div>' +
       '        <h2 class="labs-fn-title">' + esc(labelA) + ' <span class="labs-vs-arrow">vs</span> ' + esc(labelB) + '</h2>' +
       '      </div>' +
       '      <div class="labs-fn-right-cluster">' +
       headerBtnsHtml +
       '        <div class="labs-fn-score-chip">' +
       '          <span class="labs-fn-score-val">' + exactScore.toFixed(1) + '%</span>' +
-      '          <span class="labs-fn-score-lbl">SIMILARITY</span>' +
+      '          <span class="labs-fn-score-lbl">REPRODUCTION FIDELITY</span>' +
       '        </div>' +
       '      </div>' +
       '    </div>' +
       '    <div class="labs-fn-meta-row">' +
       twinBadgeHtml +
       '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
-      '      <span class="labs-hint-text">3D spectrograms above · Expandable comparative telemetry below</span>' +
+      '      <span class="labs-hint-text">3D Spectral Distribution above · Expandable Laboratory Notes below</span>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-spec-bay">' +
       '    <div class="labs-spec-bay-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">3D TIME-FREQUENCY TOPOLOGY</div>' +
-      '        <h3 class="labs-section-title">Side-by-Side Spectrograms</h3>' +
+      '        <div class="labs-eyebrow">3D SPECTRAL DISTRIBUTION TOPOLOGY</div>' +
+      '        <h3 class="labs-section-title">Comparative 3D Spectrograms</h3>' +
       '      </div>' +
       '      <div class="labs-spec-actions">' +
       '        <button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-fn-b2b">▶ A → B</button>' +
@@ -884,19 +881,19 @@
       '        <canvas class="labs-spec-canvas labs-fn-canvas-b"></canvas>' +
       '      </div>' +
       '    </div>' +
-      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Spectrogram Commentary') +
+      renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, 'Research Note · 3D Spectrogram') +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMPLETE COMPARATIVE ACOUSTIC ANALYSIS</div>' +
-      '        <h3 class="labs-section-title">Head-to-Head Research Summary</h3>' +
+      '        <div class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY · COMPARATIVE ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Comparative Acoustic Assessment &amp; Official Findings</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-blue">' + rowItems.length + ' Telemetry Suites</span>' +
       '    </div>' +
       '    <div class="labs-verdict-banner">' +
       '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">LABORATORY FINDINGS · OFFICIAL SCIENTIFIC VERDICT</span>' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · LABORATORY VERDICT</span>' +
       '        <span class="labs-verdict-grade">' + esc('Grade ' + (result.grade || 'B') + ' · ' + (result.title || 'Aligned Profile')) + '</span>' +
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(cmpVerdict) + '</p>' +
@@ -906,12 +903,12 @@
       renderRareCommentHtml(rareDispatch) +
       humorStripHtml +
       renderArchiveComparisonHtml(archCmp) +
-      '    <div class="labs-hint-text">Tap any row below to expand complete FFT charts, side-by-side statistics &amp; equations inline.</div>' +
+      '    <div class="labs-hint-text">Select any telemetry domain below to inspect interactive FFT plots, observed variance statistics &amp; governing equations.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Similarity') +
+      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Reproduction Fidelity') +
       renderReportSignatureHtml((labelA || '') + '|' + (labelB || '') + '|cmp') +
       '</div>';
 
@@ -1333,7 +1330,7 @@
   /* ==================== ON-DEVICE ML CLASSIFIER ==================== */
   var ML_PROTOTYPES = [
     {
-      name: 'Thunderstorm Rumble',
+      name: 'Barometric Sub-Bass Front',
       emoji: '⛈️',
       color: '#60A5FA',
       pitchLog: Math.log2(82),
@@ -1342,11 +1339,11 @@
       subShare: 0.56,
       crest: 0.52,
       wetness: 0.25,
-      description: 'Low-frequency storm-front rumble anchored below 120 Hz with deep room-rattling sub-bass.'
+      description: 'Sustained sub-120 Hz low-frequency resonance exhibiting pronounced acoustic energy propagation.'
     },
     {
-      name: 'High-Pressure Squeaker',
-      emoji: '🎈',
+      name: 'High-Frequency Resonant Mode',
+      emoji: '📡',
       color: '#FACC15',
       pitchLog: Math.log2(340),
       flatness: 0.22,
@@ -1354,11 +1351,11 @@
       subShare: 0.14,
       crest: 0.55,
       wetness: 0.22,
-      description: 'Pinched aperture oscillation generating elevated pitch stability above 220 Hz.'
+      description: 'Constricted aperture harmonic oscillation maintaining tonal stability above 220 Hz.'
     },
     {
-      name: 'Staccato Sputterer',
-      emoji: '🛵',
+      name: 'Multi-Burst Staccato Regime',
+      emoji: '📊',
       color: '#F97316',
       pitchLog: Math.log2(145),
       flatness: 0.30,
@@ -1366,10 +1363,10 @@
       subShare: 0.35,
       crest: 0.65,
       wetness: 0.48,
-      description: 'Multi-burst oscillating valve event driven by strong 8–30 Hz amplitude flutter.'
+      description: 'Segmented multi-impulse discharge governed by pronounced 8–30 Hz periodic amplitude modulation.'
     },
     {
-      name: 'Stealth Airband',
+      name: 'Broadband Laminar Dispersion',
       emoji: '💨',
       color: '#9CA3AF',
       pitchLog: Math.log2(260),
@@ -1378,11 +1375,11 @@
       subShare: 0.16,
       crest: 0.28,
       wetness: 0.16,
-      description: 'High spectral flatness turbulent airstream engineered for plausible office deniability.'
+      description: 'High spectral flatness characteristic of unvoiced laminar airflow dispersion.'
     },
     {
-      name: 'Wet Squelch Event',
-      emoji: '💦',
+      name: 'Hydro-Acoustic Turbulence Profile',
+      emoji: '💧',
       color: '#8B5CF6',
       pitchLog: Math.log2(135),
       flatness: 0.34,
@@ -1390,10 +1387,10 @@
       subShare: 0.32,
       crest: 0.48,
       wetness: 0.78,
-      description: 'Elevated mid-band spectral flux and rapid transient micro-gurgling topology.'
+      description: 'Elevated mid-band spectral flux paired with rapid transient fluid-boundary modulation.'
     },
     {
-      name: 'Classic Mid-Rumble',
+      name: 'Equilibrium Mid-Band Profile',
       emoji: '⚡',
       color: '#22C55E',
       pitchLog: Math.log2(150),
@@ -1402,7 +1399,7 @@
       subShare: 0.40,
       crest: 0.54,
       wetness: 0.34,
-      description: 'Balanced midrange reed timbre displaying textbook acoustic equilibrium.'
+      description: 'Balanced midrange harmonic structure exhibiting textbook Institute spectral equilibrium.'
     }
   ];
 
@@ -1672,10 +1669,11 @@
         norm: (peakSpecIdx + 0.5) / Math.max(1, spec.length),
         spanLo: clamp((peakSpecIdx - 2) / Math.max(1, spec.length), 0, 1),
         spanHi: clamp((peakSpecIdx + 3) / Math.max(1, spec.length), 0, 1),
-        tag: specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster',
-        title: (specAnomaly ? 'Unusual Resonance Spike' : 'Spectral Cluster') + ' @ ' + peakSpecHz + ' Hz',
+        tag: specAnomaly ? 'Significant Harmonic Concentration' : 'Research Candidate',
+        obsLabel: 'Laboratory Observation',
+        title: (specAnomaly ? 'Significant Harmonic Concentration' : 'Primary Spectral Cluster') + ' @ ' + peakSpecHz + ' Hz',
         telemetry: peakSpecHz + ' Hz · ' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% Peak Energy (' + ordinalPct(specPct) + ' pct)',
-        story: 'A stubborn wall of sound parked itself at ' + peakSpecHz + ' Hz and refused to apologize. Dr. Wobble zoomed in twice just to admire the nerve of it.',
+        story: 'A significant concentration of acoustic energy was detected within this ' + peakSpecHz + ' Hz region, maintaining elevated spectral stability relative to neighboring bands.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', peakSpecHz + 'spec', 0).quote
       },
@@ -1684,10 +1682,11 @@
         norm: (subPeakIdx + 0.5) / Math.max(1, spec.length),
         spanLo: 0,
         spanHi: clamp((subPeakIdx + 4) / Math.max(1, spec.length), 0.15, 0.45),
-        tag: 'Thunder Concentration',
-        title: 'Thunder Concentration @ ' + subPeakHz + ' Hz',
-        telemetry: 'Sub-165 Hz Core · ' + Math.round(clamp(subPeakVal, 0, 1) * 100) + '% Low-End Energy',
-        story: 'Heavy tectonic pressure anchored around ' + subPeakHz + ' Hz. Dr. Turbulence noted enough sub-bass propagation to rattle silverware in an adjacent postal code.',
+        tag: 'Elevated Energy Release Zone',
+        obsLabel: 'Field Observation',
+        title: 'Elevated Energy Release Zone @ ' + subPeakHz + ' Hz',
+        telemetry: 'Sub-165 Hz Core · ' + Math.round(clamp(subPeakVal, 0, 1) * 100) + '% Low-Band Output',
+        story: 'High-energy low-frequency acoustic release anchored near ' + subPeakHz + ' Hz. Comparable behaviour appears in only a small subset of preserved recordings.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', subPeakHz + 'thunder', 1).quote
       },
@@ -1696,10 +1695,11 @@
         norm: (maxArchDiffIdx + 0.5) / Math.max(1, spec.length),
         spanLo: clamp((maxArchDiffIdx - 2) / Math.max(1, spec.length), 0, 1),
         spanHi: clamp((maxArchDiffIdx + 3) / Math.max(1, spec.length), 0, 1),
-        tag: 'Archive Outlier',
-        title: 'Archive Outlier @ ' + outlierHz + ' Hz',
-        telemetry: outlierHz + ' Hz · +' + Math.round(maxArchDiffVal * 100) + '% above Institute baseline',
-        story: 'At ' + outlierHz + ' Hz, energy drifts miles off normal human etiquette baselines. Dr. Flatley flagged this band as "spectrally unrepentant."',
+        tag: 'Archive Anomaly',
+        obsLabel: 'Research Note',
+        title: 'Archive Anomaly @ ' + outlierHz + ' Hz',
+        telemetry: outlierHz + ' Hz · +' + Math.round(maxArchDiffVal * 100) + '% vs Institute Archive baseline',
+        story: 'This frequency cluster falls outside typical archive distributions at ' + outlierHz + ' Hz. Several researchers have requested additional examination of this area.',
         scientistId: 'flatley',
         scientistQuote: pickScientistComment('flatley', outlierHz + 'outlier', 2).quote
       }
@@ -1711,12 +1711,13 @@
         norm: maxPitchFrame / Math.max(1, pArr.length - 1),
         spanLo: clamp((maxPitchFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
         spanHi: clamp((maxPitchFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
-        tag: 'Harmonic Event',
-        title: voicedPts.length ? 'Harmonic Event @ ' + Math.round(maxPitch) + ' Hz' : 'Harmonic Stealth Window',
-        telemetry: voicedPts.length ? 'Peak F0 ' + Math.round(maxPitch) + ' Hz · Frame ' + (maxPitchFrame + 1) + ' (±' + pitchCi + ' Hz CI)' : 'Unvoiced Aerodynamic Band',
+        tag: 'Primary Resonance Event',
+        obsLabel: 'Peer Review Observation',
+        title: voicedPts.length ? 'Primary Resonance Event @ ' + Math.round(maxPitch) + ' Hz' : 'Unvoiced Aerodynamic Window',
+        telemetry: voicedPts.length ? 'Peak F0 ' + Math.round(maxPitch) + ' Hz · Frame ' + (maxPitchFrame + 1) + ' (±' + pitchCi + ' Hz CI)' : 'Unvoiced Broadband Regime',
         story: voicedPts.length
-          ? 'Pitch locked onto ' + Math.round(maxPitch) + ' Hz with such barometric intensity that Dr. Wobble checked outside for an approaching squall line.'
-          : 'Zero tonal pitching detected — pure whisper-stealth aerodynamics engineered for slipping quietly out of a crowded checkout line.',
+          ? 'Primary resonance locked onto ' + Math.round(maxPitch) + ' Hz with exceptional harmonic discipline. This pattern exceeds archive averages and warrants further study.'
+          : 'No periodic fundamental contour detected — broadband aerodynamic dispersion remained stable across active frames.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', Math.round(maxPitch) + 'pitch', 1).quote
       },
@@ -1725,10 +1726,11 @@
         norm: steepFrame / Math.max(1, pArr.length - 1),
         spanLo: clamp((steepFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
         spanHi: clamp((steepFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
-        tag: 'Statistical Curiosity',
-        title: 'Pitch Inflection Shift (' + pitchSpanSt.toFixed(1) + ' st span)',
+        tag: 'Research Candidate',
+        obsLabel: 'Peer Review Comment',
+        title: 'Resonance Inflection Shift (' + pitchSpanSt.toFixed(1) + ' st span)',
         telemetry: 'Sweep Span ' + pitchSpanSt.toFixed(1) + ' semitones · ' + ordinalPct(pitchPct) + ' pct',
-        story: 'Frequency swerved abruptly across ' + pitchSpanSt.toFixed(1) + ' semitones like it noticed someone walking into the hallway. Professor Bottomsworth saluted the dramatic plot twist.',
+        story: 'Primary resonance traversed ' + pitchSpanSt.toFixed(1) + ' semitones mid-emission. The science team remains interested in these findings for comparative resonance modeling.',
         scientistId: 'bottomsworth',
         scientistQuote: pickScientistComment('bottomsworth', pitchSpanSt + 'sweep', 2).quote
       },
@@ -1737,10 +1739,11 @@
         norm: minPitchFrame / Math.max(1, pArr.length - 1),
         spanLo: clamp((minPitchFrame - 2) / Math.max(1, pArr.length - 1), 0, 1),
         spanHi: clamp((minPitchFrame + 2) / Math.max(1, pArr.length - 1), 0, 1),
-        tag: 'Archive Outlier',
-        title: 'Register Floor vs 90–240 Hz Corridor',
+        tag: 'Archive Observation',
+        obsLabel: 'Archive Note',
+        title: 'Register Floor vs 90–240 Hz Reference Corridor',
         telemetry: 'Floor ' + (minPitch < 9000 ? Math.round(minPitch) + ' Hz' : 'Broadband') + ' · Mean ' + Math.round(meanPitch || centHz) + ' Hz',
-        story: 'Anchored against our shaded 90–240 Hz baseline corridor (' + ordinalPct(pitchPct) + ' archive percentile), earning an appreciative nod from Dr. Pufferton.',
+        story: 'This characteristic sits at the ' + ordinalPct(pitchPct) + ' archive percentile against our preserved 90–240 Hz corridor. Several comparable events appear in historical recordings.',
         scientistId: 'pufferton',
         scientistQuote: pickScientistComment('pufferton', Math.round(meanPitch) + 'floor', 0).quote
       }
@@ -1752,10 +1755,11 @@
         norm: modPeakNorm,
         spanLo: clamp(modPeakNorm - 0.1, 0, 1),
         spanHi: clamp(modPeakNorm + 0.1, 0, 1),
-        tag: 'Peak Turbulence Event',
-        title: 'Peak Turbulence Event @ ' + Math.round(modRate) + ' Hz',
-        telemetry: Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' flaps/min) · Depth ' + modDepthPct + '%',
-        story: 'Sustaining ' + Math.round(modRate * 60) + ' cheek flaps/min (' + modDepthPct + '% depth). Dr. Turbulence considers this speed proof that human aerodynamics deserve a wind-tunnel budget.',
+        tag: 'Primary Resonance Event',
+        obsLabel: 'Field Observation',
+        title: 'Peak Oscillation Cadence @ ' + Math.round(modRate) + ' Hz',
+        telemetry: Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' cycles/min) · Depth ' + modDepthPct + '%',
+        story: 'Sustained ' + Math.round(modRate * 60) + ' oscillation cycles/min at ' + modDepthPct + '% modulation depth. High-energy airflow behaviour exceeded nominal pressure dynamics predictions.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', modDepthPct + 'turb', 0).quote
       },
@@ -1764,10 +1768,11 @@
         norm: 0.25,
         spanLo: (8 - 4) / 41,
         spanHi: (20 - 4) / 41,
-        tag: 'Harmonic Event',
-        title: 'Mud-Boot & Flutter Band (8–20 Hz)',
+        tag: 'Elevated Energy Release Zone',
+        obsLabel: 'Research Observation',
+        title: 'Primary Oscillation Band (8–20 Hz)',
         telemetry: Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% Modulation Share',
-        story: 'The chaotic 8–20 Hz vortex pocket captures ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of ripple power — uncannily like a rain boot yanking free of thick clay mud.',
+        story: 'The 8–20 Hz modulation regime accounts for ' + Math.round(safeNum(f.modBands && f.modBands[1], 0.34) * 100) + '% of total envelope energy, exceeding archive baseline distributions.',
         scientistId: 'wobble',
         scientistQuote: pickScientistComment('wobble', modRate + 'band', 2).quote
       },
@@ -1776,10 +1781,11 @@
         norm: 0.68,
         spanLo: (20 - 4) / 41,
         spanHi: 1,
-        tag: 'Statistical Curiosity',
-        title: 'Fast Turbulence Rattle (20–45 Hz)',
-        telemetry: Math.round(safeNum(f.modBands && f.modBands[2], 0.3) * 100) + '% High-Rattle Share (' + ordinalPct(modPct) + ' pct)',
-        story: 'Rapid oscillation above 20 Hz sounds suspiciously like a miniature scooter idling inside a tuxedo pocket. Dr. Flatley cannot stop graphing it.',
+        tag: 'Acoustic Irregularity Region',
+        obsLabel: 'Archive Observation',
+        title: 'Acoustic Irregularity Region (20–45 Hz)',
+        telemetry: Math.round(safeNum(f.modBands && f.modBands[2], 0.3) * 100) + '% Rapid Modulation Share (' + ordinalPct(modPct) + ' pct)',
+        story: 'Rapid envelope oscillation above 20 Hz constitutes an uncommon characteristic among recorded samples, warranting supplemental Fourier review.',
         scientistId: 'flatley',
         scientistQuote: pickScientistComment('flatley', modPct + 'rattle', 1).quote
       }
@@ -1791,10 +1797,11 @@
         norm: envPeakNorm,
         spanLo: clamp(envPeakNorm - 0.08, 0, 1),
         spanHi: clamp(envPeakNorm + 0.08, 0, 1),
-        tag: 'Pressure Instability Zone',
-        title: 'Peak Shockwave @ ' + Math.round(envPeakNorm * durSec * 1000) + ' ms',
-        telemetry: 'Attack ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB (' + ordinalPct(envPct) + ' pct)',
-        story: 'Full ' + crestDb.toFixed(1) + ' dB sonic impact landed in just ' + atkMs + ' ms — faster than anyone nearby could invent an alibi. Professor Bottomsworth is deeply moved.',
+        tag: 'Elevated Energy Release Zone',
+        obsLabel: 'Laboratory Observation',
+        title: 'Peak Acoustic Energy Release @ ' + Math.round(envPeakNorm * durSec * 1000) + ' ms',
+        telemetry: 'Onset ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB (' + ordinalPct(envPct) + ' pct)',
+        story: 'Maximum ' + crestDb.toFixed(1) + ' dB acoustic energy output developed within ' + atkMs + ' ms. A significant concentration of energy was detected within this region.',
         scientistId: 'bottomsworth',
         scientistQuote: pickScientistComment('bottomsworth', crestDb + 'crest', 3).quote
       },
@@ -1803,10 +1810,11 @@
         norm: t50Norm,
         spanLo: clamp(t50Norm - 0.1, 0, 1),
         spanHi: clamp(t50Norm + 0.1, 0, 1),
-        tag: 'Statistical Curiosity',
-        title: 'Mid-Energy T50 Threshold (' + Math.round(t50Norm * 100) + '%)',
-        telemetry: 'Half-Energy Expended @ ' + Math.round(t50Norm * durSec * 1000) + 'ms · ±18ms CI',
-        story: '50% of total kinetic energy fired off before ' + Math.round(t50Norm * 100) + '% duration — front-loaded boldness with zero interest in tiptoeing out slowly.',
+        tag: 'Research Candidate',
+        obsLabel: 'Field Observation',
+        title: 'T50 Energy Equilibrium Coordinate (' + Math.round(t50Norm * 100) + '%)',
+        telemetry: 'Half-Energy Released @ ' + Math.round(t50Norm * durSec * 1000) + 'ms · ±18ms CI',
+        story: 'Fifty percent of cumulative pressure release occurred prior to ' + Math.round(t50Norm * 100) + '% emission lifetime, indicating front-loaded discharge kinetics.',
         scientistId: 'turbulence',
         scientistQuote: pickScientistComment('turbulence', Math.round(t50Norm * 100) + 't50', 2).quote
       },
@@ -1815,12 +1823,13 @@
         norm: clamp(0.82, 0, 1),
         spanLo: 0.68,
         spanHi: 1.0,
-        tag: bursts > 1 ? 'Peak Turbulence Event' : 'Archive Outlier',
-        title: bursts > 1 ? bursts + '-Burst Release Tail' : 'Clean Valve Decay Tail',
-        telemetry: bursts + ' Hysteresis Burst(s) · ' + durSec.toFixed(2) + 's Total',
+        tag: bursts > 1 ? 'Acoustic Irregularity Region' : 'Archive Anomaly',
+        obsLabel: 'Field Observation',
+        title: bursts > 1 ? bursts + '-Burst Terminal Phase' : 'Disciplined Attenuation Phase',
+        telemetry: bursts + ' Impulse Segment(s) · ' + durSec.toFixed(2) + 's Emission Lifetime',
         story: bursts > 1
-          ? 'Punctuated across ' + bursts + ' distinct dramatic acts, like a sitcom with unexpected post-credits scenes. Dr. Pufferton gave it VIP archive shelving.'
-          : 'One clean, dignified release with zero sloppy aftershocks — filed proudly in the Gentlemanly Acoustics Wing.',
+          ? 'High-energy airflow behaviour was observed near the terminal phase across ' + bursts + ' distinct segments. Comparable behaviour appears in only a small subset of preserved recordings.'
+          : 'Smooth laminar attenuation observed across the terminal decay boundary. This characteristic has strong preservation potential within the Institute collection.',
         scientistId: 'pufferton',
         scientistQuote: pickScientistComment('pufferton', bursts + 'tail', 2).quote
       }
@@ -1830,21 +1839,21 @@
       bases: bases,
       c_spec: {
         key: 'c_spec',
-        modalTitle: '40-Band FFT Energy Spectrum',
-        modalSubtitle: 'Logarithmic spectral energy (45 Hz – 4.2 kHz) vs Archive baseline & 95% confidence band',
+        modalTitle: 'Spectral Distribution Map (40-Band FFT)',
+        modalSubtitle: 'Logarithmic spectral energy (45 Hz – 4.2 kHz) vs Institute Archive baseline & 95% confidence corridor',
         extraLayerLabel: 'Band Division Markers',
         expertIds: ['wobble', 'flatley'],
         percentile: specPct,
         percentileLabel: ordinalPct(specPct) + ' percentile',
         ciLabel: '95% CI ±11%',
-        anomalyTag: specAnomaly ? 'Unusual Resonance Spike' : (specPct >= 75 ? 'Exceeds Archive Avg' : 'Within Archive Norm'),
+        anomalyTag: specAnomaly ? 'Significant Harmonic Concentration' : (specPct >= 75 ? 'Research Candidate' : 'Within Archive Norm'),
         scientistId: 'wobble',
         observation: specAnomaly
-          ? 'A concentrated resonance spike emerged at ' + peakSpecHz + ' Hz. Dr. Wobble identified unusual harmonic behaviour in the surrounding frequency region.'
+          ? 'Significant Harmonic Concentration detected at ' + peakSpecHz + ' Hz. This pattern exceeds archive averages and warrants further study.'
           : specPct >= 75
-          ? 'Spectral centroid reaches ' + Math.round(centHz) + ' Hz, exceeding typical Institute archive averages across upper harmonics.'
-          : 'Harmonic distribution remains cleanly anchored around ' + peakSpecHz + ' Hz against historic Institute Archive baselines.',
-        defaultReadout: 'Peak ' + peakSpecHz + ' Hz (' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% rel) · Archive Avg @ Peak: ' + Math.round((bases.specMean[peakSpecIdx] || 0.3) * 100) + '% · Tap any bar or callout',
+          ? 'Spectral centroid reaches ' + Math.round(centHz) + ' Hz, exceeding typical Institute archive distributions across upper harmonics.'
+          : 'Harmonic distribution remains cleanly anchored around ' + peakSpecHz + ' Hz relative to preserved Archive baselines.',
+        defaultReadout: 'Peak ' + peakSpecHz + ' Hz (' + Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% rel) · Archive Avg @ Peak: ' + Math.round((bases.specMean[peakSpecIdx] || 0.3) * 100) + '% · Tap any bar or annotation',
         hotspots: specHotspots,
         describeAtNorm: function (norm) {
           var idx = clamp(Math.floor(norm * Math.max(1, spec.length)), 0, Math.max(0, spec.length - 1));
@@ -1852,15 +1861,16 @@
           var valPct = Math.round(clamp(safeNum(spec[idx], 0), 0, 1) * 100);
           var avgPct = Math.round(clamp(safeNum(bases.specMean[idx], 0.25), 0, 1) * 100);
           var diff = valPct - avgPct;
-          var regionLabel = hz < 150 ? 'Thunder Concentration' : hz < 450 ? 'Harmonic Event' : 'Spectral Cluster';
+          var regionLabel = hz < 150 ? 'Elevated Energy Release Zone' : hz < 450 ? 'Significant Harmonic Concentration' : 'Research Candidate';
           var sciPick = hz < 150 ? 'turbulence' : 'wobble';
           return {
-            tag: diff >= 18 ? 'Archive Outlier' : regionLabel,
+            tag: diff >= 18 ? 'Archive Anomaly' : regionLabel,
+            obsLabel: diff >= 18 ? 'Archive Observation' : 'Research Note',
             title: hz + ' Hz Spectral Region (' + valPct + '% magnitude)',
             telemetry: hz + ' Hz · Level ' + valPct + '% vs Archive ' + avgPct + '% (' + (diff >= 0 ? '+' : '') + diff + '%)',
             story: diff >= 18
-              ? 'Laboratory Observation: At ' + hz + ' Hz, acoustic output stands +' + diff + '% above the Institute archive mean. ' + (sciPick === 'wobble' ? 'Dr. Wobble' : 'Dr. Turbulence') + ' flagged this resonance peak for elevated scientific scrutiny.'
-              : 'Laboratory Observation: Measured ' + valPct + '% relative spectral energy at ' + hz + ' Hz (' + (diff >= 0 ? '+' : '') + diff + '% vs archive baseline, 95% CI ±11%). Harmonically consistent with surrounding chamber resonances.',
+              ? 'This frequency cluster falls outside typical archive distributions (+' + diff + '% above archive mean at ' + hz + ' Hz). Several researchers have requested additional examination of this area.'
+              : 'Measured ' + valPct + '% relative spectral energy at ' + hz + ' Hz (' + (diff >= 0 ? '+' : '') + diff + '% vs archive mean, 95% CI ±11%). Harmonically consistent with preserved reference profiles.',
             scientistId: sciPick,
             scientistQuote: pickScientistComment(sciPick, hz + 'probe', idx).quote,
             spanLo: clamp((idx - 1.5) / Math.max(1, spec.length), 0, 1),
@@ -1877,29 +1887,29 @@
           return hz + ' Hz · Level ' + valPct + '% vs Archive ' + avgPct + '% (' + (diff >= 0 ? '+' : '') + diff + '%, ±' + ciPct + '% CI)';
         },
         drillStats: [
-          { label: 'Peak Cluster', value: peakSpecHz + ' Hz', sub: Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% normalized amplitude' },
+          { label: 'Harmonic Peak', value: peakSpecHz + ' Hz', sub: Math.round(clamp(peakSpecVal, 0, 1) * 100) + '% normalized energy' },
           { label: 'Archive Percentile', value: ordinalPct(specPct), sub: 'Centroid ' + Math.round(centHz) + ' Hz' },
-          { label: '95% CI Band', value: '±11% mag', sub: 'Archive mean corridor overlaid' },
-          { label: 'Flagged Anomaly', value: specAnomaly ? 'Resonance Spike' : 'Calibrated Spread', sub: specAnomaly ? 'Dr. Wobble frequency alert' : 'Normal broadband spread' }
+          { label: '95% Confidence Band', value: '±11% mag', sub: 'Archive mean corridor overlaid' },
+          { label: 'Discovery Flag', value: specAnomaly ? 'Archive Anomaly' : 'Calibrated Spread', sub: specAnomaly ? 'Dr. Wobble spectral alert' : 'Normal dispersion spread' }
         ],
-        drillNote: 'Logarithmic 40-band spectrum plotted directly against the Institute Archive mean curve (dashed amber) and 95% confidence band (shaded envelope). Tap any bar, peak, or hotspot to read its localized laboratory story.'
+        drillNote: 'Historical Archive Comparison & Confidence Discussion: 40-band Spectral Distribution Map plotted directly against the Institute Archive baseline mean (dashed amber) and 95% statistical confidence interval (shaded corridor). Select any bar or callout to examine outlier deviations.'
       },
       c_pitch: {
         key: 'c_pitch',
-        modalTitle: 'Pitch & Frequency Sweep',
-        modalSubtitle: '32-frame YIN fundamental contour overlaid on Institute 90–240 Hz typical register corridor',
+        modalTitle: 'Primary Resonance Profile & Frequency Sweep',
+        modalSubtitle: '32-frame YIN fundamental contour overlaid on Institute 90–240 Hz archival register corridor',
         extraLayerLabel: 'Register Inflection Markers',
         expertIds: ['wobble', 'bottomsworth'],
         percentile: pitchPct,
         percentileLabel: ordinalPct(pitchPct) + ' percentile',
         ciLabel: '95% CI ±' + pitchCi + ' Hz',
-        anomalyTag: pitchSpanSt >= 5 ? 'Statistical Curiosity' : voicedPts.length === 0 ? 'Unvoiced Stealth Band' : 'Harmonic Event',
+        anomalyTag: pitchSpanSt >= 5 ? 'Archive Anomaly' : voicedPts.length === 0 ? 'Acoustic Irregularity Region' : 'Primary Resonance Event',
         scientistId: 'wobble',
         observation: pitchSpanSt >= 5
-          ? 'A wide ' + pitchSpanSt.toFixed(1) + '-semitone inflection sweep suggests uncommon characteristics compared to archived specimens.'
+          ? 'A wide ' + pitchSpanSt.toFixed(1) + '-semitone inflection trajectory exceeds archive averages and warrants further study.'
           : voicedPts.length === 0
-          ? 'Acoustic emissions remained broadly unvoiced across all 32 frames, resisting classical pitch extraction.'
-          : 'Dr. Wobble verified coherent pitch trajectory relative to the 90–240 Hz Institute corridor.',
+          ? 'Emissions remained broadband unvoiced across all 32 frames, resisting classical pitch extraction.'
+          : 'Dr. Wobble verified disciplined harmonic contour tracking within the 90–240 Hz Institute corridor.',
         defaultReadout: voicedPts.length ? 'Mean ' + Math.round(meanPitch) + ' Hz (Peak ' + Math.round(maxPitch) + ' Hz @ Frame ' + (maxPitchFrame + 1) + ') · Tap contour points to inspect' : 'Unvoiced emission (<25% voiced frames) · Corridor 90–240 Hz shown · Tap to probe',
         hotspots: pitchHotspots,
         describeAtNorm: function (norm) {
@@ -1907,12 +1917,13 @@
           var tSec = (idx / Math.max(1, pArr.length - 1)) * durSec;
           var hz = safeNum(pArr[idx], 0);
           return {
-            tag: hz > 240 ? 'Archive Outlier' : hz > 20 ? 'Harmonic Event' : 'Statistical Curiosity',
-            title: hz > 20 ? 'Frame ' + (idx + 1) + ' Harmonic Point (' + Math.round(hz) + ' Hz)' : 'Frame ' + (idx + 1) + ' Unvoiced Air Segment',
+            tag: hz > 240 ? 'Archive Anomaly' : hz > 20 ? 'Primary Resonance Event' : 'Acoustic Irregularity Region',
+            obsLabel: hz > 240 ? 'Archive Note' : 'Laboratory Observation',
+            title: hz > 20 ? 'Frame ' + (idx + 1) + ' Primary Resonance (' + Math.round(hz) + ' Hz)' : 'Frame ' + (idx + 1) + ' Broadband Dispersion',
             telemetry: 't=' + tSec.toFixed(2) + 's · ' + (hz > 20 ? Math.round(hz) + ' Hz (±' + pitchCi + ' Hz CI)' : 'Broadband Turbulence'),
             story: hz > 20
-              ? 'Laboratory Observation: At ' + tSec.toFixed(2) + 's, cheek oscillation sustained ' + Math.round(hz) + ' Hz (' + (hz > 240 ? 'above the 240 Hz archive ceiling' : hz < 90 ? 'below the 90 Hz sub-bass floor' : 'inside the primary 90–240 Hz vocal-reed zone') + ').'
-              : 'Laboratory Observation: At ' + tSec.toFixed(2) + 's, transient airflow overwhelmed harmonic locking, yielding pure unvoiced aerodynamic turbulence.',
+              ? 'At ' + tSec.toFixed(2) + 's, primary resonance sustained ' + Math.round(hz) + ' Hz (' + (hz > 240 ? 'above the 240 Hz archive ceiling — uncommon among recorded samples' : hz < 90 ? 'within the sub-90 Hz barometric floor' : 'inside the primary 90–240 Hz harmonic reference corridor') + ').'
+              : 'At ' + tSec.toFixed(2) + 's, transient airflow dispersion dominated harmonic locking, generating unvoiced broadband energy.',
             scientistId: hz > 240 ? 'bottomsworth' : 'wobble',
             scientistQuote: pickScientistComment(hz > 240 ? 'bottomsworth' : 'wobble', idx + 'f0', 0).quote,
             spanLo: clamp((idx - 1.5) / Math.max(1, pArr.length - 1), 0, 1),
@@ -1924,44 +1935,45 @@
           var tSec = (idx / Math.max(1, pArr.length - 1)) * durSec;
           var hz = safeNum(pArr[idx], 0);
           return hz > 20
-            ? 't=' + tSec.toFixed(2) + 's · Pitch ' + Math.round(hz) + ' Hz (95% CI ±' + pitchCi + ' Hz · Archive typ 90–240 Hz)'
-            : 't=' + tSec.toFixed(2) + 's · Unvoiced frame (Turbulent airband · Archive typ 90–240 Hz)';
+            ? 't=' + tSec.toFixed(2) + 's · Resonance ' + Math.round(hz) + ' Hz (95% CI ±' + pitchCi + ' Hz · Archive typ 90–240 Hz)'
+            : 't=' + tSec.toFixed(2) + 's · Broadband frame (Unvoiced airflow · Archive typ 90–240 Hz)';
         },
         drillStats: [
-          { label: 'Mean Pitch F0', value: voicedPts.length ? Math.round(meanPitch) + ' Hz' : 'Unvoiced', sub: voicedPts.length + '/' + pArr.length + ' voiced frames' },
+          { label: 'Mean Resonance F0', value: voicedPts.length ? Math.round(meanPitch) + ' Hz' : 'Broadband', sub: voicedPts.length + '/' + pArr.length + ' voiced frames' },
           { label: '95% Confidence', value: '±' + pitchCi + ' Hz', sub: 'Inter-frame stability margin' },
-          { label: 'Archive Percentile', value: ordinalPct(pitchPct), sub: 'Vs historical register corpus' },
-          { label: 'Sweep Excursion', value: pitchSpanSt.toFixed(1) + ' st', sub: pitchSpanSt >= 5 ? 'Wide inflection anomaly' : 'Controlled pitch contour' }
+          { label: 'Archive Percentile', value: ordinalPct(pitchPct), sub: 'Vs historical corpus' },
+          { label: 'Sweep Excursion', value: pitchSpanSt.toFixed(1) + ' st', sub: pitchSpanSt >= 5 ? 'Archive anomaly span' : 'Controlled trajectory' }
         ],
-        drillNote: 'Frame-by-frame YIN fundamental tracker overlaid on the translucent Archive Typical Register (90–240 Hz) and ±1σ frame confidence corridor.'
+        drillNote: 'Archive Comparison & Confidence Discussion: Frame-by-frame YIN fundamental resonance overlaid against the 90–240 Hz Institute Archive Reference Corridor and ±95% inter-frame confidence bounds.'
       },
       c_mod: {
         key: 'c_mod',
-        modalTitle: 'Modulation & Flutter FFT (4–45 Hz)',
-        modalSubtitle: 'Biomechanical cheek oscillation speed vs Institute Archive modulation averages',
-        extraLayerLabel: '3-Zone Biomechanical Bands',
+        modalTitle: 'Airflow Modulation & Oscillation FFT (4–45 Hz)',
+        modalSubtitle: 'Periodic oscillation cadence relative to Institute Archive modulation baselines',
+        extraLayerLabel: '3-Regime Modulation Zones',
         expertIds: ['turbulence', 'wobble'],
         percentile: modPct,
         percentileLabel: ordinalPct(modPct) + ' percentile',
         ciLabel: '95% CI ±9% depth',
-        anomalyTag: highTurb ? 'Peak Turbulence Event' : 'Measured Flutter',
+        anomalyTag: highTurb ? 'Acoustic Irregularity Region' : 'Research Candidate',
         scientistId: 'turbulence',
         observation: highTurb
-          ? 'High turbulence concentration recorded at ' + Math.round(modRate * 60) + ' flaps/min, exceeding typical Institute archive averages.'
-          : 'Flutter kinematics remain well structured around ' + Math.round(modRate) + ' Hz. Dr. Turbulence noted unusually clean air-flow organization.',
-        defaultReadout: 'Peak ' + Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' flaps/min) · Depth ' + modDepthPct + '% · Tap any modulation band',
+          ? 'Elevated oscillation concentration recorded at ' + Math.round(modRate * 60) + ' cycles/min, exceeding typical Institute archive distributions.'
+          : 'Airflow modulation remains disciplined around ' + Math.round(modRate) + ' Hz. Dr. Turbulence noted balanced aerodynamic organization.',
+        defaultReadout: 'Peak ' + Math.round(modRate) + ' Hz (' + Math.round(modRate * 60) + ' cycles/min) · Depth ' + modDepthPct + '% · Tap any modulation band',
         hotspots: modHotspots,
         describeAtNorm: function (norm) {
           var mHz = 4 + norm * 41;
           var idx = clamp(Math.round(norm * Math.max(0, ms.length - 1)), 0, Math.max(0, ms.length - 1));
-          var zone = mHz < 8 ? 'Slow Stutter' : mHz < 20 ? 'Cheek Flutter' : 'Fast Rattle';
+          var zone = mHz < 8 ? 'Low-Frequency Cadence' : mHz < 20 ? 'Mid-Band Oscillation' : 'Rapid Oscillation';
           var mVal = Math.round(clamp(safeNum(ms[idx], 0), 0, 1) * 100);
           var mAvg = Math.round(clamp(safeNum(bases.modMean[idx], 0.25), 0, 1) * 100);
           return {
-            tag: mVal >= mAvg + 15 ? 'Peak Turbulence Event' : zone,
-            title: zone + ' Zone @ ' + mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' flaps/min)',
+            tag: mVal >= mAvg + 15 ? 'Acoustic Irregularity Region' : 'Elevated Energy Release Zone',
+            obsLabel: 'Peer Review Observation',
+            title: zone + ' @ ' + mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' cycles/min)',
             telemetry: mVal + '% Modulation Energy vs ' + mAvg + '% Archive Avg',
-            story: 'Laboratory Observation: At ' + Math.round(mHz * 60) + ' flaps/min (' + zone + ' regime), envelope ripple carries ' + mVal + '% relative energy against a ' + mAvg + '% archive baseline.',
+            story: 'At ' + Math.round(mHz * 60) + ' cycles/min (' + zone + '), envelope modulation carries ' + mVal + '% relative energy against a ' + mAvg + '% archive average. Comparable behaviour appears in only a small subset of preserved recordings.',
             scientistId: 'turbulence',
             scientistQuote: pickScientistComment('turbulence', Math.round(mHz) + 'mod', idx).quote,
             spanLo: clamp(norm - 0.08, 0, 1),
@@ -1971,36 +1983,36 @@
         sampleAtNorm: function (norm) {
           var idx = clamp(Math.round(norm * Math.max(0, ms.length - 1)), 0, Math.max(0, ms.length - 1));
           var mHz = 4 + norm * 41;
-          var zone = mHz < 8 ? 'Slow Stutter' : mHz < 20 ? 'Cheek Flutter' : 'Fast Rattle';
+          var zone = mHz < 8 ? 'Low Cadence' : mHz < 20 ? 'Mid Oscillation' : 'Rapid Oscillation';
           var mVal = Math.round(clamp(safeNum(ms[idx], 0), 0, 1) * 100);
           var mAvg = Math.round(clamp(safeNum(bases.modMean[idx], 0.25), 0, 1) * 100);
-          return mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' flaps/min · ' + zone + ') · Energy ' + mVal + '% vs Archive ' + mAvg + '%';
+          return mHz.toFixed(1) + ' Hz (' + Math.round(mHz * 60) + ' cycles/min · ' + zone + ') · Energy ' + mVal + '% vs Archive ' + mAvg + '%';
         },
         drillStats: [
-          { label: 'Dominant Flutter', value: Math.round(modRate) + ' Hz', sub: Math.round(modRate * 60) + ' cheek flaps/min' },
+          { label: 'Dominant Cadence', value: Math.round(modRate) + ' Hz', sub: Math.round(modRate * 60) + ' cycles/min' },
           { label: 'Modulation Depth', value: modDepthPct + '%', sub: 'Archive median ~36% (±9% CI)' },
-          { label: 'Archive Percentile', value: ordinalPct(modPct), sub: highTurb ? 'Top quartile turbulence' : 'Balanced flutter dynamics' },
-          { label: 'Bursts Logged', value: String(bursts), sub: '4–45 Hz modulation bands' }
+          { label: 'Archive Percentile', value: ordinalPct(modPct), sub: highTurb ? 'Upper-quartile turbulence' : 'Balanced modulation dynamics' },
+          { label: 'Impulse Segments', value: String(bursts), sub: '4–45 Hz modulation bands' }
         ],
-        drillNote: 'Three anatomical modulation zones are shaded: 4–8 Hz Slow Stutter (blue), 8–20 Hz Classic Cheek Flutter (emerald), and 20–45 Hz Fast Bee-Rattle (violet), compared against the dashed Archive average.'
+        drillNote: 'Archive Comparison & Confidence Discussion: Three oscillatory domains are shaded (4–8 Hz Low Cadence, 8–20 Hz Mid Oscillation, 20–45 Hz Rapid Oscillation) and compared against the dashed Institute Archive mean curve.'
       },
       c_env: {
         key: 'c_env',
-        modalTitle: 'Blast Pressure Envelope',
-        modalSubtitle: 'Temporal pressure release curve vs Archive impulse baseline, attack peak & 0.35 burst gate',
+        modalTitle: 'Pressure Release Potential & Energy Envelope',
+        modalSubtitle: 'Temporal pressure contour vs Institute Archive impulse baseline, onset peak & 0.35 segmentation gate',
         extraLayerLabel: '0.35 Burst Gate Threshold',
         expertIds: ['bottomsworth', 'pufferton'],
         percentile: envPct,
         percentileLabel: ordinalPct(envPct) + ' percentile',
         ciLabel: '95% CI ±18 ms',
-        anomalyTag: crestDb >= 12 || bursts > 1 ? 'Pressure Instability Zone' : 'Clean Pressure Release',
+        anomalyTag: crestDb >= 12 || bursts > 1 ? 'Elevated Energy Release Zone' : 'Research Candidate',
         scientistId: 'bottomsworth',
         observation: crestDb >= 12
-          ? 'An abrupt ' + crestDb.toFixed(1) + ' dB pressure shockwave occurred at ' + atkMs + ' ms. Professor Bottomsworth requested additional temporal review.'
+          ? 'Elevated Acoustic Energy Output (' + crestDb.toFixed(1) + ' dB crest) developed within ' + atkMs + ' ms. Additional temporal review requested.'
           : bursts > 1
-          ? 'Multi-burst acoustic release exceeds typical single-pulse archive baselines.'
-          : 'Pressure attack and attenuation profiles align cleanly within calibrated Institute tolerances.',
-        defaultReadout: 'Attack ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB · T50 @ ' + Math.round(t50Norm * 100) + '% · Tap timeline to inspect',
+          ? 'Multi-impulse pressure segmentation exceeds typical single-pulse archive baselines.'
+          : 'Pressure onset and terminal attenuation profiles align cleanly within calibrated Institute tolerances.',
+        defaultReadout: 'Onset ' + atkMs + 'ms · Crest ' + crestDb.toFixed(1) + ' dB · T50 @ ' + Math.round(t50Norm * 100) + '% · Tap timeline to inspect',
         hotspots: envHotspots,
         describeAtNorm: function (norm) {
           var idx = clamp(Math.round(norm * Math.max(0, env.length - 1)), 0, Math.max(0, env.length - 1));
@@ -2008,10 +2020,11 @@
           var ampPct = Math.round(clamp(safeNum(env[idx], 0), 0, 1) * 100);
           var archPct = Math.round(clamp(safeNum(bases.envMean[idx], 0.3), 0, 1) * 100);
           return {
-            tag: ampPct >= 35 ? 'Pressure Instability Zone' : 'Statistical Curiosity',
-            title: 'Envelope Moment @ ' + tMs + ' ms (' + ampPct + '% pressure)',
+            tag: ampPct >= 35 ? 'Elevated Energy Release Zone' : 'Research Candidate',
+            obsLabel: norm >= 0.65 ? 'Field Observation' : 'Laboratory Observation',
+            title: 'Envelope Coordinate @ ' + tMs + ' ms (' + ampPct + '% pressure)',
             telemetry: 't=' + tMs + 'ms (' + Math.round(norm * 100) + '%) · ' + ampPct + '% Pressure vs ' + archPct + '% Archive',
-            story: 'Laboratory Observation: At ' + tMs + ' ms into the release, instantaneous pressure stands at ' + ampPct + '% of maximum against an archive expectation of ' + archPct + '%.' + (ampPct >= 35 ? ' This point clears the 0.35 burst-segmentation gate.' : ''),
+            story: 'At ' + tMs + ' ms into the emission lifetime, instantaneous pressure registered ' + ampPct + '% of peak output against an archive expectation of ' + archPct + '%.' + (ampPct >= 35 ? ' This region exceeds the 0.35 segmentation threshold.' : ''),
             scientistId: norm < 0.35 ? 'turbulence' : 'bottomsworth',
             scientistQuote: pickScientistComment(norm < 0.35 ? 'turbulence' : 'bottomsworth', idx + 'env', 1).quote,
             spanLo: clamp(norm - 0.07, 0, 1),
@@ -2026,12 +2039,12 @@
           return 't=' + tMs + 'ms (' + Math.round(norm * 100) + '%) · Pressure ' + ampPct + '% vs Archive ' + archPct + '% · 95% CI ±18ms';
         },
         drillStats: [
-          { label: 'Onset Attack', value: atkMs + ' ms', sub: 'Peak RMS arrival time' },
+          { label: 'Onset Latency', value: atkMs + ' ms', sub: 'Peak RMS arrival time' },
           { label: 'Crest Factor', value: crestDb.toFixed(1) + ' dB', sub: 'Archive mean ~9.2 dB' },
-          { label: 'Archive Percentile', value: ordinalPct(envPct), sub: 'Dynamic shockwave rank' },
-          { label: '95% Timing CI', value: '±18 ms', sub: 'Gate re-arm hysteresis' }
+          { label: 'Archive Percentile', value: ordinalPct(envPct), sub: 'Pressure release rank' },
+          { label: '95% Timing CI', value: '±18 ms', sub: 'Segmentation hysteresis' }
         ],
-        drillNote: 'Normalized RMS pressure envelope overlaid against the shaded Institute Archive baseline impulse curve, highlighting attack surge, T50 acoustic midpoint, and the 0.35 hysteresis burst threshold.'
+        drillNote: 'Archive Comparison & Confidence Discussion: Normalized RMS pressure envelope overlaid against the preserved Institute Archive baseline curve, highlighting onset peak, T50 coordinate, and 0.35 hysteresis segmentation threshold.'
       }
     };
   }
@@ -2547,7 +2560,7 @@
       var sci = getScientistById(activeDesc.scientistId || cm.scientistId);
       storyEl.innerHTML =
         '<div class="labs-story-head">' +
-        '  <span class="labs-eyebrow">LABORATORY OBSERVATION</span>' +
+        '  <span class="labs-eyebrow">' + esc(activeDesc.obsLabel || 'LABORATORY OBSERVATION') + '</span>' +
         '  <span class="labs-chart-anomaly-tag">' + esc(activeDesc.tag) + '</span>' +
         '</div>' +
         '<div class="labs-story-title">' + esc(activeDesc.title) + '</div>' +
@@ -2638,7 +2651,7 @@
     if (notesEl) {
       var fnSeed = hashSeed((cfg.label || '') + key);
       notesEl.innerHTML =
-        '<div class="labs-eyebrow">LABORATORY NOTES &amp; FOOTNOTES</div>' +
+        '<div class="labs-eyebrow">LABORATORY NOTES &amp; ACADEMIC FOOTNOTES</div>' +
         '<p class="labs-chart-drill-note">' + esc(cm.drillNote) + '</p>' +
         '<ul>' +
         '  <li><sup>[1]</sup> * ' + esc(RESEARCH_FOOTNOTES[fnSeed % RESEARCH_FOOTNOTES.length]) + '</li>' +
@@ -2752,7 +2765,7 @@
     ctx.fillText('C1', pad.l, h - 7);
     ctx.textAlign = 'center';
     ctx.fillStyle = '#D1D5DB';
-    ctx.fillText('13-Dim MFCC Vocal/Cheek Filterbank Signature', pad.l + pw * 0.5, h - 7);
+    ctx.fillText('13-Dim MFCC Resonance & Filterbank Signature', pad.l + pw * 0.5, h - 7);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#9CA3AF';
     ctx.fillText('C13', pad.l + pw, h - 7);
@@ -2897,9 +2910,9 @@
     ctx.font = '700 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#FECDD3';
-    ctx.fillText('Blast Radius ' + safeNum(radiusM, 4).toFixed(1) + 'm · Panic ' + Math.round(panicPct || 50) + '%', cx, 16);
+    ctx.fillText('Propagation Radius ' + safeNum(radiusM, 4).toFixed(1) + 'm · Disruption ' + Math.round(panicPct || 50) + '%', cx, 16);
     ctx.fillStyle = '#9CA3AF';
-    ctx.fillText('Dashed box = Standard 2.2m Elevator Cabin', cx, h - 7);
+    ctx.fillText('Dashed boundary = 2.2m Standard Acoustic Chamber', cx, h - 7);
     finishDarkPlot(p);
   }
 
@@ -2941,7 +2954,7 @@
     ctx.fillStyle = '#86EFAC';
     ctx.font = '700 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Closest Twin: ' + bonus.acoustics.twinA.short + ' (' + bonus.acoustics.topScoreA + '%)', w * 0.5, h - 7);
+    ctx.fillText('Closest Reference: ' + bonus.acoustics.twinA.short + ' (' + bonus.acoustics.topScoreA + '%)', w * 0.5, h - 7);
     finishDarkPlot(p);
   }
 
@@ -2966,23 +2979,23 @@
     }
     if (chartType === 's_flux') {
       var fx = bonus && bonus.wetness ? bonus.wetness.fluxSeriesA : [];
-      return drawSeriesPlot(target, fx, { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.25)', caption: 'Instantaneous Spectral Change (Wetness Driver)' });
+      return drawSeriesPlot(target, fx, { stroke: '#8B5CF6', fill: 'rgba(139, 92, 246, 0.25)', caption: 'Instantaneous Spectral Flux (Turbulence Driver)' });
     }
     if (chartType === 's_4band') {
       var bp = feat.bandProfile || [0.25, 0.25, 0.25, 0.25];
       return drawHorizontalBarsPlot(target, [
         { label: '45-150Hz Sub-Bass', pct: safeNum(bp[0], 0) * 100, color: '#60A5FA' },
-        { label: '150-450Hz Mid-Buzz', pct: safeNum(bp[1], 0) * 100, color: '#22C55E' },
-        { label: '450-1.2kHz Upper', pct: safeNum(bp[2], 0) * 100, color: '#F97316' },
-        { label: '1.2k-4.2kHz Air/Hiss', pct: safeNum(bp[3], 0) * 100, color: '#FB7185' }
+        { label: '150-450Hz Mid-Low Resonance', pct: safeNum(bp[1], 0) * 100, color: '#22C55E' },
+        { label: '450-1.2kHz Mid-Upper', pct: safeNum(bp[2], 0) * 100, color: '#F97316' },
+        { label: '1.2k-4.2kHz Upper Aperture', pct: safeNum(bp[3], 0) * 100, color: '#FB7185' }
       ]);
     }
     if (chartType === 's_mod3band') {
       var mb = feat.modBands || [0.34, 0.33, 0.33];
       return drawHorizontalBarsPlot(target, [
-        { label: '2-8Hz Slow Stutter', pct: safeNum(mb[0], 0) * 100, color: '#60A5FA' },
-        { label: '8-20Hz Cheek Flutter', pct: safeNum(mb[1], 0) * 100, color: '#22C55E' },
-        { label: '20-45Hz Fast Rattle', pct: safeNum(mb[2], 0) * 100, color: '#8B5CF6' }
+        { label: '2-8Hz Slow Oscillation', pct: safeNum(mb[0], 0) * 100, color: '#60A5FA' },
+        { label: '8-20Hz Primary Flutter', pct: safeNum(mb[1], 0) * 100, color: '#22C55E' },
+        { label: '20-45Hz High-Rate Modulation', pct: safeNum(mb[2], 0) * 100, color: '#8B5CF6' }
       ]);
     }
     if (chartType === 's_attack_decay') {
@@ -2999,9 +3012,9 @@
     if (chartType === 's_squelch_mix') {
       var dA = bonus && bonus.wetness ? bonus.wetness.detailA : { md: 0.2, flux: 0.1, squelchBand: 0.2 };
       return drawHorizontalBarsPlot(target, [
-        { label: 'Flutter Factor', pct: clamp(safeNum(dA.md, 0) / 0.65, 0, 1) * 100, color: '#22C55E' },
+        { label: 'Modulation Depth', pct: clamp(safeNum(dA.md, 0) / 0.65, 0, 1) * 100, color: '#22C55E' },
         { label: 'Spectral Flux', pct: clamp(safeNum(dA.flux, 0) / 0.22, 0, 1) * 100, color: '#8B5CF6' },
-        { label: 'Mid Squelch Band', pct: clamp(safeNum(dA.squelchBand, 0), 0, 1) * 100, color: '#F97316' }
+        { label: 'Turbulence Band', pct: clamp(safeNum(dA.squelchBand, 0), 0, 1) * 100, color: '#F97316' }
       ]);
     }
     if (chartType === 's_twin_bars' && bonus) {
@@ -3019,9 +3032,9 @@
     if (chartType === 's_alibi_bars' && bonus) {
       var soc = bonus.social.a;
       return drawHorizontalBarsPlot(target, [
-        { label: 'Blame Family Dog', pct: soc.dogBlame, color: '#22C55E' },
-        { label: 'Sneaker Scuff', pct: soc.shoeScuff, color: '#60A5FA' },
-        { label: 'Leather Office Chair', pct: soc.leatherChair, color: '#F97316' }
+        { label: 'Mechanical Floor Resonance', pct: soc.dogBlame, color: '#22C55E' },
+        { label: 'Footwear Friction Transient', pct: soc.shoeScuff, color: '#60A5FA' },
+        { label: 'Pneumatic Chair Compression', pct: soc.leatherChair, color: '#F97316' }
       ]);
     }
     if (chartType === 's_ml_probs' && ml) {
@@ -3036,10 +3049,10 @@
       var lowPct = feat.bandProfile ? safeNum(feat.bandProfile[0], 0.25) + safeNum(feat.bandProfile[1], 0.25) : 0.4;
       var penBase = clamp(45 + lowPct * 55, 25, 99);
       return drawHorizontalBarsPlot(target, [
-        { label: 'Immediate Vicinity', pct: penBase, color: '#FB7185' },
-        { label: 'Thin Drywall Wall', pct: clamp(penBase * (0.52 + lowPct * 0.35), 10, 95), color: '#F97316' },
-        { label: 'Across Hallway', pct: clamp(penBase * (0.34 + lowPct * 0.28), 5, 85), color: '#60A5FA' },
-        { label: 'Floor Below', pct: clamp(penBase * (0.24 + safeNum(feat.bandProfile ? feat.bandProfile[0] : 0.2, 0.2) * 0.5), 4, 78), color: '#22C55E' }
+        { label: 'Primary Microphone Zone', pct: penBase, color: '#FB7185' },
+        { label: 'Partition Wall Boundary', pct: clamp(penBase * (0.52 + lowPct * 0.35), 10, 95), color: '#F97316' },
+        { label: 'Corridor Boundary', pct: clamp(penBase * (0.34 + lowPct * 0.28), 5, 85), color: '#60A5FA' },
+        { label: 'Lower Deck Chamber', pct: clamp(penBase * (0.24 + safeNum(feat.bandProfile ? feat.bandProfile[0] : 0.2, 0.2) * 0.5), 4, 78), color: '#22C55E' }
       ]);
     }
   }
@@ -3064,20 +3077,20 @@
     var isVoiced = feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0;
 
     var opening = isVoiced
-      ? 'This ' + dur + ' emission committed proudly to a musical ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz), flapping at ' + bpmMod + ' cheek flaps/min across ' + bursts + ' burst' + (bursts === 1 ? '' : 's') + '.'
-      : 'This ' + dur + ' specimen operated as a sneaky ' + bpmMod + ' flaps/min unvoiced breeze (' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center), slipping past pitches like an office chair phantom.';
+      ? 'This ' + dur + ' specimen exhibited a sustained fundamental resonance at ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz), oscillating at ' + safeNum(feat.modRateHz, 0).toFixed(1) + ' Hz (' + bpmMod + ' cycles/min) across ' + bursts + ' burst' + (bursts === 1 ? '' : 's') + '.'
+      : 'This ' + dur + ' specimen presented as an unpitched aerodynamic release oscillating at ' + bpmMod + ' cycles/min (' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz spectral centroid), evading standard harmonic detection.';
 
     var mlLine =
-      ' Our 22-dimension offline ML classifier diagnosed it as "' + ml.topClass.emoji + ' ' + ml.topClass.name + '" (' + ml.confidence + '% confidence) at ' + crest + ' dB impulse snap — thankfully processed 100% locally so no cloud server ever has to explain this in a standup.';
+      ' The 22-dimension local acoustic classifier assigned "' + ml.topClass.emoji + ' ' + ml.topClass.name + '" (' + ml.confidence + '% model confidence) with a ' + crest + ' dB pressure crest — computed entirely within our offline laboratory telemetry suite.';
 
     var wetLine = bonus
-      ? ' Laundry Advisory: ' + bonus.wetness.wetA + '% ("' + bonus.wetness.labelA + '").'
+      ? ' Hydro-Acoustic Stability: ' + bonus.wetness.wetA + '% turbulence index ("' + bonus.wetness.labelA + '").'
       : '';
     var twinLine = bonus
-      ? ' Blind-lineup Doppelgänger: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name + ' (' + bonus.acoustics.topScoreA + '% match).'
+      ? ' Closest Acoustic Reference: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name + ' (' + bonus.acoustics.topScoreA + '% structural correspondence).'
       : '';
     var alibiLine = bonus
-      ? ' Elevator Survival Protocol: ' + bonus.social.a.radiusM.toFixed(1) + 'm blast zone — ' + bonus.social.a.verdict
+      ? ' Environmental Propagation Model: ' + bonus.social.a.radiusM.toFixed(1) + 'm effective acoustic radius — ' + bonus.social.a.verdict
       : '';
 
     return opening + mlLine + wetLine + twinLine + alibiLine;
@@ -3117,92 +3130,92 @@
     var noteTag =
       Forensics && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
         ? Forensics.hzToNoteName(feat.medianPitchHz)
-        : 'Stealth Airband';
+        : 'Unpitched Airband';
 
     var list = [
       {
         id: 's_crest',
-        title: '💥 Shockwave Crest Intensity',
+        title: '💥 Transient Crest Intensity',
         score: crestScore,
-        sub: crestDb.toFixed(1) + ' dB peak punch',
-        quip: crestDb >= 12 ? 'Explosive onset — nearby glassware definitely registered the shockwave.' : 'Polite hydraulic ramp without extreme pop clipping.'
+        sub: crestDb.toFixed(1) + ' dB peak crest',
+        quip: crestDb >= 12 ? 'High-amplitude initial transient consistent with rapid valve release.' : 'Controlled pressure gradient without extreme impulse clipping.'
       },
       {
         id: 's_resonance',
-        title: '🎨 Upholstery & Storm Depth',
+        title: '🎨 Spectral Distribution Depth',
         score: resScore,
-        sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz center',
-        quip: subRatio >= 0.35 ? 'Thunderstorm-grade ' + Math.round(subRatio * 100) + '% sub-bass rumble built to rattle windowpanes.' : 'Sharp mid-band turbulence cuts clean through sofa cushions.'
+        sub: Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz centroid',
+        quip: subRatio >= 0.35 ? 'Substantial ' + Math.round(subRatio * 100) + '% sub-bass energy concentration below 150 Hz.' : 'Focused mid-band harmonic concentration above the low-frequency floor.'
       },
       {
         id: 's_tone',
-        title: '📡 Core Pitch & Mood Curve',
+        title: '📡 Primary Resonance Profile',
         score: toneScore,
         sub: formatHzLabel(feat) + ' · ' + noteTag,
-        quip: feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? 'Locks onto ' + noteTag + ' with stubborn barometric conviction.' : 'Operates like an innocent hallway draft rather than a thunderstorm.'
+        quip: feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0 ? 'Sustained pitch locking around ' + noteTag + ' with disciplined modal stability.' : 'Aperiodic broadband flow resistant to single-pitch tracking.'
       },
       {
         id: 's_turbulence',
-        title: '🫧 Cheek-Flutter BPM',
+        title: '🫧 Oscillation Cadence',
         score: turbScore,
-        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' flaps/min)',
-        quip: bpmSingle >= 1000 ? 'High-RPM valve chatter at ' + bpmSingle + ' flaps/min (yes, seriously).' : 'Smooth aerodynamic oscillation at ' + bpmSingle + ' flaps/min.'
+        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' cycles/min)',
+        quip: bpmSingle >= 1000 ? 'Elevated acoustic oscillation at ' + bpmSingle + ' cycles/min.' : 'Measured aerodynamic ripple at ' + bpmSingle + ' cycles/min.'
       },
       {
         id: 's_burst',
-        title: '🥁 Sputter & Burst Cadence',
+        title: '🥁 Emission & Burst Segmentation',
         score: burstScore,
-        sub: bursts + ' distinct burst(s)',
-        quip: bursts >= 3 ? 'Machine-gun staccato sputtering — rhythmic phrasing nobody can predict.' : bursts === 2 ? 'Clean double-tap cadence; deliberate or unavoidable.' : 'Unified single-stream aerodynamic release.'
+        sub: bursts + ' discrete phase(s)',
+        quip: bursts >= 3 ? 'Multi-stage episodic pulse train exhibiting irregular temporal spacing.' : bursts === 2 ? 'Distinct dual-phase emission profile.' : 'Single continuous aerodynamic release.'
       },
       {
         id: 's_timbre',
-        title: '🧪 13-Band MFCC & Reed Rasp',
+        title: '🧪 13-Band MFCC Harmonic Index',
         score: timbreScore,
         sub: 'Flatness ' + safeNum(feat.spectralFlatness, 0).toFixed(2),
-        quip: safeNum(feat.spectralFlatness, 0) > 0.45 ? 'Airy/stealth profile muffled as if filtered through thick winter jeans.' : 'Rich harmonic cheek-reed buzz with bold overtones.'
+        quip: safeNum(feat.spectralFlatness, 0) > 0.45 ? 'Broadband dampened profile with minimal discrete harmonic partials.' : 'Coherent harmonic structure with pronounced upper overtones.'
       },
       {
         id: 's_moisture',
-        title: '💦 Squelch Index & Laundry Risk',
+        title: '💦 Hydro-Acoustic Turbulence',
         score: moistScore,
-        sub: bonus ? bonus.wetness.labelA : 'Surface flux',
-        quip: bonus && bonus.wetness.wetA >= 65 ? 'Laundry Advisory: Hazardous bubble turbulence — inspect trousers immediately.' : 'Dry aerodynamic exit confirmed — carry on with plausible swagger.'
+        sub: bonus ? bonus.wetness.labelA : 'Spectral flux',
+        quip: bonus && bonus.wetness.wetA >= 65 ? 'Laboratory Assessment: Elevated spectral-flux irregularity across mid-band bins.' : 'Dry laminar discharge confirmed under laboratory inspection.'
       },
       {
         id: 's_twin',
-        title: '🌩️ Acoustic Doppelgänger Twin',
+        title: '🌩️ Comparative Archive Analogue',
         score: twinScore,
-        sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Archetype',
-        quip: bonus ? 'In a blind lineup, sounds startlingly like a ' + bonus.acoustics.twinA.name + '.' : 'Matched against storm, mud, wildlife, and engine archetypes.'
+        sub: bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference Class',
+        quip: bonus ? 'Closest structural acoustic analogue: ' + bonus.acoustics.twinA.name + '.' : 'Indexed against calibrated meteorological and mechanical reference profiles.'
       },
       {
         id: 's_panic',
-        title: '🛋️ Elevator Panic & Alibi Odds',
+        title: '🛋️ Propagation & Masking Index',
         score: panicScore,
-        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm blast radius' : 'Radius',
-        quip: bonus ? 'Alibi: ' + bonus.social.a.verdict : 'Modeling confined-space social survivability.'
+        sub: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm effective radius' : 'Radius',
+        quip: bonus ? 'Masking Assessment: ' + bonus.social.a.verdict : 'Evaluating enclosed-chamber acoustic detectability.'
       },
       {
         id: 's_ml',
-        title: '🤖 On-Device ML Archetype Fit',
+        title: '🤖 Computational Classification',
         score: mlScore,
-        sub: ml.topClass.emoji + ' ' + ml.topClass.name + ' (Zero Cloud)',
-        quip: 'Classified by 22 local features so no cloud server ever sees what you recorded.'
+        sub: ml.topClass.emoji + ' ' + ml.topClass.name + ' (Local)',
+        quip: 'Evaluated locally across 22 acoustic descriptors inside the offline telemetry suite.'
       },
       {
         id: 's_velocity',
-        title: '🚀 Detonation Velocity & Onset',
+        title: '🚀 Onset Rise Velocity',
         score: velocityScore,
-        sub: Math.round(atkMs) + 'ms blast attack',
-        quip: atkMs <= 70 ? 'Hair-trigger transient snap — zero warning shots were fired.' : 'Gradual crescendo buildup before full aerodynamic release.'
+        sub: Math.round(atkMs) + 'ms pressure rise',
+        quip: atkMs <= 70 ? 'Rapid transient onset with negligible pressure ramp.' : 'Progressive pressure escalation preceding peak release.'
       },
       {
         id: 's_neighbor',
-        title: '🧱 Drywall & Neighbor Penetration',
+        title: '🧱 Structural Boundary Attenuation',
         score: neighborScore,
-        sub: Math.round(subRatio * 100) + '% wall-piercing bass',
-        quip: subRatio >= 0.35 ? 'Low frequencies punch straight through hollow drywall — blame the subwoofer.' : 'Higher hiss decays quickly before crossing apartment walls.'
+        sub: Math.round(subRatio * 100) + '% sub-150Hz coupling',
+        quip: subRatio >= 0.35 ? 'Low-frequency wavelength demonstrates strong structural boundary transmission.' : 'Higher-frequency energy attenuates rapidly across architectural partitions.'
       }
     ];
 
@@ -3232,29 +3245,29 @@
       return {
         id: g.id,
         badgeCode: 'ML-10 // ON-DEVICE CEPSTRAL CLASSIFIER',
-        title: 'Machine Learning Acoustic Classification: ' + ml.topClass.emoji + ' ' + ml.topClass.name,
+        title: 'Computational Classification: ' + ml.topClass.emoji + ' ' + ml.topClass.name,
         subtitle: ml.topClass.description,
         score: g.score,
         color: g.color,
         commentary:
-          'How our ML engine works (with alarming sincerity): it extracts 22 acoustic descriptors (13 MFCCs, fundamental pitch, spectral flatness, modulation depth, crest shockwave, sub-bass share, and flux) and runs a softmax distance classifier against 6 calibrated archetypes. Confidence sits at ' +
+          'This 22-dimension offline acoustic classifier evaluates 13 MFCC coefficients, fundamental resonance pitch, spectral flatness, modulation depth, transient crest, sub-bass concentration, and spectral flux against six calibrated laboratory prototypes. Posterior confidence sits at ' +
           ml.confidence +
           '% for "' +
           ml.topClass.name +
-          '" (runner-up: "' +
+          '" (secondary candidate: "' +
           ml.runnerUp.name +
           '" at ' +
           ml.runnerUp.prob +
-          '%) — computed 100% locally so no tech billionaire owns a model trained on your butts.',
+          '%), executed entirely within the institute local workstation.',
         charts: [
-          { title: '6-Class Softmax Probability Distribution', sub: 'Nearest acoustic archetype fit', drawType: 's_ml_probs' },
-          { title: '13-Band MFCC Input Tensor', sub: 'Primary cepstral classification features', drawType: 's_mfcc13' }
+          { title: '6-Class Softmax Probability Distribution', sub: 'Nearest archive prototype correspondence', drawType: 's_ml_probs' },
+          { title: '13-Band MFCC Input Tensor', sub: 'Primary cepstral classification vector', drawType: 's_mfcc13' }
         ],
         stats: [
-          { label: 'Top Class', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
-          { label: 'Runner-Up', value: ml.runnerUp.name, sub: ml.runnerUp.prob + '% posterior' },
+          { label: 'Primary Class', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
+          { label: 'Secondary', value: ml.runnerUp.name, sub: ml.runnerUp.prob + '% posterior' },
           { label: 'Pitch / Centroid', value: ml.featureVector.pitchHz + ' Hz', sub: ml.featureVector.subBandPct + '% sub-bass' },
-          { label: 'Model Type', value: '22-D Softmax', sub: '100% local · zero cloud upload' }
+          { label: 'Model Type', value: '22-D Softmax', sub: 'Offline local telemetry' }
         ],
         formula: 'P(class_k) = exp(-d_weighted(x_22d, mu_k) / 0.55) / SUM(exp(-d / 0.55))'
       };
@@ -3263,216 +3276,216 @@
     var map = {
       s_crest: {
         badgeCode: 'DOC-01 // TRANSIENT CREST TELEMETRY',
-        title: 'Shockwave Crest Intensity & Impulse Force',
-        subtitle: 'Peak-to-RMS acoustic punch across ' + dur.toFixed(2) + 's.',
+        title: 'Transient Crest Intensity & Impulse Force',
+        subtitle: 'Peak-to-RMS acoustic energy across ' + dur.toFixed(2) + 's emission lifetime.',
         commentary:
-          'Shockwave Forensics clocked ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB of peak-to-average punchiness. ' +
-          (safeNum(feat.crestFactorDb, 0) >= 12 ? 'Noticeably explosive snapping onset — nearby wine glasses and innocent bystanders definitely flinched.' : 'Surprisingly composed aerodynamic release without embarrassing pressure clipping.'),
+          'Transient telemetry measured ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB of peak-to-average impulse contrast. ' +
+          (safeNum(feat.crestFactorDb, 0) >= 12 ? 'A sharply defined valve-release transient triggered maximum peak excursion early in the trace.' : 'A measured hydraulic pressure rise progressed without extreme impulse clipping.'),
         charts: [
-          { title: 'Blast Pressure Envelope', sub: 'RMS contour vs time', drawType: 's_envelope' },
+          { title: 'Pressure Release Envelope', sub: 'RMS contour vs time', drawType: 's_envelope' },
           { title: 'Cumulative Energy Integral', sub: 'T10 / T50 / T90 energy milestones', drawType: 's_energy_cum' }
         ],
         stats: [
           { label: 'Crest Factor', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Peak / RMS ratio' },
-          { label: 'Peak Timing', value: Math.round(safeNum(feat.peakTimeRatio, 0.5) * 100) + '%', sub: 'Point of max pressure' },
-          { label: 'Total Span', value: dur.toFixed(2) + 's', sub: 'Auto-trimmed active window' },
-          { label: 'Half-Energy T50', value: Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', sub: 'Where half the gas left the room' }
+          { label: 'Peak Timing', value: Math.round(safeNum(feat.peakTimeRatio, 0.5) * 100) + '%', sub: 'Maximum pressure phase' },
+          { label: 'Emission Lifetime', value: dur.toFixed(2) + 's', sub: 'Active acoustic window' },
+          { label: 'Half-Energy T50', value: Math.round(safeNum(feat.t50Ratio, 0.5) * 100) + '%', sub: '50% cumulative release point' }
         ],
         formula: 'Crest_dB = 20 * log10(max(|x|) / RMS(x))'
       },
       s_resonance: {
-        badgeCode: 'DOC-02 // UPHOLSTERY & FORMANT RESONANCE',
-        title: 'Upholstery Damping & Chamber Resonance',
-        subtitle: '40-band STFT distribution across winter-jeans bass vs sharp hiss turbulence.',
+        badgeCode: 'DOC-02 // SPECTRAL DISTRIBUTION & FORMANT RESONANCE',
+        title: 'Spectral Distribution & Chamber Resonance',
+        subtitle: '40-band STFT distribution mapping sub-bass coupling vs upper-band air dispersion.',
         commentary:
-          'Spectral center of mass sits at ' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz with ' +
-          Math.round(safeNum(bp[0], 0) * 100) + '% of acoustic power below 150 Hz. ' +
-          (bp[0] >= 0.35 ? 'Substantial thunderstorm-grade bass depth confirmed — wooden dining chairs act as pure amplifiers.' : 'Sharper upper turbulence dominates; minimal winter-denim muffling detected.'),
+          'Spectral center of mass resides at ' + Math.round(safeNum(feat.spectralCentroidHz, 220)) + ' Hz with ' +
+          Math.round(safeNum(bp[0], 0) * 100) + '% of acoustic output concentrated below 150 Hz. ' +
+          (bp[0] >= 0.35 ? 'Low-frequency coupling dominates the spectrum, generating sustained resonant boundary amplification.' : 'Mid- and high-band turbulence dominates over low-frequency dampened propagation.'),
         charts: [
-          { title: '40-Band FFT Energy Spectrum', sub: '45 Hz to 4.2 kHz logarithmic surface', drawType: 's_spectrum' },
-          { title: '4-Band Energy Breakdown', sub: 'Sub-Thunder vs Mud Rumble vs Harsh Rasp vs Air', drawType: 's_4band' }
+          { title: '40-Band Spectral Distribution Map', sub: '45 Hz to 4.2 kHz logarithmic surface', drawType: 's_spectrum' },
+          { title: '4-Band Energy Breakdown', sub: 'Sub-Bass vs Mid-Low vs Mid-Upper vs Aperture', drawType: 's_4band' }
         ],
         stats: [
-          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Spectral center of mass' },
-          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Chair-rattling band' },
-          { label: 'Mid Rumble', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz turbulence band' },
-          { label: 'Upper Air (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'Steam-valve air hiss band' }
+          { label: 'Spectral Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Acoustic center of mass' },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Low-frequency coupling' },
+          { label: 'Mid-Low Resonance', value: Math.round(safeNum(bp[1], 0) * 100) + '%', sub: '150–450 Hz core band' },
+          { label: 'Upper Aperture (>1.2kHz)', value: Math.round(safeNum(bp[3], 0) * 100) + '%', sub: 'High-frequency diffusion' }
         ],
         formula: 'Centroid = SUM(f_k * E_k) / SUM(E_k)'
       },
       s_tone: {
-        badgeCode: 'DOC-03 // FUNDAMENTAL F0 & MOOD TELEMETRY',
-        title: 'Fundamental Musical Note & Mood Curve',
-        subtitle: 'Tracks pitch glide in Hz and maps nervous upward bends vs calm deflations.',
+        badgeCode: 'DOC-03 // FUNDAMENTAL F0 & PITCH TRAJECTORY',
+        title: 'Primary Resonance Profile & Pitch Trajectory',
+        subtitle: 'Tracks fundamental pitch contour in Hz across voiced emission frames.',
         commentary:
           (feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
-            ? 'Clean pitched core locked onto ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz) across ' + Math.round(feat.voicedRatio * 100) + '% of frames. Confident enough to set off backyard storm sirens.'
-            : 'Stealth Crosswind Emission (' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% voiced frames). Operates like a secret office-chair air leak rather than a rolling weather front.'),
+            ? 'Disciplined harmonic resonance locked onto ' + noteStr + ' (' + Math.round(feat.medianPitchHz) + ' Hz) across ' + Math.round(feat.voicedRatio * 100) + '% of active frames.'
+            : 'Broadband unpitched emission (' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% voiced frames), behaving acoustically as a diffused boundary airflow discharge.'),
         charts: [
-          { title: '32-Frame Pitch Sweep (Hz)', sub: 'Fundamental frequency over time', drawType: 's_pitch' },
-          { title: 'Spectral Brightness Drift', sub: 'Log2 centroid trajectory across frames', drawType: 's_centroid_contour' }
+          { title: '32-Frame Primary Resonance Contour', sub: 'Fundamental frequency over time', drawType: 's_pitch' },
+          { title: 'Spectral Brightness Trajectory', sub: 'Log2 centroid progression across frames', drawType: 's_centroid_contour' }
         ],
         stats: [
-          { label: 'Fart Piano Key', value: formatHzLabel(feat), sub: noteStr },
-          { label: 'Glissando Bend', value: safeNum(feat.pitchRangeSemitones, 0).toFixed(1) + ' st', sub: 'Semitone wobble span' },
-          { label: 'Voiced Ratio', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Tonal frame share' },
-          { label: 'Sweep Direction', value: (safeNum(feat.pitchTrend, 0) >= 0 ? 'Question-Mark Rise +' : 'Sad-Trombone Drop ') + Math.abs(safeNum(feat.pitchTrend, 0)).toFixed(2), sub: 'Octave delta' }
+          { label: 'Primary Resonance', value: formatHzLabel(feat), sub: noteStr },
+          { label: 'Pitch Deviation', value: safeNum(feat.pitchRangeSemitones, 0).toFixed(1) + ' st', sub: 'Semitone modulation span' },
+          { label: 'Harmonic Ratio', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Pitched frame share' },
+          { label: 'Trajectory Drift', value: (safeNum(feat.pitchTrend, 0) >= 0 ? 'Ascending +' : 'Descending ') + Math.abs(safeNum(feat.pitchTrend, 0)).toFixed(2), sub: 'Octave delta' }
         ],
         formula: 'F0(frame) via Normalized Lag Autocorrelation; MIDI = 69 + 12 * log2(Hz / 440)'
       },
       s_turbulence: {
-        badgeCode: 'DOC-04 // CHEEK-FLUTTER BPM SPECTROSCOPY',
-        title: 'Cheek-Flutter BPM & Valve Oscillation',
-        subtitle: 'Measures gluteal oscillation speed in Beats-Per-Minute (yes, seriously).',
+        badgeCode: 'DOC-04 // OSCILLATION CADENCE SPECTROSCOPY',
+        title: 'Oscillation Cadence & Valve Modulation',
+        subtitle: 'Quantifies periodic envelope modulation frequency in Hz and cycles/min.',
         commentary:
-          'Biomechanics Memo: cheek oscillation clocked ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' flaps/min) at ' + Math.round(safeNum(feat.modDepth, 0) * 100) + '% wobble depth. ' +
-          (feat.modRateHz >= 18 ? 'Running like a 2-stroke Vespa — high-RPM cheek flutter confirmed.' : 'Cruising at a relaxed trombone ripple cadence.'),
+          'Modulation analysis recorded ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmSingle + ' cycles/min) at ' + Math.round(safeNum(feat.modDepth, 0) * 100) + '% envelope modulation depth. ' +
+          (feat.modRateHz >= 18 ? 'Elevated rapid-cycle valve flutter remained persistent across the primary release window.' : 'Controlled low-frequency aerodynamic cadence maintained throughout.'),
         charts: [
-          { title: 'Modulation FFT (4–45 Hz)', sub: 'Stutter, cheek flutter, and fast bee-buzz peaks', drawType: 's_mod' },
-          { title: '3-Band Turbulence Split', sub: 'Slow Stutter vs Cheek Flutter vs Fast Rattle', drawType: 's_mod3band' }
+          { title: 'Modulation FFT (4–45 Hz)', sub: 'Low oscillation, primary flutter, and high-rate modulation', drawType: 's_mod' },
+          { title: '3-Band Modulation Split', sub: 'Slow vs Primary Flutter vs High-Rate Modulation', drawType: 's_mod3band' }
         ],
         stats: [
-          { label: 'Flap Speed', value: bpmSingle + ' BPM', sub: Math.round(safeNum(feat.modRateHz, 0)) + ' cheek flaps/sec' },
-          { label: 'Wobble Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Amplitude flutter depth' },
-          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Texture mutation chaos' },
-          { label: 'ZCR', value: safeNum(feat.zcr, 0).toFixed(3), sub: 'Zero-crossing hiss' }
+          { label: 'Oscillation Rate', value: bpmSingle + ' cyc/m', sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz envelope frequency' },
+          { label: 'Modulation Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Amplitude flutter depth' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame variance' },
+          { label: 'ZCR', value: safeNum(feat.zcr, 0).toFixed(3), sub: 'Zero-crossing turbulence' }
         ],
-        formula: 'ModDepth = std(Env) / mean(Env); BPM = 60 * argmax(FFT_mod[4Hz..45Hz])'
+        formula: 'ModDepth = std(Env) / mean(Env); Rate = 60 * argmax(FFT_mod[4Hz..45Hz])'
       },
       s_burst: {
-        badgeCode: 'DOC-05 // SPUTTER PULSE SEGMENTATION',
-        title: 'Sputter Gate & Rhythmic Burst Audit',
-        subtitle: 'Discrete pressure impulse segmentation across ' + dur.toFixed(2) + 's.',
+        badgeCode: 'DOC-05 // EPISODIC PULSE SEGMENTATION',
+        title: 'Burst Gate & Temporal Segmentation Audit',
+        subtitle: 'Discrete pressure impulse segmentation across ' + dur.toFixed(2) + 's emission lifetime.',
         commentary:
-          'Segmented ' + (feat.burstCount || 1) + ' distinct emission burst(s) clearing the 0.35 envelope gate. ' +
-          ((feat.burstCount || 1) >= 3 ? 'Classic staccato motorcycle cadence — chaotic rhythmic phrasing that catches bystanders off-guard.' : feat.burstCount === 2 ? 'Textbook double-tap timing — impossible to pretend that was just your sneaker.' : 'Unified single-stream release — clean start, no sequel.'),
+          'Envelope gating identified ' + (feat.burstCount || 1) + ' distinct emission phase(s) exceeding the 0.35 amplitude threshold. ' +
+          ((feat.burstCount || 1) >= 3 ? 'Multi-stage pulse sequencing produced discrete acoustic packets separated by measurable valleys.' : feat.burstCount === 2 ? 'Dual-phase temporal separation confirmed two consecutive discharge events.' : 'Unified single-phase aerodynamic discharge without secondary re-ignition.'),
         charts: [
           { title: 'Envelope vs 0.35 Gate Threshold', sub: 'Burst detection hysteresis peaks', drawType: 's_burst_gate' },
-          { title: 'Attack / Sustain / Decay Ratio', sub: 'Temporal anatomy percentages', drawType: 's_attack_decay' }
+          { title: 'Attack / Sustain / Decay Ratio', sub: 'Temporal structure distribution', drawType: 's_attack_decay' }
         ],
         stats: [
-          { label: 'Bursts Detected', value: String(feat.burstCount || 1), sub: 'Gate > 0.35 / re-arm < 0.18' },
-          { label: 'Attack Time', value: atkMs + ' ms', sub: 'Rise to max pressure' },
-          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Lingering trailing sputter' },
-          { label: 'Total Length', value: dur.toFixed(2) + 's', sub: 'Auto-trimmed span' }
+          { label: 'Phases Detected', value: String(feat.burstCount || 1), sub: 'Gate > 0.35 / re-arm < 0.18' },
+          { label: 'Attack Time', value: atkMs + ' ms', sub: 'Rise to peak RMS' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Post-peak attenuation span' },
+          { label: 'Emission Lifetime', value: dur.toFixed(2) + 's', sub: 'Active trace duration' }
         ],
         formula: 'BurstCount = peaks(SmoothEnv > 0.35 separated by valleys < 0.18)'
       },
       s_timbre: {
         badgeCode: 'DOC-06 // 13-BAND CEPSTRAL FINGERPRINT',
-        title: 'Timbre, MFCC & Upholstery Coloring',
-        subtitle: 'Quantifies mud-boot rasp vs muffled winter-jeans air noise.',
+        title: 'Timbral Texture, MFCC & Boundary Attenuation',
+        subtitle: 'Quantifies harmonic overtone structure vs broadband airflow dispersion.',
         commentary:
-          'Wiener Spectral Flatness reads ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'breezy stealth character — plausibly mistaken for a cracked window draft' : 'hostile low-end rumble and coarse flutter — nobody thinks that was the chair') + '). Every acoustic fingerprint stays 100% locally computed.',
+          'Wiener Spectral Flatness measured ' + safeNum(feat.spectralFlatness, 0).toFixed(2) + ' (' + (feat.spectralFlatness > 0.45 ? 'elevated broadband airiness with subdued discrete harmonics' : 'dense harmonic structure with distinct modal overtones') + '). All 13-band cepstral signatures remain stored locally within the laboratory archive.',
         charts: [
           { title: '13-Band MFCC Signature', sub: 'Spectral envelope shape vector', drawType: 's_mfcc13' },
-          { title: '40-Band FFT Energy Spectrum', sub: 'Formant resonances & overtones', drawType: 's_spectrum' }
+          { title: '40-Band Spectral Distribution Map', sub: 'Formant resonances & overtones', drawType: 's_spectrum' }
         ],
         stats: [
-          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = dense pitch, 1 = pure air' },
-          { label: 'Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Upholstery brightness' },
-          { label: 'ML Top Fit', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
-          { label: 'Voice Share', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Harmonic frames' }
+          { label: 'Spectral Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(3), sub: '0 = tonal, 1 = broadband' },
+          { label: 'Spectral Centroid', value: Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz', sub: 'Weighted frequency balance' },
+          { label: 'ML Classification', value: ml.topClass.name, sub: ml.confidence + '% posterior' },
+          { label: 'Harmonic Share', value: Math.round(safeNum(feat.voicedRatio, 0) * 100) + '%', sub: 'Tonal frames' }
         ],
         formula: 'Flatness = geomMean(|X|) / arithMean(|X|); MFCC = DCT(log(MelEnergy))'
       },
       s_moisture: {
-        badgeCode: 'DOC-07 // HYDRO-ACOUSTIC LAUNDRY ADVISORY',
-        title: 'Squelch Index & Moisture Probability',
-        subtitle: 'Quantifying suspicious mid-band micro-gurgling dynamics.',
+        badgeCode: 'DOC-07 // HYDRO-ACOUSTIC TURBULENCE TELEMETRY',
+        title: 'Hydro-Acoustic Turbulence & Spectral Flux',
+        subtitle: 'Quantifies transient mid-band micro-modulation dynamics.',
         commentary:
           bonus
-            ? 'Laundry Advisory: Classified as "' + bonus.wetness.labelA + '" (' + bonus.wetness.wetA + '%). ' + (bonus.wetness.wetA >= 65 ? 'Heavy turbulent bubble-flux detected — consult emergency laundry protocols immediately.' : 'Dry aerodynamic exit confirmed — trousers remain structurally uncompromised.')
-            : 'Surface moisture metrics computed from modulation flux.',
+            ? 'Laboratory Assessment: Classified under "' + bonus.wetness.labelA + '" (' + bonus.wetness.wetA + '%). ' + (bonus.wetness.wetA >= 65 ? 'High inter-frame spectral volatility recorded within the core turbulence band.' : 'Low spectral volatility confirms stable dry aerodynamic discharge.')
+            : 'Hydro-acoustic modulation metrics derived from instantaneous spectral flux.',
         charts: [
-          { title: 'Instantaneous Spectral Flux', sub: 'Micro-texture volatility across event', drawType: 's_flux' },
-          { title: 'Moisture Index Components', sub: 'Flutter + Flux + Squelch Band weightings', drawType: 's_squelch_mix' }
+          { title: 'Instantaneous Spectral Flux', sub: 'Inter-frame spectral volatility', drawType: 's_flux' },
+          { title: 'Turbulence Component Mix', sub: 'Modulation + Flux + Turbulence Band weightings', drawType: 's_squelch_mix' }
         ],
         stats: [
-          { label: 'Squelch Score', value: (bonus ? bonus.wetness.wetA : 25) + '%', sub: bonus ? bonus.wetness.labelA : '' },
-          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame splat chaos' },
-          { label: 'Mod Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Flutter contributor' },
-          { label: 'Bursts', value: String(feat.burstCount || 1), sub: 'Bubble interrupt count' }
+          { label: 'Turbulence Index', value: (bonus ? bonus.wetness.wetA : 25) + '%', sub: bonus ? bonus.wetness.labelA : '' },
+          { label: 'Spectral Flux', value: safeNum(feat.spectralFlux, 0).toFixed(3), sub: 'Inter-frame variance' },
+          { label: 'Modulation Depth', value: Math.round(safeNum(feat.modDepth, 0) * 100) + '%', sub: 'Envelope ripple factor' },
+          { label: 'Phases', value: String(feat.burstCount || 1), sub: 'Discrete impulse count' }
         ],
-        formula: 'Wetness = 22*norm(Mod) + 46*norm(Flux) + 22*SquelchBand + BurstBonus'
+        formula: 'Turbulence = 22*norm(Mod) + 46*norm(Flux) + 22*Band + BurstBonus'
       },
       s_twin: {
-        badgeCode: 'DOC-08 // ACOUSTIC DOPPELGÄNGER MATCHER',
-        title: 'Acoustic Twin: ' + (bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference'),
-        subtitle: 'Cross-referenced against 8 calibrated weather, mud, wildlife, and machine noisemakers.',
+        badgeCode: 'DOC-08 // REFERENCE ANALOGUE CLASSIFICATION',
+        title: 'Archive Analogue: ' + (bonus ? bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name : 'Reference'),
+        subtitle: 'Cross-referenced against 8 calibrated meteorological, fluid, and mechanical profiles.',
         commentary:
           bonus
-            ? 'Wild & Weather Twin Match: In a blind acoustic lineup, this specimen impersonates a "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% similarity. Mention that scientific fact loudly if accused at dinner.'
-            : 'Matched against calibrated noisemaker archetypes.',
+            ? 'Comparative Archive Match: Acoustic parameters align most closely with "' + bonus.acoustics.twinA.name + '" at ' + bonus.acoustics.topScoreA + '% structural affinity across fundamental pitch, flatness, and modulation.'
+            : 'Indexed against calibrated reference archetypes.',
         charts: [
-          { title: '8-Archetype Affinity Breakdown', sub: 'Thunder, Foghorn, Mud Boot, Chainsaw, Goose, Balloon...', drawType: 's_twin_bars' },
-          { title: '2D Hz × Airiness Archetype Map', sub: 'Green dot = Your recording vs archetypes', drawType: 's_twin_map' }
+          { title: '8-Analogue Affinity Distribution', sub: 'Comparison across calibrated natural & mechanical profiles', drawType: 's_twin_bars' },
+          { title: '2D Hz × Flatness Archive Map', sub: 'Green point = Subject specimen vs reference classes', drawType: 's_twin_map' }
         ],
         stats: [
-          { label: 'Top Twin', value: bonus ? bonus.acoustics.twinA.short : '—', sub: bonus ? bonus.acoustics.topScoreA + '% similarity' : '' },
-          { label: 'Effective Tone', value: formatHzLabel(feat), sub: 'Comparison frequency' },
-          { label: 'Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Texture vs airiness axis' },
-          { label: 'Acoustic Biome', value: (feat.medianPitchHz || 200) < 130 ? 'Storm / Bog Mud' : 'Engine / Steam Vent', sub: 'Environmental zone' }
+          { label: 'Closest Analogue', value: bonus ? bonus.acoustics.twinA.short : '—', sub: bonus ? bonus.acoustics.topScoreA + '% affinity' : '' },
+          { label: 'Primary Frequency', value: formatHzLabel(feat), sub: 'Reference alignment band' },
+          { label: 'Spectral Flatness', value: safeNum(feat.spectralFlatness, 0).toFixed(2), sub: 'Harmonic vs noise axis' },
+          { label: 'Acoustic Regime', value: (feat.medianPitchHz || 200) < 130 ? 'Sub-Bass / Fluid' : 'High-Pressure / Aero', sub: 'Archive stratum' }
         ],
         formula: 'Affinity = 100 * exp(-(|deltaOct|/1.15 + |deltaFlat|*1.4 + |deltaMod|*0.75))'
       },
       s_panic: {
-        badgeCode: 'DOC-09 // CONFINED-SPACE ALIBI PROTOCOL',
-        title: 'Elevator Panic, Dog-Blame & Blast Radius',
-        subtitle: 'Calculates optimal social excuses and audible awkwardness perimeter.',
+        badgeCode: 'DOC-09 // ACOUSTIC PROPAGATION & MASKING AUDIT',
+        title: 'Propagation Radius & Environmental Masking',
+        subtitle: 'Models enclosed-chamber audibility radius and ambient acoustic masking.',
         commentary:
           bonus
-            ? 'Plausible Deniability Briefing: Audible blast perimeter reaches ' + bonus.social.a.radiusM.toFixed(1) + 'm (' + bonus.social.a.panicPct + '% cabin panic). Recommended Cover Story: "' + bonus.social.a.verdict + '"'
-            : 'Social blast telemetry.',
+            ? 'Propagation Briefing: Effective acoustic perimeter extends to ' + bonus.social.a.radiusM.toFixed(1) + 'm (' + bonus.social.a.panicPct + '% chamber prominence). Masking Finding: "' + bonus.social.a.verdict + '"'
+            : 'Propagation radius telemetry.',
         charts: [
-          { title: 'Elevator Cabin Blast Radius', sub: 'Event perimeter vs 2.2m cabin box', drawType: 's_blast_map' },
-          { title: 'Alibi Deflection Success Odds', sub: 'Dog vs Shoe vs Leather Office Chair', drawType: 's_alibi_bars' }
+          { title: 'Enclosed Chamber Propagation Map', sub: 'Audible perimeter vs 2.2m reference chamber', drawType: 's_blast_map' },
+          { title: 'Ambient Masking Comparators', sub: 'Mechanical vs Friction vs Pneumatic profiles', drawType: 's_alibi_bars' }
         ],
         stats: [
-          { label: 'Blast Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + ' m' : '—', sub: 'Audible awkwardness zone' },
-          { label: 'Panic Level', value: (bonus ? bonus.social.a.panicPct : 40) + '%', sub: 'Elevator intimidation' },
-          { label: 'Best Alibi', value: bonus ? bonus.social.a.verdict.split('(')[0].trim().slice(0, 22) : 'Dog', sub: 'Highest cover probability' },
-          { label: 'Duration Factor', value: dur.toFixed(2) + 's', sub: 'Exposure window' }
+          { label: 'Effective Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + ' m' : '—', sub: 'Audible propagation zone' },
+          { label: 'Prominence Index', value: (bonus ? bonus.social.a.panicPct : 40) + '%', sub: 'Chamber detectability' },
+          { label: 'Nearest Mask', value: bonus ? bonus.social.a.verdict.split('(')[0].trim().slice(0, 22) : 'Ambient', sub: 'Highest masking overlap' },
+          { label: 'Emission Lifetime', value: dur.toFixed(2) + 's', sub: 'Exposure duration' }
         ],
-        formula: 'Radius_m = 1.8 + 10.5 * (PanicPct / 100); Deflection = f(Pitch, Duration, Centroid)'
+        formula: 'Radius_m = 1.8 + 10.5 * (ProminencePct / 100); Masking = f(Pitch, Duration, Centroid)'
       },
       s_velocity: {
         badgeCode: 'DOC-11 // ONSET VELOCITY & IMPULSE RISE',
-        title: 'Detonation Velocity & Attack Speed',
-        subtitle: 'How violently pressure ramped from dead silence to peak decibels.',
+        title: 'Onset Rise Velocity & Transient Slope',
+        subtitle: 'Quantifies pressure escalation rate from baseline silence to peak amplitude.',
         commentary:
-          'Peak amplitude detonated in just ' + atkMs + 'ms (' + Math.round((atkMs / Math.max(40, dur * 1000)) * 100) + '% into the emission). ' +
-          (atkMs <= 70 ? 'Hair-trigger ambush transient — zero warning shots were fired before impact.' : 'Dramatic slow-burn crescendo followed by ' + decMs + 'ms lingering fade-out.'),
+          'Peak amplitude was reached in ' + atkMs + 'ms (' + Math.round((atkMs / Math.max(40, dur * 1000)) * 100) + '% of emission lifetime). ' +
+          (atkMs <= 70 ? 'A steep, unmitigated initial step response indicates instantaneous pressure release.' : 'A progressive pressure ramp preceded Peak RMS, followed by ' + decMs + 'ms of exponential decay.'),
         charts: [
           { title: 'Initial Attack Surge Zoom', sub: 'First 50% normalized onset envelope', drawType: 's_onset_zoom' },
           { title: 'Cumulative Energy T10/T50/T90', sub: 'Cumulative acoustic power milestones', drawType: 's_energy_cum' }
         ],
         stats: [
           { label: 'Attack Rise', value: atkMs + ' ms', sub: 'Time to peak RMS' },
-          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Post-peak sputter fade' },
+          { label: 'Decay Tail', value: decMs + ' ms', sub: 'Post-peak attenuation' },
           { label: 'T10 / T90', value: Math.round(safeNum(feat.t10Ratio, 0.1) * 100) + '% / ' + Math.round(safeNum(feat.t90Ratio, 0.9) * 100) + '%', sub: 'Energy bounds' },
-          { label: 'Crest Impulse', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Shockwave sharpness' }
+          { label: 'Crest Impulse', value: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB', sub: 'Transient sharpness' }
         ],
         formula: 'AttackVelocity = PeakRMS / max(0.01, AttackSec)'
       },
       s_neighbor: {
-        badgeCode: 'DOC-12 // STRUCTURAL DRYWALL PENETRATION FORECAST',
-        title: 'Neighbor & Drywall Penetration Risk',
-        subtitle: 'Modeling whether low frequencies cross apartment walls.',
+        badgeCode: 'DOC-12 // ARCHITECTURAL BOUNDARY ATTENUATION',
+        title: 'Structural Boundary Transmission Forecast',
+        subtitle: 'Models low-frequency acoustic wavelength propagation across solid partitions.',
         commentary:
-          'Structural Acoustics Audit: Sub-150 Hz waves punch straight through hollow-core bedroom doors while high hiss fizzles in the carpet. With ' +
-          Math.round(safeNum(bp[0], 0) * 100) + '% sub-bass fuel, through-wall awkwardness stands at ' + g.score + '% — keep a heavy cough queued just in case.',
+          'Structural Transmission Audit: Sub-150 Hz waves couple effectively across rigid partitions while high-frequency content attenuates rapidly. With ' +
+          Math.round(safeNum(bp[0], 0) * 100) + '% sub-bass allocation, structural boundary transmission measures ' + g.score + '%.',
         charts: [
-          { title: 'Structural Transmission Forecast', sub: 'Audibility across walls & floors', drawType: 's_wall_atten' },
-          { title: '4-Band Frequency Attenuation', sub: 'Low frequencies travel farthest', drawType: 's_4band' }
+          { title: 'Structural Transmission Forecast', sub: 'Attenuation across architectural boundaries', drawType: 's_wall_atten' },
+          { title: '4-Band Frequency Attenuation', sub: 'Low-frequency coupling vs upper absorption', drawType: 's_4band' }
         ],
         stats: [
-          { label: 'Wall Risk', value: g.score + '%', sub: g.status },
-          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Wall-piercing bass' },
-          { label: 'Blast Reach', value: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm' : '4.0m', sub: 'Open-air propagation' },
+          { label: 'Transmission Index', value: g.score + '%', sub: g.status },
+          { label: 'Sub-Bass (<150Hz)', value: Math.round(safeNum(bp[0], 0) * 100) + '%', sub: 'Boundary-coupling band' },
+          { label: 'Propagation Radius', value: bonus ? bonus.social.a.radiusM.toFixed(1) + 'm' : '4.0m', sub: 'Open-chamber range' },
           { label: 'ML Profile', value: ml.topClass.short || ml.topClass.name, sub: ml.confidence + '% fit' }
         ],
-        formula: 'Transmission = 0.82 * SubBassRatio + 0.52 * PanicIndex'
+        formula: 'Transmission = 0.82 * SubBassRatio + 0.52 * ProminenceIndex'
       }
     };
 
@@ -3933,9 +3946,9 @@
 
     var turbulenceExplain =
       lipTrillScore >= 0.38
-        ? 'Detected concentrated 22–42 Hz bilabial lip-trill periodic modulation (' + Math.round(lipTrillPeakHz || modRateHz) + ' Hz peak) — stronger oral embouchure signature than 6–20 Hz cheek flutter.'
+        ? 'Detected concentrated 22–42 Hz bilabial lip-trill periodic modulation (' + Math.round(lipTrillPeakHz || modRateHz) + ' Hz peak) — stronger oral embouchure signature than 6–20 Hz lower-aperture flutter.'
         : airflowTurbulenceScore >= 70
-          ? 'Strong turbulence signatures, explosive attack (' + (attackSec * 1000).toFixed(0) + ' ms), and ' + Math.round(modRateHz) + ' Hz cheek flutter support authenticity.'
+          ? 'Strong turbulence signatures, rapid pressure onset (' + (attackSec * 1000).toFixed(0) + ' ms), and ' + Math.round(modRateHz) + ' Hz airflow oscillation support authenticity.'
           : airflowTurbulenceScore >= 45
             ? 'Moderate airflow irregularity and impulse modulation detected.'
             : 'Smooth ramp-up and muted turbulence suggest controlled oral or gentle steady air release.';
@@ -4111,7 +4124,7 @@
         title: '🔬 Authenticity Analysis',
         score: avgScore,
         sub: (labelA || 'Specimen A') + ': ' + authA.authenticityScore + '% (' + authA.tier.label + ') vs ' + (labelB || 'Specimen B') + ': ' + authB.authenticityScore + '% (' + authB.tier.label + ')',
-        quip: 'Informational heuristic origin check (Organic vs Mouth Suspicion) — excluded from similarity scoring & rankings.',
+        quip: 'Informational heuristic origin check (Organic vs Oral Mimicry) — excluded from Reproduction Fidelity & rankings.',
         forensicsKey: 'authenticity',
         status: avgTier.label,
         color: avgTier.color,
@@ -4123,8 +4136,8 @@
       id: rowId || 's_authenticity',
       title: '🔬 Authenticity Analysis',
       score: a.authenticityScore,
-      sub: a.tier.label + ' · Organic ' + a.organicProbability + '% · Mouth Suspicion ' + a.mouthSuspicion + '% · Confidence: ' + a.confidenceLevel,
-      quip: 'Informational origin check — heuristic estimate of natural acoustic release vs mouth-generated mimicry.',
+      sub: a.tier.label + ' · Organic ' + a.organicProbability + '% · Oral Mimicry ' + a.mouthSuspicion + '% · Confidence: ' + a.confidenceLevel,
+      quip: 'Informational origin assessment — heuristic estimate of naturally occurring release vs oral mimicry.',
       status: a.tier.label,
       color: a.tier.color,
       tone: a.tier.tone
@@ -4270,7 +4283,7 @@
       '    <div class="labs-single-facts-grid">' +
       '      <div class="labs-fact-box"><span>Authenticity Score</span><strong style="color:' + auth.tier.color + '">' + score + '%</strong><small class="labs-fact-sub">' + esc(auth.tier.label) + '</small></div>' +
       '      <div class="labs-fact-box"><span>Organic Emission Probability</span><strong>' + auth.organicProbability + '%</strong><small class="labs-fact-sub">Posterior heuristic weight</small></div>' +
-      '      <div class="labs-fact-box"><span>Mouth-Fart Suspicion Level</span><strong>' + auth.mouthSuspicion + '%</strong><small class="labs-fact-sub">Oral mimicry likelihood</small></div>' +
+      '      <div class="labs-fact-box"><span>Oral Mimicry Indicator</span><strong>' + auth.mouthSuspicion + '%</strong><small class="labs-fact-sub">Estimated vocal/oral probability</small></div>' +
       '      <div class="labs-fact-box"><span>Analysis Confidence</span><strong>' + esc(auth.confidenceLevel) + '</strong><small class="labs-fact-sub">Signal certainty (' + auth.confidenceScore + '%)</small></div>' +
       '    </div>' +
       v2Html +
@@ -4321,8 +4334,8 @@
     return (
       '<div class="labs-acc-head">' +
       '  <div>' +
-      '    <div class="labs-eyebrow">INFORMATIONAL DSP HEURISTICS · NOT USED IN GAME SCORING</div>' +
-      '    <div class="labs-expanded-note">' + esc(extraNote || 'Pure heuristic acoustic evaluation of natural gastrointestinal release vs mouth-generated emission signatures. Results express probability only.') + '</div>' +
+      '    <div class="labs-eyebrow">INFORMATIONAL TELEMETRY ONLY · EXCLUDED FROM REPRODUCTION FIDELITY</div>' +
+      '    <div class="labs-expanded-note">' + esc(extraNote || 'Pure heuristic acoustic evaluation of natural gastrointestinal emission vs oral mimicry signatures. Results express scientific probability only.') + '</div>' +
       '  </div>' +
       '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
       '</div>' +
@@ -4333,7 +4346,7 @@
       '</div>' +
       '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
       renderAuthenticityBreakdownRowsHtml(auth.breakdown) +
-      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Authenticity = 100 * sum(w_i * OrganicTrait_i); Confidence = Consensus(7) + Duration + SNR (Zero Game Score Impact)</code></div>'
+      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Authenticity = 100 * sum(w_i * OrganicTrait_i); Confidence = Consensus(7) + Duration + SNR (Excluded From Fidelity Index)</code></div>'
     );
   }
 
@@ -4363,8 +4376,8 @@
     return (
       '<div class="labs-acc-head">' +
       '  <div>' +
-      '    <div class="labs-eyebrow">INFORMATIONAL ORIGIN AUDIT · ZERO IMPACT ON SIMILARITY SCORING</div>' +
-      '    <div class="labs-expanded-note">Independent probabilistic heuristic scan for both specimens. Acoustic similarity rankings remain purely spectral and temporal based.</div>' +
+      '    <div class="labs-eyebrow">INFORMATIONAL ORIGIN AUDIT · EXCLUDED FROM REPRODUCTION FIDELITY</div>' +
+      '    <div class="labs-expanded-note">Independent probabilistic heuristic scan for both specimens. Reproduction Fidelity rankings remain purely spectral and temporal based.</div>' +
       '  </div>' +
       '  <button type="button" class="labs-btn-ghost labs-btn-sm labs-acc-close">✕ Collapse</button>' +
       '</div>' +
@@ -4378,7 +4391,7 @@
       '</div>' +
       '<div class="labs-eyebrow" style="margin:8px 0 6px">DETAILED BREAKDOWN (7 INDICATORS + OVERALL SCORE)</div>' +
       '<div class="labs-auth-breakdown">' + rowsHtml + '</div>' +
-      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in acoustic similarity scoring)</code></div>'
+      '<div class="labs-formula-strip"><span class="formula-tag">HEURISTIC ENGINE</span> <code>Pure DSP indicators only · Informational laboratory telemetry (0% weight in Reproduction Fidelity)</code></div>'
     );
   }
 
@@ -4436,7 +4449,7 @@
     var activeSlotEl = null;
 
     var compareBtnHtml = opts.onPrimaryAction
-      ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🔬 Comparative Analysis') + '</button>'
+      ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-single-primary">' + esc(opts.primaryLabel || '🔬 Comparative Acoustic Assessment') + '</button>'
       : '';
 
     var rowsHtml = renderMetricRowsHtml(displayGauges, { expandable: true });
@@ -4446,7 +4459,7 @@
       var sci = getScientistById(desc.scientistId || fallbackSciId || 'wobble');
       return (
         '<div class="labs-story-head">' +
-        '  <span class="labs-eyebrow">LABORATORY OBSERVATION</span>' +
+        '  <span class="labs-eyebrow">' + esc(desc.obsLabel || 'LABORATORY OBSERVATION') + '</span>' +
         '  <span class="labs-chart-anomaly-tag">' + esc(desc.tag) + '</span>' +
         '</div>' +
         '<div class="labs-story-title">' + esc(desc.title) + '</div>' +
@@ -4501,8 +4514,8 @@
         '  <div class="labs-chart-readout" id="' + uid + key + '_readout">' + esc(cm.defaultReadout) + '</div>' +
         '  <div class="labs-chart-story-box" id="' + uid + key + '_story">' + renderChartStoryInner(activeDesc, cm.scientistId) + '</div>' +
         '  <div class="labs-chart-card-actions">' +
-        '    <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-chart-view-details-btn" data-view-chart="' + esc(key) + '">🔍 View Details</button>' +
-        '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-chart-drill-btn" data-drill="' + esc(key) + '" aria-expanded="false">🔬 Scientific Drill-Down &amp; Archive Notes</button>' +
+        '    <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-chart-view-details-btn" data-view-chart="' + esc(key) + '">🔍 Laboratory Notes</button>' +
+        '    <button type="button" class="labs-btn-ghost labs-btn-sm labs-chart-drill-btn" data-drill="' + esc(key) + '" aria-expanded="false">🔬 Archive Comparison &amp; Archive Notes</button>' +
         '  </div>' +
         '  <div class="labs-chart-drilldown hidden" data-drill-slot="' + esc(key) + '">' +
         '    <div class="labs-single-facts-grid">' + statsHtml + '</div>' +
@@ -4557,44 +4570,44 @@
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">ANALYSIS DASHBOARD · LABORATORY FINDINGS</div>' +
-      '        <h3 class="labs-section-title">Research Summary &amp; Expandable Telemetry</h3>' +
+      '        <div class="labs-eyebrow">INSTITUTE REPORT · LABORATORY FINDINGS</div>' +
+      '        <h3 class="labs-section-title">Executive Research Summary &amp; Telemetry</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-purple">🤖 ' + esc(ml.topClass.name) + '</span>' +
       '    </div>' +
       '    <div class="labs-verdict-banner">' +
       '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL GASTRO-ACOUSTIC FIELD REPORT</span>' +
-      '        <span class="labs-verdict-grade">' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' · ' + Math.round(safeNum(feat.modRateHz, 0) * 60) + ' flaps/min') + '</span>' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ACOUSTIC PROFILE SUMMARY</span>' +
+      '        <span class="labs-verdict-grade">' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' · ' + Math.round(safeNum(feat.modRateHz, 0)) + ' Hz Modulation') + '</span>' +
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
       '    </div>' +
       renderScientistCommentHtml(sciComment.scientistId, sciComment.quote, sciComment.label) +
       renderRareCommentHtml(rareDispatch) +
       '    <div class="labs-single-facts-grid">' +
-      '      <div class="labs-fact-box"><span>ML Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
-      '      <div class="labs-fact-box"><span>Fart Piano Key</span><strong>' + esc(noteStr) + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>Computational Classification</span><strong>' + esc(ml.topClass.emoji + ' ' + ml.topClass.name + ' (' + ml.confidence + '%)') + '</strong></div>' +
+      '      <div class="labs-fact-box"><span>Primary Resonance Profile</span><strong>' + esc(noteStr) + '</strong></div>' +
       (bonus
-        ? '<div class="labs-fact-box"><span>Squelch / Laundry Risk</span><strong>' + esc(bonus.wetness.wetA + '% · ' + bonus.wetness.labelA) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Sound Twin</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
-          '<div class="labs-fact-box"><span>Acoustic Alibi</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
+        ? '<div class="labs-fact-box"><span>Hydro-Acoustic Turbulence</span><strong>' + esc(bonus.wetness.wetA + '% · ' + bonus.wetness.labelA) + '</strong></div>' +
+          '<div class="labs-fact-box"><span>Reference Analogue</span><strong>' + esc(bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name) + '</strong></div>' +
+          '<div class="labs-fact-box"><span>Environmental Masking</span><strong>' + esc(bonus.social.a.verdict) + '</strong></div>'
         : '') +
       '    </div>' +
       renderArchiveComparisonHtml(archCmp) +
-      '    <div class="labs-hint-text">Tap any of the ' + displayGauges.length + ' metrics below to expand charts, scientific commentary, stats &amp; equation inline.</div>' +
+      '    <div class="labs-hint-text">Select any of the ' + displayGauges.length + ' metrics below to inspect plots, laboratory observations &amp; acoustic equations inline.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
       '    <hr class="labs-analysis-divider" />' +
-      '    <div class="labs-eyebrow">INTERACTIVE CORE SPECTRAL &amp; TEMPORAL PLOTS (TAP ANY BAR, POINT, OR HOTSPOT)</div>' +
+      '    <div class="labs-eyebrow">INTERACTIVE SPECTRAL &amp; TEMPORAL PLOTS (SELECT ANY BAR, POINT, OR MARKER)</div>' +
       '    <div class="labs-single-charts-grid">' +
-      renderFinalChartCardHtml('c_spec', '40-Band FFT Energy Spectrum', 'Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz') +
-      renderFinalChartCardHtml('c_pitch', 'Pitch & Frequency Sweep', '32-frame F0 tracker') +
-      renderFinalChartCardHtml('c_mod', 'Modulation & Flutter FFT (4–45 Hz)', 'Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%') +
-      renderFinalChartCardHtml('c_env', 'Blast Pressure Envelope', 'Attack / T50 / Decay') +
+      renderFinalChartCardHtml('c_spec', 'Spectral Distribution Map (40-Band FFT)', 'Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz') +
+      renderFinalChartCardHtml('c_pitch', 'Primary Resonance Profile', '32-frame F0 tracker') +
+      renderFinalChartCardHtml('c_mod', 'Airflow Modulation FFT (4–45 Hz)', 'Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%') +
+      renderFinalChartCardHtml('c_env', 'Pressure Release Envelope', 'Attack / T50 / Decay') +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, label, ml.topClass.name + ' · ' + archCmp.energyPct + 'th Energy Pct') +
+      renderShareableVerdictHtml(shareVerdict, label, 'Acoustic Profile · ' + archCmp.energyPct + 'th Energy Pct') +
       renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single') +
       '</div>';
 
@@ -4856,8 +4869,8 @@
         slot.classList.toggle('hidden', isOpen);
         this.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
         this.textContent = isOpen
-          ? '🔬 Scientific Drill-Down & Archive Notes'
-          : '✕ Hide Scientific Drill-Down';
+          ? '🔬 Archive Comparison & Archive Notes'
+          : '✕ Hide Drill-Down';
       });
     }
 
@@ -4971,43 +4984,43 @@
         id: 'g_coh',
         title: 'Barometric Front Coherence',
         score: cohScore,
-        sub: (m.count || 0) + ' Vault fronts',
-        quip: cohScore >= 70 ? 'Disturbingly consistent weather-front pressure — feels almost coordinated.' : 'Wild mood swings from calm Zen drizzle straight into swamp-boot chaos.'
+        sub: (m.count || 0) + ' archive specimens',
+        quip: cohScore >= 70 ? 'Unusually disciplined spectral consistency across independent acoustic emissions.' : 'Marked spectral divergence spanning tranquil airflow and turbulent pressure fronts.'
       },
       {
         id: 'g_span',
-        title: 'Vocal Range Span',
+        title: 'Primary Resonance Span',
         score: spanScore,
         sub: safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves span',
-        quip: 'Covers ' + safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves around ' + Math.round(safeNum(m.meanPitchHz, 140)) + ' Hz average core.'
+        quip: 'Spans ' + safeNum(m.pitchSpanOctaves, 0).toFixed(2) + ' octaves around a ' + Math.round(safeNum(m.meanPitchHz, 140)) + ' Hz mean centroid.'
       },
       {
         id: 'g_turb',
-        title: 'Collective Flutter BPM',
+        title: 'Ensemble Oscillation Rate',
         score: turbScore,
-        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmGroup + ' flaps/min)',
-        quip: bpmGroup >= 900 ? 'High-RPM collective cheek chatter across the ensemble.' : 'Steady low-frequency chamber rumble.'
+        sub: Math.round(safeNum(feat.modRateHz, 0)) + ' Hz (' + bpmGroup + ' cyc/m)',
+        quip: bpmGroup >= 900 ? 'Sustained high-rate valve modulation across the composite sequence.' : 'Measured low-frequency resonant chamber modulation.'
       },
       {
         id: 'g_wet',
-        title: 'Laundry Risk (Group Wetness)',
+        title: 'Aggregate Hydro-Acoustic Turbulence',
         score: wetPct,
-        sub: 'Combined Squelch Index',
-        quip: wetPct >= 62 ? 'Hazmat mop warning! Check floorboards after listening.' : 'Mostly dry aerodynamic emissions — laundry remains safe.'
+        sub: 'Combined Turbulence Index',
+        quip: wetPct >= 62 ? 'Elevated cumulative spectral flux across multiple constituent emissions.' : 'Consistent dry laminar release maintained across the sequence.'
       },
       {
         id: 'g_blast',
-        title: 'Cumulative Blast Zone',
+        title: 'Composite Propagation Radius',
         score: blastScore,
-        sub: blastRad.toFixed(1) + 'm evacuation zone',
-        quip: blastRad >= 10 ? 'Zero elevator survival odds — evacuate a ' + blastRad.toFixed(1) + 'm perimeter.' : 'Containable within a medium conference room.'
+        sub: blastRad.toFixed(1) + 'm effective perimeter',
+        quip: blastRad >= 10 ? 'Extended open-chamber audibility across a ' + blastRad.toFixed(1) + 'm acoustic perimeter.' : 'Contained within a standard enclosed acoustic test chamber.'
       },
       {
         id: 'g_dyn',
-        title: 'Dynamic Blast Shockwave',
+        title: 'Composite Transient Crest',
         score: dynScore,
         sub: safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB peak ratio',
-        quip: safeNum(feat.crestFactorDb, 0) >= 11 ? 'Explosive transient pops punctuate the medley.' : 'Mastered at smooth 44.1 kHz studio dynamics.'
+        quip: safeNum(feat.crestFactorDb, 0) >= 11 ? 'High-contrast pressure transients punctuate the composite sequence.' : 'Balanced 44.1 kHz studio dynamic range throughout.'
       }
     ];
 
@@ -5018,11 +5031,11 @@
   }
 
   function formatSegSortTag(seg, sortBy) {
-    if (sortBy === 'wetness') return Math.round(safeNum(seg.wetnessPct, 0)) + '% wet';
+    if (sortBy === 'wetness') return Math.round(safeNum(seg.wetnessPct, 0)) + '% turb';
     if (sortBy === 'duration') return Math.round(safeNum(seg.pitchHz, 0)) + ' Hz';
     if (sortBy === 'crest') return safeNum(seg.crestDb, 0).toFixed(1) + ' dB';
-    if (sortBy === 'radius') return safeNum(seg.radiusM, 0).toFixed(1) + 'm reach';
-    if (sortBy === 'flutter') return Math.round(safeNum(seg.modRateHz, 0)) + ' Hz flutter';
+    if (sortBy === 'radius') return safeNum(seg.radiusM, 0).toFixed(1) + 'm radius';
+    if (sortBy === 'flutter') return Math.round(safeNum(seg.modRateHz, 0)) + ' Hz mod';
     if (sortBy === 'date') {
       try {
         if (seg.createdAt && seg.createdAt > 1e11) {
@@ -5140,7 +5153,7 @@
     ctx.font = '600 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     ctx.fillText('45Hz', pad.l, h - 7);
-    ctx.fillText('100% Wet', 4, pad.t + 8);
+    ctx.fillText('100% Turb', 4, pad.t + 8);
     ctx.textAlign = 'right';
     ctx.fillText('1.6kHz ->', pad.l + pw, h - 7);
     finishDarkPlot(p);
@@ -5166,13 +5179,13 @@
     var sortBy = opts.sortBy || (g.metrics && g.metrics.sortBy) || 'pitch';
     var sortDir = opts.sortDir || (g.metrics && g.metrics.sortDir) || 'asc';
     var sortOptions = (root.TootLabs.Store && root.TootLabs.Store.GROUP_SORT_OPTIONS) || [
-      { key: 'pitch', label: 'Pitch (Hz)', unit: 'Hz' },
-      { key: 'wetness', label: 'Wetness / Squelch (%)', unit: '%' },
-      { key: 'duration', label: 'Duration (s)', unit: 's' },
-      { key: 'crest', label: 'Loudness / Crest (dB)', unit: 'dB' },
-      { key: 'radius', label: 'Blast Radius (m)', unit: 'm' },
-      { key: 'flutter', label: 'Flutter Rate (Hz)', unit: 'Hz' },
-      { key: 'date', label: 'Date Recorded', unit: '' }
+      { key: 'pitch', label: 'Primary Resonance (Hz)', unit: 'Hz' },
+      { key: 'wetness', label: 'Turbulence Index (%)', unit: '%' },
+      { key: 'duration', label: 'Emission Lifetime (s)', unit: 's' },
+      { key: 'crest', label: 'Acoustic Energy / Crest (dB)', unit: 'dB' },
+      { key: 'radius', label: 'Propagation Radius (m)', unit: 'm' },
+      { key: 'flutter', label: 'Modulation Rate (Hz)', unit: 'Hz' },
+      { key: 'date', label: 'Date Archived', unit: '' }
     ];
 
     var sortOptionsHtml = sortOptions
@@ -5207,7 +5220,7 @@
       '  <section class="labs-glass-card labs-fn-header">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">MULTI-SPECIMEN MEGAMIX · RESEARCH SUMMARY</div>' +
+      '        <div class="labs-eyebrow">INSTITUTE REPORT · MULTI-SPECIMEN SYNTHESIS</div>' +
       '        <h2 class="labs-fn-title">' + esc(g.name) + '</h2>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-green">' + g.metrics.totalDurationSec.toFixed(2) + 's Total</span>' +
@@ -5223,7 +5236,7 @@
       '    </div>' +
       '    <div class="labs-sort-bar">' +
       '      <label class="labs-sort-field" for="' + uid + 'sortby">' +
-      '        <span>Arrange Farts By</span>' +
+      '        <span>Order Specimens By</span>' +
       '        <select id="' + uid + 'sortby" class="labs-g-sort-by">' + sortOptionsHtml + '</select>' +
       '      </label>' +
       '      <div class="labs-dir-group" role="group" aria-label="Sort Direction">' +
@@ -5248,23 +5261,23 @@
       '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
       renderScientistCommentHtml(specWobble.scientistId, specWobble.quote, '3D Ensemble Topology Note') +
       '    <div class="labs-group-wave-wrap">' +
-      '      <div class="labs-chart-box-head"><span>Composite Storm-Front Waveform</span><small>Color-coded Vault Specimens in Active Order</small></div>' +
+      '      <div class="labs-chart-box-head"><span>Composite Acoustic Profile Waveform</span><small>Color-coded Archive Specimens in Sequence</small></div>' +
       '      <canvas class="labs-2d-canvas" id="' + uid + 'c_wave" style="height:130px"></canvas>' +
       '    </div>' +
       '  </section>' +
       '  <section class="labs-glass-card labs-analysis-card">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
-      '        <div class="labs-eyebrow">COMBINED GROUP ANALYSIS</div>' +
-      '        <h3 class="labs-section-title">Ensemble Telemetry &amp; Movement Order</h3>' +
+      '        <div class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY · COMPOSITE ANALYSIS</div>' +
+      '        <h3 class="labs-section-title">Ensemble Telemetry &amp; Specimen Order</h3>' +
       '      </div>' +
       '      <span class="labs-chip labs-chip-blue">' + esc(sortLabel) + '</span>' +
       '    </div>' +
       '    <div class="labs-seg-pills-row">' + trackListHtml + '</div>' +
       '    <div class="labs-verdict-banner">' +
       '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">CONDUCTOR\'S GASTRO-ACOUSTIC FIELD NOTES</span>' +
-      '        <span class="labs-verdict-grade">Studio Mastered · 44.1 kHz</span>' +
+      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ENSEMBLE CONDUCTOR ASSESSMENT</span>' +
+      '        <span class="labs-verdict-grade">Archive Mastered · 44.1 kHz</span>' +
       '      </div>' +
       '      <p class="labs-verdict-text">' + esc(g.metrics.groupVerdict) + '</p>' +
       '    </div>' +
@@ -5277,18 +5290,18 @@
       '    <hr class="labs-analysis-divider" />' +
       '    <div class="labs-single-charts-grid">' +
       '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Vault Specimen Map (Pitch × Moisture)</span><small>Spatial acoustic spread</small></div>' +
+      '        <div class="labs-chart-box-head"><span>Archive Specimen Constellation (Pitch × Turbulence)</span><small>Spatial acoustic distribution</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_map"></canvas>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Classification:</strong> Constellation spans ' + (g.segments || []).length + ' cataloged Vault movements — Dr. Pufferton had to open a second wing just to shelve it cleanly. <em>(Dr. Pufferton)</em></span></div>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('pufferton').img) + '" alt="Dr. Pufferton" loading="lazy" /><span><strong>Archive Observation:</strong> Constellation spans ' + (g.segments || []).length + ' cataloged archive specimens — Dr. Pufferton verified full structural indexing. <em>(Dr. Pufferton)</em></span></div>' +
       '      </div>' +
       '      <div class="labs-chart-box-inner">' +
-      '        <div class="labs-chart-box-head"><span>Combined 40-Band FFT Spectrum</span><small>Aggregate frequency energy</small></div>' +
+      '        <div class="labs-chart-box-head"><span>Spectral Distribution Map (Combined 40-Band FFT)</span><small>Aggregate frequency energy</small></div>' +
       '        <canvas class="labs-2d-canvas" id="' + uid + 'c_spec"></canvas>' +
-      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid achieved such unexpected symphonic richness that Dr. Wobble requested Carnegie Hall pricing. <em>(Dr. Wobble)</em></span></div>' +
+      '        <div class="labs-chart-obs"><img src="' + esc(getScientistById('wobble').img) + '" alt="Dr. Wobble" loading="lazy" /><span><strong>Laboratory Observation:</strong> Aggregate harmonic centroid exhibits unusual modal discipline across all constituent emissions. <em>(Dr. Wobble)</em></span></div>' +
       '      </div>' +
       '    </div>' +
       '  </section>' +
-      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Vault Movements') +
+      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Archive Specimens') +
       renderReportSignatureHtml(g.name + '|' + sortLabel + '|group') +
       '</div>';
 
@@ -5333,7 +5346,7 @@
         slotEl.classList.remove('hidden');
         slotEl.innerHTML = renderAuthenticityAccordionHtml(
           authGrp,
-          'Heuristic origin evaluation computed across the combined multi-fart master track and movement spectrum (informational only).'
+          'Heuristic origin evaluation computed across the combined multi-specimen composite track and movement spectrum (informational only).'
         );
         var closeBtn = slotEl.querySelector('.labs-acc-close');
         if (closeBtn) closeBtn.addEventListener('click', closeGroupAuthRow);

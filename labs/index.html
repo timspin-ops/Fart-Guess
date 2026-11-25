@@ -7,17 +7,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
-  <link rel="stylesheet" href="css/labs.css?v=20261124l" />
-  <script defer src="../js/dsp.js?v=20261124l"></script>
-  <script defer src="../js/audioEngine.js?v=20261124l"></script>
-  <script defer src="../js/storage.js?v=20261124l"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124l"></script>
-  <script defer src="../js/forensicsCharts.js?v=20261124l"></script>
-  <script defer src="js/labsStore.js?v=20261124l"></script>
-  <script defer src="js/labsAudioFx.js?v=20261124l"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124l"></script>
-  <script defer src="js/labsPdfExport.js?v=20261124l"></script>
-  <script defer src="js/labsApp.js?v=20261124l"></script>
+  <link rel="stylesheet" href="css/labs.css?v=20261124m" />
+  <script defer src="../js/dsp.js?v=20261124m"></script>
+  <script defer src="../js/audioEngine.js?v=20261124m"></script>
+  <script defer src="../js/storage.js?v=20261124m"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261124m"></script>
+  <script defer src="../js/forensicsCharts.js?v=20261124m"></script>
+  <script defer src="js/labsStore.js?v=20261124m"></script>
+  <script defer src="js/labsAudioFx.js?v=20261124m"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261124m"></script>
+  <script defer src="js/labsPdfExport.js?v=20261124m"></script>
+  <script defer src="js/labsApp.js?v=20261124m"></script>
 </head>
 <body>
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -31,7 +31,7 @@
         </div>
         <div>
           <div class="labs-brand-name">TOOT MATCH <span class="labs-brand-tag">LABS</span></div>
-          <div class="labs-brand-sub" id="labs-brand-sub">GUESS THE FART · ACOUSTIC LAB</div>
+          <div class="labs-brand-sub" id="labs-brand-sub">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
         </div>
       </div>
 
@@ -109,17 +109,17 @@
       <!-- ==================== AREA 1: HOME ==================== -->
       <section id="labs-view-home" class="labs-view active">
         <div class="labs-hero">
-          <div class="labs-hero-badge">THE ACOUSTIC REFEREE FOR HUMAN SOUND</div>
+          <div class="labs-hero-badge">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
           <h1 class="labs-hero-title">TOOT MATCH LABS</h1>
-          <div class="labs-hero-kicker">Guess The Fart — Judged by Science.</div>
-          <p class="labs-hero-sub">Pick a Mystery Fart name and guess blindly before hearing it — or tap Play First for Mimic Mode. Compare side-by-side 3D spectrum plots and crown the winner.</p>
+          <div class="labs-hero-kicker">Advancing the scientific understanding of gastrointestinal acoustics.</div>
+          <p class="labs-hero-sub">Determine whether participants can accurately predict or reproduce archived acoustic events using deterministic telemetry, 3D spectrograms, and comparative analysis.</p>
         </div>
 
         <section class="labs-action-cards-grid" aria-label="Primary Actions">
           <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
             <span class="labs-ac-icon">🎯</span>
             <span class="labs-ac-title">Guess The Fart</span>
-            <span class="labs-ac-desc">Guess a Mystery Fart blindly before the reveal &amp; 3D spectrum comparison — or tap Play First for Mimic Mode.</span>
+            <span class="labs-ac-desc">Determine whether participants can accurately predict or reproduce the source acoustic event — or switch to Mimic Mode.</span>
           </button>
 
           <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
@@ -128,37 +128,37 @@
               <button type="button" id="btn-home-sentry-toggle" class="labs-ac-sentry-pill active" aria-pressed="true" title="Toggle Sentry Auto Detect Mode">● AUTO DETECT: ON</button>
             </div>
             <span class="labs-ac-title">Record New Fart</span>
-            <span class="labs-ac-desc" id="home-rec-desc">Sentry mode armed — beeps on start &amp; stop, auto-saved to Vault.</span>
+            <span class="labs-ac-desc" id="home-rec-desc">Automated acoustic capture armed — verified specimens are logged directly to the Research Archive.</span>
           </div>
 
           <button type="button" id="btn-home-analyze-fart" class="labs-action-card labs-ac-blue">
             <span class="labs-ac-icon">🧪</span>
             <span class="labs-ac-title">Analyze A Fart</span>
-            <span class="labs-ac-desc">Deep FFT &amp; 3D lab reports for one fart, a guess, or all combined.</span>
+            <span class="labs-ac-desc">Generate official Institute Reports, 3D spectrograms, and comparative acoustic assessments.</span>
           </button>
         </section>
 
-        <section class="labs-glass-card labs-summary-card" aria-label="Lab Summary">
+        <section class="labs-glass-card labs-summary-card" aria-label="Executive Research Summary">
           <div class="labs-summary-head">
-            <span class="labs-eyebrow">LAB SUMMARY</span>
-            <span class="labs-live-pill">LIVE STATS</span>
+            <span class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY</span>
+            <span class="labs-live-pill">LABORATORY TELEMETRY</span>
           </div>
           <div class="labs-summary-grid">
             <div class="labs-stat-tile">
               <div class="labs-stat-num" id="stat-samples-recorded">0</div>
-              <div class="labs-stat-label">Farts Saved</div>
+              <div class="labs-stat-label">Archived Specimens</div>
             </div>
             <div class="labs-stat-tile">
               <div class="labs-stat-num labs-num-green" id="stat-best-score">0.0%</div>
-              <div class="labs-stat-label">Best Guess Score</div>
+              <div class="labs-stat-label">Peak Reproduction Fidelity</div>
             </div>
             <div class="labs-stat-tile">
               <div class="labs-stat-num labs-num-blue" id="stat-challenges-completed">0</div>
-              <div class="labs-stat-label">Guesses Judged</div>
+              <div class="labs-stat-label">Assessments Logged</div>
             </div>
             <div class="labs-stat-tile">
               <div class="labs-stat-num labs-num-purple" id="stat-avg-quality">0.0%</div>
-              <div class="labs-stat-label">Average Match</div>
+              <div class="labs-stat-label">Mean Match Confidence</div>
             </div>
           </div>
         </section>
@@ -166,10 +166,10 @@
         <section class="labs-vault-section">
           <div class="labs-section-head">
             <div>
-              <div class="labs-eyebrow">RECENT SPECIMENS</div>
-              <h2 class="labs-section-heading">Latest Farts in Your Vault</h2>
+              <div class="labs-eyebrow">RESEARCH ARCHIVE · RECENT SPECIMENS</div>
+              <h2 class="labs-section-heading">Recent Archive Specimens</h2>
             </div>
-            <button type="button" id="btn-home-open-vault" class="labs-btn-ghost labs-btn-sm">Open Full Vault →</button>
+            <button type="button" id="btn-home-open-vault" class="labs-btn-ghost labs-btn-sm">Open Research Archive →</button>
           </div>
           <div id="home-recent-vault" class="labs-vault-grid"></div>
         </section>
@@ -179,8 +179,8 @@
       <section id="labs-view-vault" class="labs-view">
         <div class="labs-subview-bar labs-wrap-bar">
           <div>
-            <div class="labs-eyebrow">CONTENT LIBRARY · SPECIMEN ARCHIVE</div>
-            <h2 class="labs-section-heading">Your Fart Vault</h2>
+            <div class="labs-eyebrow">RESEARCH ARCHIVE · SPECIMEN REPOSITORY</div>
+            <h2 class="labs-section-heading">Research Archive Vault</h2>
           </div>
           <div class="labs-vault-top-btns">
             <button type="button" id="btn-vault-select" class="labs-btn-ghost labs-btn-sm">☑️ Select</button>
@@ -260,7 +260,7 @@
         <section class="labs-glass-card labs-detail-hero">
           <div class="labs-detail-head">
             <div>
-              <div class="labs-eyebrow" id="detail-sample-eyebrow">RECORDED FART SPECIMEN</div>
+              <div class="labs-eyebrow" id="detail-sample-eyebrow">ARCHIVED ACOUSTIC SPECIMEN</div>
               <h2 class="labs-detail-title" id="detail-sample-name">Specimen</h2>
               <div class="labs-detail-meta" id="detail-sample-meta">—</div>
             </div>
@@ -273,19 +273,19 @@
 
           <div class="labs-improvement-strip">
             <div class="labs-imp-cell">
-              <span class="labs-imp-lbl">BEST GUESS</span>
+              <span class="labs-imp-lbl">PEAK FIDELITY</span>
               <span class="labs-imp-val labs-num-green" id="detail-best-score">—</span>
             </div>
             <div class="labs-imp-cell">
-              <span class="labs-imp-lbl">PREVIOUS GUESS</span>
+              <span class="labs-imp-lbl">PRIOR ASSESSMENT</span>
               <span class="labs-imp-val" id="detail-prev-score">—</span>
             </div>
             <div class="labs-imp-cell">
-              <span class="labs-imp-lbl">LATEST GUESS</span>
+              <span class="labs-imp-lbl">LATEST ASSESSMENT</span>
               <span class="labs-imp-val labs-num-blue" id="detail-latest-score">—</span>
             </div>
             <div class="labs-imp-cell">
-              <span class="labs-imp-lbl">TOTAL GUESSES</span>
+              <span class="labs-imp-lbl">LOGGED ASSESSMENTS</span>
               <span class="labs-imp-val" id="detail-attempt-count">0</span>
             </div>
           </div>
@@ -308,8 +308,8 @@
         <section class="labs-attempts-section">
           <div class="labs-section-head">
             <div>
-              <div class="labs-eyebrow">RANKED GUESS HISTORY</div>
-              <h3 class="labs-section-heading">Guess Leaderboard</h3>
+              <div class="labs-eyebrow">COMPARATIVE ASSESSMENT LOG</div>
+              <h3 class="labs-section-heading">Reproduction Fidelity History</h3>
             </div>
           </div>
           <div id="detail-attempts-list" class="labs-attempts-list"></div>
@@ -375,7 +375,7 @@
                 <span id="guess-rec-icon" class="labs-game-btn-icon">🎤</span>
                 <span class="labs-game-btn-copy">
                   <strong id="guess-rec-label">Guess The Fart</strong>
-                  <small id="guess-rec-sub">Record what you imagine it sounds like</small>
+                  <small id="guess-rec-sub">Record predicted acoustic event</small>
                 </span>
               </button>
               <button type="button" id="btn-guess-play-first" class="labs-game-playfirst-btn">
@@ -396,16 +396,16 @@
             <div id="guess-reveal-banner" class="labs-reveal-banner hidden" role="status" aria-live="polite">
               <div class="labs-reveal-head">
                 <div class="labs-reveal-titles">
-                  <div class="labs-eyebrow" id="guess-reveal-eyebrow">INSTITUTE OF ACOUSTIC FLATULENCE · SWORN EXHIBIT PLAYBACK</div>
-                  <div class="labs-reveal-heading" id="guess-reveal-title">⚖️ EXHIBIT PLAYBACK — TRUTH VS. ALLEGED IMITATION</div>
+                  <div class="labs-eyebrow" id="guess-reveal-eyebrow">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · COMPARATIVE PLAYBACK</div>
+                  <div class="labs-reveal-heading" id="guess-reveal-title">🔬 INSTITUTE ACOUSTIC PLAYBACK — REFERENCE VS. REPRODUCTION</div>
                 </div>
                 <button type="button" id="btn-reveal-skip" class="labs-btn-ghost labs-btn-xs">Skip →</button>
               </div>
               <div id="guess-reveal-now-bar" class="labs-reveal-now-bar">
                 <span id="guess-reveal-spinner" class="labs-reveal-spinner" aria-hidden="true"></span>
                 <div class="labs-reveal-now-copy">
-                  <div id="guess-reveal-speaker" class="labs-reveal-speaker">PREPARING EXHIBITS…</div>
-                  <div id="guess-reveal-text" class="labs-reveal-text">🔒 Locking acoustic exhibits…</div>
+                  <div id="guess-reveal-speaker" class="labs-reveal-speaker">PREPARING RECORDINGS…</div>
+                  <div id="guess-reveal-text" class="labs-reveal-text">🔒 Source specimen sealed pending sequence playback…</div>
                 </div>
               </div>
               <div class="labs-reveal-bar-track"><div id="guess-reveal-bar" class="labs-reveal-bar-fill"></div></div>
@@ -428,7 +428,7 @@
                     <div id="reveal-mystery-seal" class="labs-mystery-seal" aria-hidden="true">
                       <span class="labs-seal-ico">🔒</span>
                       <strong id="reveal-seal-title">MYSTERY FART</strong>
-                      <small id="reveal-seal-sub">Real sound plays last!</small>
+                      <small id="reveal-seal-sub">Source specimen plays last</small>
                     </div>
                   </div>
                 </div>
@@ -454,12 +454,12 @@
           <section id="guess-inline-results" class="labs-glass-card labs-inline-results hidden" aria-live="polite">
             <div class="labs-inline-res-head">
               <div>
-                <div class="labs-eyebrow" id="res-heading-eyebrow">WHO GUESSED THE FART BEST?</div>
-                <div class="labs-res-context-sub" id="res-sample-context">RESULTS LEADERBOARD</div>
+                <div class="labs-eyebrow" id="res-heading-eyebrow">OFFICIAL FINDINGS · COMPARATIVE ASSESSMENT</div>
+                <div class="labs-res-context-sub" id="res-sample-context">LABORATORY ASSESSMENT</div>
               </div>
               <div class="labs-inline-res-badges">
                 <span class="labs-chip labs-chip-green hidden" id="res-winner-chip">🏆 1st Place</span>
-                <div id="res-pb-pill" class="labs-pb-banner hidden">NEW PERSONAL BEST</div>
+                <div id="res-pb-pill" class="labs-pb-banner hidden">NEW BENCHMARK RECORD</div>
               </div>
             </div>
 
@@ -478,7 +478,7 @@
                 </svg>
                 <div class="labs-score-ring-center">
                   <div class="labs-score-big" id="res-score-value">0.0%</div>
-                  <div class="labs-score-lbl">MATCH QUALITY</div>
+                  <div class="labs-score-lbl">LABORATORY MATCH CONFIDENCE</div>
                 </div>
               </div>
 
@@ -489,7 +489,7 @@
                     <div id="res-stars-row" class="labs-stars-row" aria-label="Reward Stars"></div>
                   </div>
                 </div>
-                <div id="res-bell-label" class="labs-bell-label">Calculating rating…</div>
+                <div id="res-bell-label" class="labs-bell-label">Calibrating rating…</div>
                 <div class="labs-rank-desc" id="res-rank-desc"></div>
               </div>
             </div>
@@ -498,14 +498,14 @@
             <div id="res-delta-note" class="labs-delta-banner hidden"></div>
 
             <div class="labs-res-lb-card labs-res-lb-inline" id="res-leaderboard-card">
-              <div class="labs-eyebrow" id="res-lb-eyebrow" style="margin-bottom:4px">COMPARISON SCORECARD</div>
+              <div class="labs-eyebrow" id="res-lb-eyebrow" style="margin-bottom:4px">OFFICIAL FINDINGS · ASSESSMENT SCORECARD</div>
               <div id="res-leaderboard-list" class="labs-res-lb-list"></div>
             </div>
 
             <div id="res-spec3d-bay" class="labs-inline-spec3d-bay">
               <div class="labs-inline-spec3d-head">
                 <div>
-                  <div class="labs-eyebrow">SIDE-BY-SIDE 3D SPECTRUM PLOT</div>
+                  <div class="labs-eyebrow">COMPARATIVE 3D SPECTRAL DISTRIBUTION</div>
                   <div class="labs-inline-spec3d-sub" id="res-spec3d-b-title">Mystery Fart vs Your Guess</div>
                 </div>
                 <div class="labs-spec-presets" role="group" aria-label="3D View Presets">
@@ -518,7 +518,7 @@
 
               <div class="labs-inline-spec3d-grid">
                 <div class="labs-inline-spec3d-pane">
-                  <span class="labs-inline-spec3d-tag tag-orig" id="res-spec3d-lbl-a">🎯 REAL MYSTERY FART</span>
+                  <span class="labs-inline-spec3d-tag tag-orig" id="res-spec3d-lbl-a">🎯 SOURCE SPECIMEN</span>
                   <canvas id="res-spec3d-orig" class="labs-inline-spec3d-canvas"></canvas>
                 </div>
                 <div class="labs-inline-spec3d-pane">
@@ -535,7 +535,7 @@
             </div>
 
             <div class="labs-verdict-box-inline">
-              <div class="labs-eyebrow" id="res-verdict-eyebrow">SCIENTIFIC COMPARISON REPORT</div>
+              <div class="labs-eyebrow" id="res-verdict-eyebrow">LABORATORY VERDICT · COMPARATIVE ACOUSTIC ASSESSMENT</div>
               <p class="labs-verdict-text" id="res-verdict-text"></p>
             </div>
 
@@ -576,37 +576,37 @@
           <section class="labs-glass-card labs-challenge-card">
             <div class="labs-ch-card-head">
               <div>
-                <div class="labs-eyebrow">EXPERIMENTAL MODE · LIVE ROOM PREDICTION</div>
+                <div class="labs-eyebrow">EXPERIMENTAL PROTOCOL · BLIND GUESS MODE</div>
                 <h3 class="labs-ch-title">BLIND PREDICTION MODE</h3>
-                <div class="labs-ch-meta">1. Friends record blind predictions first → 2. Record a brand-new live fart afterward → 3. Science compares &amp; crowns the winner.</div>
+                <div class="labs-ch-meta">1. Participants record blind acoustic predictions prior to emission → 2. Capture the live source acoustic event afterward → 3. The Institute evaluates reproduction fidelity.</div>
               </div>
             </div>
 
             <div class="labs-blind-step">
-              <div class="labs-eyebrow">STEP 1 · RECORD BLIND GUESSES FIRST</div>
+              <div class="labs-eyebrow">STEP 1 · RECORD BLIND PREDICTIONS</div>
               <div class="labs-guesser-name-row">
-                <label class="labs-guesser-label" for="blind-name-input">Guesser Name (optional):</label>
+                <label class="labs-guesser-label" for="blind-name-input">Participant Designation (optional):</label>
                 <input type="text" id="blind-name-input" class="labs-text-input labs-guesser-input" maxlength="32" placeholder="Guesser 1" />
               </div>
               <div class="labs-ch-sample-btns">
                 <button type="button" id="btn-blind-rec-guess" class="labs-btn labs-btn-orange labs-btn-lg">🎤 RECORD GUESS</button>
-                <span class="labs-hint-text" id="blind-guess-status">Record each friend's blind prediction before the fart happens.</span>
+                <span class="labs-hint-text" id="blind-guess-status">Record each participant's blind prediction prior to capturing the source acoustic event.</span>
               </div>
               <div id="blind-guesses-list" class="labs-queue-list"></div>
             </div>
 
             <div class="labs-blind-step">
-              <div class="labs-eyebrow">STEP 2 · RECORD ORIGINAL FART AFTERWARD</div>
+              <div class="labs-eyebrow">STEP 2 · CAPTURE SOURCE SPECIMEN</div>
               <div class="labs-ch-sample-btns">
                 <button type="button" id="btn-blind-rec-orig" class="labs-btn labs-btn-emerald labs-btn-lg">● RECORD ORIGINAL FART</button>
-                <span class="labs-hint-text" id="blind-orig-status">No original fart recorded yet for this blind round.</span>
+                <span class="labs-hint-text" id="blind-orig-status">No source acoustic specimen captured for this blind trial.</span>
               </div>
               <div class="labs-waveform-box labs-wave-compact hidden" id="blind-orig-wave-wrap">
                 <canvas id="blind-orig-wave" class="labs-wave-canvas"></canvas>
               </div>
             </div>
 
-            <button type="button" id="btn-blind-analyze" class="labs-analyze-cta" disabled>🧪 ANALYZE RESULTS &amp; DETERMINE WINNER</button>
+            <button type="button" id="btn-blind-analyze" class="labs-analyze-cta" disabled>🧪 GENERATE OFFICIAL FINDINGS &amp; RANKINGS</button>
           </section>
         </div>
 
@@ -620,21 +620,21 @@
           <section id="qf-setup-card" class="labs-glass-card labs-challenge-card labs-qf-card">
             <div class="labs-ch-card-head">
               <div>
-                <div class="labs-eyebrow">HANDS-FREE RAPID GAUNTLET</div>
+                <div class="labs-eyebrow">AUTOMATED RAPID-SEQUENCE PROTOCOL</div>
                 <h3 class="labs-ch-title">QUICK-FIRE MIMIC ROUND</h3>
               </div>
             </div>
 
             <div id="qf-briefing-box" class="labs-qf-briefing">
-              <div class="labs-eyebrow">DR. TURBULENCE'S RAPID-GAUNTLET PROTOCOL · 100% AUTOMATIC</div>
-              <p class="labs-qf-briefing-copy">Hardly a breath between rounds! A.S.S. v4.2 blasts each specimen, snaps open your mic, locks onto your mimicry, cuts off the instant you finish, and fires the next fart nonstop until the grand tally.</p>
+              <div class="labs-eyebrow">DR. TURBULENCE'S RAPID-SEQUENCE PROTOCOL · 100% AUTOMATIC</div>
+              <p class="labs-qf-briefing-copy">Minimal interval between acoustic trials. A.S.S. v4.2 plays each archived specimen, automatically engages microphone telemetry, captures your reproduction, terminates on trailing silence, and advances immediately until final scientific tabulation.</p>
               <div class="labs-qf-flow-steps">
                 <div class="labs-qf-flow-pill is-listen"><strong>1. 🔊 LISTEN</strong><span>Specimen plays automatically</span></div>
-                <div class="labs-qf-flow-pill is-guess"><strong>2. 🎤 GUESS!</strong><span>Mic opens ON its own</span></div>
-                <div class="labs-qf-flow-pill is-auto"><strong>3. ⚡ INSTANT NEXT</strong><span>Auto-cutoff &amp; next fart!</span></div>
+                <div class="labs-qf-flow-pill is-guess"><strong>2. 🎤 GUESS!</strong><span>Telemetry engages automatically</span></div>
+                <div class="labs-qf-flow-pill is-auto"><strong>3. ⚡ INSTANT NEXT</strong><span>Auto-cutoff &amp; next trial</span></div>
               </div>
               <div class="labs-qf-briefing-tip">
-                <span>🛠️ <strong>Manual Override:</strong> Noisy room or auto-detect didn't trip? Tap <strong>⏭ Next Fart</strong> anytime during <strong>GUESS</strong> to advance manually.</span>
+                <span>🛠️ <strong>Manual Override:</strong> Elevated ambient noise or missed auto-detection? Tap <strong>⏭ Next Fart</strong> anytime during <strong>GUESS</strong> to advance manually.</span>
               </div>
             </div>
 
@@ -687,14 +687,14 @@
             <div class="labs-qf-hero">
               <div id="qf-celebration-banner" class="labs-qf-celeb-banner hidden"></div>
               <div>
-                <div class="labs-eyebrow">QUICK-FIRE GAUNTLET COMPLETE</div>
+                <div class="labs-eyebrow">RAPID-SEQUENCE TRIAL COMPLETE · OFFICIAL FINDINGS</div>
                 <div class="labs-qf-avg-line">
                   <span id="qf-avg-score" class="labs-qf-avg-score">0%</span>
                   <span id="qf-avg-rank" class="labs-rank-pill">Rook</span>
                 </div>
                 <div id="qf-avg-stars" class="labs-stars-row" aria-label="Quick-Fire Rating"></div>
               </div>
-              <div id="qf-avg-summary" class="labs-qf-summary-copy">Summary ready</div>
+              <div id="qf-avg-summary" class="labs-qf-summary-copy">Executive Research Summary ready</div>
               <div id="qf-highlights" class="labs-qf-highlights"></div>
             </div>
 
@@ -731,36 +731,36 @@
         <!-- Selectors for Single Analysis & Compare -->
         <div id="fn-pickers-bar" class="labs-glass-card labs-fn-pickers hidden">
           <label class="labs-mic-field" for="fn-sample-select">
-            <span id="fn-sample-label">Recording to Analyze</span>
+            <span id="fn-sample-label">Primary Acoustic Specimen</span>
             <select id="fn-sample-select"></select>
           </label>
           <label class="labs-mic-field hidden" id="fn-guess-field" for="fn-guess-select">
-            <span>Comparison Guess</span>
+            <span>Comparative Recording</span>
             <select id="fn-guess-select"></select>
           </label>
         </div>
 
-        <!-- Ranked Guess Leaderboard (Compare Mode) -->
-        <div id="fn-guess-leaderboard" class="labs-glass-card labs-fn-guess-lb hidden" aria-label="Session Guess Leaderboard"></div>
+        <!-- Ranked Comparative Recording Index (Compare Mode) -->
+        <div id="fn-guess-leaderboard" class="labs-glass-card labs-fn-guess-lb hidden" aria-label="Comparative Recording Index"></div>
 
-        <!-- Megamix Source Filter (Mode 4 Only) -->
+        <!-- Megamix Source Filter (Mode 3 Only) -->
         <div id="fn-group-filter-bar" class="labs-glass-card labs-group-filter-bar hidden">
           <div class="labs-group-filter-pills" role="group" aria-label="Megamix Source Filter">
             <button type="button" class="labs-format-btn active" data-group-source="all">All (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="recorded">Recorded (Real Farts) (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="guesses">Recorded Guesses (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="defaults">Default Farts (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="recorded">Field Recordings (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="guesses">Comparative Recordings (0)</button>
+            <button type="button" class="labs-format-btn" data-group-source="defaults">Archive Reference Pack (0)</button>
           </div>
           <div class="labs-group-cap-row">
-            <span id="fn-group-cap-note" class="labs-hint-text">Analyzing selected Vault recordings</span>
+            <span id="fn-group-cap-note" class="labs-hint-text">Analyzing selected Research Archive specimens</span>
             <button type="button" id="btn-group-shuffle-defaults" class="labs-btn-ghost labs-btn-xs hidden">🎲 Shuffle 20</button>
           </div>
         </div>
 
         <div id="fn-empty-state" class="labs-glass-card labs-empty-card hidden">
-          <h3 id="fn-empty-title">No Recording Ready</h3>
-          <p id="fn-empty-copy">Record an acoustic specimen to generate a Fartnalysis Report and Laboratory Findings.</p>
-          <button type="button" id="btn-fn-go-guess" class="labs-btn labs-btn-emerald">← Return to Vault Archive</button>
+          <h3 id="fn-empty-title">No Specimen Ready</h3>
+          <p id="fn-empty-copy">Record an acoustic specimen to generate an Institute Report and Laboratory Findings.</p>
+          <button type="button" id="btn-fn-go-guess" class="labs-btn labs-btn-emerald">← Return to Research Archive</button>
         </div>
 
         <div id="fn-dashboard-mount"></div>
@@ -778,8 +778,8 @@
 
         <section class="labs-glass-card labs-team-hero">
           <div class="labs-eyebrow">TOOT MATCH LABS · INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
-          <h3 class="labs-team-hero-title">Advancing The Science Of Gastrointestinal Acoustics Since 2026</h3>
-          <p class="labs-team-hero-sub">The world's leading authorities on gastrointestinal acoustics and comparative flatulence science.</p>
+          <h3 class="labs-team-hero-title">Advancing the scientific understanding of gastrointestinal acoustics.</h3>
+          <p class="labs-team-hero-sub">An international research faculty dedicated to spectral telemetry, pressure dynamics, and archival flatulence science.</p>
         </section>
 
         <div id="team-faculty-grid" class="labs-team-grid"></div>
@@ -787,7 +787,7 @@
         <section class="labs-glass-card labs-ass-card">
           <div class="labs-eyebrow">PROPRIETARY COMPUTATIONAL ENGINE</div>
           <h3 class="labs-ch-title">A.S.S. — Acoustic Similarity System v4.2</h3>
-          <p class="labs-ch-meta">All Laboratory Findings, Comparative Analyses, and Research Summaries at Toot Match Labs are executed deterministically on-device using A.S.S. (Acoustic Similarity System) telemetry modules.</p>
+          <p class="labs-ch-meta">All Institute Reports, Laboratory Findings, Comparative Acoustic Assessments, and Executive Research Summaries at Toot Match Labs are computed deterministically on-device via A.S.S. (Acoustic Similarity System) telemetry modules.</p>
         </section>
       </section>
     </main>
@@ -940,19 +940,19 @@
     </div>
   </div>
 
-  <!-- Humorous About Toot Match Labs Modal -->
+  <!-- About Toot Match Labs Modal -->
   <div id="labs-about-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-about-title">
     <div class="labs-glass-card labs-modal-card labs-about-sheet">
       <div class="labs-eyebrow">TOOT MATCH LABS · INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
       <h3 id="labs-about-title" class="labs-section-heading">About The Institute</h3>
-      <p class="labs-modal-copy">Founded in 2026 on a question nobody asked: what if backyard party flatulence received aerospace-grade acoustic signal processing?</p>
+      <p class="labs-modal-copy">Toot Match Labs is an independent research institute dedicated to advancing the scientific understanding of gastrointestinal acoustics through precision spectral telemetry and comparative signal analysis.</p>
       <div class="labs-about-block">
         <strong>A.S.S. (Acoustic Similarity System v4.2)</strong>
-        <p>Every similarity verdict, 3D spectrogram, thunder quotient, and mouth-fart authenticity suspicion score runs 100% deterministically on your device. No emissions ever leave your phone unless you explicitly hit Email or Share.</p>
+        <p>Every Reproduction Fidelity Assessment, 3D Spectral Distribution Map, acoustic energy calculation, and origin screening indicator executes 100% deterministically on-device. Recorded specimens remain inside your local Research Archive unless explicitly dispatched via Share / Email.</p>
       </div>
       <div class="labs-about-block">
-        <strong>Official Research Mandate</strong>
-        <p>Advancing the science of gastrointestinal acoustics while maintaining strict laboratory decorum, unblinking peer review, and suspiciously generous coffee budgets.</p>
+        <strong>Official Institute Mandate</strong>
+        <p>Advancing the scientific understanding of gastrointestinal acoustics through disciplined peer review, archival classification, and reproducible laboratory methodology.</p>
       </div>
       <div class="labs-modal-actions labs-about-footer">
         <button type="button" id="btn-about-open-team" class="labs-btn labs-btn-blue labs-btn-sm">🏛️ Meet The Team</button>
@@ -961,39 +961,39 @@
     </div>
   </div>
 
-  <!-- First-Launch Welcome & Instructional Splash Modal -->
+  <!-- First-Launch Welcome & Operating Briefing Modal -->
   <div id="labs-splash-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-splash-title">
     <div class="labs-glass-card labs-modal-card labs-splash-sheet">
-      <div class="labs-hero-badge">OFFICIAL BRIEFING · HOW TO PLAY</div>
+      <div class="labs-hero-badge">INSTITUTE BRIEFING · OPERATING PROTOCOL</div>
       <h3 id="labs-splash-title" class="labs-section-heading">Welcome To Toot Match Labs</h3>
-      <p class="labs-modal-copy">Record authentic audio events, challenge friends to recreate them, and let our Institute settle the scoreboard scientifically.</p>
+      <p class="labs-modal-copy">Institute of Acoustic Flatulence Research — Advancing the scientific understanding of gastrointestinal acoustics.</p>
       <div class="labs-splash-steps">
         <div class="labs-splash-step">
           <span class="labs-splash-num">1</span>
           <div>
             <strong>🎯 Guess The Fart &amp; Mimic Mode</strong>
-            <p>Mystery Fart keeps both name &amp; audio secret (use <em>💡 Hint (0/3)</em> or tap <em>Play Fart First</em> to Mimic). Tap <em>Guess The Fart</em>, then <em>Score Now</em> for solo or <em>2nd Player</em> for group showdown + side-by-side 3D plots.</p>
+            <p>Determine whether participants can accurately predict or reproduce the source acoustic event. Mystery specimens remain sealed (unlock up to 3 progressive telemetry hints via <em>💡 Hint (0/3)</em>, or select <em>Play Fart First</em> for Mimic Mode) prior to 3D spectral comparison.</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">2</span>
           <div>
-            <strong>⚡ Quick-Fire Mimic Round (Hands-Free Automatic)</strong>
-            <p>Pick how many farts (default 5): follow the big <strong>🔊 LISTEN</strong> → <strong>🎤 GUESS!</strong> cue. The mic opens &amp; shuts OFF automatically after you recreate each fart — or tap <em>⏭ Next Fart</em> anytime if auto-detect misses!</p>
+            <strong>⚡ Quick-Fire Mimic Round (Automated Protocol)</strong>
+            <p>Configure trial count (default 5) and follow <strong>🔊 LISTEN</strong> → <strong>🎤 GUESS!</strong> cues. Automated cutoff advances immediately upon trailing silence — or tap <em>⏭ Next Fart</em> manually if ambient conditions interfere.</p>
           </div>
         </div>
         <div class="labs-splash-step">
           <span class="labs-splash-num">3</span>
           <div>
-            <strong>🎙️ Record, Swipe Vault &amp; Fartnalysis</strong>
-            <p>Record real specimens on Home (Sentry Auto Detect v3 ignores speech &amp; noise), swipe left/right between Home / Vault / 3-tab Fartnalysis, and tap <em>📤 Share / Email</em> on any report to Share or Email PDF + WAV.</p>
+            <strong>🎙️ Capture, Research Archive &amp; Fartnalysis</strong>
+            <p>Record specimens on Home, swipe across Home / Vault / Fartnalysis for full Institute Reports, and tap <em>📤 Share / Email</em> on any dossier to transmit PDF and WAV documentation.</p>
           </div>
         </div>
         <div class="labs-splash-step labs-splash-step-beta">
           <span class="labs-splash-num">4</span>
           <div>
             <strong>🔮 Blind Prediction Mode <span class="labs-exp-badge">Beta</span></strong>
-            <p>Available anytime in ⚙️ Settings: record blind predictions <strong>before</strong> a live fart even happens, then capture the real Mystery Fart afterward.</p>
+            <p>Accessible via ⚙️ Settings: record blind acoustic predictions prior to a live event, then capture the source specimen afterward for Laboratory Assessment.</p>
           </div>
         </div>
       </div>
@@ -1002,7 +1002,7 @@
           <input type="checkbox" id="chk-splash-hide" checked />
           <span>Don't show on startup</span>
         </label>
-        <button type="button" id="btn-splash-start" class="labs-btn labs-btn-emerald">Got It — Let's Play</button>
+        <button type="button" id="btn-splash-start" class="labs-btn labs-btn-emerald">Enter Laboratory</button>
       </div>
     </div>
   </div>

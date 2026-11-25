@@ -98,13 +98,13 @@
   var ACOUSTIC_NAME_COUNT = 9 * 8 * 8;
 
   var LEGENDARY_TITLES = [
-    'MOUTH FART CHAMPION',
-    'CERTIFIED CHEEK IMPERSONATOR',
-    'MASTER OF RESONANCE',
-    'THUNDER SUMMONER',
-    'AIRFLOW ARCHITECT',
-    'GRAND FLATULENCE MASTER',
-    'ACOUSTIC GENIUS'
+    'ARCHIVE-GRADE ACOUSTIC SPECIALIST',
+    'SENIOR FELLOW OF RESONANCE',
+    'DISTINGUISHED AIRFLOW ARCHITECT',
+    'EXEMPLARY REPRODUCTION FIDELITY',
+    'CERTIFIED SPECTRAL PRECISIONIST',
+    'INSTITUTE BENCHMARK LAUREATE',
+    'HONORARY TELEMETRY DIRECTOR'
   ];
 
   var memoryMeta = {
@@ -279,63 +279,63 @@
     if (archetype === 'swamp_mud') {
       return {
         archetype: archetype,
-        moodLabel: st.wetPct >= 75 ? 'Bogged Down & Chaotic' : 'Squishy & Unforgiving',
-        wildAnalogy: 'Sounds like yanking a waterlogged rain boot out of waist-deep swamp clay.'
+        moodLabel: st.wetPct >= 75 ? 'High-Flux Hydro-Acoustic' : 'Turbulent Multi-Phase',
+        wildAnalogy: 'Exhibits dense fluid-boundary modulation and rapid mid-band spectral flux variance.'
       };
     }
     if (archetype === 'storm_thunder') {
       return {
         archetype: archetype,
-        moodLabel: 'Stormy & Barometric',
-        wildAnalogy: 'Tracks on Doppler radar like a low-pressure summer squall line rolling over a tin roof.'
+        moodLabel: 'Barometric Low-Pressure Front',
+        wildAnalogy: 'Displays sustained sub-120 Hz energy release comparable to atmospheric barometric propagation.'
       };
     }
     if (archetype === 'stealth_breeze') {
       return {
         archetype: archetype,
-        moodLabel: 'Sneaky & Nonchalant',
-        wildAnalogy: 'Feels like an innocent hallway draft from a cracked winter window nobody admits opening.'
+        moodLabel: 'Laminar Boundary Dispersion',
+        wildAnalogy: 'Maintains unvoiced broadband airflow with minimal tonal locking across the chamber spectrum.'
       };
     }
     if (archetype === 'high_squeaker') {
       return {
         archetype: archetype,
-        moodLabel: 'High-Strung & Startled',
-        wildAnalogy: 'Carries the frantic energy of a helium balloon escaping into a startled teacup.'
+        moodLabel: 'High-Frequency Resonant Mode',
+        wildAnalogy: 'Concentrates harmonic energy under constricted aperture tension above typical reference registers.'
       };
     }
     if (archetype === 'rapid_flutter') {
       return {
         archetype: archetype,
-        moodLabel: 'Agitated & Restless',
-        wildAnalogy: 'Putt-putts like a stubborn outboard engine fighting headwinds on a choppy lake.'
+        moodLabel: 'Staccato Oscillatory Regime',
+        wildAnalogy: 'Generates discrete multi-impulse bursts governed by rapid periodic valve modulation.'
       };
     }
     if (archetype === 'rising_question') {
       return {
         archetype: archetype,
-        moodLabel: 'Confused & Inquisitive',
-        wildAnalogy: 'Sweeps upward like an accidental rhetorical question nobody in the elevator wanted answered.'
+        moodLabel: 'Ascending Inflection Profile',
+        wildAnalogy: 'Demonstrates progressive upward frequency drift across its temporal discharge window.'
       };
     }
     if (archetype === 'quick_pop') {
       return {
         archetype: archetype,
-        moodLabel: 'Impulsive & Snappy',
-        wildAnalogy: 'Fires like a dry champagne cork popping in a silent library — zero time to duck.'
+        moodLabel: 'Brief Impulse Transient',
+        wildAnalogy: 'Concentrates acoustic energy output inside an unusually compact emission lifetime.'
       };
     }
     if (archetype === 'aggressive_rumble') {
       return {
         archetype: archetype,
-        moodLabel: 'Aggressive & Confrontational',
-        wildAnalogy: 'Radiates hostile low-end pressure like a territorial badger guarding the thermostat.'
+        moodLabel: 'High-Energy Sub-Bass Release',
+        wildAnalogy: 'Sustains elevated pressure release potential across low-frequency chamber harmonics.'
       };
     }
     return {
       archetype: 'zen_relaxing',
-      moodLabel: 'Relaxing & Zen',
-      wildAnalogy: 'Settles in like a peaceful porch-swing breeze therapy session on a warm Sunday afternoon.'
+      moodLabel: 'Equilibrium Laminar Profile',
+      wildAnalogy: 'Maintains balanced harmonic stability and disciplined pressure attenuation through termination.'
     };
   }
 
@@ -413,7 +413,7 @@
         title: 'Unclassified',
         tier: 0,
         color: '#9CA3AF',
-        desc: 'Acoustic signature bears no legal resemblance to the crime scene. Did you even try?'
+        desc: 'Observed spectral profile exhibits substantial divergence from reference archive parameters. Recalibration advised.'
       };
     }
     if (s < 40) {
@@ -421,7 +421,7 @@
         title: 'Novice',
         tier: 1,
         color: '#FB7185',
-        desc: 'Courageous cheek effort, wildly wrong frequency band. Back to the wind tunnel.'
+        desc: 'Observable acoustic energy output detected, though primary resonance profile lies outside reference tolerance.'
       };
     }
     if (s < 60) {
@@ -429,7 +429,7 @@
         title: 'Capable',
         tier: 2,
         color: '#F97316',
-        desc: 'Recognizable blast silhouette, though your mid-toot wobble wandered off-script.'
+        desc: 'Recognizable pressure release silhouette with measurable variance across mid-band modulation harmonics.'
       };
     }
     if (s < 80) {
@@ -437,7 +437,7 @@
         title: 'Skilled',
         tier: 3,
         color: '#60A5FA',
-        desc: 'Respectable vocal-tract forgery — close enough to fool a distracted bystander.'
+        desc: 'Research-grade reproduction alignment across fundamental resonance and spectral distribution map.'
       };
     }
     if (s < 90) {
@@ -445,7 +445,7 @@
         title: 'Expert',
         tier: 4,
         color: '#22C55E',
-        desc: 'Uncanny cheek-flutter control and barometric wallop. National Weather Service Doppler radar is taking notes.'
+        desc: 'Exceptional oscillation control and pressure release fidelity verified across multi-band telemetry.'
       };
     }
     if (s < 95) {
@@ -453,24 +453,24 @@
         title: 'Elite',
         tier: 5,
         color: '#8B5CF6',
-        desc: 'Alarmingly faithful bio-acoustic forgery. Almost indistinguishable in a blind elevator test.'
+        desc: 'Scientifically remarkable spectral alignment with minimal observed variance across all telemetry dimensions.'
       };
     }
     return {
       title: 'Legendary',
       tier: 6,
       color: '#FACC15',
-      desc: 'Reference-grade porcelain virtuosity. You matched everything from swamp-boot suction to gale-force thunder.'
+      desc: 'Archive-worthy reference reproduction. Exceptional harmonic discipline from onset attack through terminal attenuation.'
     };
   }
 
   function getRewardTier(score) {
     var s = clamp(safeNum(score, 0), 0, 100);
-    if (s < 40) return { bells: 1, stars: 1, label: 'Poor Match' };
-    if (s < 60) return { bells: 2, stars: 2, label: 'Fair Match' };
-    if (s < 80) return { bells: 3, stars: 3, label: 'Good Match' };
-    if (s < 95) return { bells: 4, stars: 4, label: 'Excellent Match' };
-    return { bells: 5, stars: 5, label: 'Legendary Match' };
+    if (s < 40) return { bells: 1, stars: 1, label: 'Significant Variance' };
+    if (s < 60) return { bells: 2, stars: 2, label: 'Partial Convergence' };
+    if (s < 80) return { bells: 3, stars: 3, label: 'Research Grade' };
+    if (s < 95) return { bells: 4, stars: 4, label: 'High Fidelity' };
+    return { bells: 5, stars: 5, label: 'Archive Grade' };
   }
 
   function pickLegendaryTitle() {
@@ -497,58 +497,58 @@
     var resTitle = (result && result.title) || 'Acoustic Event';
     var grade = (result && result.grade) || 'B';
     var mrA = Math.round(safeNum(fA.modRateHz, 0));
-    var bpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
+    var cpmB = Math.round(safeNum(fB.modRateHz, 0) * 60);
     var firstTip = result && result.tips && result.tips.length > 0 ? result.tips[0] : '';
     var twinLine = bonus
-      ? ' Acoustic doppelgängers mapped to ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.emoji + ' ' + bonus.acoustics.twinB.short + '.'
+      ? ' Reference analogues classified as ' + bonus.acoustics.twinA.short + ' vs ' + bonus.acoustics.twinB.short + '.'
       : '';
-    var alibiLine = bonus
-      ? ' Confined-room radar calls this a ' + bonus.social.b.radiusM.toFixed(1) + 'm blast ("' + bonus.wetness.labelB + '").'
+    var radLine = bonus
+      ? ' Estimated propagation radius measured ' + bonus.social.b.radiusM.toFixed(1) + 'm (' + bonus.wetness.labelB + ').'
       : '';
 
     if (score >= 95) {
       return (
-        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Eerily forensic vocal-tract cloning! ' +
-        'Your ' + durB + ' mimicry nailed the ' + pitchA + ' storm core (logging ' + pitchB + ' at ' + bpmB + ' cheek flaps/min) and matched the tail sputter well enough to fail a courtroom alibi.' +
-        twinLine + alibiLine
+        'Laboratory Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Exceptional acoustic reproduction. ' +
+        'Comparative emission lifetime (' + durB + ') matched the ' + pitchA + ' primary resonance profile (registering ' + pitchB + ' at ' + cpmB + ' oscillation cycles/min) with archive-worthy terminal attenuation.' +
+        twinLine + radLine
       );
     }
     if (score >= 85) {
       var weakness =
         envScore <= timScore && envScore <= modScore
-          ? 'terminal pressure decay ("trailing sputter discipline")'
+          ? 'terminal pressure decay attenuation'
           : modScore <= timScore
-          ? 'cheek-flutter RPM (' + bpmB + ' flaps/min vs ' + (mrA * 60) + ' target)'
-          : 'upholstery resonance & upper overtones';
+          ? 'oscillation cadence (' + cpmB + ' cycles/min vs ' + (mrA * 60) + ' reference)'
+          : 'upper-band harmonic distribution';
       return (
-        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Impressive acoustic impersonation! ' +
-        'You locked onto the ' + pitchA + ' target with ' + pitchB + ' across ' + durB + ', losing only trace telemetry points during ' + weakness + '.' +
-        twinLine + alibiLine
+        'Laboratory Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Research-grade acoustic reproduction. ' +
+        'Primary resonance profile aligned closely (' + pitchB + ' vs ' + pitchA + ' across ' + durB + '), with minor observed variance isolated to ' + weakness + '.' +
+        twinLine + radLine
       );
     }
     if (score >= 70) {
       return (
-        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Respectable room-fooling effort (' +
+        'Laboratory Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Favourable spectral alignment (' +
         pitchB + ' over ' + durB + ' vs ' + pitchA + ' / ' + durA + ').' +
-        (firstTip ? ' Forensic note: ' + firstTip : '') +
-        ' Tighten embouchure curvature to bump timbre (' + timScore + '%) into Master Blaster territory.' +
+        (firstTip ? ' Research Note: ' + firstTip : '') +
+        ' Refining spectral distribution (' + timScore + '%) would further elevate Laboratory Match Confidence.' +
         twinLine
       );
     }
     if (score >= 50) {
       return (
-        'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Partial witness confusion achieved: your ' +
-        pitchB + ' pass fluttered at ' + bpmB + ' flaps/min against the ' + pitchA + ' evidence, while pressure dynamics (' +
-        envScore + '%) and wobble cadence (' + modScore + '%) wandered.' +
-        (firstTip ? ' Primary divergence: ' + firstTip : '') +
-        alibiLine
+        'Laboratory Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Partial acoustic convergence observed: ' +
+        pitchB + ' comparative recording oscillated at ' + cpmB + ' cycles/min relative to the ' + pitchA + ' reference, while pressure release (' +
+        envScore + '%) and cadence (' + modScore + '%) diverged.' +
+        (firstTip ? ' Observed Variance: ' + firstTip : '') +
+        radLine
       );
     }
     return (
-      'Lab Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Total gastro-acoustic alibi failure! Your ' +
-      durB + ' submission (' + pitchB + ', ' + bpmB + ' flaps/min) sounds like a completely different weather system than the ' +
-      durA + ' (' + pitchA + ') exhibit.' +
-      (firstTip ? ' Lab diagnosis: ' + firstTip : '') +
+      'Laboratory Verdict [' + resTitle + ', Grade ' + grade + ' — ' + score.toFixed(1) + '%]: Elevated observed variance detected. The ' +
+      durB + ' comparative sample (' + pitchB + ', ' + cpmB + ' cycles/min) occupies a distinct spectral band relative to the ' +
+      durA + ' (' + pitchA + ') reference specimen.' +
+      (firstTip ? ' Field Observation: ' + firstTip : '') +
       twinLine
     );
   }
@@ -1247,13 +1247,13 @@
   var SEGMENT_COLORS = ['#22C55E', '#60A5FA', '#F97316', '#8B5CF6', '#FACC15', '#FB7185', '#34D399', '#38BDF8'];
 
   var GROUP_SORT_OPTIONS = [
-    { key: 'pitch', label: 'Pitch (Hz)', unit: 'Hz' },
-    { key: 'wetness', label: 'Wetness / Squelch (%)', unit: '%' },
-    { key: 'duration', label: 'Duration (s)', unit: 's' },
-    { key: 'crest', label: 'Loudness / Crest (dB)', unit: 'dB' },
-    { key: 'radius', label: 'Blast Radius (m)', unit: 'm' },
-    { key: 'flutter', label: 'Flutter Rate (Hz)', unit: 'Hz' },
-    { key: 'date', label: 'Date Recorded', unit: '' }
+    { key: 'pitch', label: 'Primary Resonance Profile (Hz)', unit: 'Hz' },
+    { key: 'wetness', label: 'Hydro-Acoustic Turbulence (%)', unit: '%' },
+    { key: 'duration', label: 'Emission Lifetime (s)', unit: 's' },
+    { key: 'crest', label: 'Acoustic Energy Output (dB)', unit: 'dB' },
+    { key: 'radius', label: 'Propagation Radius (m)', unit: 'm' },
+    { key: 'flutter', label: 'Oscillation Cadence (Hz)', unit: 'Hz' },
+    { key: 'date', label: 'Archive Timestamp', unit: '' }
   ];
 
   function getGroupSortMeta(sortKey) {
@@ -1418,34 +1418,34 @@
       clamp(92 - pitchSpanOctaves * 18 - Math.abs(aggregateMoisturePct - 45) * 0.22, 18, 99)
     );
     var totalDurationSec = combined.length / targetSr;
-    var trackTitle = 'Vault Megamix — Storm System in ' + count + ' Front' + (count === 1 ? '' : 's');
+    var trackTitle = 'Archive Anthology — Multi-Specimen Sequence (' + count + ' Specimen' + (count === 1 ? '' : 's') + ')';
 
     var moistureNote =
       aggregateMoisturePct >= 62
-        ? 'Hazmat Laundry & Bog Warning: collective moisture sits at ' + aggregateMoisturePct + '% — thick wet-boot-in-mud suction energy.'
+        ? 'Field Observation: Elevated hydro-acoustic turbulence (' + aggregateMoisturePct + '%) indicates vigorous fluid-boundary dynamics across the ensemble.'
         : aggregateMoisturePct >= 38
-        ? 'Moderate ' + aggregateMoisturePct + '% squelch turbulence keeps the mix richly swamp-adjacent without triggering floor-mop protocols.'
-        : 'Remarkably desert-dry cascade (' + aggregateMoisturePct + '% moisture) suitable for quiet library reading rooms.';
+        ? 'Archive Observation: Moderate ' + aggregateMoisturePct + '% hydro-acoustic flux maintains balanced mid-band dispersion throughout the sequence.'
+        : 'Research Note: Low-flux laminar profile (' + aggregateMoisturePct + '% index) indicates dry aerodynamic boundary propagation.';
 
     var groupVerdict =
-      'Assembled ' +
+      'Synthesized ' +
       count +
-      ' Vault specimens into a ' +
+      ' archived specimens into a ' +
       totalDurationSec.toFixed(2) +
-      's continuous barometric & acoustic anthology, ordered by ' +
+      's continuous reference anthology ordered by ' +
       sortMeta.label +
       ' (' +
       (sortDir === 'desc' ? 'descending' : 'ascending') +
-      ') like a miniature Doppler radar forecast. ' +
-      'Ensemble spans ' +
+      '). ' +
+      'Ensemble frequency distribution spans ' +
       pitchSpanOctaves.toFixed(2) +
       ' octaves around a ' +
       Math.round(meanPitchHz) +
-      ' Hz mean core (' +
+      ' Hz mean primary resonance (' +
       coherenceScore +
-      '% weather-front coherence), commanding a cumulative ' +
+      '% inter-specimen coherence), yielding a cumulative ' +
       combinedBlastRadiusM.toFixed(1) +
-      'm elevator evacuation zone. ' +
+      'm acoustic propagation radius. ' +
       moistureNote;
 
     return {
@@ -1486,32 +1486,33 @@
         ? ' [' + Forensics.hzToNoteName(feat.medianPitchHz) + ']'
         : '';
 
-    var bpmMod = Math.round(safeNum(feat.modRateHz, 0) * 60);
+    var cpmMod = Math.round(safeNum(feat.modRateHz, 0) * 60);
     var mood = describeAcousticMood(feat, bonus);
     var labNote =
       bonus && bonus.wetness.wetA >= 65
-        ? 'Laundry & Swamp Advisory: Heavy mud-boot suction turbulence detected — crack a window immediately.'
+        ? 'Research Note (' + mood.moodLabel + '): Elevated hydro-acoustic turbulence and multi-band spectral flux warrant archival preservation.'
         : bonus && feat.voicedRatio >= 0.25 && feat.medianPitchHz > 0
-        ? 'Institute Mood Ruling (' + mood.moodLabel + '): ' + mood.wildAnalogy
-        : 'Institute Ruling (' + mood.moodLabel + '): Pure aerodynamic stealth crosswind — plausible office deniability remains intact.';
+        ? 'Archive Observation (' + mood.moodLabel + '): ' + mood.wildAnalogy
+        : 'Field Observation (' + mood.moodLabel + '): ' + mood.wildAnalogy;
 
     var lines = [
-      'TOOT MATCH — ' + (roleLabel || 'FORENSIC AUDIO DOSSIER'),
-      'Specimen: ' + (sound.displayName || sound.name || 'Recording'),
-      'Duration: ' + prof.durationLabel + ' | Profile: ' + (prof.profileTag || 'Acoustic Event'),
-      'Primary Tone: ' + prof.pitchLabel + noteStr,
-      'Texture & Flutter: ' + prof.textureLabel + ' (' + bpmMod + ' cheek flaps/min | Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz)',
-      'Crest Dynamics: ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB | Attack ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms'
+      'TOOT MATCH LABS — ' + (roleLabel || 'INSTITUTE REPORT'),
+      'Institute of Acoustic Flatulence Research · Advancing the scientific understanding of gastrointestinal acoustics.',
+      'Specimen Designation: ' + (sound.displayName || sound.name || 'Recording'),
+      'Emission Lifetime: ' + prof.durationLabel + ' | Archive Classification: ' + (prof.profileTag || 'Acoustic Specimen'),
+      'Primary Resonance Profile: ' + prof.pitchLabel + noteStr,
+      'Spectral Distribution & Cadence: ' + prof.textureLabel + ' (' + cpmMod + ' cycles/min | Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz)',
+      'Acoustic Energy Output: ' + safeNum(feat.crestFactorDb, 0).toFixed(1) + ' dB crest | Onset ' + Math.round(safeNum(feat.attackSec, 0) * 1000) + 'ms'
     ];
     if (bonus) {
-      lines.push('Moisture / Squelch Index: ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ')');
-      lines.push('Acoustic Twin: ' + bonus.acoustics.twinA.emoji + ' ' + bonus.acoustics.twinA.name);
-      lines.push('Blast Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm | Alibi: ' + bonus.social.a.verdict);
+      lines.push('Hydro-Acoustic Turbulence: ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + ')');
+      lines.push('Reference Analogue: ' + bonus.acoustics.twinA.name);
+      lines.push('Propagation Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm | Masking Assessment: ' + bonus.social.a.verdict);
     }
     lines.push(labNote);
     var fnApi = root.TootLabs && root.TootLabs.Fartnalysis;
     if (fnApi && typeof fnApi.pickShareableVerdict === 'function') {
-      lines.push('Official Verdict: ' + fnApi.pickShareableVerdict((sound.displayName || sound.name || 'Recording') + '|' + prof.durationLabel));
+      lines.push('Laboratory Verdict: ' + fnApi.pickShareableVerdict((sound.displayName || sound.name || 'Recording') + '|' + prof.durationLabel));
     }
     lines.push('');
     lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
@@ -1531,14 +1532,15 @@
         ? fnApi.pickShareableVerdict((soundA.displayName || soundA.name || '') + '|' + (soundB.name || '') + '|' + exact.toFixed(1))
         : null;
     var lines = [
-      'TOOT MATCH LABS — COMPARATIVE ACOUSTIC ANALYSIS REPORT',
-      'Primary Specimen: ' + (soundA.displayName || soundA.name || 'Specimen A'),
-      'Comparison Recording: ' + (soundB.name || 'Specimen B'),
-      'Similarity Score: ' + exact.toFixed(1) + '% | Rank: ' + rank.title + ' (' + reward.bells + '/5 Stars)',
-      'Metrics: Duration ' + result.durationScore + '% | Tone ' + result.pitchScore + '% | Flutter ' + result.modulationScore + '% | Resonance ' + result.timbreScore + '% | Pressure ' + result.envelopeScore + '%',
-      'Scientific Verdict: ' + verdict
+      'TOOT MATCH LABS — COMPARATIVE ACOUSTIC ASSESSMENT',
+      'Institute of Acoustic Flatulence Research · Advancing the scientific understanding of gastrointestinal acoustics.',
+      'Reference Specimen: ' + (soundA.displayName || soundA.name || 'Specimen A'),
+      'Comparative Recording: ' + (soundB.name || 'Specimen B'),
+      'Reproduction Fidelity: ' + exact.toFixed(1) + '% | Laboratory Assessment: ' + rank.title + ' (' + reward.label + ')',
+      'Telemetry Breakdown: Emission Lifetime ' + result.durationScore + '% | Primary Resonance ' + result.pitchScore + '% | Oscillation Cadence ' + result.modulationScore + '% | Spectral Distribution ' + result.timbreScore + '% | Pressure Release ' + result.envelopeScore + '%',
+      'Executive Research Summary: ' + verdict
     ];
-    if (officialVerdict) lines.push('Official Verdict: ' + officialVerdict);
+    if (officialVerdict) lines.push('Laboratory Verdict: ' + officialVerdict);
     lines.push('');
     lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
     lines.push('Reviewed and Approved By: Professor Reginald P. Bottomsworth, Chief Acoustic Flatulence Officer, Institute of Acoustic Flatulence Research, Toot Match Labs');
@@ -1550,7 +1552,7 @@
     var m = groupObj.metrics;
     var tracks = (groupObj.segments || [])
       .map(function (seg, idx) {
-        return '  ' + (idx + 1) + '. ' + seg.name + ' (' + seg.startSec.toFixed(2) + 's–' + seg.endSec.toFixed(2) + 's, ~' + Math.round(seg.pitchHz) + ' Hz, Wetness ' + seg.wetnessPct + '%)';
+        return '  ' + (idx + 1) + '. ' + seg.name + ' (' + seg.startSec.toFixed(2) + 's–' + seg.endSec.toFixed(2) + 's, ~' + Math.round(seg.pitchHz) + ' Hz, Turbulence ' + seg.wetnessPct + '%)';
       })
       .join('\n');
     var fnApi = root.TootLabs && root.TootLabs.Fartnalysis;
@@ -1559,15 +1561,16 @@
         ? fnApi.pickShareableVerdict(groupObj.name + '|' + (m.sortLabel || 'Default') + '|megamix')
         : null;
     var lines = [
-      'TOOT MATCH LABS — MULTI-SPECIMEN COHERENT MEGAMIX REPORT',
-      'Track: ' + groupObj.name,
-      'Arrangement: ' + (m.sortLabel || 'Default'),
-      'Movements: ' + m.count + ' | Total Duration: ' + m.totalDurationSec.toFixed(2) + 's | Coherence Score: ' + m.coherenceScore + '%',
-      'Aggregate Moisture: ' + m.aggregateMoisturePct + '% | Combined Blast Radius: ' + m.combinedBlastRadiusM.toFixed(1) + 'm',
-      'Tracklist:\n' + tracks,
-      'Verdict: ' + m.groupVerdict
+      'TOOT MATCH LABS — MULTI-SPECIMEN INSTITUTE REPORT',
+      'Institute of Acoustic Flatulence Research · Advancing the scientific understanding of gastrointestinal acoustics.',
+      'Anthology Designation: ' + groupObj.name,
+      'Sequence Ordering: ' + (m.sortLabel || 'Default'),
+      'Specimens: ' + m.count + ' | Combined Emission Lifetime: ' + m.totalDurationSec.toFixed(2) + 's | Ensemble Coherence: ' + m.coherenceScore + '%',
+      'Mean Hydro-Acoustic Flux: ' + m.aggregateMoisturePct + '% | Cumulative Propagation Radius: ' + m.combinedBlastRadiusM.toFixed(1) + 'm',
+      'Indexed Specimens:\n' + tracks,
+      'Official Findings: ' + m.groupVerdict
     ];
-    if (officialVerdict) lines.push('Official Verdict: ' + officialVerdict);
+    if (officialVerdict) lines.push('Laboratory Verdict: ' + officialVerdict);
     lines.push('');
     lines.push('Analysis performed using A.S.S. (Acoustic Similarity System v4.2)');
     lines.push('Reviewed and Approved By: Professor Reginald P. Bottomsworth, Chief Acoustic Flatulence Officer, Institute of Acoustic Flatulence Research, Toot Match Labs');

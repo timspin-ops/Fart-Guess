@@ -1289,45 +1289,45 @@
     if (isVoiced) {
       var hz = Math.round(feat.medianPitchHz);
       var band =
-        hz < 95 ? 'Deep Bass' : hz < 180 ? 'Mid Rumble' : hz < 300 ? 'Cheeky Tone' : 'High Squeak';
+        hz < 95 ? 'Deep Sub-Bass' : hz < 180 ? 'Mid-Low Resonance' : hz < 300 ? 'Mid-Upper Resonance' : 'High-Frequency Resonance';
       pitchLabel = hz + ' Hz (' + band + ')';
     } else {
-      pitchLabel = 'Airy (~' + Math.round(feat.spectralCentroidHz || 250) + ' Hz)';
+      pitchLabel = 'Broadband (~' + Math.round(feat.spectralCentroidHz || 250) + ' Hz)';
     }
 
     var textureLabel;
     if (feat.burstCount >= 3) {
-      textureLabel = 'Staccato · ' + feat.burstCount + ' bursts';
-      if (feat.modDepth > 0.35) textureLabel += ' · ' + Math.round(feat.modRateHz) + ' Hz flutter';
+      textureLabel = 'Staccato Multi-Burst · ' + feat.burstCount + ' bursts';
+      if (feat.modDepth > 0.35) textureLabel += ' · ' + Math.round(feat.modRateHz) + ' Hz oscillation';
     } else if (feat.burstCount === 2) {
-      textureLabel = 'Double Puff · 2 bursts';
+      textureLabel = 'Dual-Impulse · 2 bursts';
     } else if (feat.modDepth > 0.38) {
-      textureLabel = 'Fluttery · ~' + Math.round(feat.modRateHz) + ' Hz ripple';
+      textureLabel = 'Modulated · ~' + Math.round(feat.modRateHz) + ' Hz oscillation';
     } else if (feat.spectralFlatness > 0.42) {
-      textureLabel = 'Breathy / Airy';
+      textureLabel = 'Broadband / Aerodynamic';
     } else {
-      textureLabel = 'Smooth Blast';
+      textureLabel = 'Continuous Laminar Release';
     }
 
-    var profileTag = 'Classic Ripper';
+    var profileTag = 'Balanced Acoustic Release';
     var cc = feat.centroidContour;
     var ccDelta = cc && cc.length >= 32 ? cc[29] - cc[2] : 0;
     if (!isVoiced && feat.spectralCentroidHz > 850) {
-      profileTag = 'Airy Steam Leak';
+      profileTag = 'Broadband Air Dispersion';
     } else if (feat.burstCount >= 4) {
-      profileTag = 'Staccato Sputter';
+      profileTag = 'Multi-Burst Oscillation';
     } else if (feat.burstCount === 2) {
-      profileTag = 'Double Tap';
+      profileTag = 'Dual-Impulse Release';
     } else if (isVoiced && (ccDelta > 0.65 || (feat.pitchRangeSemitones > 8 && feat.pitchContour[29] > feat.pitchContour[2] + 4))) {
-      profileTag = 'Rising Squeaker';
+      profileTag = 'Ascending Resonance Sweep';
     } else if (isVoiced && (ccDelta < -0.65 || (feat.pitchRangeSemitones > 8 && feat.pitchContour[2] > feat.pitchContour[29] + 4))) {
-      profileTag = 'Deflating Trombone';
+      profileTag = 'Descending Resonance Sweep';
     } else if (isVoiced && feat.medianPitchHz >= 240) {
-      profileTag = 'Mouse Squeaker';
+      profileTag = 'High-Frequency Resonance';
     } else if (isVoiced && feat.medianPitchHz < 95 && feat.modDepth < 0.45) {
-      profileTag = 'Deep Tuba Rumble';
+      profileTag = 'Low-Frequency Sub-Bass';
     } else if (feat.modDepth > 0.50) {
-      profileTag = 'Chaotic Swamp Rasp';
+      profileTag = 'High-Turbulence Dispersion';
     }
 
     return {
@@ -1647,72 +1647,72 @@
     envelopeScore = Math.round(clamp(safeNumber(envelopeScore, 0), 0, 100));
     var overall = Math.round(clamp(safeNumber(rawOverall, 0), 0, 100));
 
-    // Grade & Rank Title
+    // Grade & Classification Title
     var grade = 'D';
-    var title = 'Totally Different Toot';
+    var title = 'Significant Acoustic Divergence';
     if (overall >= 90) {
       grade = 'S+';
-      title = 'Certified Master Blaster';
+      title = 'Archive-Grade Reproduction';
     } else if (overall >= 80) {
       grade = 'S';
-      title = 'Toot Virtuoso';
+      title = 'Exceptional Acoustic Alignment';
     } else if (overall >= 68) {
       grade = 'A';
-      title = 'Precision Pooter';
+      title = 'Research-Grade Fidelity';
     } else if (overall >= 54) {
       grade = 'B';
-      title = 'Solid Attempt';
+      title = 'Moderate Acoustic Convergence';
     } else if (overall >= 38) {
       grade = 'C';
-      title = 'Cheeky Miss';
+      title = 'Observed Spectral Variance';
     }
 
-    // Analytical tips explaining exact mismatches
+    // Analytical telemetry notes detailing exact observed variance
     var tips = [];
     if (!refUnvoiced && !userUnvoiced) {
       var stDiff = Math.abs(12 * Math.log2(refFeat.medianPitchHz / userFeat.medianPitchHz));
       if (stDiff >= 2.5) {
         if (userFeat.medianPitchHz > refFeat.medianPitchHz) {
-          tips.push('Pitch too high (' + Math.round(userFeat.medianPitchHz) + ' Hz vs ' + Math.round(refFeat.medianPitchHz) + ' Hz target).');
+          tips.push('Primary resonance elevated (' + Math.round(userFeat.medianPitchHz) + ' Hz vs ' + Math.round(refFeat.medianPitchHz) + ' Hz reference).');
         } else {
-          tips.push('Pitch too low (' + Math.round(userFeat.medianPitchHz) + ' Hz vs ' + Math.round(refFeat.medianPitchHz) + ' Hz target).');
+          tips.push('Primary resonance lower (' + Math.round(userFeat.medianPitchHz) + ' Hz vs ' + Math.round(refFeat.medianPitchHz) + ' Hz reference).');
         }
       }
     } else if (refUnvoiced && !userUnvoiced) {
-      tips.push('Too tonal (~' + Math.round(userFeat.medianPitchHz) + ' Hz buzz) — original was an airy hiss.');
+      tips.push('Excessive harmonic voicing (~' + Math.round(userFeat.medianPitchHz) + ' Hz) relative to unvoiced reference dispersion.');
     } else if (!refUnvoiced && userUnvoiced) {
-      tips.push('Too breathy/airy — original had a ~' + Math.round(refFeat.medianPitchHz) + ' Hz tone.');
+      tips.push('Insufficient harmonic voicing relative to reference fundamental resonance (~' + Math.round(refFeat.medianPitchHz) + ' Hz).');
     }
 
     if (Math.abs(refFeat.burstCount - userFeat.burstCount) >= 2) {
-      tips.push('Burst rhythm differed (' + userFeat.burstCount + ' burst' + (userFeat.burstCount === 1 ? '' : 's') + ' vs ' + refFeat.burstCount + ' in original).');
+      tips.push('Burst segmentation diverged (' + userFeat.burstCount + ' impulse' + (userFeat.burstCount === 1 ? '' : 's') + ' vs ' + refFeat.burstCount + ' in reference).');
     } else if (md1 > 0.42 && md2 < 0.22) {
-      tips.push('Missing the ~' + Math.round(mr1) + ' Hz cheek flutter.');
+      tips.push('Attenuated modulation (~' + Math.round(mr1) + ' Hz oscillation absent).');
     } else if (md2 > 0.42 && md1 < 0.22) {
-      tips.push('Too fluttery (~' + Math.round(mr2) + ' Hz) compared to smooth original.');
+      tips.push('Elevated modulation (~' + Math.round(mr2) + ' Hz oscillation vs laminar reference).');
     }
 
     if (d2 < d1 * 0.78) {
-      tips.push('Way too short (' + d2.toFixed(2) + 's vs ' + d1.toFixed(2) + 's).');
+      tips.push('Emission lifetime shorter (' + d2.toFixed(2) + 's vs ' + d1.toFixed(2) + 's reference).');
     } else if (d2 > d1 * 1.28) {
-      tips.push('Too long (' + d2.toFixed(2) + 's vs ' + d1.toFixed(2) + 's).');
+      tips.push('Emission lifetime extended (' + d2.toFixed(2) + 's vs ' + d1.toFixed(2) + 's reference).');
     }
 
     if (timbreScore < 55 && tips.length < 3) {
       if (c2 > c1 * 1.35) {
-        tips.push('Brighter rasp (' + Math.round(c2) + ' Hz vs ' + Math.round(c1) + ' Hz centroid).');
+        tips.push('Elevated spectral centroid (' + Math.round(c2) + ' Hz vs ' + Math.round(c1) + ' Hz reference).');
       } else if (c2 < c1 * 0.72) {
-        tips.push('More muffled texture (' + Math.round(c2) + ' Hz vs ' + Math.round(c1) + ' Hz centroid).');
+        tips.push('Attenuated spectral centroid (' + Math.round(c2) + ' Hz vs ' + Math.round(c1) + ' Hz reference).');
       } else {
-        tips.push('Distinctly different spectral texture (Timbre ' + timbreScore + '%).');
+        tips.push('Observed spectral distribution variance (Timbre ' + timbreScore + '%).');
       }
     }
 
     if (tips.length === 0) {
       if (overall >= 82) {
-        tips.push('Tight match across pitch (' + Math.round(userFeat.medianPitchHz || c2) + ' Hz), duration (' + d2.toFixed(2) + 's), and texture!');
+        tips.push('High alignment across primary resonance (' + Math.round(userFeat.medianPitchHz || c2) + ' Hz), emission lifetime (' + d2.toFixed(2) + 's), and spectral distribution.');
       } else {
-        tips.push('Decent timing (' + d2.toFixed(2) + 's), tweak tone and dynamics for a higher match.');
+        tips.push('Nominal emission lifetime (' + d2.toFixed(2) + 's); refine primary resonance and pressure envelope to improve reproduction fidelity.');
       }
     }
 

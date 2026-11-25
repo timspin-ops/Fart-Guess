@@ -246,10 +246,10 @@
 
   function drawPdfFooter(ctx) {
     ctx.fillStyle = '#6B7280';
-    ctx.font = '600 13px monospace';
+    ctx.font = '600 12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(
-      'Toot Match Labs · Institute of Acoustic Flatulence Research · Analysis performed using A.S.S. v4.2 · Reviewed by Prof. R. P. Bottomsworth',
+      'Toot Match Labs · Institute of Acoustic Flatulence Research · Advancing the scientific understanding of gastrointestinal acoustics · A.S.S. v4.2',
       PAGE_W * 0.5,
       PAGE_H - 28
     );
@@ -602,7 +602,7 @@
     var kpis = [
       { l: 'Authenticity Score', v: Math.round(sc) + '% (' + tier.label + ')' },
       { l: 'Organic Emission Prob.', v: Math.round(safeNum(auth && auth.organicProbability, sc)) + '%' },
-      { l: 'Mouth-Fart Suspicion', v: Math.round(safeNum(auth && auth.mouthSuspicion, 100 - sc)) + '%' },
+      { l: 'Oral Mimicry Indicator', v: Math.round(safeNum(auth && auth.mouthSuspicion, 100 - sc)) + '%' },
       { l: 'Analysis Confidence', v: String((auth && auth.confidenceLevel) || 'Moderate') + ' (' + Math.round(safeNum(auth && auth.confidenceScore, 50)) + '%)' }
     ];
     var cellW = Math.floor((kw - 12) / 2);
@@ -642,9 +642,9 @@
 
     drawPdfHeader(
       ctx,
-      'AUTHENTICITY ANALYSIS · PURE DSP HEURISTICS (NO ML · ZERO GAME SCORE IMPACT)',
+      'AUTHENTICITY ANALYSIS · PURE DSP HEURISTICS · INFORMATIONAL TELEMETRY ONLY',
       authB ? labelA + ' vs ' + labelB : labelA,
-      'Probabilistic Acoustic Screening (Natural Emission vs Mouth-Generated Likelihood)',
+      'Probabilistic Specimen Origin Assessment (Naturally Occurring vs Oral Mimicry)',
       pageNum,
       totalPages
     );
@@ -784,30 +784,30 @@
       var mlB = Fn.classifyAcousticProfile(fB);
       var authA = typeof Fn.computeAuthenticityAnalysis === 'function' ? Fn.computeAuthenticityAnalysis(sA) : null;
       var authB = typeof Fn.computeAuthenticityAnalysis === 'function' ? Fn.computeAuthenticityAnalysis(sB) : null;
-      var labelA = sA.displayName || sA.name || 'Original';
-      var labelB = sB.name || 'Guess';
+      var labelA = sA.displayName || sA.name || 'Reference Specimen';
+      var labelB = sB.name || 'Comparative Recording';
       var totalCmpPages = 7;
 
       // PAGE 1: 3D Spectrograms FIRST + Executive Verdict + All 12 Comparison Tiles
       var p1 = createPageCanvas();
       drawPdfHeader(
         p1.ctx,
-        'FORENSIC COMPARISON DOSSIER · ' + nowStr,
+        'INSTITUTE REPORT · COMPARATIVE ACOUSTIC ASSESSMENT · ' + nowStr,
         labelA + ' vs ' + labelB,
-        'Match Quality: ' + exact.toFixed(1) + '% | Rank: ' + rank.title + ' (Grade ' + res.grade + ')',
+        'Laboratory Match Confidence: ' + exact.toFixed(1) + '% | Classification: ' + rank.title + ' (Grade ' + res.grade + ')',
         1,
         totalCmpPages
       );
       var domSpecs = opts.specCanvases || [];
-      drawSpectrogramSlot(p1.ctx, 44, 180, 564, 468, domSpecs[0], fA.spectrogram, 'Sound A: ' + labelA, 'plasma');
-      drawSpectrogramSlot(p1.ctx, 632, 180, 564, 468, domSpecs[1], fB.spectrogram, 'Sound B: ' + labelB, 'magma');
+      drawSpectrogramSlot(p1.ctx, 44, 180, 564, 468, domSpecs[0], fA.spectrogram, 'Reference Specimen (A): ' + labelA, 'plasma');
+      drawSpectrogramSlot(p1.ctx, 632, 180, 564, 468, domSpecs[1], fB.spectrogram, 'Comparative Recording (B): ' + labelB, 'magma');
 
       var bonusCmp = Forensics && typeof Forensics.computeBonusMetrics === 'function' ? Forensics.computeBonusMetrics(fA, fB) : null;
       drawRoundedCard(p1.ctx, 44, 666, PAGE_W - 88, 304, 18, '#111827', '#374151');
       p1.ctx.fillStyle = '#22C55E';
       p1.ctx.font = '700 17px monospace';
       p1.ctx.textAlign = 'left';
-      p1.ctx.fillText('SCIENTIFIC REFEREE VERDICT, HUMOROUS NOTES & ML CROSS-CHECK', 68, 700);
+      p1.ctx.fillText('EXECUTIVE RESEARCH SUMMARY · OFFICIAL FINDINGS & ML VERIFICATION', 68, 700);
       p1.ctx.fillStyle = '#FFFFFF';
       p1.ctx.font = '600 18px sans-serif';
       drawWrappedText(p1.ctx, verdict, 68, 732, PAGE_W - 136, 25, 3);
@@ -815,10 +815,10 @@
       p1.ctx.font = '600 16px sans-serif';
       drawWrappedText(
         p1.ctx,
-        'Duration: ' + fA.duration.toFixed(2) + 's vs ' + fB.duration.toFixed(2) + 's | ' +
-          'Flutter: ' + Math.round(safeNum(fA.modRateHz, 0) * 60) + ' vs ' + Math.round(safeNum(fB.modRateHz, 0) * 60) + ' flaps/min. ' +
+        'Emission Lifetime: ' + fA.duration.toFixed(2) + 's vs ' + fB.duration.toFixed(2) + 's | ' +
+          'Modulation: ' + Math.round(safeNum(fA.modRateHz, 0)) + ' Hz vs ' + Math.round(safeNum(fB.modRateHz, 0)) + ' Hz. ' +
           (bonusCmp
-            ? 'Laundry Advisory: ' + bonusCmp.wetness.wetA + '% (' + bonusCmp.wetness.labelA + ') vs ' + bonusCmp.wetness.wetB + '% (' + bonusCmp.wetness.labelB + '). Sound Twins: ' + bonusCmp.acoustics.twinA.name + ' vs ' + bonusCmp.acoustics.twinB.name + '. Alibi: ' + bonusCmp.social.b.verdict
+            ? 'Turbulence Index: ' + bonusCmp.wetness.wetA + '% (' + bonusCmp.wetness.labelA + ') vs ' + bonusCmp.wetness.wetB + '% (' + bonusCmp.wetness.labelB + '). Analogues: ' + bonusCmp.acoustics.twinA.name + ' vs ' + bonusCmp.acoustics.twinB.name + '. Masking: ' + bonusCmp.social.b.verdict
             : ''),
         68,
         822,
@@ -829,7 +829,7 @@
       p1.ctx.fillStyle = '#60A5FA';
       p1.ctx.font = '700 15px monospace';
       p1.ctx.fillText(
-        'Original ML: ' + mlA.topClass.name + ' (' + mlA.confidence + '%)   |   Guess ML: ' + mlB.topClass.name + ' (' + mlB.confidence + '%)',
+        'Specimen A ML: ' + mlA.topClass.name + ' (' + mlA.confidence + '%)   |   Specimen B ML: ' + mlB.topClass.name + ' (' + mlB.confidence + '%)',
         68,
         948
       );
@@ -873,13 +873,13 @@
         pushPageCanvas(cp);
       }
 
-      // PAGE 6: 9th Forensics Criterion (social / Alibi) + ML Distributions + Mathematical Equations
+      // PAGE 6: 9th Acoustic Criterion (Propagation & Masking) + ML Distributions + Mathematical Equations
       var p6 = createPageCanvas();
       drawPdfHeader(
         p6.ctx,
-        'ELEVATOR ALIBI AUDIT, ML CLASSIFICATION & FORMULAS',
+        'PROPAGATION & MASKING AUDIT · COMPUTATIONAL CLASSIFICATION & EQUATIONS',
         labelA + ' vs ' + labelB,
-        'Opened Social Blast Perimeter Analysis, 22-Feature ML Classification & Scoring Mathematics',
+        'Enclosed Chamber Propagation Radius, 22-Feature ML Classification & Fidelity Equations',
         6,
         totalCmpPages
       );
@@ -892,23 +892,23 @@
       p6.ctx.fillStyle = '#8B5CF6';
       p6.ctx.font = '700 17px monospace';
       p6.ctx.textAlign = 'left';
-      p6.ctx.fillText('ON-DEVICE ML ARCHETYPE CLASSIFICATION & EQUATIONS', 68, 984);
+      p6.ctx.fillText('COMPUTATIONAL ACOUSTIC CLASSIFICATION & EQUATIONS', 68, 984);
       p6.ctx.fillStyle = '#60A5FA';
       p6.ctx.font = '700 14px monospace';
-      p6.ctx.fillText('ORIGINAL (' + labelA.slice(0, 22) + ') ML DISTRIBUTION', 68, 1012);
+      p6.ctx.fillText('SPECIMEN A (' + labelA.slice(0, 22) + ') ML DISTRIBUTION', 68, 1012);
       p6.ctx.fillStyle = '#FB7185';
-      p6.ctx.fillText('GUESS (' + labelB.slice(0, 22) + ') ML DISTRIBUTION', 648, 1012);
+      p6.ctx.fillText('SPECIMEN B (' + labelB.slice(0, 22) + ') ML DISTRIBUTION', 648, 1012);
       Fn.drawSingleChartType({ ctx: p6.ctx, x: 68, y: 1024, w: 524, h: 256 }, 's_ml_probs', sA, fA, null, mlA);
       Fn.drawSingleChartType({ ctx: p6.ctx, x: 648, y: 1024, w: 524, h: 256 }, 's_ml_probs', sB, fB, null, mlB);
 
       p6.ctx.fillStyle = '#22C55E';
       p6.ctx.font = '700 16px monospace';
-      p6.ctx.fillText('WHAT IS "MACHINE LEARNING ANALYSIS" IN TOOT MATCH?', 68, 1314);
+      p6.ctx.fillText('LABORATORY METHODOLOGY · LOCAL MACHINE LEARNING TELEMETRY', 68, 1314);
       p6.ctx.fillStyle = '#D1D5DB';
       p6.ctx.font = '500 15px sans-serif';
       drawWrappedText(
         p6.ctx,
-        'Toot Match runs a 100% private, offline 22-feature acoustic ML classifier directly in JavaScript with zero server uploads. STFT spectrograms, 13-band MFCCs, Wiener flatness, modulation FFT, and crest factor feed temperature-scaled softmax distances across 6 acoustic archetypes — zero cloud servers required.',
+        'Toot Match Labs executes an entirely local 22-feature acoustic classification pipeline inside the client workstation with zero remote transmission. STFT spectrograms, 13-band MFCCs, Wiener flatness, modulation FFT, and crest factor drive temperature-scaled softmax distances across six archive prototypes.',
         68,
         1344,
         PAGE_W - 136,
@@ -917,14 +917,14 @@
       );
       p6.ctx.fillStyle = '#60A5FA';
       p6.ctx.font = '700 16px monospace';
-      p6.ctx.fillText('MATHEMATICAL SCORING EQUATIONS', 68, 1456);
+      p6.ctx.fillText('MATHEMATICAL FIDELITY EQUATIONS', 68, 1456);
       var cmpEqs = [
-        '1. Overall Parity = 0.60*Arith + 0.40*Geom across (Duration 14%, Pitch 26%, Flutter 18%, Timbre 28%, Envelope 14%)',
+        '1. Reproduction Fidelity = 0.60*Arith + 0.40*Geom across (Duration 14%, Pitch 26%, Mod 18%, Timbre 28%, Env 14%)',
         '2. MFCC Cosine Similarity = dot(MFCC_A, MFCC_B) / (||MFCC_A|| * ||MFCC_B||)',
-        '3. Pitch Gap = |12 * log2(F0_Guess / F0_Original)| semitones',
+        '3. Observed Variance (Pitch) = |12 * log2(F0_SpecimenB / F0_SpecimenA)| semitones',
         '4. Modulation FFT = Hann-windowed FFT(Envelope - Mean) across [4 Hz .. 45 Hz]',
-        '5. Squelch Index = 22*norm(ModDepth) + 46*norm(SpectralFlux) + 22*MidBand + BurstBonus',
-        '6. Blast Radius (m) = 1.8 + 10.5 * (PanicPct / 100)'
+        '5. Turbulence Index = 22*norm(ModDepth) + 46*norm(SpectralFlux) + 22*MidBand + BurstBonus',
+        '6. Propagation Radius (m) = 1.8 + 10.5 * (ProminencePct / 100)'
       ];
       p6.ctx.fillStyle = '#93C5FD';
       p6.ctx.font = '600 14px monospace';
@@ -959,13 +959,13 @@
       var gDom = (opts.specCanvases && opts.specCanvases[0]) || null;
       var totalGrpPages = 4;
 
-      // PAGE 1: Unified 3D Spectrogram FIRST + Symphony Waveform + Ensemble Verdict + 6 Gauges
+      // PAGE 1: Unified 3D Spectrogram FIRST + Ensemble Waveform + Official Findings + 6 Gauges
       var gp1 = createPageCanvas();
       drawPdfHeader(
         gp1.ctx,
-        'MULTI-FART GROUP TELEMETRY · ' + nowStr,
+        'INSTITUTE REPORT · MULTI-SPECIMEN SYNTHESIS · ' + nowStr,
         grp.name,
-        grp.metrics.count + ' Vault Specimens Combined (' + grp.metrics.totalDurationSec.toFixed(2) + 's)',
+        grp.metrics.count + ' Research Archive Specimens Combined (' + grp.metrics.totalDurationSec.toFixed(2) + 's)',
         1,
         totalGrpPages
       );
@@ -977,7 +977,7 @@
         486,
         gDom,
         grp.features ? grp.features.spectrogram : null,
-        'Unified Group Track 3D Spectrogram — ' + grp.name,
+        'Unified Ensemble 3D Spectrogram — ' + grp.name,
         'toxic'
       );
       Fn.drawSegmentedWaveform({ ctx: gp1.ctx, x: 44, y: 684, w: PAGE_W - 88, h: 204 }, grp, null);
@@ -985,12 +985,12 @@
       gp1.ctx.fillStyle = '#22C55E';
       gp1.ctx.font = '700 17px monospace';
       gp1.ctx.textAlign = 'left';
-      gp1.ctx.fillText('CONDUCTOR VERDICT & COMPOSITE ML CLASSIFICATION', 68, 942);
+      gp1.ctx.fillText('EXECUTIVE RESEARCH SUMMARY & COMPOSITE ML CLASSIFICATION', 68, 942);
       gp1.ctx.fillStyle = '#FFFFFF';
       gp1.ctx.font = '600 18px sans-serif';
       drawWrappedText(
         gp1.ctx,
-        grp.metrics.groupVerdict + ' Composite ML Archetype: "' + gMl.topClass.name + '" (' + gMl.confidence + '% certainty). Sort Order: ' + (grp.metrics.sortLabel || 'Custom'),
+        grp.metrics.groupVerdict + ' Composite ML Prototype: "' + gMl.topClass.name + '" (' + gMl.confidence + '% certainty). Sequence Order: ' + (grp.metrics.sortLabel || 'Custom'),
         68,
         978,
         PAGE_W - 136,
@@ -1005,13 +1005,13 @@
       drawPdfFooter(gp1.ctx);
       pushPageCanvas(gp1);
 
-      // PAGE 2: Group Spatial, Spectral, Pitch & Modulation Plots + Full Movement Tracklist
+      // PAGE 2: Ensemble Spatial, Spectral, Pitch & Modulation Plots + Full Sequence Tracklist
       var gp2 = createPageCanvas();
       drawPdfHeader(
         gp2.ctx,
-        'GROUP CHARTS, MOVEMENT TRACKLIST & COHERENCE AUDIT',
+        'ENSEMBLE CHARTS, SPECIMEN SEQUENCE & COHERENCE AUDIT',
         grp.name,
-        'Vault Map, Aggregate FFT, Combined Pitch & Flutter Contours, Sequential Tracklist',
+        'Archive Map, Aggregate FFT, Combined Pitch & Modulation Contours, Sequence Log',
         2,
         totalGrpPages
       );
@@ -1019,38 +1019,38 @@
       gp2.ctx.fillStyle = '#FFFFFF';
       gp2.ctx.font = '700 16px sans-serif';
       gp2.ctx.textAlign = 'left';
-      gp2.ctx.fillText('Vault Specimen Map (Pitch vs Moisture)', 62, 212);
+      gp2.ctx.fillText('Archive Specimen Constellation (Pitch vs Turbulence)', 62, 212);
       Fn.drawConstellationPlot({ ctx: gp2.ctx, x: 56, y: 224, w: 540, h: 286 }, grp);
 
       drawRoundedCard(gp2.ctx, 632, 184, 564, 338, 16, '#111827', '#374151');
       gp2.ctx.fillStyle = '#FFFFFF';
       gp2.ctx.font = '700 16px sans-serif';
-      gp2.ctx.fillText('Combined 40-Band FFT Energy Spectrum', 650, 212);
+      gp2.ctx.fillText('Spectral Distribution Map (Combined 40-Band FFT)', 650, 212);
       Fn.drawSpectrumPlot({ ctx: gp2.ctx, x: 644, y: 224, w: 540, h: 286 }, grp.features, '#22C55E');
 
       drawRoundedCard(gp2.ctx, 44, 540, 564, 338, 16, '#111827', '#374151');
       gp2.ctx.fillStyle = '#FFFFFF';
       gp2.ctx.font = '700 16px sans-serif';
-      gp2.ctx.fillText('Combined Pitch Contour Across Megamix', 62, 568);
+      gp2.ctx.fillText('Combined Primary Resonance Contour', 62, 568);
       Fn.drawPitchContourPlot({ ctx: gp2.ctx, x: 56, y: 580, w: 540, h: 286 }, grp.features);
 
       drawRoundedCard(gp2.ctx, 632, 540, 564, 338, 16, '#111827', '#374151');
       gp2.ctx.fillStyle = '#FFFFFF';
       gp2.ctx.font = '700 16px sans-serif';
-      gp2.ctx.fillText('Combined Modulation & Flutter FFT (4-45 Hz)', 650, 568);
+      gp2.ctx.fillText('Combined Airflow Modulation FFT (4-45 Hz)', 650, 568);
       Fn.drawModulationPlot({ ctx: gp2.ctx, x: 644, y: 580, w: 540, h: 286 }, grp.features);
 
       drawRoundedCard(gp2.ctx, 44, 898, PAGE_W - 88, 524, 18, '#1F2937', '#374151');
       gp2.ctx.fillStyle = '#60A5FA';
       gp2.ctx.font = '700 17px monospace';
-      gp2.ctx.fillText('MOVEMENT TRACKLIST (' + (grp.metrics.sortLabel || 'Arranged') + ')', 68, 934);
+      gp2.ctx.fillText('SPECIMEN SEQUENCE LOG (' + (grp.metrics.sortLabel || 'Ordered') + ')', 68, 934);
       gp2.ctx.fillStyle = '#D1D5DB';
       gp2.ctx.font = '600 15px monospace';
       var segs = (grp.segments || []).slice(0, 14);
       for (var si = 0; si < segs.length; si++) {
         var sg = segs[si];
         gp2.ctx.fillText(
-          (si + 1) + '. ' + String(sg.name || '').slice(0, 26) + '   [' + sg.startSec.toFixed(2) + 's-' + sg.endSec.toFixed(2) + 's]   ~' + Math.round(sg.pitchHz) + ' Hz   Wet ' + sg.wetnessPct + '%   Crest ' + safeNum(sg.crestDb, 0).toFixed(1) + ' dB',
+          (si + 1) + '. ' + String(sg.name || '').slice(0, 26) + '   [' + sg.startSec.toFixed(2) + 's-' + sg.endSec.toFixed(2) + 's]   ~' + Math.round(sg.pitchHz) + ' Hz   Turb ' + sg.wetnessPct + '%   Crest ' + safeNum(sg.crestDb, 0).toFixed(1) + ' dB',
           68,
           972 + si * 31
         );
@@ -1059,12 +1059,12 @@
       drawRoundedCard(gp2.ctx, 44, 1440, PAGE_W - 88, 250, 18, '#111827', '#374151');
       gp2.ctx.fillStyle = '#8B5CF6';
       gp2.ctx.font = '700 17px monospace';
-      gp2.ctx.fillText('HOW MULTI-FART COHERENCE IS MEASURED', 68, 1478);
+      gp2.ctx.fillText('LABORATORY SYNTHESIS & COHERENCE METHODOLOGY', 68, 1478);
       gp2.ctx.fillStyle = '#D1D5DB';
       gp2.ctx.font = '500 17px sans-serif';
       drawWrappedText(
         gp2.ctx,
-        'Every saved Vault recording is cleanly resampled to 44.1 kHz, micro-faded at 8ms boundaries, and stitched with 0.18s silent pauses in your chosen arrangement order. Ensemble gauges track octave continuity across movements, cumulative crest headroom, and aggregate harmonic texture — giving a medley of farts the studio mastering dignity Carnegie Hall never asked for.',
+        'Each archived specimen is uniformly resampled to 44.1 kHz, micro-faded across 8ms boundary windows, and concatenated with 0.18s inter-stimulus isolation gaps in your specified ordering parameter. Ensemble metrics quantify octave continuity, peak pressure crest headroom, and composite spectral balance across the institute corpus.',
         68,
         1516,
         PAGE_W - 136,
@@ -1097,8 +1097,8 @@
       var gCharts = [
         { title: 'Composite ML 6-Class Softmax Fit', type: 's_ml_probs' },
         { title: 'Ensemble 13-Band MFCC Timbre', type: 's_mfcc13' },
-        { title: '4-Band Frequency Energy Share', type: 's_4band' },
-        { title: 'Aggregate Blast Pressure Envelope', type: 's_envelope' }
+        { title: 'Spectral Distribution (4-Band Share)', type: 's_4band' },
+        { title: 'Composite Pressure Release Envelope', type: 's_envelope' }
       ];
       for (var gci = 0; gci < gCharts.length; gci++) {
         var gcc = gci % 2;
@@ -1120,7 +1120,7 @@
       gp4.ctx.font = '500 18px sans-serif';
       drawWrappedText(
         gp4.ctx,
-        gMl.methodologyNote + ' Master Feature Vector -> Pitch/Centroid: ' + gMl.featureVector.pitchHz + ' Hz, Sub-Bass: ' + gMl.featureVector.subBandPct + '%, Flatness: ' + gMl.featureVector.flatnessPct + '%, Flutter: ' + gMl.featureVector.modDepthPct + '%, Bursts: ' + gMl.featureVector.bursts + ', Crest: ' + gMl.featureVector.crestDb + ' dB, Wetness: ' + gMl.featureVector.wetnessPct + '%. Computed 100% locally in your browser.',
+        gMl.methodologyNote + ' Master Feature Vector -> Pitch/Centroid: ' + gMl.featureVector.pitchHz + ' Hz, Sub-Bass: ' + gMl.featureVector.subBandPct + '%, Flatness: ' + gMl.featureVector.flatnessPct + '%, Mod Depth: ' + gMl.featureVector.modDepthPct + '%, Bursts: ' + gMl.featureVector.bursts + ', Crest: ' + gMl.featureVector.crestDb + ' dB, Turbulence: ' + gMl.featureVector.wetnessPct + '%. Computed locally within the workstation.',
         72,
         1116,
         PAGE_W - 144,
@@ -1148,14 +1148,14 @@
     var authS = typeof Fn.computeAuthenticityAnalysis === 'function' ? Fn.computeAuthenticityAnalysis(s) : null;
     var sGauges = Fn.buildSingleGauges(s);
     var prof = DSP.describeSoundProfile(feat);
-    var titleName = opts.label || s.displayName || s.name || 'Saved Fart';
+    var titleName = opts.label || s.displayName || s.name || 'Archive Specimen';
     var totalSinglePages = 9;
 
-    // PAGE 1: HERO 3D Spectrogram FIRST + Field Report + All 12 Summary Tiles
+    // PAGE 1: HERO 3D Spectrogram FIRST + Executive Research Summary + All 12 Summary Tiles
     var sp1 = createPageCanvas();
     drawPdfHeader(
       sp1.ctx,
-      (opts.eyebrow || 'INDIVIDUAL FARTNALYSIS DOSSIER') + ' · ' + nowStr,
+      (opts.eyebrow || 'INSTITUTE REPORT · INDIVIDUAL FARTNALYSIS') + ' · ' + nowStr,
       titleName,
       prof.durationLabel + '  |  ' + prof.pitchLabel + '  |  ' + prof.textureLabel,
       1,
@@ -1167,20 +1167,20 @@
     var singleFieldSummary =
       typeof Fn.buildSingleFieldVerdict === 'function'
         ? Fn.buildSingleFieldVerdict(s, feat, bonus, ml)
-        : 'Wetness telemetry clocked ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + '). ' + ml.topClass.description;
+        : 'Hydro-Acoustic Turbulence measured ' + bonus.wetness.wetA + '% (' + bonus.wetness.labelA + '). ' + ml.topClass.description;
 
     drawRoundedCard(sp1.ctx, 44, 718, PAGE_W - 88, 252, 18, '#111827', '#374151');
     sp1.ctx.fillStyle = '#22C55E';
     sp1.ctx.font = '700 16px monospace';
     sp1.ctx.textAlign = 'left';
-    sp1.ctx.fillText('OFFICIAL GASTRO-ACOUSTIC FIELD REPORT, ML PROFILE & ALIBI', 68, 750);
+    sp1.ctx.fillText('EXECUTIVE RESEARCH SUMMARY · LABORATORY FINDINGS & ML PROFILE', 68, 750);
     sp1.ctx.fillStyle = '#FFFFFF';
     sp1.ctx.font = '600 17px sans-serif';
     drawWrappedText(sp1.ctx, singleFieldSummary, 68, 782, PAGE_W - 136, 24, 5);
     sp1.ctx.fillStyle = '#60A5FA';
     sp1.ctx.font = '700 15px monospace';
     sp1.ctx.fillText(
-      'ML Class: ' + ml.topClass.name + ' (' + ml.confidence + '%)   |   Twin: ' + bonus.acoustics.twinA.name + ' (' + bonus.acoustics.topScoreA + '%)   |   Blast Zone: ' + bonus.social.a.radiusM.toFixed(1) + 'm',
+      'ML Class: ' + ml.topClass.name + ' (' + ml.confidence + '%)   |   Analogue: ' + bonus.acoustics.twinA.name + ' (' + bonus.acoustics.topScoreA + '%)   |   Propagation Radius: ' + bonus.social.a.radiusM.toFixed(1) + 'm',
       68,
       944
     );
@@ -1245,10 +1245,10 @@
       totalSinglePages
     );
     var coreSlots = [
-      { title: '40-Band FFT Energy Spectrum', type: 's_spectrum' },
-      { title: 'Pitch Sweep Contour (Hz)', type: 's_pitch' },
-      { title: 'Modulation & Flutter FFT (4-45 Hz)', type: 's_mod' },
-      { title: 'Blast Pressure Envelope', type: 's_envelope' }
+      { title: 'Spectral Distribution Map (40-Band FFT)', type: 's_spectrum' },
+      { title: 'Primary Resonance Profile (Hz)', type: 's_pitch' },
+      { title: 'Airflow Modulation FFT (4-45 Hz)', type: 's_mod' },
+      { title: 'Pressure Release Envelope', type: 's_envelope' }
     ];
     for (var csi = 0; csi < coreSlots.length; csi++) {
       var csc = csi % 2;
@@ -1267,12 +1267,12 @@
     sp9.ctx.fillStyle = '#8B5CF6';
     sp9.ctx.font = '700 19px monospace';
     sp9.ctx.textAlign = 'left';
-    sp9.ctx.fillText('WHAT IS "MACHINE LEARNING ANALYSIS" IN TOOT MATCH LABS?', 72, 954);
+    sp9.ctx.fillText('COMPUTATIONAL ACOUSTIC METHODOLOGY · TOOT MATCH LABS', 72, 954);
     sp9.ctx.fillStyle = '#D1D5DB';
     sp9.ctx.font = '600 18px sans-serif';
     drawWrappedText(
       sp9.ctx,
-      ml.methodologyNote + ' Measured Input Vector -> Pitch/Centroid: ' + ml.featureVector.pitchHz + ' Hz, Sub-Bass: ' + ml.featureVector.subBandPct + '%, Flatness: ' + ml.featureVector.flatnessPct + '%, Flutter: ' + ml.featureVector.modDepthPct + '%, Bursts: ' + ml.featureVector.bursts + ', Crest: ' + ml.featureVector.crestDb + ' dB, Wetness: ' + ml.featureVector.wetnessPct + '%. Computed 100% locally so no cloud server ever has to explain this to its boss.',
+      ml.methodologyNote + ' Measured Feature Vector -> Pitch/Centroid: ' + ml.featureVector.pitchHz + ' Hz, Sub-Bass: ' + ml.featureVector.subBandPct + '%, Flatness: ' + ml.featureVector.flatnessPct + '%, Mod Depth: ' + ml.featureVector.modDepthPct + '%, Bursts: ' + ml.featureVector.bursts + ', Crest: ' + ml.featureVector.crestDb + ' dB, Turbulence: ' + ml.featureVector.wetnessPct + '%. Computed entirely locally within the institute telemetry workstation.',
       72,
       996,
       PAGE_W - 144,
@@ -1287,8 +1287,8 @@
     var singleEqs = [
       '• STFT Spectrogram: 1024-pt Hann-windowed FFT across 40 log-spaced bands (45 Hz - 4.2 kHz)',
       '• MFCC Signature: Discrete Cosine Transform of log-mel filterbank frame energies (C1..C13)',
-      '• Squelch / Moisture: 22*norm(ModDepth) + 46*norm(SpectralFlux) + 22*MidSquelchBand + BurstBonus',
-      '• Blast Zone (m): 1.8 + 10.5 * (PanicPct / 100)  |  Softmax Prob = exp(-d/0.55) / SUM(exp(-d/0.55))'
+      '• Hydro-Acoustic Turbulence: 22*norm(ModDepth) + 46*norm(SpectralFlux) + 22*MidBand + BurstBonus',
+      '• Propagation Radius (m): 1.8 + 10.5 * (ProminencePct / 100)  |  Softmax Prob = exp(-d/0.55) / SUM(exp(-d/0.55))'
     ];
     sp9.ctx.fillStyle = '#93C5FD';
     sp9.ctx.font = '600 16px monospace';

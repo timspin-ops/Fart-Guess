@@ -584,95 +584,97 @@
     ctx.font = '700 10px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     ctx.fillStyle = '#86EFAC';
-    ctx.fillText('ORIGINAL FART', 8, 13);
+    ctx.fillText('SOURCE SPECIMEN', 8, 13);
     ctx.fillStyle = '#FED7AA';
-    ctx.fillText('YOUR GUESS', 8, h * 0.5 + 14);
+    ctx.fillText('COMPARATIVE TRIAL', 8, h * 0.5 + 14);
   }
 
   /* ==================== ANIMATION CLEANUP ==================== */
   var ANALYSIS_OPENING_POOL = [
-    'Capturing acoustic signatures...',
-    'Generating waveform model...'
+    'Acquiring acoustic telemetry streams...',
+    'Initializing waveform morphology model...'
   ];
 
   var ANALYSIS_COMPARISON_OPENING_POOL = [
-    'Locking onto Mystery Fart evidence...',
-    'Aligning guess & original waveforms...'
+    'Synchronizing reference specimen telemetry...',
+    'Aligning reference and comparative waveforms...'
   ];
 
   var ANALYSIS_QUICKFIRE_OPENING_POOL = [
-    'Ingesting rapid-fire gauntlet telemetry...',
-    'Synchronizing multi-round cheek captures...'
+    'Ingesting rapid-sequence trial telemetry...',
+    'Synchronizing sequential acoustic captures...'
   ];
 
   var ANALYSIS_QUICKFIRE_CORE_POOL = [
-    'Tallying acoustic drift across all gauntlet rounds...',
-    'Measuring vocal-tract stamina & embouchure recovery...',
-    'Ranking peak thunder fidelity & squeak precision...',
-    'Dr. Turbulence grading pressure transitions under fatigue...',
-    'Isolating highest-accuracy & chaos-tier highlights...'
+    'Evaluating spectral drift across sequential trials...',
+    'Quantifying emission lifetime consistency across captures...',
+    'Ranking primary resonance alignment and harmonic stability...',
+    'Dr. Turbulence evaluating pressure release profiles across sequence...',
+    'Isolating peak fidelity and maximum variance events...'
   ];
 
   var ANALYSIS_RESULTS_CORE_POOL = [
-    'Comparing onset timing & attack snap...',
-    'Measuring pitch delta & Doppler storm shift...',
-    'Cross-correlating flutter RPM cadence...',
-    'Weighing pressure decay & mud-boot suction...',
-    'Running A.S.S. 22-dimension comparison...',
-    'Evaluating 3D spectrogram peak overlap...',
-    'Auditing emotional mood convergence (Zen vs Hostile)...',
-    'Scoring vocal-tract forgery fidelity...',
-    'Checking barometric gust & airflow turbulence...'
+    'Computing emission lifetime and onset transient variance...',
+    'Measuring primary resonance profile and frequency trajectory...',
+    'Cross-correlating oscillation cadence modulation spectra...',
+    'Evaluating pressure release potential and attenuation decay...',
+    'Executing A.S.S. 22-dimension comparative assessment...',
+    'Computing 3D Spectral Distribution Map correlation...',
+    'Quantifying observed variance across normalized harmonic bands...',
+    'Evaluating heuristic origin telemetry indicators...',
+    'Analyzing barometric pressure contour alignment...'
   ];
 
   var ANALYSIS_STANDARD_POOL = [
-    'Calibrating frequency spectrum...',
-    'Cross-referencing Doppler storm radar...',
-    'Consulting historical fart archive...',
-    'Analyzing harmonic distribution...',
-    'Computing barometric pressure profile...',
-    'Measuring wet-boot mud suction coefficient...',
-    'Running emotional mood telemetry (Zen vs Hostile)...',
-    'Detecting acoustic anomalies...',
-    'Evaluating authenticity indicators...',
-    'Running temporal analysis...',
-    'Checking local cold-front thunder index...',
-    'Calculating swamp moisture estimate...',
-    'Reviewing historical specimens...',
-    'Performing multi-dimensional comparison...',
-    'Analyzing waveform morphology...',
-    'Detecting crosswind airflow irregularities...',
+    'Calibrating 40-band spectral distribution map...',
+    'Cross-referencing Institute Archive baselines...',
+    'Consulting historical flatulence research holdings...',
+    'Mapping primary resonance harmonic structure...',
+    'Computing acoustic energy output and crest dynamics...',
+    'Measuring hydro-acoustic turbulence flux coefficient...',
+    'Evaluating oscillation cadence across 4–45 Hz bands...',
+    'Screening for archive anomalies and research candidates...',
+    'Computing probabilistic origin telemetry indicators...',
+    'Measuring emission lifetime and T50 energy burn...',
+    'Mapping elevated energy release zones...',
+    'Evaluating acoustic irregularity regions...',
+    'Comparing statistical percentiles against reference corpus...',
+    'Executing multi-dimensional vector projection...',
+    'Analyzing temporal envelope morphology...',
+    'Quantifying broadband airflow dispersion...',
     'Processing gastrointestinal acoustics...',
-    'Evaluating sonic fingerprints...',
-    'Reconstructing emission profile...',
-    'Checking for suspicious facial involvement...',
-    'Estimating neighbour awareness risk...',
-    'Validating laboratory findings...'
+    'Extracting 13-dimension cepstral fingerprints...',
+    'Reconstructing 3D time-frequency surface...',
+    'Evaluating environmental masking propagation radius...',
+    'Verifying statistical confidence intervals...',
+    'Compiling official Laboratory Findings...'
   ];
 
   var ANALYSIS_SCIENTIST_UPDATES = [
-    'Professor Bottomsworth reviews the evidence...',
-    'Dr. Flatley checks the similarity math...',
-    'Dr. Wobble inspects the 3D peaks...',
-    'Dr. Turbulence measures cheek rumble...',
-    'Dr. Pufferton updates the archive log...'
+    'Professor Bottomsworth reviewing preliminary telemetry...',
+    'Dr. Flatley validating computational clustering models...',
+    'Dr. Wobble inspecting 3D harmonic contours...',
+    'Dr. Turbulence evaluating pressure release dynamics...',
+    'Dr. Pufferton cross-referencing Institute Archive holdings...'
   ];
 
   var ANALYSIS_RARE_POOL = [
-    'Laboratory disagreement detected...',
-    'Science team requests more coffee...',
-    'This comparison is eerily close...',
-    'Unexpected harmonic behaviour!',
-    'Results under emergency peer review...'
+    'Laboratory disagreement detected.',
+    'Additional peer review required.',
+    'Several scientists requested a second opinion.',
+    'Archive retrieval taking longer than expected.',
+    'Unexpected resonance behaviour observed.',
+    'Further funding has been requested.',
+    'Coffee consumption increased during analysis.'
   ];
 
   var AUTO_DETECT_WAIT_MESSAGES = [
-    'Listening for emissions...',
-    'Monitoring acoustic activity...',
-    'Awaiting gastrointestinal event...',
-    'Acoustic sensors armed...',
-    'Standing by...',
-    'Monitoring pressure conditions...'
+    'Monitoring acoustic baseline...',
+    'Calibrating ambient noise floor...',
+    'Awaiting gastrointestinal acoustic event...',
+    'Acoustic telemetry sensors armed...',
+    'Standing by for emission...',
+    'Tracking localized pressure conditions...'
   ];
 
   var AUTO_DETECT_TRIGGER_TITLES = [
@@ -728,9 +730,13 @@
       var qfStages = [
         { text: qfOpening, rare: false, scientist: false },
         { text: qfCore[0], rare: false, scientist: false },
-        { text: qfSci, rare: false, scientist: true },
-        { text: qfCore[1], rare: Math.random() < 0.35, scientist: false },
-        { text: 'Certifying Quick-Fire Gauntlet Final Score...', rare: false, scientist: false }
+        {
+        text: qfSci,
+        rare: false,
+        scientist: true
+      },
+      { text: qfCore[1], rare: Math.random() < 0.35, scientist: false },
+      { text: 'Certifying Rapid-Sequence Official Findings...', rare: false, scientist: false }
       ];
       return qfStages.map(function (st, idx) {
         var ms = idx === qfStages.length - 1 ? 520 : Math.round(445 + Math.random() * 95);
@@ -788,8 +794,8 @@
     }
     stages.push({
       text: isResults
-        ? (opts.isSolo ? 'Scoring your comparison...' : 'Determining winner...')
-        : 'Finalizing laboratory verdict...',
+        ? (opts.isSolo ? 'Compiling Reproduction Fidelity Assessment...' : 'Finalizing Laboratory Match Confidence Rankings...')
+        : 'Finalizing Laboratory Verdict...',
       rare: false,
       scientist: false
     });
@@ -968,8 +974,8 @@
     if (recDesc) {
       recDesc.textContent =
         next === 'auto'
-          ? 'Sentry mode armed — beeps on start & stop, auto-saved to Vault.'
-          : 'Manual 1-tap capture — beeps on start & stop, saved to Vault.';
+          ? 'Automated acoustic capture armed — verified specimens are logged directly to the Research Archive.'
+          : 'Manual acoustic capture protocol — recorded specimens are indexed directly to the Research Archive.';
     }
   }
 
@@ -1284,8 +1290,8 @@
         viewKey === 'fartnalysis'
           ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · FARTNALYSIS REPORT'
           : viewKey === 'team'
-          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH'
-          : 'GUESS THE FART · ACOUSTIC LAB';
+          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · RESEARCH DIRECTORY'
+          : 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH';
     }
 
     var views = document.querySelectorAll('.labs-view');
@@ -2444,7 +2450,7 @@
         grid.innerHTML =
           '<div class="labs-glass-card labs-empty-card">' +
           '  <h3>No Recorded Farts Yet</h3>' +
-          '  <p>Go to <strong>Home</strong> and tap <strong>Record New Fart</strong> to record your own real fart.</p>' +
+          '  <p>Go to <strong>Home</strong> and tap <strong>Record New Fart</strong> to record a primary acoustic specimen.</p>' +
           '</div>';
         return;
       }
@@ -2452,7 +2458,7 @@
         'recorded',
         'labs-chip-green',
         '🎙️ User Recorded Farts',
-        'Real farts recorded from Home',
+        'Captured specimens indexed from Home',
         buckets.recorded.length,
         buckets.recorded.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
       );
@@ -2461,7 +2467,7 @@
         grid.innerHTML =
           '<div class="labs-glass-card labs-empty-card">' +
           '  <h3>No Recorded Guesses Yet</h3>' +
-          '  <p>Play <strong>Guess The Fart</strong> or <strong>Mimic Mode</strong> to log your guesses here.</p>' +
+          '  <p>Run a <strong>Guess The Fart</strong> or <strong>Mimic Mode</strong> trial to log reproductions here.</p>' +
           '</div>';
         return;
       }
@@ -2469,7 +2475,7 @@
         'guesses',
         'labs-chip-orange',
         '🎤 User Recorded Guesses',
-        'Your guess & mimic recordings',
+        'Participant prediction & mimicry logs',
         buckets.guesses.length,
         buckets.guesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
       );
@@ -2478,7 +2484,7 @@
         grid.innerHTML =
           '<div class="labs-glass-card labs-empty-card">' +
           '  <h3>No Pre-Loaded Default Farts Found</h3>' +
-          '  <p>Add .wav or .mp3 files into <strong>VaultPreLoads/</strong> to populate the Default Pack.</p>' +
+          '  <p>Place reference WAV or MP3 files in <strong>VaultPreLoads/</strong> to populate the Archive Reference Pack.</p>' +
           '</div>';
         return;
       }
@@ -2486,7 +2492,7 @@
         'defaults',
         'labs-chip-blue',
         '📦 Pre-Loaded Default Farts',
-        'Built-in default specimen pack · Always kept',
+        'Institute Reference Corpus · Protected',
         buckets.defaults.length,
         buckets.defaults.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
       );
@@ -2497,7 +2503,7 @@
           'recorded',
           'labs-chip-green',
           '🎙️ User Recorded Farts',
-          'Real farts recorded from Home',
+          'Captured specimens indexed from Home',
           buckets.recorded.length,
           buckets.recorded.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
         );
@@ -2507,7 +2513,7 @@
           'guesses',
           'labs-chip-orange',
           '🎤 User Recorded Guesses',
-          'Your guess & mimic recordings',
+          'Participant prediction & mimicry logs',
           buckets.guesses.length,
           buckets.guesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
         );
@@ -2882,8 +2888,8 @@
 
     if (origStatus) {
       origStatus.textContent = state.blindOriginal
-        ? 'Recorded Original Fart: "' + getSampleName(state.blindOriginal) + '" (' + (state.blindOriginal.samples.length / state.blindOriginal.sampleRate).toFixed(2) + 's) — Saved to Vault!'
-        : 'No original fart recorded yet for this blind round.';
+        ? 'Source Acoustic Specimen: "' + getSampleName(state.blindOriginal) + '" (' + (state.blindOriginal.samples.length / state.blindOriginal.sampleRate).toFixed(2) + 's) — Indexed in Research Archive.'
+        : 'No source acoustic specimen captured for this blind trial.';
     }
     if (origWaveWrap && origWave) {
       origWaveWrap.classList.toggle('hidden', !state.blindOriginal);
@@ -3126,11 +3132,11 @@
   }
 
   function pickQuickFireCelebration(avg) {
-    if (avg >= 90) return { banner: '🏆 LEGENDARY GAUNTLET — HALL OF WIND!', legendary: true };
-    if (avg >= 78) return { banner: '🔥 RAPID-FIRE ACOUSTIC VIRTUOSO!', legendary: true };
-    if (avg >= 60) return { banner: '⚡ CERTIFIED CHEEK ATHLETE!', legendary: false };
-    if (avg >= 40) return { banner: '💨 BRAVE GAUNTLET SURVIVOR!', legendary: false };
-    return { banner: '🚨 CHAOTIC ACOUSTIC CARNAGE — TRY AGAIN!', legendary: false };
+    if (avg >= 90) return { banner: '🏛️ EXCEPTIONAL RAPID-SEQUENCE REPRODUCTION — ARCHIVE WORTHY', legendary: true };
+    if (avg >= 78) return { banner: '🔬 RESEARCH-GRADE ACOUSTIC PRECISION ACHIEVED', legendary: true };
+    if (avg >= 60) return { banner: '📊 STATISTICALLY FAVOURABLE REPRODUCTION FIDELITY', legendary: false };
+    if (avg >= 40) return { banner: '🧪 PRELIMINARY TELEMETRY LOGGED — FURTHER TRIALS ADVISED', legendary: false };
+    return { banner: '📋 ELEVATED SPECTRAL VARIANCE — RECALIBRATION RECOMMENDED', legendary: false };
   }
 
   function renderQuickFireResults(opts) {
@@ -3174,9 +3180,9 @@
       avgSummaryEl.textContent =
         'Completed ' +
         results.length +
-        ' quick-fire farts (' +
+        ' acoustic trials (' +
         valid +
-        ' captured) · Average ' +
+        ' captured) · Mean Reproduction Fidelity ' +
         avg.toFixed(1) +
         '% (' +
         avgTitle +
@@ -3186,7 +3192,7 @@
       var chips = [];
       if (best) {
         chips.push(
-          '<span class="labs-chip labs-chip-green">🏆 Best: #' +
+          '<span class="labs-chip labs-chip-green">🏆 Best Fidelity: #' +
             (best.index + 1) +
             ' ' +
             esc(getSampleName(best.target)) +
@@ -3197,7 +3203,7 @@
       }
       if (toughest && toughest !== best) {
         chips.push(
-          '<span class="labs-chip labs-chip-orange">🎯 Toughest: #' +
+          '<span class="labs-chip labs-chip-orange">🎯 Highest Variance: #' +
             (toughest.index + 1) +
             ' ' +
             esc(getSampleName(toughest.target)) +
@@ -3606,8 +3612,8 @@
                   uiDetected = true;
                   if (stageBanner) stageBanner.classList.add('is-detected');
                   if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
-                  if (badgeEl) badgeEl.textContent = '🟢 FART DETECTED — CAPTURING…';
-                  if (subEl) subEl.textContent = 'Keep going — auto-cuts right when you finish!';
+                  if (badgeEl) badgeEl.textContent = '🟢 ACOUSTIC ONSET DETECTED — RECORDING…';
+                  if (subEl) subEl.textContent = 'Reproducing specimen — automated cutoff armed upon completion';
                 }
                 if (det.shouldStop) {
                   triggerStop();
@@ -3690,8 +3696,8 @@
               runAnalysisSequence(
                 {
                   context: 'quickfire',
-                  title: 'SCORING QUICK-FIRE GAUNTLET',
-                  subtitle: 'Grading ' + state.qfResults.length + ' rapid-fire recreations via A.S.S. v4.2…',
+                  title: 'EVALUATING RAPID-SEQUENCE TRIALS',
+                  subtitle: 'Computing reproduction fidelity across ' + state.qfResults.length + ' captures via A.S.S. v4.2…',
                   count: state.qfResults.length
                 },
                 function () {
@@ -3711,16 +3717,16 @@
           var target = readyDeck[idx];
           state.qfIndex = idx;
 
-          if (counterEl) counterEl.textContent = 'FART ' + (idx + 1) + ' OF ' + readyDeck.length;
+          if (counterEl) counterEl.textContent = 'SPECIMEN ' + (idx + 1) + ' OF ' + readyDeck.length;
           renderQuickFireDots(idx, false, rawCaptures);
           if (stageBanner) {
             stageBanner.classList.remove('is-recording', 'is-detected', 'is-scoring');
             stageBanner.classList.add('is-listening');
           }
           if (phaseWordEl) phaseWordEl.textContent = '🔊 LISTEN';
-          if (badgeEl) badgeEl.textContent = 'FART #' + (idx + 1) + ' OF ' + readyDeck.length + ' · AUDIO PLAYING';
+          if (badgeEl) badgeEl.textContent = 'SPECIMEN #' + (idx + 1) + ' OF ' + readyDeck.length + ' · REFERENCE PLAYBACK';
           if (titleEl) titleEl.textContent = getSampleName(target);
-          if (subEl) subEl.textContent = 'Hands-free: mic snaps ON right after playback';
+          if (subEl) subEl.textContent = 'Automated sequence: microphone telemetry engages after playback';
           if (timerBar && timerBar.style) timerBar.style.width = '0%';
           if (doneBtn) doneBtn.classList.add('hidden');
 
@@ -3742,8 +3748,8 @@
                 stageBanner.classList.add('is-recording');
               }
               if (phaseWordEl) phaseWordEl.textContent = '🎤 GUESS!';
-              if (badgeEl) badgeEl.textContent = '🔴 MIC ON · AUTO-DETECT ARMED';
-              if (subEl) subEl.textContent = 'Make your fart now — auto-cuts when done (or tap Next Fart)';
+              if (badgeEl) badgeEl.textContent = '🔴 TELEMETRY ACTIVE · AUTO-DETECT ARMED';
+              if (subEl) subEl.textContent = 'Reproduce reference event — automated cutoff active (or tap Next Fart)';
               if (timerBar && timerBar.style) timerBar.style.width = '0%';
               if (doneBtn) doneBtn.classList.remove('hidden');
               return captureMimicForRound(target, idx);
@@ -3768,13 +3774,13 @@
               if (timerBar && timerBar.style) timerBar.style.width = '100%';
 
               if (missed) {
-                if (phaseWordEl) phaseWordEl.textContent = '⚠️ MISSED';
-                if (badgeEl) badgeEl.textContent = 'TOO QUIET · NEXT FART!';
-                if (subEl) subEl.textContent = 'No hangup — firing next specimen!';
+                if (phaseWordEl) phaseWordEl.textContent = '⚠️ BELOW THRESHOLD';
+                if (badgeEl) badgeEl.textContent = 'INSUFFICIENT SIGNAL · ADVANCING';
+                if (subEl) subEl.textContent = 'Proceeding to next reference specimen.';
               } else {
                 if (phaseWordEl) phaseWordEl.textContent = '⚡ NEXT!';
-                if (badgeEl) badgeEl.textContent = 'CAPTURED #' + (idx + 1) + ' · KEEP ROLLING!';
-                if (subEl) subEl.textContent = idx + 1 >= readyDeck.length ? 'Calculating gauntlet results…' : 'Firing next fart immediately!';
+                if (badgeEl) badgeEl.textContent = 'TRIAL #' + (idx + 1) + ' LOGGED · ADVANCING';
+                if (subEl) subEl.textContent = idx + 1 >= readyDeck.length ? 'Compiling Rapid-Sequence Official Findings…' : 'Advancing immediately to next specimen.';
               }
 
               renderQuickFireDots(idx + 1, false, rawCaptures);
@@ -3865,21 +3871,21 @@
     if (hintLevel >= 2) {
       var burstDesc =
         bursts >= 3
-          ? bursts + ' bursts (staccato chatter)'
+          ? bursts + ' bursts (staccato modulation)'
           : bursts === 2
-          ? 'Double-tap burst'
-          : 'Single continuous release';
+          ? 'Dual-impulse burst'
+          : 'Continuous laminar release';
       var durTxt = durSec > 0 ? durSec.toFixed(2) + 's' : 'Classified span';
       chips.push(
-        '<div class="labs-hint-chip" data-hint-step="2">⏱️ <strong>Hint 2 · Length &amp; Pattern:</strong> ' +
+        '<div class="labs-hint-chip" data-hint-step="2">⏱️ <strong>Hint 2 · Emission Lifetime &amp; Pattern:</strong> ' +
         esc(durTxt + ' · ' + burstDesc + ' · ' + textureTxt) +
         '</div>'
       );
     }
     if (hintLevel >= 3) {
       chips.push(
-        '<div class="labs-hint-chip" data-hint-step="3">🌡️ <strong>Hint 3 · Pitch &amp; Vibe:</strong> ' +
-        esc(pitchTxt + ' · Mood: ' + mood.moodLabel + ' — ' + mood.wildAnalogy) +
+        '<div class="labs-hint-chip" data-hint-step="3">🌡️ <strong>Hint 3 · Primary Resonance &amp; Acoustic Profile:</strong> ' +
+        esc(pitchTxt + ' · Classification: ' + mood.moodLabel + ' — ' + mood.wildAnalogy) +
         '</div>'
       );
     }
@@ -4021,12 +4027,12 @@
       if (hintStatus) {
         hintStatus.textContent =
           hintLvl === 0
-            ? 'Next: Name'
+            ? 'Next: Designation'
             : hintLvl === 1
-            ? 'Next: Duration & Rhythm'
+            ? 'Next: Emission Lifetime'
             : hintLvl === 2
-            ? 'Next: Pitch & Vibe'
-            : 'All clues revealed';
+            ? 'Next: Resonance Profile'
+            : 'All telemetry clues unlocked';
       }
       if (hintsTray) {
         var showTray = isHiddenGuess && hintLvl > 0;
@@ -4073,11 +4079,11 @@
         if (recLbl) recLbl.textContent = state.guessMode === 'mimic' ? 'Mimic The Fart' : 'Guess The Fart';
         if (recSub) {
           if (!target) {
-            recSub.textContent = 'Record a fart on Home first';
+            recSub.textContent = 'Record a specimen on Home first';
           } else if (state.guessMode === 'mimic') {
-            recSub.textContent = 'Reproduce the fart you just heard';
+            recSub.textContent = 'Reproduce the reference acoustic event';
           } else {
-            recSub.textContent = 'Record what you imagine it sounds like';
+            recSub.textContent = 'Record predicted acoustic event';
           }
         }
       }
@@ -4250,11 +4256,11 @@
   }
 
   var REVEAL_HEARING_TITLES = [
-    '⚖️ EXHIBIT PLAYBACK — TRUTH VS. ALLEGED IMITATION',
-    '🔬 FORENSIC ACOUSTIC LINEUP — ENTERING EVIDENCE INTO THE RECORD',
-    '🏛️ TRIBUNAL HEARING — AUDIT OF SUSPECTED FLATULENCE',
-    '🎙️ LIVE SPECTRAL CONFRONTATION — ORIGINAL VS. TESTIMONY',
-    '🧪 PEER-REVIEWED WIND AUDIT — STAND BY FOR REALITY'
+    '🔬 INSTITUTE ACOUSTIC PLAYBACK — REFERENCE VS. REPRODUCTION',
+    '📡 COMPARATIVE AUDIO SEQUENCE — RECORDING INTO ARCHIVE',
+    '🏛️ LABORATORY VERIFICATION SEQUENCE — SOURCE AUDIT',
+    '🎙️ CONTROLLED SPECTRAL COMPARISON — TRIALS VS. REFERENCE',
+    '🧪 PEER-REVIEWED ACOUSTIC VERIFICATION — PREPARING BASELINE'
   ];
 
   function triggerRevealAndAnalyze(target, rawGuesses, modeUsed, subtitleLabel, delayMs) {
@@ -4335,7 +4341,7 @@
             (idx < activeIdx ? ' is-done' : idx === activeIdx ? (cueingMode ? ' is-cueing' : ' is-active') : '');
           var ico = idx < activeIdx ? '✓' : idx === activeIdx ? (cueingMode ? '⏳' : isOrig ? '🚨' : '🔊') : isOrig ? '🎯' : '🎤';
           var textLbl = isOrig
-            ? 'MYSTERY FART (REAL)'
+            ? 'MYSTERY FART (SOURCE)'
             : rawGuesses.length === 1
             ? st.label
             : 'Guess ' + (st.guessIndex + 1) + ': ' + st.label;
@@ -4353,11 +4359,11 @@
     }
     if (speakerEl) {
       speakerEl.textContent = rawGuesses.length === 1
-        ? '⚙️ PROCESSING · YOUR GUESS UP FIRST'
-        : '⚙️ PROCESSING · GUESS 1 (' + firstGuessName + ')';
+        ? '⚙️ PROCESSING · PARTICIPANT RECORDING FIRST'
+        : '⚙️ PROCESSING · RECORDING 1 (' + firstGuessName + ')';
     }
     if (txtEl) {
-      txtEl.textContent = 'Calibrating waveform & spectral sweep — get ready to listen!';
+      txtEl.textContent = 'Calibrating waveform & spectral distribution — prepare for playback.';
     }
     if (barEl) {
       barEl.classList.remove('filling');
@@ -4374,9 +4380,9 @@
     }
     if (sealEl) sealEl.classList.toggle('hidden', !isMysteryReveal);
     if (sealTitleEl) sealTitleEl.textContent = 'MYSTERY FART';
-    if (sealSubEl) sealSubEl.textContent = 'Real sound plays last!';
+    if (sealSubEl) sealSubEl.textContent = 'Source specimen plays last';
     if (lblA) {
-      lblA.textContent = isMysteryReveal && (state.hintLevel || 0) < 1 ? '🔒 MYSTERY FART' : '🎯 REAL · ' + targetName;
+      lblA.textContent = isMysteryReveal && (state.hintLevel || 0) < 1 ? '🔒 MYSTERY FART' : '🎯 SOURCE · ' + targetName;
     }
     if (lblB) lblB.textContent = rawGuesses.length === 1 ? '🎤 YOUR GUESS' : '🎤 GUESS 1 · ' + firstGuessName;
     if (pillA) pillA.textContent = 'PLAYS LAST';
@@ -4498,12 +4504,12 @@
             paneA.classList.toggle('is-cueing-mystery', isMysteryReveal);
           }
           if (sealEl) sealEl.classList.toggle('hidden', !isMysteryReveal);
-          if (isMysteryReveal && sealTitleEl) sealTitleEl.textContent = 'UNSEALING REAL FART…';
-          if (isMysteryReveal && sealSubEl) sealSubEl.textContent = 'Baseline comparison ready';
-          if (pillB) pillB.textContent = '✓ HEARD';
+          if (isMysteryReveal && sealTitleEl) sealTitleEl.textContent = 'UNSEALING SOURCE SPECIMEN…';
+          if (isMysteryReveal && sealSubEl) sealSubEl.textContent = 'Reference acoustic baseline ready';
+          if (pillB) pillB.textContent = '✓ LOGGED';
           if (pillA) pillA.textContent = '🔓 UNSEALING…';
-          if (speakerEl) speakerEl.textContent = '🔓 PREPARING REAL MYSTERY FART…';
-          if (txtEl) txtEl.textContent = 'All guesses processed — unsealing the authentic Mystery Fart now!';
+          if (speakerEl) speakerEl.textContent = '🔓 PREPARING SOURCE MYSTERY FART…';
+          if (txtEl) txtEl.textContent = 'All comparative trials processed — unsealing the source Mystery Fart.';
           var mystCueT = setTimeout(function () {
             startStepPlayback(nextIdx);
           }, mysteryCueMs);
@@ -4522,11 +4528,11 @@
           if (sealEl) sealEl.classList.toggle('hidden', !isMysteryReveal);
           if (lblB) lblB.textContent = '🎤 GUESS ' + (nextStep.guessIndex + 1) + ' · ' + nextStep.label;
           if (pillA) pillA.textContent = 'PLAYS LAST';
-          if (pillB) pillB.textContent = '⏳ UP NEXT';
+          if (pillB) pillB.textContent = '⏳ NEXT AUDIT';
           if (speakerEl) {
-            speakerEl.textContent = '⏳ NEXT UP · GUESS ' + (nextStep.guessIndex + 1) + ': ' + nextStep.label;
+            speakerEl.textContent = '⏳ NEXT RECORDING · GUESS ' + (nextStep.guessIndex + 1) + ': ' + nextStep.label;
           }
-          if (txtEl) txtEl.textContent = 'Loading acoustic profile — listen closely!';
+          if (txtEl) txtEl.textContent = 'Calibrating spectral profile prior to acoustic playback.';
           var gCueT = setTimeout(function () {
             startStepPlayback(nextIdx);
           }, guessCueMs);
@@ -4566,14 +4572,14 @@
           }
           if (sealEl) sealEl.classList.add('hidden');
           if (banner) banner.classList.add('is-mystery-finale');
-          if (lblA) lblA.textContent = '🎯 REAL · ' + targetName;
-          if (pillA) pillA.textContent = '🔊 REAL FART!';
-          if (pillB) pillB.textContent = '✓ HEARD';
+          if (lblA) lblA.textContent = '🎯 SOURCE · ' + targetName;
+          if (pillA) pillA.textContent = '🔊 SOURCE SPECIMEN';
+          if (pillB) pillB.textContent = '✓ LOGGED';
           if (speakerEl) {
-            speakerEl.textContent = '🚨 NOW PLAYING · REAL MYSTERY FART: ' + targetName;
+            speakerEl.textContent = '🔬 NOW PLAYING · SOURCE MYSTERY FART: ' + targetName;
           }
           if (txtEl) {
-            txtEl.textContent = 'Compare the authentic Mystery Fart against the guesses!';
+            txtEl.textContent = 'Comparing reference source acoustics against recorded trials.';
           }
         } else {
           if (step.guessIndex > 0) {
@@ -4601,7 +4607,7 @@
               : '🔊 NOW PLAYING · GUESS ' + (step.guessIndex + 1) + ' OF ' + rawGuesses.length + ': ' + step.label;
           }
           if (txtEl) {
-            txtEl.textContent = 'Active exhibit playing — real Mystery Fart plays last!';
+            txtEl.textContent = 'Comparative trial active — source Mystery Fart plays last.';
           }
         }
 
@@ -5010,29 +5016,29 @@
   }
 
   function pickSoloChipBadge(score) {
-    if (score >= 95) return '🧙 Cheek Sorcery · ' + score.toFixed(1) + '%';
-    if (score >= 85) return '🎯 Suspiciously Accurate · ' + score.toFixed(1) + '%';
-    if (score >= 70) return '💨 Room-Fooling Forgery · ' + score.toFixed(1) + '%';
-    if (score >= 50) return '🌬️ Noble Amateur Effort · ' + score.toFixed(1) + '%';
-    if (score >= 25) return '🦆 Bold Audacity · ' + score.toFixed(1) + '%';
-    return '💥 Pure Delusion · ' + score.toFixed(1) + '%';
+    if (score >= 95) return '🏛️ Archive-Grade Reproduction · ' + score.toFixed(1) + '%';
+    if (score >= 85) return '🎯 Exceptional Fidelity · ' + score.toFixed(1) + '%';
+    if (score >= 70) return '🔬 Research-Grade Alignment · ' + score.toFixed(1) + '%';
+    if (score >= 50) return '📊 Partial Acoustic Convergence · ' + score.toFixed(1) + '%';
+    if (score >= 25) return '📈 Notable Spectral Variance · ' + score.toFixed(1) + '%';
+    return '📋 Significant Acoustic Divergence · ' + score.toFixed(1) + '%';
   }
 
   function pickSoloRowLabel(score) {
-    if (score >= 95) return '🧙 Courtroom-Grade Clone';
-    if (score >= 85) return '🎯 Honor-Roll Forger';
-    if (score >= 70) return '🌬️ Convincing Alibi';
-    if (score >= 50) return '🙃 Half-Cooked Toot';
-    if (score >= 25) return '🦆 Different Zip Code';
-    return '🚨 Lab Evacuated in Confusion';
+    if (score >= 95) return '🏛️ Archive-Grade Benchmark';
+    if (score >= 85) return '🎯 Exceptional Fidelity';
+    if (score >= 70) return '🔬 Research Grade';
+    if (score >= 50) return '📊 Partial Convergence';
+    if (score >= 25) return '📈 Notable Spectral Variance';
+    return '📋 Significant Acoustic Divergence';
   }
 
   function pickSoloSubQuip(score) {
-    if (score >= 90) return 'Scarily Close';
-    if (score >= 75) return 'Solid Impression';
-    if (score >= 55) return 'Getting Warm';
-    if (score >= 30) return 'Noble Attempt';
-    return 'Send Backup';
+    if (score >= 90) return 'Near-Identical Profile';
+    if (score >= 75) return 'Favourable Alignment';
+    if (score >= 55) return 'Moderate Convergence';
+    if (score >= 30) return 'Measurable Variance';
+    return 'Divergent Spectral Band';
   }
 
   function renderInlineResults(outcome, sessionResults) {
@@ -5057,13 +5063,13 @@
     var headingEl = $('res-heading-eyebrow');
     if (headingEl) {
       headingEl.textContent = isSoloRound
-        ? (isMimic ? 'HOW CLOSE WAS YOUR MIMIC?' : 'HOW CLOSE WAS YOUR GUESS?')
-        : (isMimic ? 'WHO MIMICKED THE FART BEST?' : 'WHO GUESSED THE FART BEST?');
+        ? (isMimic ? 'REPRODUCTION FIDELITY ASSESSMENT · MIMIC' : 'REPRODUCTION FIDELITY ASSESSMENT')
+        : (isMimic ? 'OFFICIAL FINDINGS · MIMIC PARTICIPANT RANKINGS' : 'OFFICIAL FINDINGS · PARTICIPANT RANKINGS');
     }
 
     $('res-sample-context').textContent = isSoloRound
-      ? ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · SOLO COMPARISON')
-      : ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · ' + resultsList.length + ' PLAYERS');
+      ? ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · COMPARATIVE ASSESSMENT')
+      : ('MYSTERY FART: ' + getSampleName(target).toUpperCase() + ' · ' + resultsList.length + ' PARTICIPANTS');
 
     var winChip = $('res-winner-chip');
     if (winChip) {
@@ -5078,11 +5084,11 @@
 
     var lbEye = $('res-lb-eyebrow');
     if (lbEye) {
-      lbEye.textContent = isSoloRound ? 'COMPARISON SCORECARD' : '🏆 WINNER & PLAYER RANKINGS';
+      lbEye.textContent = isSoloRound ? 'OFFICIAL FINDINGS · ASSESSMENT SCORECARD' : '🏆 OFFICIAL FINDINGS · PARTICIPANT RANKINGS';
     }
     var verdEye = $('res-verdict-eyebrow');
     if (verdEye) {
-      verdEye.textContent = isSoloRound ? 'SCIENTIFIC COMPARISON REPORT' : 'SCIENTIFIC REPORT · WINNER COMPARISON';
+      verdEye.textContent = isSoloRound ? 'LABORATORY VERDICT · COMPARATIVE ASSESSMENT' : 'LABORATORY VERDICT · LEADING REPRODUCTION';
     }
     var repBtn = $('btn-res-replay');
     if (repBtn) {
@@ -5263,22 +5269,22 @@
     if (resultsList.length > 1) {
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
       deltaNoteEl.textContent =
-        '🏆 ' + outcome.attempt.name + ' wins the ' + resultsList.length + '-player round at ' + exact.toFixed(1) + '%!';
+        '🏆 ' + outcome.attempt.name + ' wins the ' + resultsList.length + '-participant round at ' + exact.toFixed(1) + '% Laboratory Match Confidence.';
     } else if (typeof outcome.previousScore === 'number') {
       var delta = Math.round((exact - outcome.previousScore) * 10) / 10;
       deltaNoteEl.classList.remove('hidden', 'delta-neutral');
       if (delta >= 0) {
         deltaNoteEl.textContent =
-          'Score Delta: ' + outcome.previousScore.toFixed(1) + '% → ' + exact.toFixed(1) + '% (+' + delta.toFixed(1) + '%)';
+          'Observed Variance: ' + outcome.previousScore.toFixed(1) + '% → ' + exact.toFixed(1) + '% (+' + delta.toFixed(1) + '%)';
       } else {
         deltaNoteEl.classList.add('delta-neutral');
         deltaNoteEl.textContent =
-          'Previous vs Current: ' + outcome.previousScore.toFixed(1) + '% → ' + exact.toFixed(1) + '% (' + delta.toFixed(1) + '%)';
+          'Observed Variance: ' + outcome.previousScore.toFixed(1) + '% → ' + exact.toFixed(1) + '% (' + delta.toFixed(1) + '%)';
       }
     } else {
       deltaNoteEl.classList.remove('hidden');
       deltaNoteEl.classList.add('delta-neutral');
-      deltaNoteEl.textContent = 'First comparison logged — tap Guess The Fart above to beat your score!';
+      deltaNoteEl.textContent = 'Baseline assessment logged — record an additional trial above to evaluate variance.';
     }
 
     $('res-verdict-text').textContent = outcome.verdict;
@@ -5287,7 +5293,7 @@
     var bellLabel = $('res-bell-label');
     var legTitleEl = $('res-legendary-title');
     starsRow.innerHTML = '';
-    bellLabel.textContent = 'Calibrating Match Quality…';
+    bellLabel.textContent = 'Calibrating Laboratory Match Confidence…';
     legTitleEl.classList.add('hidden');
     legTitleEl.textContent = '';
 
@@ -5295,7 +5301,7 @@
       setTimeout(function () {
         if (state.view !== 'guess') return;
         if (rewardStageEl && rewardStageEl.classList) rewardStageEl.classList.remove('labs-reveal-pending');
-        bellLabel.textContent = 'Assigning Telemetry Rating…';
+        bellLabel.textContent = 'Assigning Scientific Assessment…';
         if (outcome.isPersonalBest) {
           pbEl.classList.remove('hidden');
         }
@@ -5418,12 +5424,12 @@
       var key = btns[i].getAttribute('data-group-source');
       btns[i].classList.toggle('active', key === bucket.source);
       if (key === 'all') btns[i].textContent = 'All (' + bucket.counts.all + ')';
-      else if (key === 'recorded') btns[i].textContent = 'Recorded (Real Farts) (' + bucket.counts.recorded + ')';
-      else if (key === 'guesses') btns[i].textContent = 'Recorded Guesses (' + bucket.counts.guesses + ')';
+      else if (key === 'recorded') btns[i].textContent = 'Field Recordings (' + bucket.counts.recorded + ')';
+      else if (key === 'guesses') btns[i].textContent = 'Comparative Recordings (' + bucket.counts.guesses + ')';
       else if (key === 'defaults') {
         btns[i].textContent = bucket.defaultsCapped
-          ? 'Default Farts (' + bucket.counts.defaultsIncluded + '/' + bucket.totalDefaults + ')'
-          : 'Default Farts (' + bucket.counts.defaults + ')';
+          ? 'Archive Reference Pack (' + bucket.counts.defaultsIncluded + '/' + bucket.totalDefaults + ')'
+          : 'Archive Reference Pack (' + bucket.counts.defaults + ')';
       }
     }
 
@@ -5431,9 +5437,9 @@
     if (capNote) {
       if (bucket.defaultsCapped && (bucket.source === 'all' || bucket.source === 'defaults')) {
         capNote.textContent =
-          'Default pack limited to ' + bucket.cap + ' of ' + bucket.totalDefaults + ' built-in farts per Megamix (' + bucket.items.length + ' total tracks).';
+          'Archive Reference Pack capped at ' + bucket.cap + ' of ' + bucket.totalDefaults + ' specimens per synthesis (' + bucket.items.length + ' total tracks).';
       } else {
-        capNote.textContent = 'Combining ' + bucket.items.length + ' recording' + (bucket.items.length === 1 ? '' : 's') + ' from selected source.';
+        capNote.textContent = 'Synthesizing ' + bucket.items.length + ' archived specimen' + (bucket.items.length === 1 ? '' : 's') + ' from selected source.';
       }
     }
 
@@ -5551,16 +5557,16 @@
       var label = getSampleName(s);
       if (showGuessCounts && attemptsBySample && attemptsBySample[s.id]) {
         var c = attemptsBySample[s.id];
-        label += ' (' + c + (c === 1 ? ' guess)' : ' guesses)');
+        label += ' (' + c + (c === 1 ? ' comparison)' : ' comparisons)');
       }
       return '<option value="' + esc(s.id) + '">' + esc(label) + '</option>';
     }
     var parts = [];
     if (recorded.length > 0) {
-      parts.push('<optgroup label="🎙️ Recorded Farts">' + recorded.map(renderOpt).join('') + '</optgroup>');
+      parts.push('<optgroup label="🎙️ Field Recordings">' + recorded.map(renderOpt).join('') + '</optgroup>');
     }
     if (defaults.length > 0) {
-      parts.push('<optgroup label="📦 Default Farts">' + defaults.map(renderOpt).join('') + '</optgroup>');
+      parts.push('<optgroup label="📦 Archive Reference Pack">' + defaults.map(renderOpt).join('') + '</optgroup>');
     }
     return parts.join('');
   }
@@ -5606,7 +5612,7 @@
 
     var isCompare = state.fnMode === 'comparison';
     if (sampleLbl) {
-      sampleLbl.textContent = isCompare ? 'Target Fart' : 'Recording to Analyze';
+      sampleLbl.textContent = isCompare ? 'Reference Specimen' : 'Primary Acoustic Specimen';
     }
 
     var optHtml = buildTargetOptionsHtml(isCompare, attemptsBySample);
@@ -5614,15 +5620,15 @@
       var guessOpts = allAtts
         .map(function (a) {
           var tSample = a.sampleId ? getSampleById(a.sampleId) : null;
-          var tLabel = tSample ? getSampleName(tSample) : (a.targetName || 'Vault Specimen');
+          var tLabel = tSample ? getSampleName(tSample) : (a.targetName || 'Archive Specimen');
           var label = a.name + ' (' + (a.exactScore || 0).toFixed(1) + '%) → ' + tLabel;
           return '<option value="' + esc('guess::' + a.id + '::' + a.sampleId) + '">' + esc(label) + '</option>';
         })
         .join('');
-      optHtml += '<optgroup label="🎯 Recorded Guesses">' + guessOpts + '</optgroup>';
+      optHtml += '<optgroup label="🔬 Comparative Recordings">' + guessOpts + '</optgroup>';
     }
 
-    sampleSel.innerHTML = optHtml || '<option value="">No saved recordings</option>';
+    sampleSel.innerHTML = optHtml || '<option value="">No archived specimens available</option>';
     if (state.fnMode === 'guess' && state.fnAttemptId && state.fnSampleId) {
       sampleSel.value = 'guess::' + state.fnAttemptId + '::' + state.fnSampleId;
     } else if (state.fnSampleId) {
@@ -5634,7 +5640,7 @@
       var sortedAttempts = sortAttemptsByScore(state.fnAttempts);
       guessSel.innerHTML =
         sortedAttempts.length === 0
-          ? '<option value="">No guesses recorded for this fart yet</option>'
+          ? '<option value="">No comparative recordings logged for this specimen</option>'
           : sortedAttempts
               .map(function (a, idx) {
                 return (
@@ -5654,7 +5660,7 @@
           guessLb.innerHTML = '';
         } else {
           var targetObj = getSampleById(state.fnSampleId);
-          var targetTitle = targetObj ? getSampleName(targetObj) : 'Selected Fart';
+          var targetTitle = targetObj ? getSampleName(targetObj) : 'Selected Specimen';
           var pillsHtml = sortedAttempts
             .map(function (a, idx) {
               var isSel = a.id === state.fnAttemptId;
@@ -5680,14 +5686,14 @@
 
           guessLb.innerHTML =
             '<div class="labs-fn-glb-head">' +
-            '  <span class="labs-fn-glb-title">🏆 Guesses for ' +
+            '  <span class="labs-fn-glb-title">🔬 Comparative Recordings — ' +
             esc(targetTitle) +
             ' (' +
             sortedAttempts.length +
             ')</span>' +
-            '  <button type="button" id="btn-fn-inspect-solo" class="labs-btn-ghost labs-btn-xs labs-fn-glb-solo">🧪 Inspect Solo</button>' +
+            '  <button type="button" id="btn-fn-inspect-solo" class="labs-btn-ghost labs-btn-xs labs-fn-glb-solo">🧪 Individual Report</button>' +
             '</div>' +
-            '<div class="labs-fn-glb-pills" role="listbox" aria-label="Guesses for ' +
+            '<div class="labs-fn-glb-pills" role="listbox" aria-label="Comparative recordings for ' +
             esc(targetTitle) +
             '">' +
             pillsHtml +
@@ -5746,18 +5752,18 @@
         emptyEl.classList.remove('hidden');
         emptyTitle.textContent =
           bucket.source === 'recorded'
-            ? 'No Recorded Real Farts Yet'
+            ? 'No Field Recordings Indexed'
             : bucket.source === 'guesses'
-            ? 'No Recorded Guesses Yet'
+            ? 'No Comparative Recordings Indexed'
             : bucket.source === 'defaults'
-            ? 'No Default Pack Farts Found'
-            : 'No Recordings Ready for Megamix';
+            ? 'No Archive Reference Specimens Found'
+            : 'No Specimens Ready for Multi-Specimen Synthesis';
         emptyCopy.textContent =
           bucket.source === 'guesses'
-            ? 'Play a round of Guess The Fart first to analyze recorded guesses together.'
+            ? 'Conduct a comparative acoustic trial first to synthesize comparative specimens together.'
             : bucket.source === 'defaults'
-            ? 'Add audio files to VaultPreLoads to build the Default Pack.'
-            : 'Record a new specimen from Home (or play a Guess round) to build your Megamix.';
+            ? 'Add reference audio files to VaultPreLoads to build the Archive Reference Pack.'
+            : 'Capture an acoustic specimen from Home to generate a multi-specimen Institute Report.';
         mountEl.innerHTML = '';
         return;
       }
@@ -5858,7 +5864,7 @@
         sound: sample,
         archiveSamples: state.samples,
         label: getSampleName(sample),
-        eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN · ACOUSTIC ANALYSIS',
+        eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN · INSTITUTE REVIEW',
         onOpenTeam: openTeamView,
         onCopyVerdict: handleCopyVerdict,
         onShareOrEmail: function (s, specCanvases) {
@@ -5866,10 +5872,10 @@
           var reportText = TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT');
           var pdfPayload = { mode: 'single', sound: s, label: sName, eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases };
           openShareEmailModal({
-            title: 'Share or Email Specimen Report',
-            subtitle: sName + ' — full PDF dossier + WAV audio',
+            title: 'Share or Email Institute Report',
+            subtitle: sName + ' — full PDF Institute Report + WAV audio',
             onShare: function () {
-              shareTextOrAudio('Fartnalysis Report: ' + sName, reportText, s, pdfPayload);
+              shareTextOrAudio('Institute Report: ' + sName, reportText, s, pdfPayload);
             },
             onEmail: function () {
               emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, s);
@@ -5898,22 +5904,22 @@
       state.fnController = TootLabs.Fartnalysis.renderSingleDashboard(mountEl, {
         sound: attempt,
         archiveSamples: state.samples,
-        label: attempt.name + ' (Secondary Recording for ' + getSampleName(sample) + ')',
+        label: attempt.name + ' (Secondary Specimen for ' + getSampleName(sample) + ')',
         eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING · LABORATORY FINDINGS',
-        primaryLabel: '⚖️ Open Comparative Analysis',
+        primaryLabel: '⚖️ Open Comparative Assessment',
         onPrimaryAction: function () {
           openFartnalysis('comparison', sample.id, attempt.id);
         },
         onOpenTeam: openTeamView,
         onCopyVerdict: handleCopyVerdict,
         onShareOrEmail: function (g, specCanvases) {
-          var reportText = TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY RECORDING ANALYSIS');
+          var reportText = TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY SPECIMEN INSTITUTE REPORT');
           var pdfPayload = { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases };
           openShareEmailModal({
-            title: 'Share or Email Guess Report',
-            subtitle: g.name + ' — full PDF dossier + WAV audio',
+            title: 'Share or Email Comparative Specimen Report',
+            subtitle: g.name + ' — full PDF Institute Report + WAV audio',
             onShare: function () {
-              shareTextOrAudio('Acoustic Analysis: ' + g.name, reportText, g, pdfPayload);
+              shareTextOrAudio('Institute Report: ' + g.name, reportText, g, pdfPayload);
             },
             onEmail: function () {
               emailAnalysisReport('Fartnalysis Report: ' + g.name, reportText, pdfPayload, g);
@@ -5942,13 +5948,13 @@
         var reportText = TootLabs.Store.buildComparisonReportText(sA, sB, r, exact);
         var pdfPayload = { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases };
         openShareEmailModal({
-          title: 'Share or Email Comparison Report',
-          subtitle: sB.name + ' vs ' + getSampleName(sA) + ' (' + exact.toFixed(1) + '%)',
+          title: 'Share or Email Comparative Report',
+          subtitle: sB.name + ' vs ' + getSampleName(sA) + ' (' + exact.toFixed(1) + '% Reproduction Fidelity)',
           onShare: function () {
-            shareTextOrAudio('Toot Match Comparative Report: ' + exact.toFixed(1) + '%', reportText, stitchComparisonAudio(sA, sB), pdfPayload);
+            shareTextOrAudio('Toot Match Labs Comparative Assessment: ' + exact.toFixed(1) + '%', reportText, stitchComparisonAudio(sA, sB), pdfPayload);
           },
           onEmail: function () {
-            emailAnalysisReport('Toot Match Comparative Analysis: ' + sB.name + ' vs ' + getSampleName(sA), reportText, pdfPayload, stitchComparisonAudio(sA, sB));
+            emailAnalysisReport('Toot Match Labs Comparative Assessment: ' + sB.name + ' vs ' + getSampleName(sA), reportText, pdfPayload, stitchComparisonAudio(sA, sB));
           }
         });
       },
@@ -6342,13 +6348,13 @@
       var sample = getSampleById(state.detailSampleId);
       if (!sample) return;
       var sName = getSampleName(sample);
-      var reportText = TootLabs.Store.buildSingleAnalysisReportText(sample, 'ORIGINAL FART ANALYSIS');
-      var pdfPayload = { mode: 'single', sound: sample, label: sName, eyebrow: 'ORIGINAL FART ANALYSIS' };
+      var reportText = TootLabs.Store.buildSingleAnalysisReportText(sample, 'INSTITUTE SPECIMEN REPORT');
+      var pdfPayload = { mode: 'single', sound: sample, label: sName, eyebrow: 'INSTITUTE SPECIMEN REPORT' };
       openShareEmailModal({
-        title: 'Share or Email Vault Fart',
+        title: 'Share or Email Specimen Report',
         subtitle: sName + ' — choose Share or Email (PDF + WAV)',
         onShare: function () {
-          shareTextOrAudio('Toot Match — ' + sName, TootLabs.Store.buildSingleAnalysisReportText(sample, 'SAVED FART'), sample, pdfPayload);
+          shareTextOrAudio('Toot Match Labs — ' + sName, TootLabs.Store.buildSingleAnalysisReportText(sample, 'ARCHIVED SPECIMEN'), sample, pdfPayload);
         },
         onEmail: function () {
           emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, sample);
