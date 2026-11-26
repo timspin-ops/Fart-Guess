@@ -2479,7 +2479,71 @@
     return 'TM-0' + String(n);
   }
 
-  function getVaultStampInfo(s, isDef, attCount) {
+  var VAULT_MIN_ARCHIVE_MS = Date.UTC(1974, 2, 14);
+  var VAULT_MAX_DEFAULT_MS = Date.UTC(2025, 9, 20);
+
+  function getSpecimenArchiveDateMs(s) {
+    if (!s) return Date.now();
+    if (!s.isBuiltIn && typeof s.createdAt === 'number' && s.createdAt > 100000000000) {
+      return s.createdAt;
+    }
+    var raw = String(s.id || s.name || 'default');
+    var h = 2166136261;
+    for (var i = 0; i < raw.length; i++) {
+      h ^= raw.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    h ^= h >>> 16;
+    h = Math.imul(h, 2246822519);
+    h ^= h >>> 13;
+    var u = (h >>> 0) / 4294967296;
+    return Math.round(VAULT_MIN_ARCHIVE_MS + u * (VAULT_MAX_DEFAULT_MS - VAULT_MIN_ARCHIVE_MS));
+  }
+
+  function formatArchiveDate(ms, isBuiltIn) {
+    var d = new Date(ms);
+    if (isNaN(d.getTime())) return 'Recent';
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    if (isBuiltIn) {
+      return months[d.getUTCMonth()] + ' ' + d.getUTCDate() + ', ' + d.getUTCFullYear();
+    }
+    return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  }
+
+  function computeVaultAgingMap(samples) {
+    var map = {};
+    var list = Array.isArray(samples) ? samples : [];
+    var nowMs = Math.max(Date.now(), Date.UTC(2026, 10, 26));
+    var oldestId = null;
+    var minMs = Infinity;
+    for (var i = 0; i < list.length; i++) {
+      var s = list[i];
+      if (!s || !s.id) continue;
+      var ms = getSpecimenArchiveDateMs(s);
+      var ageYears = Math.max(0, (nowMs - ms) / (365.25 * 86400000));
+      var tier = 0;
+      if (ageYears >= 38) tier = 4;
+      else if (ageYears >= 24) tier = 3;
+      else if (ageYears >= 12) tier = 2;
+      else if (ageYears >= 3) tier = 1;
+      map[s.id] = { archiveMs: ms, ageYears: ageYears, ageTier: tier, isOldest: false };
+      if (ms < minMs) {
+        minMs = ms;
+        oldestId = s.id;
+      }
+    }
+    if (oldestId && map[oldestId]) {
+      map[oldestId].isOldest = true;
+      map[oldestId].ageTier = 4;
+    }
+    return map;
+  }
+
+  function getVaultStampInfo(s, isDef, attCount, agingInfo) {
+    if (agingInfo && agingInfo.isOldest) {
+      var yr = new Date(agingInfo.archiveMs).getUTCFullYear();
+      return { label: 'ARCHIVE RELIC · ' + yr, cls: 'stamp-red' };
+    }
     if (!isDef) {
       return attCount > 0
         ? { label: 'VERIFIED SPECIMEN', cls: 'stamp-red' }
@@ -2505,7 +2569,7 @@
       var originWord = isDef ? 'Archive Pack' : 'User Recording';
       return pitchWord + ' · ' + texWord + ' · ' + originWord;
     }
-    return isDef ? 'Archive Library · Acoustic Specimen' : (formatDateShort(s && s.createdAt) + ' · Field Recording');
+    return isDef ? 'Archive Library · Acoustic Specimen' : 'Field Recording · Captured Emission';
   }
 
   function buildVaultCardHtml(s, opts) {
@@ -2524,7 +2588,13 @@
     var bestTxt = st.attemptCount > 0 ? st.bestScore.toFixed(1) + '%' : '';
     var attTxt = st.attemptCount === 1 ? '1 guess' : st.attemptCount + ' guesses';
     var fileCode = getVaultFileNumber(s.id);
-    var stamp = getVaultStampInfo(s, isDef, st.attemptCount);
+    var agingInfo = (opts.agingMap && opts.agingMap[s.id]) || {
+      archiveMs: getSpecimenArchiveDateMs(s),
+      ageTier: isDef ? 1 : 0,
+      isOldest: false
+    };
+    var archiveDateStr = formatArchiveDate(agingInfo.archiveMs, isDef);
+    var stamp = getVaultStampInfo(s, isDef, st.attemptCount, agingInfo);
     var descLine = getVaultDescriptors(s, isDef);
 
     var checkBtnHtml =
@@ -2542,10 +2612,14 @@
           '</button>'
         : '';
 
+    var oldestBadgeHtml = agingInfo.isOldest
+      ? '<span class="labs-vc-oldest-tag" title="Oldest Archived Specimen — Covered in Dust">🕸️ OLDEST</span>'
+      : '';
+
     var deleteBtnHtml = !isDef
-      ? '<button type="button" class="labs-vc-ico-btn is-del" data-vc-act="delete" data-vc-id="' +
+      ? '<button type="button" class="labs-vc-ink-act is-del" data-vc-act="delete" data-vc-id="' +
         esc(s.id) +
-        '" aria-label="Delete recording" title="Delete recording">🗑️</button>'
+        '" aria-label="Delete recording" title="Delete recording">🗑️ Delete</button>'
       : '<span class="labs-vc-lock-pip" title="Protected Default Library Specimen">🔒</span>';
 
     var cardExtraCls =
@@ -2556,6 +2630,7 @@
         : isSelected
         ? ' is-selected'
         : '';
+    if (agingInfo.isOldest) cardExtraCls += ' is-oldest-specimen';
 
     return (
       '<article class="labs-vault-card ' +
@@ -2565,12 +2640,17 @@
       esc(s.id) +
       '" data-vc-kind="' +
       (isDef ? 'default' : 'recorded') +
-      '" tabindex="0">' +
+      '" data-age-tier="' +
+      agingInfo.ageTier +
+      '"' +
+      (agingInfo.isOldest ? ' data-oldest="true"' : '') +
+      ' tabindex="0">' +
       '  <div class="labs-vc-sleeve-top">' +
       '    <div class="labs-vc-sleeve-meta">' +
       '      <div class="labs-vc-file-row">' +
       checkBtnHtml +
-      '        <span class="labs-vc-file-code">FILE #' + esc(fileCode) + '</span>' +
+      '        <span class="labs-vc-file-code">FILE #' + esc(fileCode) + ' · ' + esc(archiveDateStr.toUpperCase()) + '</span>' +
+      oldestBadgeHtml +
       '      </div>' +
       '      <div class="labs-vc-name">' + esc(name) + '</div>' +
       '      <div class="labs-vc-tags">' + esc(descLine) + '</div>' +
@@ -2591,8 +2671,8 @@
       '      <span class="labs-vc-att">' + esc(attTxt) + (bestTxt ? ' · Best ' + esc(bestTxt) : '') + '</span>' +
       '    </div>' +
       '    <div class="labs-vc-quick-acts">' +
-      '      <button type="button" class="labs-vc-ico-btn vc-analyze" data-vc-act="analyze" data-vc-id="' + esc(s.id) + '" title="Open Fartnalysis">🧪 Analyze</button>' +
-      '      <button type="button" class="labs-vc-ico-btn vc-guess" data-vc-act="guess" data-vc-id="' + esc(s.id) + '" title="Guess This Fart">🎯 Guess</button>' +
+      '      <button type="button" class="labs-vc-ink-act vc-analyze" data-vc-act="analyze" data-vc-id="' + esc(s.id) + '" title="Open Fartnalysis">🧪 Analyze</button>' +
+      '      <button type="button" class="labs-vc-ink-act vc-guess" data-vc-act="guess" data-vc-id="' + esc(s.id) + '" title="Guess This Fart">🎯 Guess</button>' +
       deleteBtnHtml +
       '    </div>' +
       '  </div>' +
@@ -2610,6 +2690,7 @@
     var score = typeof att.exactScore === 'number' ? att.exactScore : 0;
     var rank = TootLabs.Store.getRankForScore(score);
     var fileCode = getVaultFileNumber(att.id);
+    var gDateStr = formatArchiveDate(att.createdAt || Date.now(), false);
     var checkBtnHtml = inVault
       ? '<button type="button" class="labs-vc-chk-btn' +
         (isSelected ? ' is-checked' : '') +
@@ -2635,15 +2716,15 @@
       esc(att.id) +
       '" data-open-guess-sample="' +
       esc(att.sampleId || '') +
-      '" data-vc-kind="guess" tabindex="0">' +
+      '" data-vc-kind="guess" data-age-tier="0" tabindex="0">' +
       '  <div class="labs-vc-sleeve-top">' +
       '    <div class="labs-vc-sleeve-meta">' +
       '      <div class="labs-vc-file-row">' +
       checkBtnHtml +
-      '        <span class="labs-vc-file-code">GUESS #' + esc(fileCode) + '</span>' +
+      '        <span class="labs-vc-file-code">GUESS #' + esc(fileCode) + ' · ' + esc(gDateStr.toUpperCase()) + '</span>' +
       '      </div>' +
       '      <div class="labs-vc-name">' + esc(att.name || 'Recorded Guess') + '</div>' +
-      '      <div class="labs-vc-tags">Guess of ' + esc(parentName) + ' · ' + esc(formatDateShort(att.createdAt)) + '</div>' +
+      '      <div class="labs-vc-tags">Guess of ' + esc(parentName) + '</div>' +
       '    </div>' +
       '    <div class="labs-vc-stamp-col">' +
       '      <span class="labs-vc-stamp stamp-blue">MIMIC SPECIMEN</span>' +
@@ -2662,9 +2743,9 @@
       '      <span class="labs-vc-att">Mimic · ' + esc(score.toFixed(0)) + '% Match</span>' +
       '    </div>' +
       '    <div class="labs-vc-quick-acts">' +
-      '      <button type="button" class="labs-vc-ico-btn vc-analyze" data-vg-act="analyze" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '" title="Analyze guess">🧪 Analyze</button>' +
-      '      <button type="button" class="labs-vc-ico-btn vc-compare" data-vg-act="compare" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '" title="Compare with target">⚖️ Compare</button>' +
-      '      <button type="button" class="labs-vc-ico-btn is-del" data-vg-act="delete" data-vg-id="' + esc(att.id) + '" aria-label="Delete guess" title="Delete guess">🗑️</button>' +
+      '      <button type="button" class="labs-vc-ink-act vc-analyze" data-vg-act="analyze" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '" title="Analyze guess">🧪 Analyze</button>' +
+      '      <button type="button" class="labs-vc-ink-act vc-compare" data-vg-act="compare" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '" title="Compare with target">⚖️ Compare</button>' +
+      '      <button type="button" class="labs-vc-ink-act is-del" data-vg-act="delete" data-vg-id="' + esc(att.id) + '" aria-label="Delete guess" title="Delete guess">🗑️ Delete</button>' +
       '    </div>' +
       '  </div>' +
       '</article>'
@@ -3352,7 +3433,8 @@
     }
 
     var topSamples = state.samples.slice(0, 4);
-    recentEl.innerHTML = topSamples.map(buildVaultCardHtml).join('');
+    var homeAgingMap = computeVaultAgingMap(state.samples);
+    recentEl.innerHTML = topSamples.map(function (s) { return buildVaultCardHtml(s, { agingMap: homeAgingMap }); }).join('');
     wireVaultCards(recentEl);
     drawVaultWaveforms('home-recent-vault');
   }
@@ -3471,6 +3553,8 @@
       return;
     }
 
+    var agingMap = computeVaultAgingMap(state.samples);
+
     if (filter === 'recorded') {
       if (viewRec.length === 0) {
         grid.innerHTML =
@@ -3486,7 +3570,7 @@
         '🎙️ User Recorded Farts',
         'Captured specimens indexed from Home',
         viewRec.length,
-        viewRec.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
+        viewRec.map(function (s) { return buildVaultCardHtml(s, { inVault: true, agingMap: agingMap }); }).join('')
       );
     } else if (filter === 'guesses') {
       if (viewGuesses.length === 0) {
@@ -3503,7 +3587,7 @@
         '🎤 User Recorded Guesses',
         'Participant prediction & mimicry logs',
         viewGuesses.length,
-        viewGuesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
+        viewGuesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true, agingMap: agingMap }); }).join('')
       );
     } else if (filter === 'defaults') {
       if (viewDef.length === 0) {
@@ -3520,7 +3604,7 @@
         '📦 Pre-Loaded Default Farts',
         'Institute Reference Corpus · Protected',
         viewDef.length,
-        viewDef.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
+        viewDef.map(function (s) { return buildVaultCardHtml(s, { inVault: true, agingMap: agingMap }); }).join('')
       );
     } else {
       var sectionsHtml = '';
@@ -3531,7 +3615,7 @@
           '🎙️ User Recorded Farts',
           'Captured specimens indexed from Home',
           viewRec.length,
-          viewRec.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
+          viewRec.map(function (s) { return buildVaultCardHtml(s, { inVault: true, agingMap: agingMap }); }).join('')
         );
       }
       if (viewGuesses.length > 0) {
@@ -3541,7 +3625,7 @@
           '🎤 User Recorded Guesses',
           'Participant prediction & mimicry logs',
           viewGuesses.length,
-          viewGuesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true }); }).join('')
+          viewGuesses.map(function (a) { return buildVaultGuessCardHtml(a, { inVault: true, agingMap: agingMap }); }).join('')
         );
       }
       if (viewDef.length > 0) {
@@ -3551,7 +3635,7 @@
           '📦 Pre-Loaded Default Farts',
           'Built-in default specimen pack · Always kept',
           viewDef.length,
-          viewDef.map(function (s) { return buildVaultCardHtml(s, { inVault: true }); }).join('')
+          viewDef.map(function (s) { return buildVaultCardHtml(s, { inVault: true, agingMap: agingMap }); }).join('')
         );
       }
       grid.innerHTML = sectionsHtml;
@@ -3595,7 +3679,8 @@
     $('detail-specimen-id').textContent = 'FILE #' + getVaultFileNumber(sample.id);
     $('detail-sample-name').textContent = getSampleName(sample);
     $('detail-sample-dur').textContent = (sample.samples.length / sample.sampleRate).toFixed(2) + 's';
-    $('detail-sample-meta').textContent = (sample.isBuiltIn ? 'Default Reference Pack' : formatTimeShort(sample.createdAt)) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
+    var detailDate = formatArchiveDate(getSpecimenArchiveDateMs(sample), Boolean(sample.isBuiltIn));
+    $('detail-sample-meta').textContent = (sample.isBuiltIn ? 'Archived ' + detailDate : formatTimeShort(sample.createdAt)) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
 
     var f0Txt = feat && feat.medianPitchHz > 0 && feat.voicedRatio >= 0.15
       ? Math.round(feat.medianPitchHz) + ' Hz'
@@ -6297,9 +6382,8 @@
     var clueDur = $('guess-target-dur');
     var clueMeta = $('guess-target-meta');
     var waveWrap = $('guess-target-wave-wrap');
-    var splitWrap = $('guess-split-wrap');
+    var hintRow = $('guess-hint-row');
     var hintBtn = $('btn-guess-hint');
-    var hintBtnLbl = $('guess-hint-btn-lbl');
     var hintStatus = $('guess-hint-status');
     var hintsTray = $('guess-hints-tray');
 
@@ -6319,7 +6403,7 @@
           clueMeta.textContent =
             hintLvl > 0
               ? 'Hint ' + hintLvl + '/3 unlocked — audio still sealed until reveal'
-              : 'Blind mystery — guess without hearing it, or play it first below';
+              : 'Blind mystery — record your guess, or tap Play Fart First to mimic';
         } else if (hasAudio) {
           var feat = target.features || TootApp.DSP.extractFeatures(target.samples, target.sampleRate);
           target.features = feat;
@@ -6330,23 +6414,20 @@
         }
       }
       if (waveWrap) waveWrap.classList.toggle('hidden', isHiddenGuess || !hasAudio);
-      if (splitWrap) splitWrap.classList.toggle('has-hint', isHiddenGuess);
+      if (hintRow) hintRow.classList.toggle('hidden', !isHiddenGuess);
       if (hintBtn) {
-        hintBtn.classList.toggle('hidden', !isHiddenGuess);
         hintBtn.disabled = !isHiddenGuess || hintLvl >= 3;
-      }
-      if (hintBtnLbl) {
-        hintBtnLbl.textContent = hintLvl >= 3 ? 'Hints (3/3)' : 'Hint (' + hintLvl + '/3)';
+        hintBtn.textContent = hintLvl >= 3 ? '💡 All 3 Hints Used' : '💡 Hint (' + hintLvl + '/3)';
       }
       if (hintStatus) {
         hintStatus.textContent =
           hintLvl === 0
-            ? 'Next: Name'
+            ? 'Next clue: Specimen Name'
             : hintLvl === 1
-            ? 'Next: Length'
+            ? 'Next clue: Duration'
             : hintLvl === 2
-            ? 'Next: Pitch'
-            : 'All 3 used';
+            ? 'Next clue: Resonance Pitch'
+            : 'All 3 clues unlocked';
       }
       if (hintsTray) {
         var showTray = isHiddenGuess && hintLvl > 0;
@@ -6359,8 +6440,7 @@
       if (clueDur) clueDur.classList.add('hidden');
       if (clueMeta) clueMeta.textContent = 'Record a fart on Home first.';
       if (waveWrap) waveWrap.classList.add('hidden');
-      if (splitWrap) splitWrap.classList.remove('has-hint');
-      if (hintBtn) hintBtn.classList.add('hidden');
+      if (hintRow) hintRow.classList.add('hidden');
       if (hintsTray) hintsTray.classList.add('hidden');
     }
 
@@ -6453,20 +6533,6 @@
     if (nextAfterBtn) {
       nextAfterBtn.classList.toggle('hidden', !showRes);
       nextAfterBtn.disabled = !target || state.revealInProgress || isCapturing || state.samples.length <= 1;
-    }
-    var howtoEl = $('guess-howto-line');
-    if (howtoEl) {
-      if (!target) {
-        howtoEl.textContent = 'Record a fart on Home first to start guessing.';
-      } else if (hasQueued) {
-        howtoEl.textContent = '🔒 Guess locked! Tap Score Now to reveal the real fart & get scored, or add another player.';
-      } else if (showRes) {
-        howtoEl.textContent = '✅ Scored! Review your result below, try again to beat your score, or tap 🎲 Next Mystery Fart.';
-      } else if (state.guessMode === 'mimic') {
-        howtoEl.textContent = '🦜 Mimic Mode: Listen above (or tap Replay Fart), then tap Mimic The Fart to copy it!';
-      } else {
-        howtoEl.textContent = '🎯 Blind Mystery: Tap Guess The Fart + 💡 Hint to guess blind, or tap ▶ Play Fart First to mimic it.';
-      }
     }
 
     renderSessionQueue();

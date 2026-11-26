@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Special+Elite&display=swap" />
   <link rel="stylesheet" href="css/labs.css?v=20261124o" />
-  <link rel="stylesheet" href="css/labs-dossier.css?v=20261126i" />
+  <link rel="stylesheet" href="css/labs-dossier.css?v=20261126k" />
   <script defer src="../js/dsp.js?v=20261124o"></script>
   <script defer src="../js/audioEngine.js?v=20261124o"></script>
   <script defer src="../js/storage.js?v=20261124o"></script>
@@ -19,7 +19,7 @@
   <script defer src="js/labsFartnalysis.js?v=20261126g"></script>
   <script defer src="js/labsPdfExport.js?v=20261124o"></script>
   <script defer src="js/labsSignalChain.js?v=20261126g"></script>
-  <script defer src="js/labsApp.js?v=20261126i"></script>
+  <script defer src="js/labsApp.js?v=20261126k"></script>
 </head>
 <body data-labs-view="home">
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -554,7 +554,7 @@
 
           <div class="labs-vault-top-btns">
             <button type="button" id="btn-vault-select" class="labs-btn-ghost labs-btn-sm">☑️ Select</button>
-            <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
+            <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Megamix All</button>
             <button type="button" id="btn-vault-reseal" class="labs-btn-ghost labs-btn-sm" title="Close and re-open Vault airlock">🔒 Re-Seal</button>
           </div>
         </div>
@@ -685,85 +685,79 @@
       <!-- ==================== GAME SCREEN: GUESS & MIMIC MODES ==================== -->
       <section id="labs-view-guess" class="labs-view">
         <div id="guess-standard-pane">
-          <div class="labs-game-top-bar">
-            <div class="labs-game-mode-wrap">
-              <span id="guess-mode-pill" class="labs-mode-pill">🎯 GUESS THE FART · MYSTERY</span>
-              <button type="button" id="btn-guess-reset-blind" class="labs-link-chip hidden">🔒 Back to Mystery</button>
-            </div>
-          </div>
-
-          <!-- Compact Mystery Clue Bar (Hides waveform & duration until reveal) -->
-          <section class="labs-glass-card labs-clue-bar" id="guess-clue-bar">
-            <div id="guess-empty-target" class="labs-clue-empty hidden">
-              <span>No saved farts yet — head to <strong>Home</strong> and tap <strong>Record New Fart</strong>!</span>
+          <div class="labs-dossier-page-stack labs-guess-dossier-sheet">
+            <div class="labs-guess-sheet-header">
+              <div class="labs-game-mode-wrap">
+                <span id="guess-mode-pill" class="labs-mode-pill">🎯 GUESS THE FART · MYSTERY</span>
+                <button type="button" id="btn-guess-reset-blind" class="labs-link-chip hidden">🔒 Back to Mystery</button>
+              </div>
+              <button type="button" id="btn-guess-toggle-picker" class="labs-btn-ghost labs-btn-xs" aria-expanded="false">▾ Pick</button>
             </div>
 
-            <div id="guess-loaded-pane">
-              <div class="labs-clue-head">
-                <div class="labs-clue-info">
-                  <div class="labs-clue-title-row">
-                    <span id="guess-clue-icon" aria-hidden="true">🔒</span>
-                    <h2 id="guess-target-name" class="labs-clue-name">No Fart Selected</h2>
-                    <span id="guess-target-dur" class="labs-chip labs-chip-green hidden">0.00s</span>
+            <!-- Integrated Mystery File Header -->
+            <section class="labs-glass-card labs-clue-bar" id="guess-clue-bar">
+              <div id="guess-empty-target" class="labs-clue-empty hidden">
+                <span>No saved farts yet — head to <strong>Home</strong> and tap <strong>Record New Fart</strong>!</span>
+              </div>
+
+              <div id="guess-loaded-pane">
+                <div class="labs-clue-head">
+                  <div class="labs-clue-info">
+                    <div class="labs-clue-title-row">
+                      <span id="guess-clue-icon" aria-hidden="true">🔒</span>
+                      <h2 id="guess-target-name" class="labs-clue-name">Mystery Fart</h2>
+                      <span id="guess-target-dur" class="labs-chip labs-chip-green hidden">0.00s</span>
+                    </div>
+                    <div id="guess-target-meta" class="labs-clue-meta">Record your guess blind, or tap Play Fart First to mimic it</div>
                   </div>
-                  <div id="guess-target-meta" class="labs-clue-meta">Mystery audio hidden until reveal</div>
                 </div>
-                <div class="labs-clue-actions">
-                  <button type="button" id="btn-guess-toggle-picker" class="labs-btn-ghost labs-btn-xs" aria-expanded="false">▾ Pick</button>
+
+                <div id="guess-picker-drawer" class="labs-picker-drawer hidden">
+                  <div id="guess-vault-strip" class="labs-vault-strip"></div>
                 </div>
-              </div>
 
-              <div id="guess-picker-drawer" class="labs-picker-drawer hidden">
-                <div id="guess-vault-strip" class="labs-vault-strip"></div>
-              </div>
-
-              <div id="guess-target-wave-wrap" class="labs-clue-wave-wrap hidden">
-                <canvas id="guess-target-wave" class="labs-wave-canvas"></canvas>
-                <div class="labs-clue-wave-btns">
-                  <button type="button" id="btn-guess-replay-wave" class="labs-btn-ghost labs-btn-xs">▶ Replay</button>
-                  <button type="button" id="btn-guess-analyze-orig" class="labs-btn-ghost labs-btn-xs">🧪 Analyze Fart</button>
+                <div id="guess-target-wave-wrap" class="labs-clue-wave-wrap hidden">
+                  <canvas id="guess-target-wave" class="labs-wave-canvas"></canvas>
+                  <div class="labs-clue-wave-btns">
+                    <button type="button" id="btn-guess-replay-wave" class="labs-btn-ghost labs-btn-xs">▶ Replay</button>
+                    <button type="button" id="btn-guess-analyze-orig" class="labs-btn-ghost labs-btn-xs">🧪 Analyze Fart</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Above-the-Fold Hero Actions -->
-          <section class="labs-glass-card labs-game-hero-card" id="guess-recorder-card">
-            <div id="guess-howto-line" class="labs-guess-howto">🎯 Blind Mystery: Record your guess (or tap 💡 Hint for clues) — or tap ▶ Play Fart First to hear &amp; mimic it.</div>
-
-            <div class="labs-game-hero-row">
-              <div class="labs-guess-split-control has-hint" id="guess-split-wrap">
+            <!-- Unified Side-by-Side Guess & Mimic Action Zone -->
+            <section class="labs-glass-card labs-game-hero-card" id="guess-recorder-card">
+              <div class="labs-game-hero-row">
                 <button type="button" id="btn-guess-rec" class="labs-game-primary-btn">
                   <span id="guess-rec-icon" class="labs-game-btn-icon">🎤</span>
                   <span class="labs-game-btn-copy">
                     <strong id="guess-rec-label">Guess The Fart</strong>
-                    <small id="guess-rec-sub">Record your blind guess</small>
+                    <small id="guess-rec-sub">Record blind guess</small>
                   </span>
                 </button>
-                <button type="button" id="btn-guess-hint" class="labs-guess-hint-segment" title="Unlock a mystery clue">
-                  <span class="labs-hint-seg-ico" aria-hidden="true">💡</span>
-                  <strong id="guess-hint-btn-lbl">Hint (0/3)</strong>
-                  <small id="guess-hint-status">Next: Name</small>
+                <button type="button" id="btn-guess-play-first" class="labs-game-playfirst-btn">
+                  <span id="guess-playfirst-icon">▶</span>
+                  <strong id="guess-playfirst-label">Play Fart First</strong>
+                  <small id="guess-playfirst-sub">Mimic Mode</small>
+                </button>
+                <button type="button" id="btn-guess-score-now" class="labs-game-scorenow-btn hidden">
+                  <span id="guess-scorenow-icon">🔊</span>
+                  <strong id="guess-scorenow-label">Score Now</strong>
+                  <small id="guess-scorenow-sub">Reveal &amp; score</small>
                 </button>
               </div>
-              <button type="button" id="btn-guess-play-first" class="labs-game-playfirst-btn">
-                <span id="guess-playfirst-icon">▶</span>
-                <strong id="guess-playfirst-label">Play Fart First</strong>
-                <small id="guess-playfirst-sub">Mimic Mode</small>
-              </button>
-              <button type="button" id="btn-guess-score-now" class="labs-game-scorenow-btn hidden">
-                <span id="guess-scorenow-icon">🔊</span>
-                <strong id="guess-scorenow-label">Score Now</strong>
-                <small id="guess-scorenow-sub">Reveal &amp; score</small>
-              </button>
-            </div>
 
-            <div id="guess-hints-tray" class="labs-hints-tray hidden" aria-live="polite"></div>
+              <button type="button" id="btn-guess-next-after" class="labs-btn labs-btn-emerald labs-btn-lg labs-guess-next-under hidden">🎲 Next Mystery Fart →</button>
 
-            <button type="button" id="btn-guess-next-after" class="labs-btn labs-btn-emerald labs-btn-lg labs-guess-next-under hidden">🎲 Next Mystery Fart →</button>
+              <div id="guess-hint-row" class="labs-guess-hint-strip">
+                <button type="button" id="btn-guess-hint" class="labs-guess-hint-pill" title="Unlock a mystery clue">💡 Hint (0/3)</button>
+                <span id="guess-hint-status" class="labs-guess-hint-note">Next clue: Specimen Name</span>
+              </div>
+              <div id="guess-hints-tray" class="labs-hints-tray hidden" aria-live="polite"></div>
 
-            <div id="guess-rec-status" class="labs-game-status hidden"></div>
-            <canvas id="guess-live-wave" class="labs-live-wave hidden"></canvas>
+              <div id="guess-rec-status" class="labs-game-status hidden"></div>
+              <canvas id="guess-live-wave" class="labs-live-wave hidden"></canvas>
 
             <div id="guess-reveal-banner" class="labs-reveal-banner hidden" role="status" aria-live="polite">
               <div class="labs-reveal-head">
@@ -920,6 +914,7 @@
               <button type="button" id="btn-res-share" class="labs-btn-ghost labs-btn-sm">📤 Share / Email</button>
             </div>
           </section>
+          </div><!-- /.labs-guess-dossier-sheet -->
 
           <div class="labs-guess-footer-links">
             <button type="button" id="btn-guess-toggle-history" class="labs-quiet-link-btn hidden">🏆 Past Vault Standings</button>

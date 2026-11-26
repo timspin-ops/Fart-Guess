@@ -80,6 +80,17 @@ body::before {
   pointer-events: none;
 }
 
+body:not([data-labs-view="home"])::before {
+  background-image:
+    radial-gradient(ellipse at 50% 34%, rgba(8, 12, 13, 0.16) 0%, rgba(4, 7, 8, 0.56) 100%),
+    url('../assets/theme/lab-dossier-backdrop.jpg?v=20261126j');
+  background-position: center center;
+}
+
+.labs-view {
+  overflow: visible !important;
+}
+
 .labs-shell {
   position: relative;
   z-index: 1;
@@ -93,17 +104,18 @@ body[data-labs-view="home"] .labs-shell {
 /* ==================== TOPBAR: UNIFIED PARCHMENT MASTHEAD / FLOATING GEAR ON HOME ==================== */
 .labs-topbar {
   position: relative;
-  background-color: #e6dfd0;
+  background-color: #e6dcc4;
   background-image:
-    linear-gradient(180deg, rgba(242, 236, 222, 0.56) 0%, rgba(214, 202, 178, 0.64) 100%),
-    url('../assets/theme/paper-plate-tex.jpg');
+    linear-gradient(180deg, rgba(246, 239, 222, 0.14) 0%, rgba(214, 200, 170, 0.24) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
   background-size: cover;
+  background-position: center;
   border: 1.5px solid #594b36;
   border-radius: 7px;
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.52),
-    inset 0 1px 0 rgba(255, 255, 255, 0.68),
-    inset 0 0 18px rgba(68, 52, 28, 0.24);
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 0 22px rgba(68, 48, 22, 0.28);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   padding: 8px 11px;
@@ -112,7 +124,8 @@ body[data-labs-view="home"] .labs-shell {
 }
 
 body[data-labs-view="vault"] .labs-topbar,
-body[data-labs-view="fartnalysis"] .labs-topbar {
+body[data-labs-view="fartnalysis"] .labs-topbar,
+body[data-labs-view="guess"] .labs-topbar {
   border-radius: 7px 7px 0 0;
   margin-bottom: 0;
   border-bottom: 1.5px solid rgba(58, 46, 30, 0.36);
@@ -127,8 +140,16 @@ body[data-labs-view="fartnalysis"] .labs-topbar {
 }
 
 body[data-labs-view="vault"] #labs-view-vault > .labs-vault-dossier-head {
+  margin-bottom: 0 !important;
   border-top: none !important;
-  border-radius: 0 0 8px 8px !important;
+  border-radius: 0 !important;
+  border-left: 2px solid #493822 !important;
+  border-right: 2px solid #493822 !important;
+  border-bottom: 1.5px dashed rgba(68, 52, 28, 0.45) !important;
+  box-shadow:
+    inset 0 0 24px rgba(68, 44, 16, 0.22),
+    inset 5px 0 12px rgba(48, 30, 12, 0.28),
+    inset -5px 0 12px rgba(46, 28, 10, 0.28) !important;
 }
 
 body[data-labs-view="home"] .labs-topbar {
@@ -304,8 +325,10 @@ body[data-labs-view="home"] .labs-gear-btn {
 }
 
 .labs-settings-menu {
-  background-color: #ebe4d4;
-  background-image: url('../assets/theme/paper-plate-tex.jpg');
+  background-color: #ebe2ce;
+  background-image:
+    linear-gradient(178deg, rgba(245, 238, 222, 0.14) 0%, rgba(216, 202, 172, 0.22) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
   background-size: cover;
   border: 1.5px solid #5c4e38;
   border-radius: 8px;
@@ -561,10 +584,10 @@ h1, h2, h3, h4,
 .labs-reveal-card,
 .labs-share-verdict-card,
 .labs-report-signature {
-  background-color: #e6dfd0;
+  background-color: #e6dcc4;
   background-image:
-    linear-gradient(178deg, rgba(242, 235, 218, 0.42) 0%, rgba(214, 201, 174, 0.56) 100%),
-    url('../assets/theme/paper-plate-tex.jpg');
+    linear-gradient(178deg, rgba(246, 239, 222, 0.12) 0%, rgba(214, 198, 168, 0.22) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
   background-size: 100% 100%, cover;
   background-position: center;
   border: 1.5px solid var(--paper-border);
@@ -573,7 +596,7 @@ h1, h2, h3, h4,
     0 12px 26px rgba(0, 0, 0, 0.52),
     0 2px 6px rgba(0, 0, 0, 0.34),
     inset 0 1px 0 var(--paper-edge),
-    inset 0 0 22px rgba(84, 66, 38, 0.16);
+    inset 0 0 26px rgba(68, 48, 20, 0.26);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: var(--ink);
@@ -663,7 +686,7 @@ h1, h2, h3, h4,
 }
 
 .labs-vault-fig {
-  width: 104px;
+  width: 102px;
   flex-shrink: 0;
   margin-top: -2px;
 }
@@ -673,9 +696,22 @@ h1, h2, h3, h4,
   height: auto;
   display: block;
   mix-blend-mode: multiply;
-  opacity: 0.9;
-  border-radius: 4px;
+  filter: contrast(1.28) brightness(1.08) sepia(0.14);
+  opacity: 0.88;
   pointer-events: none;
+}
+
+.labs-vault-top-btns {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  gap: 6px !important;
+  align-items: center;
+}
+
+.labs-vault-top-btns button {
+  white-space: nowrap;
+  justify-content: center;
+  padding-inline: 10px !important;
 }
 
 .labs-vault-folder-row {
@@ -757,17 +793,43 @@ h1, h2, h3, h4,
   display: flex;
   align-items: flex-start;
   position: relative;
+  isolation: isolate;
   width: 100%;
+}
+
+.labs-fn-dossier-wrap::before,
+.labs-fn-dossier-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 3px 26px -5px -3px;
+  border-radius: 3px 3px 8px 8px;
+  border: 1.5px solid #594426;
+  background-color: #d7c7a6;
+  background-image: url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
+  background-size: cover;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.labs-fn-dossier-wrap::before {
+  transform: rotate(-0.85deg) translate(-3px, 3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.46);
+}
+
+.labs-fn-dossier-wrap::after {
+  transform: rotate(0.7deg) translate(2px, 5px);
+  opacity: 0.92;
 }
 
 .labs-fn-dossier-sheet {
   flex: 1;
   min-width: 0;
   position: relative;
-  background-color: #e2d9c5;
+  z-index: 2;
+  background-color: #e4dac2;
   background-image:
-    linear-gradient(180deg, rgba(246, 239, 224, 0.48) 0%, rgba(220, 206, 178, 0.68) 100%),
-    url('../assets/theme/paper-plate-tex.jpg');
+    linear-gradient(180deg, rgba(246, 239, 224, 0.14) 0%, rgba(218, 202, 172, 0.24) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
   background-size: cover;
   border: 2px solid #493822;
   border-top: none;
@@ -777,9 +839,7 @@ h1, h2, h3, h4,
     inset 6px 0 14px rgba(48, 30, 12, 0.42),
     inset -6px 0 14px rgba(46, 28, 10, 0.42),
     inset 0 -14px 28px rgba(52, 34, 14, 0.34),
-    -4px 4px 0 -1px #c8b694,
-    -4px 4px 0 0.5px #4e3b24,
-    0 18px 42px rgba(0, 0, 0, 0.76);
+    0 18px 42px rgba(0, 0, 0, 0.72);
   color: var(--ink);
 }
 
@@ -1637,9 +1697,9 @@ h1, h2, h3, h4,
     radial-gradient(circle at calc(100% - 8px) 8px, #b4b9b5 0 1.4px, #585d5a 1.8px 3px, #1d211f 3.5px, transparent 4.3px),
     radial-gradient(circle at 8px calc(100% - 8px), #b4b9b5 0 1.4px, #585d5a 1.8px 3px, #1d211f 3.5px, transparent 4.3px),
     radial-gradient(circle at calc(100% - 8px) calc(100% - 8px), #b4b9b5 0 1.4px, #585d5a 1.8px 3px, #1d211f 3.5px, transparent 4.3px),
-    linear-gradient(132deg, rgba(255, 255, 255, 0.16) 0%, transparent 46%, rgba(36, 26, 14, 0.14) 100%),
-    linear-gradient(178deg, rgba(236, 229, 211, 0.52) 0%, rgba(196, 182, 152, 0.72) 100%),
-    url('../assets/theme/paper-plate-tex.jpg') !important;
+    linear-gradient(132deg, rgba(255, 255, 255, 0.1) 0%, transparent 46%, rgba(36, 26, 14, 0.14) 100%),
+    linear-gradient(178deg, rgba(244, 236, 218, 0.12) 0%, rgba(210, 194, 164, 0.22) 100%),
+    url('../assets/theme/dossier-card-stack.jpg?v=20261126j') !important;
   background-size: auto, auto, auto, auto, 100% 100%, 100% 100%, cover !important;
   background-position: center !important;
   padding: 25px 12px 11px !important;
@@ -4597,71 +4657,174 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   font-weight: 600;
 }
 
-.labs-vault-grid {
+/* Continuous Weathered Filing Chamber Joined to Vault Header */
+#vault-chamber.labs-vault-chamber {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+  background-color: #5b4931 !important;
+  background-image:
+    linear-gradient(180deg, rgba(58, 43, 24, 0.72) 0%, rgba(38, 28, 16, 0.82) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126k') !important;
+  background-size: cover !important;
+  border: 2px solid #493822 !important;
+  border-top: none !important;
+  border-radius: 0 0 8px 8px !important;
+  padding: 9px 7px 12px !important;
+  box-shadow:
+    inset 0 8px 18px rgba(0, 0, 0, 0.36),
+    0 18px 36px rgba(0, 0, 0, 0.64) !important;
+}
+
+#vault-grid.labs-vault-grid {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 9px !important;
+  padding: 0 !important;
+}
+
+.labs-vault-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+  margin-bottom: 2px !important;
+}
+
+.labs-vault-group-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 6px 10px !important;
+  border-radius: 5px !important;
+  background-color: #ebdfc4 !important;
+  background-image: linear-gradient(180deg, rgba(250, 244, 228, 0.94) 0%, rgba(226, 212, 180, 0.96) 100%) !important;
+  border: 1.5px solid #6b5637 !important;
+  border-left: 5px solid #145a41 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24) !important;
+}
+
+.labs-vault-group-guesses .labs-vault-group-head {
+  border-left-color: #a65211 !important;
+}
+
+.labs-vault-group-defaults .labs-vault-group-head {
+  border-left-color: #1d4f82 !important;
+}
+
+.labs-vault-group-title {
+  font-family: var(--font-mono) !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: #141816 !important;
+}
+
+.labs-vault-group-sub {
+  font-size: 0.66rem !important;
+  font-weight: 600 !important;
+  color: #3d3e36 !important;
+}
+
+.labs-vault-group > .labs-vault-grid {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  gap: 18px !important;
-  padding: 4px 3px 8px;
+  gap: 7px !important;
+  padding: 0 !important;
 }
 
 @media (min-width: 780px) {
-  .labs-vault-grid {
+  .labs-vault-group > .labs-vault-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 20px 18px !important;
+    gap: 10px !important;
   }
 }
 
+/* Photographic Stacked Manila Sleeve Cards + Progressive Age Grime + Dusty Relic */
 .labs-vault-card {
   position: relative;
-  overflow: visible !important;
-  padding: 13px 13px 10px !important;
-  gap: 9px !important;
-  border-radius: 5px !important;
-  border: 1.5px solid #6f5a38 !important;
-  border-left: 5px solid #8a7046 !important;
-  background-color: #ece4d2 !important;
-  background-image:
-    linear-gradient(176deg, rgba(248, 243, 231, 0.62) 0%, rgba(226, 214, 188, 0.74) 100%),
-    url('../assets/theme/paper-plate-tex.jpg') !important;
-  background-size: 100% 100%, cover !important;
-  /* Multi-layer stacked manila file under-sheets peeking left, right, and bottom */
-  box-shadow:
-    -4px 3px 0 0 #d5c4a1,
-    -4px 3px 0 1.2px rgba(68, 52, 28, 0.6),
-    3px 5px 0 0 #c9b58d,
-    3px 5px 0 1.2px rgba(68, 52, 28, 0.56),
-    -1px 8px 0 -1px #bd9f73,
-    -1px 8px 0 0.5px rgba(62, 46, 24, 0.52),
-    0 12px 22px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.68) !important;
+  overflow: hidden !important;
+  padding: 13px 25px 17px 25px !important;
+  gap: 7px !important;
+  border-radius: 4px !important;
+  border: none !important;
+  border-left: none !important;
+  background-color: #dfd0b0 !important;
+  background-image: url('../assets/theme/dossier-vault-sleeve.jpg?v=20261126k') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.44) !important;
   color: #161a18 !important;
   transition: transform 0.14s ease, box-shadow 0.14s ease;
 }
 
-/* Manila folder tab lip on top-right of each specimen sleeve */
 .labs-vault-card::before {
-  content: "";
-  position: absolute;
-  top: -7px;
-  right: 16px;
-  width: 68px;
-  height: 7px;
-  background: linear-gradient(180deg, #d8c7a3 0%, #c8b389 100%);
-  border: 1.5px solid #6f5a38;
-  border-bottom: none;
-  border-radius: 4px 4px 0 0;
-  pointer-events: none;
+  display: none !important;
+}
+
+/* Progressive Archive Age Grime (New -> Ancient) */
+.labs-vault-card[data-age-tier="1"] {
+  box-shadow:
+    inset 0 0 20px rgba(84, 56, 22, 0.16),
+    0 5px 12px rgba(0, 0, 0, 0.44) !important;
+}
+
+.labs-vault-card[data-age-tier="2"] {
+  filter: sepia(0.14) brightness(0.97);
+  box-shadow:
+    inset 0 0 28px rgba(76, 46, 16, 0.26),
+    0 5px 12px rgba(0, 0, 0, 0.46) !important;
+}
+
+.labs-vault-card[data-age-tier="3"] {
+  filter: sepia(0.24) brightness(0.94) contrast(1.03);
+  box-shadow:
+    inset 0 0 36px rgba(66, 38, 12, 0.36),
+    0 6px 14px rgba(0, 0, 0, 0.5) !important;
+}
+
+.labs-vault-card[data-age-tier="4"] {
+  filter: sepia(0.32) brightness(0.91) contrast(1.04);
+  box-shadow:
+    inset 0 0 42px rgba(58, 32, 10, 0.44),
+    0 6px 15px rgba(0, 0, 0, 0.52) !important;
+}
+
+/* Oldest Archived Specimen: Dusty Photographic Surface + Top-Edge Dust Haze */
+.labs-vault-card[data-oldest="true"] {
+  padding: 15px 18px 18px 18px !important;
+  background-image:
+    linear-gradient(180deg, rgba(148, 134, 114, 0.22) 0%, rgba(120, 106, 86, 0.06) 24%, transparent 45%),
+    url('../assets/theme/dossier-vault-dusty.jpg?v=20261126k') !important;
+  background-size: 100% 100%, 100% 100% !important;
+  filter: sepia(0.22) contrast(1.05) brightness(0.95);
+  box-shadow:
+    inset 0 10px 20px rgba(96, 86, 70, 0.28),
+    inset 0 0 34px rgba(56, 36, 14, 0.36),
+    0 7px 16px rgba(0, 0, 0, 0.54) !important;
+}
+
+.labs-vc-oldest-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #5c2a0c;
+  background: rgba(235, 218, 186, 0.85);
+  border: 1px solid rgba(112, 68, 28, 0.5);
+  border-radius: 3px;
+  padding: 1px 5px;
 }
 
 .labs-vault-card:hover {
   transform: translateY(-2px);
-  border-color: #3f311d !important;
 }
 
 .labs-vault-card.is-selected {
   outline: 2.5px solid #145a41;
-  outline-offset: 2px;
-  background-color: #e3efe7 !important;
+  outline-offset: -2px;
 }
 
 .labs-vc-sleeve-top {
@@ -4856,48 +5019,38 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   margin-left: auto;
 }
 
-.labs-vc-ico-btn {
+.labs-vc-ink-act {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 4px 8px;
-  border-radius: 5px;
-  border: 1px solid rgba(58, 48, 34, 0.38);
-  background: rgba(252, 249, 242, 0.88);
-  color: #161a18;
+  padding: 2px 6px;
+  border: none !important;
+  border-radius: 3px;
+  background: transparent !important;
+  color: #203229;
   font-family: var(--font-mono);
-  font-size: 0.66rem;
+  font-size: 0.67rem;
   font-weight: 800;
+  letter-spacing: 0.01em;
   cursor: pointer;
 }
 
-.labs-vc-ico-btn:hover {
-  background: #f3ecda;
-  border-color: #145a41;
+.labs-vc-ink-act:hover {
+  background: rgba(58, 46, 28, 0.1) !important;
+  text-decoration: underline;
 }
 
-.labs-vc-ico-btn.vc-analyze {
-  background: #eee7fa;
-  border-color: #5b38a6;
-  color: #2f1863;
+.labs-vc-ink-act.vc-analyze {
+  color: #3b237a;
 }
 
-.labs-vc-ico-btn.vc-guess,
-.labs-vc-ico-btn.vc-compare {
-  background: #d7efe2;
-  border-color: #156e47;
-  color: #0b472b;
+.labs-vc-ink-act.vc-guess,
+.labs-vc-ink-act.vc-compare {
+  color: #0e4f33;
 }
 
-.labs-vc-ico-btn.is-del {
-  background: #fbe1de;
-  border-color: #a6261d;
-  color: #821710;
-  padding: 4px 7px;
-}
-
-.labs-vc-ico-btn.is-del:hover {
-  background: #f5cbc6;
+.labs-vc-ink-act.is-del {
+  color: #931d15;
 }
 
 .labs-vc-lock-pip {
@@ -5065,16 +5218,101 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   color: #161a18 !important;
 }
 
-/* ==================== GUESS THE FART DOSSIER, SPLIT HINT & SCORE DIAL ==================== */
-#guess-clue-bar,
-#guess-recorder-card,
-#guess-inline-results,
-#guess-leaderboard-wrap {
+/* ==================== MULTI-PAGE STACKED DOSSIER PAGES & UNIFIED GUESS DOSSIER ==================== */
+.labs-dossier-page-stack,
+.labs-detail-hero,
+.labs-rf-dossier-head,
+.labs-rf-dossier-card,
+#seq-setup-card,
+#qf-setup-card {
+  position: relative;
+  isolation: isolate;
+  overflow: visible !important;
+}
+
+.labs-dossier-page-stack::before,
+.labs-dossier-page-stack::after,
+.labs-detail-hero::before,
+.labs-detail-hero::after,
+.labs-rf-dossier-card::before,
+.labs-rf-dossier-card::after,
+#seq-setup-card::before,
+#seq-setup-card::after,
+#qf-setup-card::before,
+#qf-setup-card::after {
+  content: "";
+  position: absolute;
+  inset: 2px -3px -5px -3px;
+  border-radius: 5px;
+  border: 1.5px solid #594426;
+  background-color: #d6c5a3;
+  background-image: url('../assets/theme/dossier-paper-aged.jpg?v=20261126k');
+  background-size: cover;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.labs-dossier-page-stack::before,
+.labs-detail-hero::before,
+.labs-rf-dossier-card::before,
+#seq-setup-card::before,
+#qf-setup-card::before {
+  transform: rotate(-1.05deg) translate(-2px, 3px);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+}
+
+.labs-dossier-page-stack::after,
+.labs-detail-hero::after,
+.labs-rf-dossier-card::after,
+#seq-setup-card::after,
+#qf-setup-card::after {
+  transform: rotate(0.85deg) translate(2px, 5px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.36);
+}
+
+/* Unified Guess The Fart Dossier Sheet */
+.labs-guess-dossier-sheet {
+  background-color: #e6dcc4;
+  background-image:
+    linear-gradient(178deg, rgba(246, 239, 222, 0.14) 0%, rgba(214, 198, 168, 0.24) 100%),
+    url('../assets/theme/dossier-paper-aged.jpg?v=20261126j');
+  background-size: 100% 100%, cover;
+  background-position: center;
+  border: 2px solid #493822;
+  border-top: none;
+  border-radius: 0 0 7px 7px;
   box-shadow:
-    -3px 3px 0 0 #d5c4a1,
-    -3px 3px 0 1px rgba(68, 52, 28, 0.55),
-    0 12px 26px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+    inset 0 0 34px rgba(68, 44, 16, 0.32),
+    inset 5px 0 12px rgba(48, 30, 12, 0.36),
+    inset -5px 0 12px rgba(46, 28, 10, 0.36),
+    0 18px 40px rgba(0, 0, 0, 0.68);
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.labs-guess-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 13px 8px;
+  border-bottom: 1px dashed rgba(68, 54, 34, 0.34);
+  flex-wrap: wrap;
+}
+
+.labs-guess-dossier-sheet > .labs-glass-card {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 11px 13px !important;
+}
+
+.labs-guess-dossier-sheet > #guess-recorder-card,
+.labs-guess-dossier-sheet > #guess-inline-results {
+  border-top: 1.5px solid rgba(58, 46, 30, 0.28) !important;
 }
 
 #guess-mode-pill {
@@ -5090,9 +5328,10 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   color: #0c2e52 !important;
 }
 
-#btn-guess-reset-blind {
-  background: rgba(250, 246, 236, 0.96) !important;
-  border: 1.5px solid rgba(58, 48, 34, 0.52) !important;
+#btn-guess-reset-blind,
+#btn-guess-toggle-picker {
+  background: rgba(250, 246, 236, 0.94) !important;
+  border: 1.5px solid rgba(58, 48, 34, 0.5) !important;
   color: #161a18 !important;
   font-weight: 800 !important;
 }
@@ -5101,7 +5340,7 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
 .labs-clue-name {
   color: #141816 !important;
   font-family: var(--font-display) !important;
-  font-size: 1.18rem !important;
+  font-size: 1.24rem !important;
   font-weight: 800 !important;
 }
 
@@ -5109,150 +5348,56 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
 .labs-clue-meta {
   color: #2f3530 !important;
   font-weight: 600 !important;
+  white-space: normal !important;
 }
 
-.labs-guess-howto {
-  background: rgba(250, 246, 236, 0.94);
-  border: 1px solid rgba(58, 48, 34, 0.34);
-  border-left: 4px solid #145a41;
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: #181d1a;
-}
-
+/* Always Side-by-Side Primary Guess & Play Fart First Buttons */
 .labs-game-hero-row {
   display: grid !important;
-  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr) !important;
-  gap: 9px !important;
+  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
   align-items: stretch;
 }
 
-@media (max-width: 520px) {
-  .labs-game-hero-row {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Unified Guess + Hint Split Button Control */
-.labs-guess-split-control {
-  display: flex;
-  align-items: stretch;
-  border-radius: 9px;
-  overflow: hidden;
-  border: 2px solid #0e402d;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.28);
-  background: #0f4430;
-}
-
-.labs-guess-split-control #btn-guess-rec {
-  flex: 1 1 auto;
-  min-width: 0;
+#btn-guess-rec {
   min-height: 70px !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: linear-gradient(180deg, #1a6e4f 0%, #0f4430 100%) !important;
+  border-radius: 8px !important;
+  border: 2px solid #0d3b29 !important;
+  background: linear-gradient(180deg, #1b7050 0%, #0f4430 100%) !important;
   color: #ffffff !important;
-  padding: 10px 12px !important;
+  padding: 10px 11px !important;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
-.labs-guess-split-control #btn-guess-rec.is-mimic {
-  background: linear-gradient(180deg, #244f82 0%, #163356 100%) !important;
+#btn-guess-rec.is-mimic {
+  border-color: #153459 !important;
+  background: linear-gradient(180deg, #245082 0%, #153459 100%) !important;
 }
 
-.labs-guess-split-control #btn-guess-rec.recording {
+#btn-guess-rec.recording {
+  border-color: #7c1811 !important;
   background: linear-gradient(180deg, #cf3529 0%, #991f16 100%) !important;
 }
 
-.labs-guess-split-control #btn-guess-rec .labs-game-btn-copy strong {
+#btn-guess-rec .labs-game-btn-copy strong {
   color: #ffffff !important;
-  font-size: 0.96rem;
+  font-size: clamp(0.86rem, 3.2vw, 0.98rem);
 }
 
-.labs-guess-split-control #btn-guess-rec .labs-game-btn-copy small {
+#btn-guess-rec .labs-game-btn-copy small {
   color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
 }
 
-.labs-guess-hint-segment {
-  flex: 0 0 auto;
-  min-width: 96px;
-  border: none !important;
-  border-left: 2px solid rgba(58, 40, 12, 0.48) !important;
-  border-radius: 0 !important;
-  background: linear-gradient(180deg, #f6e3a2 0%, #e7cc72 100%) !important;
-  color: #2f1b00 !important;
-  padding: 7px 10px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  text-align: center;
-  cursor: pointer;
-  transition: filter 0.14s ease;
-}
-
-.labs-guess-hint-segment:hover:not(:disabled) {
-  filter: brightness(1.04);
-}
-
-.labs-guess-hint-segment:disabled {
-  background: #e5ddc7 !important;
-  color: #4b473b !important;
-  opacity: 0.82;
-  cursor: default;
-}
-
-.labs-hint-seg-ico {
-  font-size: 0.92rem;
-  line-height: 1;
-}
-
-.labs-guess-hint-segment strong {
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  font-weight: 800;
-  color: #2c1900 !important;
-  line-height: 1.1;
-}
-
-.labs-guess-hint-segment small {
-  font-family: var(--font-mono);
-  font-size: 0.59rem;
-  font-weight: 700;
-  color: #4c2f02 !important;
-  line-height: 1.1;
-}
-
-#guess-hints-tray {
-  background: #f9f4e5 !important;
-  border: 1.5px solid #8c6a24 !important;
-  border-radius: 6px !important;
-  padding: 8px 10px !important;
-}
-
-#guess-hints-tray .labs-hint-chip {
-  color: #161a18 !important;
-  font-weight: 600;
-}
-
-#guess-hints-tray .labs-hint-chip strong {
-  color: #0e4e35 !important;
-}
-
-/* Fix Unreadable Play Fart First / Replay Fart Button */
 #btn-guess-play-first,
 .labs-game-playfirst-btn {
   min-height: 70px !important;
-  border-radius: 9px !important;
+  border-radius: 8px !important;
   background: linear-gradient(180deg, #1d4466 0%, #112b42 100%) !important;
   border: 2px solid #0d2336 !important;
   color: #ffffff !important;
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.24);
+  padding: 9px 8px !important;
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 #btn-guess-play-first:hover:not(:disabled),
@@ -5270,13 +5415,13 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
 #btn-guess-play-first strong,
 .labs-game-playfirst-btn strong {
   color: #ffffff !important;
-  font-size: 0.86rem !important;
+  font-size: clamp(0.78rem, 2.9vw, 0.88rem) !important;
 }
 
 #btn-guess-play-first small,
 .labs-game-playfirst-btn small {
   color: #cfe8ff !important;
-  font-size: 0.68rem !important;
+  font-size: 0.66rem !important;
   font-weight: 700 !important;
 }
 
@@ -5286,6 +5431,64 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   font-family: var(--font-mono);
   letter-spacing: 0.04em;
   min-height: 44px;
+}
+
+/* Separate Compact Hint Strip Underneath Action Buttons */
+.labs-guess-hint-strip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.labs-guess-hint-pill {
+  border-radius: 6px;
+  border: 1.5px solid #8c6411;
+  background: linear-gradient(180deg, #f6e3a2 0%, #e7cc72 100%);
+  color: #2c1900;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 5px 11px;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+}
+
+.labs-guess-hint-pill:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.labs-guess-hint-pill:disabled {
+  background: #e3dac4;
+  border-color: rgba(68, 56, 38, 0.36);
+  color: #4f4b3e;
+  cursor: default;
+}
+
+.labs-guess-hint-note {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #373c36;
+  flex: 1;
+  min-width: 0;
+}
+
+#guess-hints-tray {
+  background: #f9f4e5 !important;
+  border: 1.5px solid #8c6a24 !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+}
+
+#guess-hints-tray .labs-hint-chip {
+  color: #161a18 !important;
+  font-weight: 600;
+}
+
+#guess-hints-tray .labs-hint-chip strong {
+  color: #0e4e35 !important;
 }
 
 /* High-Contrast Score Dial & Result Card Elements */
