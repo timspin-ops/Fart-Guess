@@ -82,6 +82,26 @@
     qfScoreRaf: null,
     qfConfettiHandle: null,
     qfScoringActive: false,
+    seqCount: 3,
+    seqSource: 'all',
+    seqPlayerCount: 1,
+    seqPlayerNames: ['Player 1', 'Player 2', 'Player 3', 'Player 4'],
+    seqPhase: 'setup',
+    seqActive: false,
+    seqGen: 0,
+    seqTimers: [],
+    seqDeck: [],
+    seqPlayerIndex: 0,
+    seqActiveResultPlayer: 0,
+    seqPlayerResults: [],
+    seqStopCurrentRec: null,
+    rfDeck: [],
+    rfIndex: 0,
+    rfResults: [],
+    rfVoted: false,
+    rfOpenGen: 0,
+    rfPhase: 'play',
+    rfBriefCollapsed: false,
     hintLevel: 0,
     pickerOpen: false,
     historyOpen: false,
@@ -385,12 +405,15 @@
     var modal = $('labs-share-modal');
     var titleEl = $('labs-share-modal-title');
     var subEl = $('labs-share-modal-sub');
+    var pdfBtn = $('btn-share-modal-pdf');
     state.shareModalActions = {
       onShare: typeof opts.onShare === 'function' ? opts.onShare : null,
-      onEmail: typeof opts.onEmail === 'function' ? opts.onEmail : null
+      onEmail: typeof opts.onEmail === 'function' ? opts.onEmail : null,
+      onPdf: typeof opts.onPdf === 'function' ? opts.onPdf : null
     };
-    if (titleEl) titleEl.textContent = opts.title || 'Share or Email Report';
-    if (subEl) subEl.textContent = opts.subtitle || 'Choose how to send the full A.S.S. v4.2 PDF report & WAV audio.';
+    if (pdfBtn) pdfBtn.classList.toggle('hidden', !state.shareModalActions.onPdf);
+    if (titleEl) titleEl.textContent = opts.title || 'Share Report';
+    if (subEl) subEl.textContent = opts.subtitle || 'Choose how to export or send the full A.S.S. v4.2 PDF dossier & WAV audio.';
     if (modal) modal.classList.remove('hidden');
   }
 
@@ -1624,6 +1647,9 @@
     if (prevView === 'guess' && viewKey !== 'guess') {
       clearResultAnimations();
       abortQuickFireRound(true);
+      if (state.seqActive) {
+        abortSequenceRound(true);
+      }
     }
     if (prevView === 'vault' && viewKey !== 'vault') {
       dismissVaultDoorImmediate();
@@ -1635,7 +1661,14 @@
       state.prevBeforeVault = prevView;
     }
     if (viewKey === 'fartnalysis' && prevView && prevView !== 'fartnalysis' && prevView !== 'team') {
-      state.prevBeforeFartnalysis = prevView === 'vault' || prevView === 'detail' ? 'vault' : prevView === 'guess' ? 'guess' : 'home';
+      state.prevBeforeFartnalysis =
+        prevView === 'vault' || prevView === 'detail'
+          ? 'vault'
+          : prevView === 'guess'
+          ? 'guess'
+          : prevView === 'realfake'
+          ? 'realfake'
+          : 'home';
     }
     state.view = viewKey;
     if (document.body && typeof document.body.setAttribute === 'function') {
@@ -1644,12 +1677,7 @@
 
     var brandSub = $('labs-brand-sub');
     if (brandSub) {
-      brandSub.textContent =
-        viewKey === 'fartnalysis'
-          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · FARTNALYSIS REPORT'
-          : viewKey === 'team'
-          ? 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · RESEARCH DIRECTORY'
-          : 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH';
+      brandSub.textContent = 'INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH';
     }
 
     var views = document.querySelectorAll('.labs-view');
@@ -1687,7 +1715,11 @@
           drawGuessWaveforms();
           if (state.inlineSpecA) state.inlineSpecA.resize();
           if (state.inlineSpecB) state.inlineSpecB.resize();
-        } else if (viewKey === 'fartnalysis' && state.fnController) state.fnController.resize();
+        } else if (viewKey === 'fartnalysis' && state.fnController) {
+          state.fnController.resize();
+        } else if (viewKey === 'realfake') {
+          renderRealFakeStage();
+        }
       });
     }
   }
@@ -3658,19 +3690,32 @@
 
   function setGuessSubMode(subMode) {
     clearRevealTimers();
-    var next = subMode === 'blind' ? 'blind' : subMode === 'quickfire' ? 'quickfire' : 'standard';
+    var next =
+      subMode === 'blind'
+        ? 'blind'
+        : subMode === 'quickfire'
+        ? 'quickfire'
+        : subMode === 'sequence'
+        ? 'sequence'
+        : 'standard';
     if (state.guessSubMode === 'quickfire' && next !== 'quickfire') {
       abortQuickFireRound(true);
+    }
+    if (state.guessSubMode === 'sequence' && next !== 'sequence' && state.seqActive) {
+      abortSequenceRound(true);
     }
     state.guessSubMode = next;
     var stdPane = $('guess-standard-pane');
     var blindPane = $('guess-blind-pane');
     var qfPane = $('guess-quickfire-pane');
+    var seqPane = $('guess-sequence-pane');
     if (stdPane) stdPane.classList.toggle('hidden', next !== 'standard');
     if (blindPane) blindPane.classList.toggle('hidden', next !== 'blind');
     if (qfPane) qfPane.classList.toggle('hidden', next !== 'quickfire');
+    if (seqPane) seqPane.classList.toggle('hidden', next !== 'sequence');
     if (next === 'blind') renderBlindPane();
     else if (next === 'quickfire') renderQuickFirePane();
+    else if (next === 'sequence') renderSequencePane();
     else renderGuessView();
   }
 
@@ -4194,6 +4239,926 @@
     if (!state.qfActive) state.qfPhase = 'setup';
     showView('guess');
     setGuessSubMode('quickfire');
+  }
+
+  /* ==================== SEQUENTIAL RECALL (MEMORY SEQUENCE SOLO & MULTIPLAYER) ==================== */
+  function clearSequenceTimers() {
+    for (var i = 0; i < (state.seqTimers || []).length; i++) {
+      clearTimeout(state.seqTimers[i]);
+    }
+    state.seqTimers = [];
+  }
+
+  function setSequenceCount(n) {
+    var clamped = Math.max(2, Math.min(6, parseInt(n, 10) || 3));
+    state.seqCount = clamped;
+    var inp = $('seq-count-input');
+    if (inp) inp.value = String(clamped);
+    var pills = $('seq-count-pills');
+    if (pills) {
+      pills.querySelectorAll('[data-seq-count]').forEach(function (b) {
+        b.classList.toggle('active', parseInt(b.getAttribute('data-seq-count'), 10) === clamped);
+      });
+    }
+    renderSequenceSetup();
+  }
+
+  function setSequencePlayerCount(n) {
+    var clamped = Math.max(1, Math.min(4, parseInt(n, 10) || 1));
+    state.seqPlayerCount = clamped;
+    var pills = $('seq-player-pills');
+    if (pills) {
+      pills.querySelectorAll('[data-seq-players]').forEach(function (b) {
+        b.classList.toggle('active', parseInt(b.getAttribute('data-seq-players'), 10) === clamped);
+      });
+    }
+    renderSequenceSetup();
+  }
+
+  function syncSequencePlayerNamesFromDom() {
+    var box = $('seq-players-inputs');
+    if (!box) return;
+    box.querySelectorAll('input[data-seq-pidx]').forEach(function (inp) {
+      var idx = parseInt(inp.getAttribute('data-seq-pidx'), 10);
+      if (!isNaN(idx)) {
+        state.seqPlayerNames[idx] = inp.value.trim() || ('Player ' + (idx + 1));
+      }
+    });
+  }
+
+  function getActiveSeqPlayers() {
+    syncSequencePlayerNamesFromDom();
+    var count = Math.max(1, Math.min(4, state.seqPlayerCount || 1));
+    if (count === 1) return ['Solo Participant'];
+    var list = [];
+    for (var i = 0; i < count; i++) {
+      list.push((state.seqPlayerNames && state.seqPlayerNames[i]) || ('Player ' + (i + 1)));
+    }
+    return list;
+  }
+
+  function renderSequenceSetup() {
+    var pool = getQuickFirePool(state.seqSource || 'all');
+    var actual = Math.min(state.seqCount || 3, pool.length);
+    var noteEl = $('seq-pool-note');
+    var startBtn = $('btn-seq-start');
+    var srcSel = $('seq-source-select');
+    var inp = $('seq-count-input');
+    var pBox = $('seq-players-inputs');
+
+    if (srcSel) srcSel.value = state.seqSource || 'all';
+    if (inp) inp.value = String(state.seqCount || 3);
+    if (noteEl) {
+      noteEl.textContent =
+        pool.length < 2
+          ? 'Need at least 2 farts in this pool — record another or choose All Vault Farts.'
+          : pool.length + ' farts in pool · Sequence of ' + actual + ' specimen' + (actual === 1 ? '' : 's');
+    }
+    if (startBtn) {
+      startBtn.disabled = pool.length < 2;
+      startBtn.textContent =
+        pool.length >= 2
+          ? '🧠 Start ' + actual + '-Fart Memory Sequence' + (state.seqPlayerCount > 1 ? ' (' + state.seqPlayerCount + ' Players)' : '')
+          : '🧠 Need 2+ Specimens';
+    }
+    if (pBox) {
+      var pc = state.seqPlayerCount || 1;
+      pBox.classList.toggle('hidden', pc < 2);
+      if (pc >= 2) {
+        var existingCount = pBox.querySelectorAll('input[data-seq-pidx]').length;
+        if (existingCount !== pc) {
+          var html = [];
+          for (var i = 0; i < pc; i++) {
+            var val = (state.seqPlayerNames && state.seqPlayerNames[i]) || ('Player ' + (i + 1));
+            html.push('<input type="text" class="labs-text-input" maxlength="20" data-seq-pidx="' + i + '" value="' + esc(val) + '" placeholder="Player ' + (i + 1) + '" />');
+          }
+          pBox.innerHTML = html.join('');
+        }
+      } else {
+        pBox.innerHTML = '';
+      }
+    }
+  }
+
+  function renderSequenceStepPills(activeIdx, phaseMode, completedCount) {
+    var el = $('seq-step-pills');
+    if (!el) return;
+    var total = (state.seqDeck && state.seqDeck.length) || state.seqCount || 3;
+    var html = [];
+    for (var i = 0; i < total; i++) {
+      var cls = 'labs-seq-pill';
+      if (i < (completedCount || 0)) cls += ' is-done';
+      else if (i === activeIdx) cls += phaseMode === 'rec' ? ' is-rec' : ' is-active';
+      html.push('<span class="' + cls + '">#' + (i + 1) + '</span>');
+    }
+    el.innerHTML = html.join('');
+  }
+
+  function renderSequenceResults() {
+    var pResults = state.seqPlayerResults || [];
+    if (pResults.length === 0) return;
+    var activeP = Math.max(0, Math.min(pResults.length - 1, state.seqActiveResultPlayer || 0));
+    state.seqActiveResultPlayer = activeP;
+    var curPlayer = pResults[activeP];
+    var rows = curPlayer.items || [];
+
+    var avgEl = $('seq-avg-score');
+    var rankEl = $('seq-avg-rank');
+    var noteEl = $('seq-memory-note');
+    var tabsEl = $('seq-player-tabs');
+    var listEl = $('seq-results-list');
+
+    var avg = curPlayer.avgScore || 0;
+    var rank = TootLabs.Store.getRankForScore(avg);
+    if (avgEl) avgEl.textContent = avg.toFixed(1) + '%';
+    if (rankEl) rankEl.textContent = rank.title || rank.name || 'Rook';
+
+    if (noteEl) {
+      if (rows.length >= 3) {
+        var firstSc = rows[0].exactScore || 0;
+        var midIdx = Math.floor(rows.length / 2);
+        var midSc = rows[midIdx].exactScore || 0;
+        var lastSc = rows[rows.length - 1].exactScore || 0;
+        if (firstSc >= midSc + 6 && lastSc >= midSc + 6) {
+          noteEl.textContent = 'Serial-position curve: Primacy (#' + 1 + ': ' + Math.round(firstSc) + '%) & Recency (#' + rows.length + ': ' + Math.round(lastSc) + '%) held stronger than middle chunk #' + (midIdx + 1) + '.';
+        } else if (lastSc < firstSc - 8) {
+          noteEl.textContent = 'Echoic decay observed: Item #1 (' + Math.round(firstSc) + '%) held via rehearsal while trailing order #'+ rows.length + ' (' + Math.round(lastSc) + '%) faded.';
+        } else {
+          noteEl.textContent = 'Working memory held ' + rows.length + ' acoustic chunks evenly (' + avg.toFixed(1) + '% mean fidelity). Tap Compare on any row for 3D analysis.';
+        }
+      } else {
+        noteEl.textContent = 'Echoic memory trial across ' + rows.length + ' sequential specimens (' + avg.toFixed(1) + '% mean fidelity).';
+      }
+    }
+
+    if (tabsEl) {
+      tabsEl.classList.toggle('hidden', pResults.length <= 1);
+      if (pResults.length > 1) {
+        var rankedOrder = pResults
+          .map(function (p, i) { return { idx: i, name: p.playerName, avg: p.avgScore || 0 }; })
+          .sort(function (a, b) { return b.avg - a.avg; });
+        var rankMap = {};
+        rankedOrder.forEach(function (entry, rIdx) {
+          rankMap[entry.idx] = rIdx === 0 ? '🥇' : rIdx === 1 ? '🥈' : rIdx === 2 ? '🥉' : '#' + (rIdx + 1);
+        });
+        tabsEl.innerHTML = pResults
+          .map(function (pr, idx) {
+            return (
+              '<button type="button" class="labs-seq-ptab' + (idx === activeP ? ' active' : '') + '" data-seq-ptab="' + idx + '">' +
+              rankMap[idx] + ' ' + esc(pr.playerName) + ' · ' + (pr.avgScore || 0).toFixed(1) + '%' +
+              '</button>'
+            );
+          })
+          .join('');
+        tabsEl.querySelectorAll('[data-seq-ptab]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            state.seqActiveResultPlayer = parseInt(this.getAttribute('data-seq-ptab'), 10) || 0;
+            renderSequenceResults();
+          });
+        });
+      } else {
+        tabsEl.innerHTML = '';
+      }
+    }
+
+    if (listEl) {
+      listEl.innerHTML = rows
+        .map(function (r, idx) {
+          var tName = getSampleName(r.target);
+          var hasAttempt = Boolean(r.guessSound && r.guessSound.samples && r.guessSound.samples.length > 0);
+          var scTxt = r.missed ? 'Missed' : (r.exactScore || 0).toFixed(1) + '%';
+          var attBtns = hasAttempt
+            ? '<button type="button" class="labs-btn-ghost labs-btn-xs" data-seq-play-g="' + idx + '" title="Play attempt">🎤</button>' +
+              '<button type="button" class="labs-btn-ghost labs-btn-xs" data-seq-play-both="' + idx + '" title="Play both">🔊</button>' +
+              '<button type="button" class="labs-btn labs-btn-blue labs-btn-xs" data-seq-analyze="' + idx + '" title="Full Comparative Analysis">🔬 Analyze</button>'
+            : '';
+          return (
+            '<div class="labs-seq-compact-row">' +
+            '  <div class="labs-seq-row-left">' +
+            '    <span class="labs-seq-row-idx">#' + (idx + 1) + '</span>' +
+            '    <span class="labs-seq-row-name">' + esc(tName) + '</span>' +
+            '  </div>' +
+            '  <span class="labs-seq-row-score">' + scTxt + '</span>' +
+            '  <div class="labs-seq-row-btns">' +
+            '    <button type="button" class="labs-btn-ghost labs-btn-xs" data-seq-play-t="' + idx + '" title="Play target">▶</button>' +
+            attBtns +
+            '  </div>' +
+            '</div>'
+          );
+        })
+        .join('');
+
+      listEl.querySelectorAll('[data-seq-play-t]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = rows[parseInt(this.getAttribute('data-seq-play-t'), 10)];
+          if (row && row.target && row.target.samples) {
+            TootApp.Audio.playSound(row.target.samples, row.target.sampleRate || 44100, { channel: 'seq_replay' });
+          }
+        });
+      });
+      listEl.querySelectorAll('[data-seq-play-g]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = rows[parseInt(this.getAttribute('data-seq-play-g'), 10)];
+          if (row && row.guessSound && row.guessSound.samples) {
+            TootApp.Audio.playSound(row.guessSound.samples, row.guessSound.sampleRate || 44100, { channel: 'seq_replay' });
+          }
+        });
+      });
+      listEl.querySelectorAll('[data-seq-play-both]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = rows[parseInt(this.getAttribute('data-seq-play-both'), 10)];
+          if (row && row.target && row.target.samples && row.guessSound && row.guessSound.samples && TootApp.Audio.playSimultaneous) {
+            TootApp.Audio.playSimultaneous([
+              { samples: row.target.samples, sampleRate: row.target.sampleRate || 44100, channel: 'seq_a' },
+              { samples: row.guessSound.samples, sampleRate: row.guessSound.sampleRate || 44100, channel: 'seq_b' }
+            ]);
+          }
+        });
+      });
+      listEl.querySelectorAll('[data-seq-analyze]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var row = rows[parseInt(this.getAttribute('data-seq-analyze'), 10)];
+          if (row && row.target && row.attempt && row.attempt.id) {
+            openFartnalysis('comparison', row.target.id, row.attempt.id);
+          }
+        });
+      });
+    }
+  }
+
+  function renderSequencePane() {
+    var setupCard = $('seq-setup-card');
+    var liveCard = $('seq-live-card');
+    var resCard = $('seq-results-card');
+    var phase = state.seqPhase || 'setup';
+    if (setupCard) setupCard.classList.toggle('hidden', phase !== 'setup');
+    if (liveCard) liveCard.classList.toggle('hidden', phase !== 'live');
+    if (resCard) resCard.classList.toggle('hidden', phase !== 'results');
+    if (phase === 'setup') renderSequenceSetup();
+    else if (phase === 'results') renderSequenceResults();
+  }
+
+  function abortSequenceRound(silent) {
+    var wasLive = state.seqActive || state.seqPhase === 'live';
+    state.seqGen++;
+    state.seqActive = false;
+    clearSequenceTimers();
+    if (wasLive && root.TootApp && root.TootApp.Audio) {
+      if (typeof root.TootApp.Audio.stopAll === 'function') root.TootApp.Audio.stopAll();
+    }
+    var stopper = state.seqStopCurrentRec;
+    state.seqStopCurrentRec = null;
+    if (typeof stopper === 'function') {
+      try { stopper(); } catch (e) {}
+    } else if (wasLive && root.TootApp && root.TootApp.Audio && root.TootApp.Audio.isRecording && root.TootApp.Audio.isRecording()) {
+      try { root.TootApp.Audio.stopRecording(); } catch (e) {}
+    }
+    ['btn-seq-done-early', 'btn-seq-replay', 'btn-seq-begin-turn'].forEach(function (bid) {
+      if ($(bid)) $(bid).classList.add('hidden');
+    });
+    if (wasLive) state.seqPhase = 'setup';
+    if (!silent && state.view === 'guess' && state.guessSubMode === 'sequence') {
+      renderSequencePane();
+    }
+  }
+
+  function openSequenceMode() {
+    closeSettingsMenu();
+    if (!state.seqActive && state.seqPhase !== 'results') state.seqPhase = 'setup';
+    showView('guess');
+    setGuessSubMode('sequence');
+  }
+
+  function startSequenceRound(reuseSameDeck) {
+    if (state.revealInProgress) {
+      showToast('Finish the current reveal first.', true);
+      return Promise.resolve([]);
+    }
+    if (TootApp.Audio && TootApp.Audio.isRecordingOrStarting && TootApp.Audio.isRecordingOrStarting()) {
+      showToast('Stop the active recording first.', true);
+      return Promise.resolve([]);
+    }
+
+    var players = getActiveSeqPlayers();
+    var deck = reuseSameDeck && state.seqDeck && state.seqDeck.length >= 2
+      ? state.seqDeck.slice()
+      : pickQuickFireDeck(state.seqCount || 3, state.seqSource || 'all');
+
+    if (deck.length < 2) {
+      showToast('Need at least 2 farts in this pool!', true);
+      return Promise.resolve([]);
+    }
+
+    var gen = ++state.seqGen;
+    clearSequenceTimers();
+    state.seqActive = true;
+    state.seqDeck = deck;
+    state.seqPlayerIndex = 0;
+    state.seqPlayerResults = [];
+    state.seqPhase = 'live';
+    state.seqStopCurrentRec = null;
+    if (TootApp.Audio && typeof TootApp.Audio.stopAll === 'function') {
+      TootApp.Audio.stopAll();
+    }
+    renderSequencePane();
+    renderSequenceStepPills(0, 'listen', 0);
+
+    var counterEl = $('seq-round-counter');
+    var bannerEl = $('seq-stage-banner');
+    var phaseEl = $('seq-phase-word');
+    var badgeEl = $('seq-stage-badge');
+    var titleEl = $('seq-stage-title');
+    var subEl = $('seq-stage-sub');
+    var timerBar = $('seq-timer-bar');
+    var waveCanvas = $('seq-wave-canvas');
+    var replayBtn = $('btn-seq-replay');
+    var beginBtn = $('btn-seq-begin-turn');
+    var doneBtn = $('btn-seq-done-early');
+
+    [replayBtn, beginBtn, doneBtn].forEach(function (b) { if (b) b.classList.add('hidden'); });
+    if (counterEl) counterEl.textContent = 'PREPARING · ' + deck.length + ' SPECIMENS';
+    if (bannerEl) {
+      bannerEl.classList.remove('is-recording', 'is-detected', 'is-scoring');
+      bannerEl.classList.add('is-listening');
+    }
+    if (phaseEl) phaseEl.textContent = '⚙️ CALIBRATING';
+    if (badgeEl) badgeEl.textContent = 'WARMING MIC & DECODING SEQUENCE';
+    if (titleEl) titleEl.textContent = 'Loading ' + deck.length + ' Acoustic Events…';
+    if (subEl) subEl.textContent = 'Listen carefully to the order, pitch, and rhythm.';
+    if (timerBar && timerBar.style) timerBar.style.width = '0%';
+
+    function waitSeq(ms) {
+      return new Promise(function (resolve) {
+        var t = setTimeout(resolve, ms);
+        state.seqTimers.push(t);
+      });
+    }
+
+    var warmP = TootApp.Audio && typeof TootApp.Audio.warmMic === 'function'
+      ? TootApp.Audio.warmMic()
+      : Promise.resolve(true);
+
+    return Promise.all([warmP].concat(deck.map(function (s) { return ensureTargetReady(s); })))
+      .then(function (resolved) {
+        if (gen !== state.seqGen || !state.seqActive) return [];
+        var readyDeck = resolved.slice(1).filter(function (s) { return s && s.samples && s.samples.length > 0; });
+        if (readyDeck.length < 2) {
+          abortSequenceRound(true);
+          renderSequencePane();
+          showToast('Could not decode enough specimens for Sequential Recall.', true);
+          return [];
+        }
+        state.seqDeck = readyDeck;
+
+        function playOne(idx) {
+          if (gen !== state.seqGen || !state.seqActive) return Promise.resolve();
+          var target = readyDeck[idx];
+          renderSequenceStepPills(idx, 'listen', idx);
+          if (counterEl) counterEl.textContent = 'MEMORIZE · FART ' + (idx + 1) + ' OF ' + readyDeck.length;
+          if (bannerEl) {
+            bannerEl.classList.remove('is-recording', 'is-detected', 'is-scoring');
+            bannerEl.classList.add('is-listening');
+          }
+          if (phaseEl) phaseEl.textContent = '🔊 LISTEN #' + (idx + 1);
+          if (badgeEl) badgeEl.textContent = 'AUDITORY ENCODING · SPECIMEN ' + (idx + 1) + ' OF ' + readyDeck.length;
+          if (titleEl) titleEl.textContent = 'Sequence Event #' + (idx + 1);
+          if (subEl) subEl.textContent = 'Lock pitch & rhythm in working memory…';
+
+          return new Promise(function (resolve) {
+            var settled = false;
+            var fbTimer = null;
+            function finish() {
+              if (settled) return;
+              settled = true;
+              if (fbTimer) clearTimeout(fbTimer);
+              resolve();
+            }
+            var sr = target.sampleRate || 44100;
+            var durMs = Math.round((target.samples.length / sr) * 1000);
+            fbTimer = setTimeout(finish, Math.min(9000, Math.max(800, durMs + 500)));
+            state.seqTimers.push(fbTimer);
+
+            if (waveCanvas) {
+              drawStaticWaveform(waveCanvas, target.samples, { fallbackW: 420, fallbackH: 56, progress: 0 });
+            }
+            try {
+              var pRes = TootApp.Audio.playSound(target.samples, sr, {
+                channel: 'seq_play',
+                onProgress: function (pr) {
+                  if (gen !== state.seqGen || !state.seqActive) return;
+                  if (timerBar && timerBar.style) timerBar.style.width = Math.round(pr * 100) + '%';
+                  if (waveCanvas) drawStaticWaveform(waveCanvas, target.samples, { fallbackW: 420, fallbackH: 56, progress: pr });
+                },
+                onEnded: finish
+              });
+              if (pRes && typeof pRes.catch === 'function') {
+                pRes.catch(function () {
+                  state.seqTimers.push(setTimeout(finish, Math.min(2400, Math.max(600, durMs))));
+                });
+              }
+            } catch (e) {
+              state.seqTimers.push(setTimeout(finish, 600));
+            }
+          });
+        }
+
+        function playSequenceDeck(playerLabel) {
+          var ch = Promise.resolve();
+          readyDeck.forEach(function (_, idx) {
+            ch = ch.then(function () {
+              return playOne(idx).then(function () {
+                return idx < readyDeck.length - 1 ? waitSeq(380) : waitSeq(180);
+              });
+            });
+          });
+          return ch.then(function () {
+            if (counterEl && playerLabel) counterEl.textContent = playerLabel + ' · SEQUENCE COMPLETE';
+          });
+        }
+
+        function captureRecallItem(target, idx, playerName) {
+          var sr = target.sampleRate || 44100;
+          var targetDur = target.samples.length / sr;
+          var recWindowSec = Math.max(3.2, Math.min(6.0, targetDur + 2.4));
+          var tFeat = target.features || (TootApp.DSP && TootApp.DSP.extractFeatures(target.samples, sr));
+          var expectedBursts = Math.max(1, Math.min(4, (tFeat && tFeat.burstCount) || 1));
+          var detector = createQuickFireAutoDetector({
+            calibrateSec: 0.06,
+            minSoundMs: 65,
+            trailingSilenceMs: 110,
+            interBurstSilenceMs: expectedBursts >= 2 ? 380 : 110,
+            expectedBursts: expectedBursts,
+            minElapsedSec: 0.16,
+            releasePeakRatio: 0.30
+          });
+          return new Promise(function (resolve) {
+            var settled = false;
+            var stopRequested = false;
+            var uiDetected = false;
+            var lastPerf = performance.now();
+
+            function done(res) {
+              if (settled) return;
+              settled = true;
+              state.seqStopCurrentRec = null;
+              resolve(res);
+            }
+
+            function triggerStop() {
+              if (stopRequested || settled) return;
+              stopRequested = true;
+              TootApp.Audio.stopRecording()
+                .then(done)
+                .catch(function () { done({ ok: false, reason: 'stop_failed' }); });
+            }
+
+            state.seqStopCurrentRec = triggerStop;
+
+            TootApp.Audio.startRecording({
+              maxDurationSec: recWindowSec,
+              onLevel: function (timeData, rms, elapsed) {
+                if (gen !== state.seqGen || !state.seqActive || settled || stopRequested) return;
+                var now = performance.now();
+                var dt = Math.max(0, now - lastPerf);
+                lastPerf = now;
+                if (waveCanvas) drawLiveWave(waveCanvas, timeData, uiDetected ? '#4ade80' : '#ef4444');
+                if (timerBar && timerBar.style) {
+                  timerBar.style.width = Math.min(100, Math.round((elapsed / recWindowSec) * 100)) + '%';
+                }
+                var det = detector.feed(rms, elapsed, dt);
+                if (det.detectedNow && !uiDetected) {
+                  uiDetected = true;
+                  if (bannerEl) bannerEl.classList.add('is-detected');
+                  if (badgeEl) badgeEl.textContent = '🟢 CAPTURING ' + playerName.toUpperCase() + ' #' + (idx + 1);
+                }
+                if (det.shouldStop) triggerStop();
+              },
+              onAutoStop: done
+            }).catch(function (err) {
+              done({ ok: false, reason: 'mic_error', error: err ? err.message : 'Microphone unavailable.' });
+            });
+          });
+        }
+
+        function awaitTurnStart(playerName, playerIdx) {
+          return new Promise(function (resolve) {
+            if (gen !== state.seqGen || !state.seqActive) {
+              resolve();
+              return;
+            }
+            if (counterEl) counterEl.textContent = 'HANDOFF · PLAYER ' + (playerIdx + 1) + ' OF ' + players.length;
+            renderSequenceStepPills(0, 'listen', 0);
+            if (bannerEl) {
+              bannerEl.classList.remove('is-recording', 'is-detected');
+              bannerEl.classList.add('is-listening');
+            }
+            if (phaseEl) phaseEl.textContent = '🤝 PASS TO ' + playerName.toUpperCase();
+            if (badgeEl) badgeEl.textContent = 'MULTIPLAYER MEMORY HANDOFF';
+            if (titleEl) titleEl.textContent = playerName + ' Ready?';
+            if (subEl) subEl.textContent = 'Replay the target sequence if needed, or start your ' + readyDeck.length + '-fart recall.';
+            if (timerBar && timerBar.style) timerBar.style.width = '0%';
+            if (doneBtn) doneBtn.classList.add('hidden');
+            if (replayBtn) {
+              replayBtn.classList.remove('hidden');
+              replayBtn.disabled = false;
+              replayBtn.onclick = function () {
+                if (replayBtn) replayBtn.disabled = true;
+                if (beginBtn) beginBtn.disabled = true;
+                playSequenceDeck(playerName).then(function () {
+                  if (replayBtn) replayBtn.disabled = false;
+                  if (beginBtn) beginBtn.disabled = false;
+                  if (phaseEl) phaseEl.textContent = '🤝 ' + playerName.toUpperCase() + ' READY';
+                });
+              };
+            }
+            if (beginBtn) {
+              beginBtn.classList.remove('hidden');
+              beginBtn.disabled = false;
+              beginBtn.textContent = '🎤 Start ' + playerName + ' Recall';
+              beginBtn.onclick = function () {
+                if (replayBtn) replayBtn.classList.add('hidden');
+                if (beginBtn) beginBtn.classList.add('hidden');
+                resolve();
+              };
+            } else {
+              resolve();
+            }
+          });
+        }
+
+        function runPlayerTurn(playerIdx) {
+          if (gen !== state.seqGen || !state.seqActive) return Promise.resolve();
+          var playerName = players[playerIdx];
+          state.seqPlayerIndex = playerIdx;
+
+          var prepPromise = playerIdx === 0
+            ? playSequenceDeck(playerName)
+            : awaitTurnStart(playerName, playerIdx);
+
+          return prepPromise.then(function () {
+            if (gen !== state.seqGen || !state.seqActive) return null;
+            var captures = [];
+
+            function stepRec(i) {
+              if (gen !== state.seqGen || !state.seqActive) return Promise.resolve();
+              if (i >= readyDeck.length) {
+                if (doneBtn) doneBtn.classList.add('hidden');
+                if (phaseEl) phaseEl.textContent = '🧪 SCORING';
+                if (badgeEl) badgeEl.textContent = 'SAVING ' + playerName.toUpperCase() + ' COMPARISONS…';
+                if (titleEl) titleEl.textContent = 'Evaluating ' + readyDeck.length + ' Mimics';
+
+                var items = [];
+                var saveChain = Promise.resolve();
+                captures.forEach(function (cap) {
+                  saveChain = saveChain.then(function () {
+                    var target = cap.target;
+                    var res = cap.capRes;
+                    if (!target.features || !target.features.spectrogram) {
+                      target.features = TootApp.DSP.extractFeatures(target.samples, target.sampleRate || 44100);
+                    }
+                    if (!res || !res.ok || !res.clippedSamples || res.clippedSamples.length === 0) {
+                      items.push({
+                        index: cap.index,
+                        target: target,
+                        guessSound: null,
+                        attempt: null,
+                        exactScore: 0,
+                        missed: true
+                      });
+                      return;
+                    }
+                    var gSr = res.sampleRate || 44100;
+                    var gSamples = res.clippedSamples;
+                    var gFeat = TootApp.DSP.extractFeatures(gSamples, gSr);
+                    var guessObj = {
+                      id: 'seq_g_' + playerIdx + '_' + cap.index + '_' + Date.now(),
+                      name: players.length > 1 ? (playerName + ' #' + (cap.index + 1)) : ('Seq #' + (cap.index + 1)),
+                      sampleRate: gSr,
+                      samples: gSamples,
+                      features: gFeat
+                    };
+                    var cmpRes = TootApp.DSP.compareSounds(target.features, gFeat);
+                    return TootLabs.Store.recordChallengeResult(target, guessObj, cmpRes, { guesserName: guessObj.name }).then(function (out) {
+                      upsertAttemptsIntoCache([out.attempt]);
+                      items.push({
+                        index: cap.index,
+                        target: target,
+                        guessSound: guessObj,
+                        attempt: out.attempt,
+                        exactScore: out.exactScore,
+                        missed: false
+                      });
+                    });
+                  });
+                });
+
+                return saveChain.then(function () {
+                  if (gen !== state.seqGen) return;
+                  var totalSc = items.reduce(function (acc, it) { return acc + (it.exactScore || 0); }, 0);
+                  var avgSc = items.length > 0 ? totalSc / items.length : 0;
+                  state.seqPlayerResults.push({
+                    playerName: playerName,
+                    avgScore: avgSc,
+                    items: items
+                  });
+                  if (playerIdx + 1 < players.length) {
+                    return runPlayerTurn(playerIdx + 1);
+                  }
+                  state.seqActive = false;
+                  state.seqPhase = 'results';
+                  state.seqActiveResultPlayer = 0;
+                  renderHomeView();
+                  renderSequencePane();
+                  return state.seqPlayerResults;
+                });
+              }
+
+              var target = readyDeck[i];
+              renderSequenceStepPills(i, 'rec', i);
+              if (counterEl) counterEl.textContent = playerName + ' · RECALL ' + (i + 1) + ' OF ' + readyDeck.length;
+              if (bannerEl) {
+                bannerEl.classList.remove('is-listening', 'is-detected', 'is-scoring');
+                bannerEl.classList.add('is-recording');
+              }
+              if (phaseEl) phaseEl.textContent = '🎤 RECALL #' + (i + 1);
+              if (badgeEl) badgeEl.textContent = playerName.toUpperCase() + ' · REPRODUCE FROM MEMORY';
+              if (titleEl) titleEl.textContent = 'Reproduce Fart #' + (i + 1) + ' of ' + readyDeck.length;
+              if (subEl) subEl.textContent = 'Mimic sound #' + (i + 1) + ' — auto-advances on silence or tap Next Fart';
+              if (timerBar && timerBar.style) timerBar.style.width = '0%';
+              if (doneBtn) doneBtn.classList.remove('hidden');
+
+              return captureRecallItem(target, i, playerName).then(function (capRes) {
+                if (gen !== state.seqGen || !state.seqActive) return;
+                if (doneBtn) doneBtn.classList.add('hidden');
+                captures.push({ index: i, target: target, capRes: capRes });
+                renderSequenceStepPills(i + 1, 'rec', i + 1);
+                return waitSeq(80).then(function () {
+                  return stepRec(i + 1);
+                });
+              });
+            }
+
+            return stepRec(0);
+          });
+        }
+
+        return runPlayerTurn(0);
+      })
+      .catch(function (err) {
+        abortSequenceRound(true);
+        renderSequencePane();
+        showToast((err && err.message) || 'Could not start Sequential Recall.', true);
+        return [];
+      });
+  }
+
+  /* ==================== REAL OR FAKE? AUTHENTICITY SHOWDOWN ==================== */
+  function buildRealFakePools() {
+    var realPool = (state.samples || []).filter(Boolean);
+    var fakePool = (state.allAttemptsCache || []).filter(function (a) {
+      return a && a.samples && a.samples.length > 0;
+    });
+    return { realPool: realPool, fakePool: fakePool };
+  }
+
+  function shuffleArr(arr) {
+    var copy = (arr || []).slice();
+    for (var i = copy.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = copy[i];
+      copy[i] = copy[j];
+      copy[j] = t;
+    }
+    return copy;
+  }
+
+  function renderRealFakeStage() {
+    var pools = buildRealFakePools();
+    var lockedCard = $('rf-locked-card');
+    var playCard = $('rf-play-card');
+    var resCard = $('rf-results-card');
+    var lockedCopy = $('rf-locked-copy');
+
+    if (pools.fakePool.length < 2 || pools.realPool.length < 2) {
+      if (lockedCard) lockedCard.classList.remove('hidden');
+      if (playCard) playCard.classList.add('hidden');
+      if (resCard) resCard.classList.add('hidden');
+      if (lockedCopy) {
+        lockedCopy.textContent =
+          'You currently have ' +
+          pools.fakePool.length +
+          ' recorded guess' +
+          (pools.fakePool.length === 1 ? '' : 'es') +
+          '. Record at least 2 guesses in Guess The Fart or Sequential Recall so we can test genuine archive farts against real human mimics!';
+      }
+      return;
+    }
+
+    if (lockedCard) lockedCard.classList.add('hidden');
+
+    if (state.rfPhase === 'results') {
+      if (playCard) playCard.classList.add('hidden');
+      if (resCard) resCard.classList.remove('hidden');
+      var rows = state.rfResults || [];
+      var youCorrect = rows.filter(function (r) { return r.youCorrect; }).length;
+      var aiCorrect = rows.filter(function (r) { return r.aiCorrect; }).length;
+      var total = Math.max(1, rows.length);
+      var youPct = Math.round((youCorrect / total) * 100);
+      var aiPct = Math.round((aiCorrect / total) * 100);
+
+      if ($('rf-final-verdict')) {
+        $('rf-final-verdict').textContent =
+          youCorrect > aiCorrect
+            ? 'You Beat A.S.S. Authenticity AI!'
+            : youCorrect < aiCorrect
+            ? 'A.S.S. Authenticity AI Edged You Out!'
+            : 'Draw: Ears Tied With Spectral DSP!';
+      }
+      if ($('rf-final-you')) $('rf-final-you').textContent = youPct + '%';
+      if ($('rf-final-you-sub')) $('rf-final-you-sub').textContent = youCorrect + ' / ' + total + ' correct';
+      if ($('rf-final-ai')) $('rf-final-ai').textContent = aiPct + '%';
+      if ($('rf-final-ai-sub')) $('rf-final-ai-sub').textContent = aiCorrect + ' / ' + total + ' correct';
+      if ($('rf-final-note')) {
+        $('rf-final-note').textContent =
+          'Takeaway: Humans are remarkably good at replicating resonance pitch and airflow flutter, which is why pure acoustic telemetry cannot always separate real from fake. For 100% certainty, the human nose remains the ultimate detector.';
+      }
+
+      var listEl = $('rf-results-list');
+      if (listEl) {
+        listEl.innerHTML = rows
+          .map(function (r, idx) {
+            var sName = r.item.isReal ? getSampleName(r.item.sound) : (r.item.sound.name || 'Human Mimic');
+            var tag = r.item.isReal ? 'REAL' : 'FAKE';
+            var youMark = r.youCorrect ? 'You ✓' : 'You ✗';
+            var aiMark = r.aiCorrect ? 'AI ✓' : 'AI ✗';
+            return (
+              '<div class="labs-seq-compact-row">' +
+              '  <div class="labs-seq-row-left">' +
+              '    <span class="labs-seq-row-idx">#' + (idx + 1) + '</span>' +
+              '    <span class="labs-chip ' + (r.item.isReal ? 'labs-chip-green' : 'labs-chip-orange') + '">' + tag + '</span>' +
+              '    <span class="labs-seq-row-name">' + esc(sName) + '</span>' +
+              '  </div>' +
+              '  <span class="labs-seq-row-score">' + youMark + ' · ' + aiMark + '</span>' +
+              '  <div class="labs-seq-row-btns">' +
+              '    <button type="button" class="labs-btn-ghost labs-btn-xs" data-rf-play="' + idx + '">▶</button>' +
+              '    <button type="button" class="labs-btn labs-btn-blue labs-btn-xs" data-rf-ana="' + idx + '">🧪</button>' +
+              '  </div>' +
+              '</div>'
+            );
+          })
+          .join('');
+        listEl.querySelectorAll('[data-rf-play]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var r = rows[parseInt(this.getAttribute('data-rf-play'), 10)];
+            if (r && r.item && r.item.sound && r.item.sound.samples) {
+              TootApp.Audio.playSound(r.item.sound.samples, r.item.sound.sampleRate || 44100, { channel: 'rf_play' });
+            }
+          });
+        });
+        listEl.querySelectorAll('[data-rf-ana]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var r = rows[parseInt(this.getAttribute('data-rf-ana'), 10)];
+            if (r && r.item) inspectRealFakeItem(r.item);
+          });
+        });
+      }
+      return;
+    }
+
+    if (resCard) resCard.classList.add('hidden');
+    if (playCard) playCard.classList.remove('hidden');
+
+    var deck = state.rfDeck || [];
+    var idx = state.rfIndex || 0;
+    var item = deck[idx];
+    if (!item) return;
+
+    var doneRows = state.rfResults || [];
+    var yHits = doneRows.filter(function (r) { return r.youCorrect; }).length;
+    var aHits = doneRows.filter(function (r) { return r.aiCorrect; }).length;
+    if ($('rf-counter')) $('rf-counter').textContent = 'SPECIMEN ' + (idx + 1) + ' OF ' + deck.length;
+    if ($('rf-score-you')) $('rf-score-you').textContent = '🧑 YOU: ' + yHits + '/' + doneRows.length;
+    if ($('rf-score-ai')) $('rf-score-ai').textContent = '🤖 A.S.S. AI: ' + aHits + '/' + doneRows.length;
+
+    var waveCanvas = $('rf-wave-canvas');
+    if (waveCanvas && item.sound && item.sound.samples) {
+      drawStaticWaveform(waveCanvas, item.sound.samples, { fallbackW: 440, fallbackH: 56 });
+    }
+
+    var voteRealBtn = $('btn-rf-vote-real');
+    var voteFakeBtn = $('btn-rf-vote-fake');
+    var revBox = $('rf-reveal-box');
+    if (voteRealBtn) voteRealBtn.disabled = state.rfVoted;
+    if (voteFakeBtn) voteFakeBtn.disabled = state.rfVoted;
+    if (revBox) revBox.classList.toggle('hidden', !state.rfVoted);
+
+    if (state.rfVoted && doneRows.length > 0) {
+      var curRes = doneRows[doneRows.length - 1];
+      var sTitle = item.isReal ? getSampleName(item.sound) : (item.sound.name || 'Recorded Guess');
+      if ($('rf-reveal-truth')) {
+        $('rf-reveal-truth').textContent = item.isReal
+          ? 'ACTUAL: ✅ REAL FART — "' + sTitle + '"'
+          : 'ACTUAL: 🎭 FAKE MIMIC — "' + sTitle + '"';
+      }
+      if ($('rf-res-you')) {
+        $('rf-res-you').textContent =
+          '🧑 You voted ' + (curRes.youPickedReal ? 'REAL' : 'FAKE') + ' — ' + (curRes.youCorrect ? '✓ Correct!' : '✗ Fooled!');
+      }
+      if ($('rf-res-ai')) {
+        var authPct = curRes.auth ? curRes.auth.authenticityScore : 50;
+        $('rf-res-ai').textContent =
+          '🤖 A.S.S. (' + authPct + '% Auth → ' + (curRes.aiPickedReal ? 'REAL' : 'FAKE') + ') — ' + (curRes.aiCorrect ? '✓ Correct!' : '✗ Fooled!');
+      }
+      if ($('rf-reveal-note')) {
+        $('rf-reveal-note').textContent = (curRes.auth && curRes.auth.verdict) || 'Humans mimic spectral envelope surprisingly closely; nose verification stays undefeated.';
+      }
+      if ($('btn-rf-next')) {
+        $('btn-rf-next').textContent = idx + 1 >= deck.length ? 'View Final Showdown →' : 'Next Specimen →';
+      }
+    }
+  }
+
+  function inspectRealFakeItem(item) {
+    if (!item || !item.sound) return;
+    if (item.isReal) {
+      openFartnalysis('original', item.sound.id, null);
+    } else {
+      var parentId = item.sound.sampleId || (state.samples[0] && state.samples[0].id) || null;
+      openFartnalysis('guess', parentId, item.sound.id);
+    }
+  }
+
+  function submitRealFakeVote(pickedReal) {
+    if (state.rfVoted) return;
+    var deck = state.rfDeck || [];
+    var item = deck[state.rfIndex || 0];
+    if (!item || !item.sound) return;
+    var fn = root.TootLabs && root.TootLabs.Fartnalysis;
+    var auth =
+      item.auth ||
+      (fn && typeof fn.computeAuthenticityAnalysis === 'function'
+        ? fn.computeAuthenticityAnalysis(item.sound)
+        : { authenticityScore: 50, verdict: 'Spectral telemetry inconclusive without nose verification.' });
+    item.auth = auth;
+    var aiPickedReal = (auth.authenticityScore || 50) >= 50;
+    state.rfVoted = true;
+    state.rfResults.push({
+      index: state.rfIndex || 0,
+      item: item,
+      youPickedReal: Boolean(pickedReal),
+      youCorrect: Boolean(pickedReal) === Boolean(item.isReal),
+      aiPickedReal: aiPickedReal,
+      aiCorrect: aiPickedReal === Boolean(item.isReal),
+      auth: auth
+    });
+    renderRealFakeStage();
+  }
+
+  function startNewRealFakeDeck() {
+    var reqGen = ++state.rfOpenGen;
+    var pools = buildRealFakePools();
+    if (pools.fakePool.length < 2 || pools.realPool.length < 2) {
+      renderRealFakeStage();
+      return Promise.resolve();
+    }
+    var half = Math.min(4, pools.fakePool.length, pools.realPool.length);
+    var reals = shuffleArr(pools.realPool).slice(0, half);
+    var fakes = shuffleArr(pools.fakePool).slice(0, half);
+    if ($('rf-play-card') && $('rf-counter')) $('rf-counter').textContent = 'PREPARING SPECIMENS…';
+
+    return Promise.all(reals.map(ensureTargetReady))
+      .then(function (loadedReals) {
+        if (reqGen !== state.rfOpenGen || state.view !== 'realfake') return;
+        var entries = [];
+        loadedReals.forEach(function (s) {
+          if (s && s.samples && s.samples.length > 0) entries.push({ isReal: true, sound: s });
+        });
+        fakes.forEach(function (a) {
+          if (a && a.samples && a.samples.length > 0) entries.push({ isReal: false, sound: a });
+        });
+        state.rfDeck = shuffleArr(entries);
+        state.rfIndex = 0;
+        state.rfResults = [];
+        state.rfVoted = false;
+        state.rfPhase = 'play';
+        renderRealFakeStage();
+      })
+      .catch(function (err) {
+        if (reqGen !== state.rfOpenGen) return;
+        showToast((err && err.message) || 'Could not load specimens for Real or Fake.', true);
+      });
+  }
+
+  function openRealFakeView() {
+    closeSettingsMenu();
+    showView('realfake');
+    if (state.attemptsCacheLoaded) {
+      startNewRealFakeDeck();
+      return Promise.resolve();
+    }
+    return refreshAllAttemptsCache(true).then(function () {
+      if (state.view === 'realfake') startNewRealFakeDeck();
+    });
   }
 
   function startQuickFireRound(opts) {
@@ -6419,9 +7384,25 @@
     var guessField = $('fn-guess-field');
     var guessSel = $('fn-guess-select');
     var guessLb = $('fn-guess-leaderboard');
+    var dateEl = $('fn-report-date');
+    var tagEl = $('fn-specimen-tag');
+
+    if (dateEl) {
+      try {
+        var now = new Date();
+        var months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        dateEl.textContent = months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+      } catch (e) {}
+    }
+
+    var envSideTab = document.querySelector('#fn-side-tabs .labs-fn-side-tab[data-fn-jump="environment"]');
+    if (envSideTab) {
+      envSideTab.classList.toggle('is-muted', state.fnMode === 'comparison' || state.fnMode === 'group');
+    }
 
     if (state.fnMode === 'group') {
       pickersBar.classList.add('hidden');
+      if (tagEl) tagEl.classList.add('hidden');
       if (guessLb) {
         guessLb.classList.add('hidden');
         guessLb.innerHTML = '';
@@ -6446,7 +7427,22 @@
 
     var isCompare = state.fnMode === 'comparison';
     if (sampleLbl) {
-      sampleLbl.textContent = isCompare ? 'Reference Specimen' : 'Primary Acoustic Specimen';
+      sampleLbl.textContent = isCompare ? 'REFERENCE SPECIMEN' : 'PRIMARY ACOUSTIC SPECIMEN';
+    }
+    if (tagEl) {
+      tagEl.classList.toggle('hidden', isCompare);
+      if (!isCompare && TootLabs.Fartnalysis && typeof TootLabs.Fartnalysis.computeSpecimenMeta === 'function') {
+        var tagTarget = null;
+        if (state.fnMode === 'guess' && state.fnAttemptId) {
+          tagTarget = state.fnAttempts.find(function (a) { return a.id === state.fnAttemptId; }) || null;
+        }
+        if (!tagTarget && state.fnSampleId) tagTarget = getSampleById(state.fnSampleId);
+        if (tagTarget && tagTarget.features && TootLabs.Fartnalysis.syncShippingTag) {
+          TootLabs.Fartnalysis.syncShippingTag(
+            TootLabs.Fartnalysis.computeSpecimenMeta(tagTarget, tagTarget.features, null, null, getSampleName(tagTarget))
+          );
+        }
+      }
     }
 
     var optHtml = buildTargetOptionsHtml(isCompare, attemptsBySample);
@@ -6635,13 +7631,16 @@
             var reportText = TootLabs.Store.buildGroupAnalysisReportText(g);
             var pdfPayload = { mode: 'group', groupObj: g, specCanvases: specCanvases };
             openShareEmailModal({
-              title: 'Share or Email Megamix Report',
+              title: 'Share Megamix Report',
               subtitle: g.name + ' (' + g.segments.length + ' specimens · ' + g.metrics.totalDurationSec.toFixed(2) + 's)',
               onShare: function () {
                 shareTextOrAudio('Multi-Specimen Megamix Fartnalysis Report', reportText, g, pdfPayload);
               },
               onEmail: function () {
                 emailAnalysisReport('Multi-Specimen Megamix Fartnalysis Report', reportText, pdfPayload, g);
+              },
+              onPdf: function () {
+                downloadAnalysisPdf(pdfPayload);
               }
             });
           },
@@ -6706,13 +7705,16 @@
           var reportText = TootLabs.Store.buildSingleAnalysisReportText(s, 'FARTNALYSIS REPORT');
           var pdfPayload = { mode: 'single', sound: s, label: sName, eyebrow: 'FARTNALYSIS REPORT · PRIMARY SPECIMEN', specCanvases: specCanvases };
           openShareEmailModal({
-            title: 'Share or Email Institute Report',
+            title: 'Share Institute Report',
             subtitle: sName + ' — full PDF Institute Report + WAV audio',
             onShare: function () {
               shareTextOrAudio('Institute Report: ' + sName, reportText, s, pdfPayload);
             },
             onEmail: function () {
               emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, s);
+            },
+            onPdf: function () {
+              downloadAnalysisPdf(pdfPayload);
             }
           });
         },
@@ -6750,13 +7752,16 @@
           var reportText = TootLabs.Store.buildSingleAnalysisReportText(g, 'SECONDARY SPECIMEN INSTITUTE REPORT');
           var pdfPayload = { mode: 'single', sound: g, label: g.name, eyebrow: 'FARTNALYSIS REPORT · SECONDARY RECORDING', specCanvases: specCanvases };
           openShareEmailModal({
-            title: 'Share or Email Comparative Specimen Report',
+            title: 'Share Comparative Specimen Report',
             subtitle: g.name + ' — full PDF Institute Report + WAV audio',
             onShare: function () {
               shareTextOrAudio('Institute Report: ' + g.name, reportText, g, pdfPayload);
             },
             onEmail: function () {
               emailAnalysisReport('Fartnalysis Report: ' + g.name, reportText, pdfPayload, g);
+            },
+            onPdf: function () {
+              downloadAnalysisPdf(pdfPayload);
             }
           });
         },
@@ -6782,13 +7787,16 @@
         var reportText = TootLabs.Store.buildComparisonReportText(sA, sB, r, exact);
         var pdfPayload = { mode: 'comparison', soundA: sA, soundB: sB, result: r, specCanvases: specCanvases };
         openShareEmailModal({
-          title: 'Share or Email Comparative Report',
+          title: 'Share Comparative Report',
           subtitle: sB.name + ' vs ' + getSampleName(sA) + ' (' + exact.toFixed(1) + '% Reproduction Fidelity)',
           onShare: function () {
             shareTextOrAudio('Toot Match Labs Comparative Assessment: ' + exact.toFixed(1) + '%', reportText, stitchComparisonAudio(sA, sB), pdfPayload);
           },
           onEmail: function () {
             emailAnalysisReport('Toot Match Labs Comparative Assessment: ' + sB.name + ' vs ' + getSampleName(sA), reportText, pdfPayload, stitchComparisonAudio(sA, sB));
+          },
+          onPdf: function () {
+            downloadAnalysisPdf(pdfPayload);
           }
         });
       },
@@ -6946,6 +7954,20 @@
     var gearBtn = $('btn-labs-settings');
     if (gearBtn) gearBtn.addEventListener('click', toggleSettingsMenu);
 
+    var menuSequenceBtn = $('btn-menu-sequence');
+    if (menuSequenceBtn) {
+      menuSequenceBtn.addEventListener('click', function () {
+        openSequenceMode();
+      });
+    }
+
+    var menuRealFakeBtn = $('btn-menu-realfake');
+    if (menuRealFakeBtn) {
+      menuRealFakeBtn.addEventListener('click', function () {
+        openRealFakeView();
+      });
+    }
+
     var menuQuickFireBtn = $('btn-menu-quickfire');
     if (menuQuickFireBtn) {
       menuQuickFireBtn.addEventListener('click', function () {
@@ -7009,6 +8031,14 @@
         var actions = state.shareModalActions;
         closeShareEmailModal();
         if (actions && typeof actions.onEmail === 'function') actions.onEmail();
+      });
+    }
+    var sharePdfBtn = $('btn-share-modal-pdf');
+    if (sharePdfBtn) {
+      sharePdfBtn.addEventListener('click', function () {
+        var actions = state.shareModalActions;
+        closeShareEmailModal();
+        if (actions && typeof actions.onPdf === 'function') actions.onPdf();
       });
     }
     if (shareCloseBtn) shareCloseBtn.addEventListener('click', closeShareEmailModal);
@@ -7090,6 +8120,16 @@
     $('btn-home-guess-fart').addEventListener('click', function () {
       openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id));
     });
+    if ($('btn-home-sequence')) {
+      $('btn-home-sequence').addEventListener('click', function () {
+        openSequenceMode();
+      });
+    }
+    if ($('btn-home-realfake')) {
+      $('btn-home-realfake').addEventListener('click', function () {
+        openRealFakeView();
+      });
+    }
     if ($('home-osc-screen')) {
       $('home-osc-screen').addEventListener('click', toggleHomeOscPlay);
     }
@@ -7114,13 +8154,15 @@
         renderHomeOscilloscope();
       });
     }
-    $('btn-home-analyze-fart').addEventListener('click', function () {
-      openFartnalysis(
-        state.fnMode || 'original',
-        state.fnSampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id),
-        state.fnAttemptId
-      );
-    });
+    if ($('btn-home-analyze-fart')) {
+      $('btn-home-analyze-fart').addEventListener('click', function () {
+        openFartnalysis(
+          state.fnMode || 'original',
+          state.fnSampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id),
+          state.fnAttemptId
+        );
+      });
+    }
     $('btn-home-open-vault').addEventListener('click', function () {
       openVaultView();
     });
@@ -7202,13 +8244,16 @@
       var reportText = TootLabs.Store.buildSingleAnalysisReportText(sample, 'INSTITUTE SPECIMEN REPORT');
       var pdfPayload = { mode: 'single', sound: sample, label: sName, eyebrow: 'INSTITUTE SPECIMEN REPORT' };
       openShareEmailModal({
-        title: 'Share or Email Specimen Report',
-        subtitle: sName + ' — choose Share or Email (PDF + WAV)',
+        title: 'Share Specimen Report',
+        subtitle: sName + ' — choose Share, Email, or PDF export',
         onShare: function () {
           shareTextOrAudio('Toot Match Labs — ' + sName, TootLabs.Store.buildSingleAnalysisReportText(sample, 'ARCHIVED SPECIMEN'), sample, pdfPayload);
         },
         onEmail: function () {
           emailAnalysisReport('Fartnalysis Report: ' + sName, reportText, pdfPayload, sample);
+        },
+        onPdf: function () {
+          downloadAnalysisPdf(pdfPayload);
         }
       });
     });
@@ -7277,6 +8322,11 @@
         renderGuessLeaderboard();
       });
     }
+    if ($('btn-open-sequence-footer')) {
+      $('btn-open-sequence-footer').addEventListener('click', function () {
+        openSequenceMode();
+      });
+    }
     if ($('btn-open-quickfire-footer')) {
       $('btn-open-quickfire-footer').addEventListener('click', function () {
         openQuickFireMode();
@@ -7295,6 +8345,142 @@
     if ($('btn-qf-back')) {
       $('btn-qf-back').addEventListener('click', function () {
         setGuessSubMode('standard');
+      });
+    }
+    if ($('btn-seq-back')) {
+      $('btn-seq-back').addEventListener('click', function () {
+        setGuessSubMode('standard');
+      });
+    }
+    if ($('seq-count-pills')) {
+      $('seq-count-pills').querySelectorAll('[data-seq-count]').forEach(function (pillBtn) {
+        pillBtn.addEventListener('click', function () {
+          setSequenceCount(this.getAttribute('data-seq-count'));
+        });
+      });
+    }
+    if ($('seq-count-input')) {
+      $('seq-count-input').addEventListener('change', function () {
+        setSequenceCount(this.value);
+      });
+    }
+    if ($('seq-player-pills')) {
+      $('seq-player-pills').querySelectorAll('[data-seq-players]').forEach(function (pillBtn) {
+        pillBtn.addEventListener('click', function () {
+          setSequencePlayerCount(this.getAttribute('data-seq-players'));
+        });
+      });
+    }
+    if ($('seq-source-select')) {
+      $('seq-source-select').addEventListener('change', function () {
+        state.seqSource = this.value || 'all';
+        renderSequenceSetup();
+      });
+    }
+    if ($('btn-seq-start')) {
+      $('btn-seq-start').addEventListener('click', function () {
+        startSequenceRound(false);
+      });
+    }
+    if ($('btn-seq-done-early')) {
+      $('btn-seq-done-early').addEventListener('click', function () {
+        if (typeof state.seqStopCurrentRec === 'function') state.seqStopCurrentRec();
+      });
+    }
+    if ($('btn-seq-abort')) {
+      $('btn-seq-abort').addEventListener('click', function () {
+        abortSequenceRound(false);
+      });
+    }
+    if ($('btn-seq-rematch')) {
+      $('btn-seq-rematch').addEventListener('click', function () {
+        startSequenceRound(true);
+      });
+    }
+    if ($('btn-seq-new')) {
+      $('btn-seq-new').addEventListener('click', function () {
+        startSequenceRound(false);
+      });
+    }
+    if ($('btn-seq-setup')) {
+      $('btn-seq-setup').addEventListener('click', function () {
+        state.seqPhase = 'setup';
+        renderSequencePane();
+      });
+    }
+
+    // Real or Fake? Showdown Bindings
+    if ($('btn-rf-back')) {
+      $('btn-rf-back').addEventListener('click', function () {
+        openHomeView();
+      });
+    }
+    if ($('btn-rf-home')) {
+      $('btn-rf-home').addEventListener('click', function () {
+        openHomeView();
+      });
+    }
+    if ($('btn-rf-toggle-brief')) {
+      $('btn-rf-toggle-brief').addEventListener('click', function () {
+        state.rfBriefCollapsed = !state.rfBriefCollapsed;
+        var b = $('rf-brief-body');
+        if (b) b.classList.toggle('hidden', state.rfBriefCollapsed);
+        this.setAttribute('aria-expanded', state.rfBriefCollapsed ? 'false' : 'true');
+        this.textContent = state.rfBriefCollapsed ? '▾ Show Info' : '▴ Hide Info';
+      });
+    }
+    if ($('btn-rf-go-guess')) {
+      $('btn-rf-go-guess').addEventListener('click', function () {
+        openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id));
+      });
+    }
+    if ($('btn-rf-go-seq')) {
+      $('btn-rf-go-seq').addEventListener('click', function () {
+        openSequenceMode();
+      });
+    }
+    if ($('btn-rf-play')) {
+      $('btn-rf-play').addEventListener('click', function () {
+        var item = (state.rfDeck || [])[state.rfIndex || 0];
+        if (!item || !item.sound || !item.sound.samples) return;
+        TootApp.Audio.playSound(item.sound.samples, item.sound.sampleRate || 44100, {
+          channel: 'rf_play',
+          onProgress: function (p) {
+            if ($('rf-wave-canvas')) drawStaticWaveform($('rf-wave-canvas'), item.sound.samples, { fallbackW: 440, fallbackH: 56, progress: p });
+          },
+          onEnded: function () {
+            if ($('rf-wave-canvas')) drawStaticWaveform($('rf-wave-canvas'), item.sound.samples, { fallbackW: 440, fallbackH: 56 });
+          }
+        });
+      });
+    }
+    if ($('btn-rf-vote-real')) {
+      $('btn-rf-vote-real').addEventListener('click', function () { submitRealFakeVote(true); });
+    }
+    if ($('btn-rf-vote-fake')) {
+      $('btn-rf-vote-fake').addEventListener('click', function () { submitRealFakeVote(false); });
+    }
+    if ($('btn-rf-inspect')) {
+      $('btn-rf-inspect').addEventListener('click', function () {
+        var item = (state.rfDeck || [])[state.rfIndex || 0];
+        if (item) inspectRealFakeItem(item);
+      });
+    }
+    if ($('btn-rf-next')) {
+      $('btn-rf-next').addEventListener('click', function () {
+        var deck = state.rfDeck || [];
+        if ((state.rfIndex || 0) + 1 >= deck.length) {
+          state.rfPhase = 'results';
+        } else {
+          state.rfIndex = (state.rfIndex || 0) + 1;
+          state.rfVoted = false;
+        }
+        renderRealFakeStage();
+      });
+    }
+    if ($('btn-rf-again')) {
+      $('btn-rf-again').addEventListener('click', function () {
+        startNewRealFakeDeck();
       });
     }
     if ($('qf-count-pills')) {
@@ -7458,13 +8644,16 @@
       var pdfPayload = { mode: 'comparison', soundA: o.targetSound, soundB: o.attempt, result: o.attempt.result };
       var stitched = stitchComparisonAudio(o.targetSound, o.attempt);
       openShareEmailModal({
-        title: 'Share or Email Match Result',
+        title: 'Share Match Result',
         subtitle: o.attempt.name + ' vs ' + sName + ' (' + o.exactScore.toFixed(1) + '%)',
         onShare: function () {
           shareTextOrAudio('Toot Match Result: ' + o.exactScore.toFixed(1) + '%', reportText, stitched, pdfPayload);
         },
         onEmail: function () {
           emailAnalysisReport('Toot Match Referee Report: ' + o.attempt.name, reportText, pdfPayload, stitched);
+        },
+        onPdf: function () {
+          downloadAnalysisPdf(pdfPayload);
         }
       });
     });
@@ -7517,9 +8706,15 @@
       var dest = state.prevBeforeFartnalysis || 'home';
       if (dest === 'vault') {
         openVaultView();
+      } else if (dest === 'realfake') {
+        showView('realfake');
+        renderRealFakeStage();
       } else if (dest === 'guess') {
         showView('guess');
-        renderGuessView();
+        if (state.guessSubMode === 'sequence') renderSequencePane();
+        else if (state.guessSubMode === 'quickfire') renderQuickFirePane();
+        else if (state.guessSubMode === 'blind') renderBlindPane();
+        else renderGuessView();
       } else {
         openHomeView();
       }
@@ -7527,6 +8722,28 @@
 
     $('btn-fn-go-guess').addEventListener('click', function () {
       openVaultView();
+    });
+
+    document.querySelectorAll('#fn-side-tabs .labs-fn-side-tab[data-fn-jump]').forEach(function (stab) {
+      stab.addEventListener('click', function () {
+        var key = this.getAttribute('data-fn-jump');
+        document.querySelectorAll('#fn-side-tabs .labs-fn-side-tab').forEach(function (el) {
+          el.classList.toggle('active', el === stab);
+        });
+        var rootEl = $('labs-view-fartnalysis');
+        if (!rootEl || !key) return;
+        var target =
+          rootEl.querySelector('[data-fn-sec="' + key + '"]') ||
+          (key === 'environment' ? rootEl.querySelector('[data-fn-sec="criteria"]') : null) ||
+          rootEl.querySelector('[data-fn-sec="notes"]');
+        if (target && typeof target.scrollIntoView === 'function') {
+          try {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } catch (e) {
+            target.scrollIntoView();
+          }
+        }
+      });
     });
 
     if ($('btn-team-back')) {
@@ -7622,10 +8839,14 @@
       return true;
     }
     if (cur === 'guess' && swipeRight) {
-      if (state.guessSubMode === 'quickfire') {
+      if (state.guessSubMode === 'quickfire' || state.guessSubMode === 'sequence') {
         setGuessSubMode('standard');
         return true;
       }
+      openHomeView();
+      return true;
+    }
+    if (cur === 'realfake' && swipeRight) {
       openHomeView();
       return true;
     }
@@ -7742,6 +8963,8 @@
   TootLabs.App = {
     getState: function () { return state; },
     showView: showView,
+    openSequenceMode: openSequenceMode,
+    openRealFakeView: openRealFakeView,
     resealVaultAndReturn: resealVaultAndReturn,
     handleSwipeNavigation: handleSwipeNavigation,
     openTeamView: openTeamView,

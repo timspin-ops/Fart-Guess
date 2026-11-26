@@ -8,17 +8,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Special+Elite&display=swap" />
   <link rel="stylesheet" href="css/labs.css?v=20261124o" />
-  <link rel="stylesheet" href="css/labs-dossier.css?v=20261126a" />
+  <link rel="stylesheet" href="css/labs-dossier.css?v=20261126d" />
   <script defer src="../js/dsp.js?v=20261124o"></script>
   <script defer src="../js/audioEngine.js?v=20261124o"></script>
   <script defer src="../js/storage.js?v=20261124o"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261126a"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261126d"></script>
   <script defer src="../js/forensicsCharts.js?v=20261124o"></script>
   <script defer src="js/labsStore.js?v=20261126a"></script>
   <script defer src="js/labsAudioFx.js?v=20261124o"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261126a"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261126d"></script>
   <script defer src="js/labsPdfExport.js?v=20261124o"></script>
-  <script defer src="js/labsApp.js?v=20261126a"></script>
+  <script defer src="js/labsApp.js?v=20261126d"></script>
 </head>
 <body data-labs-view="home">
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -30,19 +30,27 @@
           <span class="labs-pulse-dot"></span>
           <span>TM</span>
         </div>
-        <div>
-          <div class="labs-brand-name">TOOT MATCH <span class="labs-brand-tag">LABS</span></div>
+        <div class="labs-brand-copy">
+          <div class="labs-brand-name">TOOT MATCH LABS</div>
           <div class="labs-brand-sub" id="labs-brand-sub">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
+          <div class="labs-brand-motto-line">SCIENCE. GAS. A BETTER TOMORROW.</div>
         </div>
       </div>
 
       <div class="labs-topbar-motto" aria-hidden="true">
-        SCIENCE · HONESTY<br />BETTER TOOTS FOR A BRIGHTER TOMORROW
+        RESEARCH<br />ANALYSE<br />CLASSIFY<br />REPEAT
       </div>
 
       <div class="labs-topbar-settings-wrap">
-        <button type="button" id="btn-labs-settings" class="labs-gear-btn" aria-label="Settings and Info" aria-haspopup="true" aria-expanded="false" title="Settings, About &amp; Meet The Team">⚙️</button>
+        <button type="button" id="btn-labs-settings" class="labs-gear-btn" aria-label="Settings and Info" aria-haspopup="true" aria-expanded="false" title="Settings, About &amp; Meet The Team">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
         <div id="labs-settings-menu" class="labs-settings-menu hidden" role="menu">
+          <button type="button" id="btn-menu-sequence" class="labs-settings-item" role="menuitem"><span>🧠</span><span>Sequential Recall (Memory)</span></button>
+          <button type="button" id="btn-menu-realfake" class="labs-settings-item" role="menuitem"><span>🎭</span><span>Real or Fake? Showdown</span></button>
           <button type="button" id="btn-menu-quickfire" class="labs-settings-item" role="menuitem"><span>⚡</span><span>Quick-Fire Mimic Round</span></button>
           <button type="button" id="btn-menu-blind" class="labs-settings-item" role="menuitem"><span>🔮</span><span>Blind Prediction Mode (Beta)</span></button>
           <button type="button" id="btn-menu-about" class="labs-settings-item" role="menuitem"><span>ℹ️</span><span>About Toot Match Labs</span></button>
@@ -114,26 +122,28 @@
       <!-- ==================== AREA 1: HOME ==================== -->
       <section id="labs-view-home" class="labs-view active">
         <section class="labs-home-stage-wrap" aria-label="Toot Match Labs Acoustic Desk">
-          <div id="home-lab-stage" class="labs-home-stage">
-            <img class="labs-stage-bg" src="assets/theme/lab-home-stage.jpg?v=20261125g" alt="Toot Match Labs Acoustic Workbench" />
-            <h1 class="labs-sr-only">TOOT MATCH LABS</h1>
-            <p class="labs-sr-only">Advancing the scientific understanding of gastrointestinal acoustics.</p>
+          <div class="labs-home-stage-crop">
+            <div id="home-lab-stage" class="labs-home-stage">
+              <img class="labs-stage-bg" src="assets/theme/lab-home-stage.jpg?v=20261125g" alt="Toot Match Labs Acoustic Workbench" />
+              <h1 class="labs-sr-only">TOOT MATCH LABS</h1>
+              <p class="labs-sr-only">Advancing the scientific understanding of gastrointestinal acoustics.</p>
 
-            <button type="button" id="home-osc-screen" class="labs-home-osc-screen" title="Play or stop live acoustic specimen on oscilloscope">
-              <span class="labs-osc-top">
-                <span class="labs-osc-mon">LIVE ACOUSTIC MONITOR</span>
-                <span class="labs-osc-meta">
-                  <span id="home-osc-freq">FREQ: -- Hz</span>
-                  <span id="home-osc-vol">PEAK: -- dB</span>
+              <button type="button" id="home-osc-screen" class="labs-home-osc-screen" title="Play or stop live acoustic specimen on oscilloscope">
+                <span class="labs-osc-top">
+                  <span class="labs-osc-mon">LIVE ACOUSTIC MONITOR</span>
+                  <span class="labs-osc-meta">
+                    <span id="home-osc-freq">FREQ: -- Hz</span>
+                    <span id="home-osc-vol">PEAK: -- dB</span>
+                  </span>
                 </span>
-              </span>
-              <canvas id="home-osc-canvas" class="labs-osc-canvas"></canvas>
-              <span class="labs-osc-bot">
-                <span id="home-osc-name" class="labs-osc-name">SPECIMEN STANDBY</span>
-                <span id="home-osc-play-lbl" class="labs-osc-play-lbl">▶ PLAY</span>
-              </span>
-              <span class="labs-osc-prog-track" aria-hidden="true"><span id="home-osc-prog" class="labs-osc-prog"></span></span>
-            </button>
+                <canvas id="home-osc-canvas" class="labs-osc-canvas"></canvas>
+                <span class="labs-osc-bot">
+                  <span id="home-osc-name" class="labs-osc-name">SPECIMEN STANDBY</span>
+                  <span id="home-osc-play-lbl" class="labs-osc-play-lbl">▶ PLAY</span>
+                </span>
+                <span class="labs-osc-prog-track" aria-hidden="true"><span id="home-osc-prog" class="labs-osc-prog"></span></span>
+              </button>
+            </div>
           </div>
 
           <div class="labs-home-osc-bar">
@@ -143,42 +153,66 @@
           </div>
         </section>
 
-        <section class="labs-action-cards-grid" aria-label="Primary Actions">
-          <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
-            <div class="labs-ac-top-row">
-              <span class="labs-ac-icon" aria-hidden="true">
-                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h5l3.2-10 4.6 20 4.4-16 3.6 10 3.2-4H32"/></svg>
-              </span>
+        <section class="labs-workbench-panel" aria-label="Laboratory Modes">
+          <div class="labs-action-cards-grid" role="group" aria-label="Primary Actions">
+            <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
               <span class="labs-ac-stamp">START HERE</span>
-            </div>
-            <span class="labs-ac-title">Guess The Fart</span>
-            <span class="labs-ac-desc">Determine whether participants can accurately predict or reproduce the source acoustic event — or switch to Mimic Mode.</span>
-            <span class="labs-ac-cta">PLAY NOW →</span>
-          </button>
+              <div class="labs-ac-body">
+                <span class="labs-ac-icon" aria-hidden="true">
+                  <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h5.5l3.5-11 5 22 4.8-18 4 11 3.2-4H36"/></svg>
+                </span>
+                <div class="labs-ac-copy">
+                  <span class="labs-ac-title">GUESS THE FART</span>
+                  <span class="labs-ac-desc">Can you identify or mimic the specimen?</span>
+                </div>
+              </div>
+              <span class="labs-ac-cta">PLAY NOW →</span>
+            </button>
 
-          <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
-            <div class="labs-ac-top-row">
-              <span class="labs-ac-icon" aria-hidden="true">
-                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="13" y="4" width="10" height="16" rx="5" fill="currentColor" fill-opacity="0.18"/><path d="M8 17c0 5.5 4.5 10 10 10s10-4.5 10-10"/><path d="M18 27v5M12 32h12"/></svg>
-              </span>
+            <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
               <button type="button" id="btn-home-sentry-toggle" class="labs-ac-sentry-pill" aria-pressed="false" title="Toggle Sentry Auto Detect Mode">○ AUTO DETECT: OFF</button>
+              <div class="labs-ac-body">
+                <span class="labs-ac-icon" aria-hidden="true">
+                  <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><rect x="14.5" y="4" width="11" height="17" rx="5.5" fill="currentColor"/><path d="M9 18c0 6 4.9 11 11 11s11-5 11-11"/><path d="M20 29v6M13.5 35h13"/></svg>
+                </span>
+                <div class="labs-ac-copy">
+                  <span class="labs-ac-title">RECORD NEW FART</span>
+                  <span class="labs-ac-desc" id="home-rec-desc">Capture &amp; log specimens to archive.</span>
+                </div>
+              </div>
+              <span class="labs-ac-note-badge" aria-hidden="true">Practice makes perfect (ish)</span>
+              <span class="labs-ac-cta">RECORD TOOT →</span>
             </div>
-            <span class="labs-ac-title">Record New Fart</span>
-            <span class="labs-ac-desc" id="home-rec-desc">Automated acoustic capture armed — verified specimens are logged directly to the Research Archive.</span>
-            <span class="labs-ac-cta">RECORD TOOT →</span>
-          </div>
 
-          <button type="button" id="btn-home-analyze-fart" class="labs-action-card labs-ac-blue">
-            <div class="labs-ac-top-row">
-              <span class="labs-ac-icon" aria-hidden="true">
-                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h10M15 5v9L7.5 27.5A2.5 2.5 0 0 0 9.7 31h16.6a2.5 2.5 0 0 0 2.2-3.5L21 14V5"/><path d="M10.5 23h15" stroke="#1b6d4f" stroke-width="2.6"/></svg>
-              </span>
+            <button type="button" id="btn-home-sequence" class="labs-action-card labs-ac-purple">
+              <span class="labs-ac-sticky" aria-hidden="true">Can you handle the pressure?</span>
+              <div class="labs-ac-body">
+                <span class="labs-ac-icon" aria-hidden="true">
+                  <svg viewBox="0 0 40 40" fill="currentColor"><path d="M19 6.5c-4.4 0-7.8 3-8.4 7-2.6.9-4.6 3.5-4.6 6.5 0 2.6 1.4 4.9 3.5 6.1.3 3.7 3.4 6.6 7.2 6.6 1.1 0 2.1-.3 3-.8V6.6c-.2 0-.5-.1-.7-.1zm2 .1v25.3c.9.5 1.9.8 3 .8 3.8 0 6.9-2.9 7.2-6.6 2.1-1.2 3.5-3.5 3.5-6.1 0-3-2-5.6-4.6-6.5-.6-4-4-7-8.4-7-.2 0-.5 0-.7.1z"/><path d="M13.5 14.5c1.2-.5 2.5.1 3 .9m-3.8 6c1.5-.3 2.8.5 3.3 1.7m10.5-8.6c-1.2-.5-2.5.1-3 .9m3.8 6c-1.5-.3-2.8.5-3.3 1.7" fill="none" stroke="#e6dfd0" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </span>
+                <div class="labs-ac-copy">
+                  <span class="labs-ac-title">SEQUENTIAL RECALL</span>
+                  <span class="labs-ac-desc">Remember the sequence. Reproduce the toots.</span>
+                </div>
+              </div>
+              <span class="labs-ac-cta">TEST YOUR MEMORY →</span>
+            </button>
+
+            <button type="button" id="btn-home-realfake" class="labs-action-card labs-ac-blue">
               <span class="labs-ac-redstamp">TOP SECRET</span>
-            </div>
-            <span class="labs-ac-title">Analyze A Fart</span>
-            <span class="labs-ac-desc">Generate official Institute Reports, 3D spectrograms, and comparative acoustic assessments.</span>
-            <span class="labs-ac-cta">OPEN LAB REPORT →</span>
-          </button>
+              <div class="labs-ac-body">
+                <span class="labs-ac-icon" aria-hidden="true">
+                  <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="17" cy="17" r="10.5" fill="currentColor" fill-opacity="0.12"/><path d="M24.8 24.8 35 35" stroke-width="3.6"/><path d="M10.5 17h3l2-4.5 3 9 2-4.5h3" stroke-width="2.3"/></svg>
+                </span>
+                <div class="labs-ac-copy">
+                  <span class="labs-ac-title">REAL OR FAKE?</span>
+                  <span class="labs-ac-desc">Authentic archive gas vs. human mimics.</span>
+                </div>
+              </div>
+              <span class="labs-ac-nose-note" aria-hidden="true">(Nose knows best)</span>
+              <span class="labs-ac-cta">SPOT THE FAKE →</span>
+            </button>
+          </div>
         </section>
 
         <section class="labs-glass-card labs-summary-card" aria-label="Executive Research Summary">
@@ -189,7 +223,7 @@
           <div class="labs-summary-grid">
             <div class="labs-stat-tile">
               <span class="labs-stat-ico" aria-hidden="true">
-                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h8M11 3v6.5L5.8 20.8A2 2 0 0 0 7.6 24h12.8a2 2 0 0 0 1.8-3.2L17 9.5V3"/><path d="M8 18h12" stroke-opacity="0.7"/></svg>
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h8M11 3v6.5L5.8 20.8A2 2 0 0 0 7.6 24h12.8a2 2 0 0 0 1.8-3.2L17 9.5V3"/><path d="M8 18h12" stroke-opacity="0.75"/></svg>
               </span>
               <div class="labs-stat-body">
                 <div class="labs-stat-num" id="stat-samples-recorded">0</div>
@@ -198,16 +232,16 @@
             </div>
             <div class="labs-stat-tile">
               <span class="labs-stat-ico" aria-hidden="true">
-                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="3.5" height="9" rx="1"/><rect x="10" y="9" width="3.5" height="14" rx="1"/><rect x="16" y="5" width="3.5" height="18" rx="1"/><rect x="22" y="11" width="3.5" height="12" rx="1"/></svg>
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="3.5" height="9" rx="1"/><rect x="10" y="9" width="3.5" height="14" rx="1"/><rect x="16" y="5" width="3.5" height="18" rx="1"/><rect x="22" y="11" width="3.5" height="12" rx="1"/></svg>
               </span>
               <div class="labs-stat-body">
                 <div class="labs-stat-num labs-num-green" id="stat-best-score">0.0%</div>
-                <div class="labs-stat-label">Peak Reproduction Fidelity</div>
+                <div class="labs-stat-label">Peak Fidelity</div>
               </div>
             </div>
             <div class="labs-stat-tile">
               <span class="labs-stat-ico" aria-hidden="true">
-                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h12v6a6 6 0 0 1-12 0z"/><path d="M8 7H5a2 2 0 0 0-2 2v1a3 3 0 0 0 3 3h2.2M20 7h3a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-2.2"/><path d="M14 17v5M9 23h10"/></svg>
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h12v6a6 6 0 0 1-12 0z"/><path d="M8 7H5a2 2 0 0 0-2 2v1a3 3 0 0 0 3 3h2.2M20 7h3a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-2.2"/><path d="M14 17v5M9 23h10"/></svg>
               </span>
               <div class="labs-stat-body">
                 <div class="labs-stat-num labs-num-blue" id="stat-challenges-completed">0</div>
@@ -216,15 +250,19 @@
             </div>
             <div class="labs-stat-tile">
               <span class="labs-stat-ico" aria-hidden="true">
-                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="10"/><ellipse cx="14" cy="14" rx="4.5" ry="10"/><path d="M4.5 11h19M4.5 17h19"/></svg>
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="10"/><ellipse cx="14" cy="14" rx="4.5" ry="10"/><path d="M4.5 11h19M4.5 17h19"/></svg>
               </span>
               <div class="labs-stat-body">
                 <div class="labs-stat-num labs-num-purple" id="stat-avg-quality">0.0%</div>
-                <div class="labs-stat-label">Mean Match Confidence</div>
+                <div class="labs-stat-label">Mean Confidence</div>
               </div>
             </div>
           </div>
-          <div class="labs-summary-sticky" aria-hidden="true">Keep Tooting, Keep Learning — Dr T.</div>
+          <div class="labs-summary-sticky" aria-hidden="true">
+            <span>Keep Tooting</span>
+            <span>Keep Learning</span>
+            <small>— Dr. T</small>
+          </div>
         </section>
 
         <section class="labs-vault-section">
@@ -260,13 +298,7 @@
               <div class="labs-vault-sub">CATALOGUED FLATULENCE SPECIMENS · Preserving important emissions for a flatter tomorrow.</div>
             </div>
             <div class="labs-vault-fig" aria-hidden="true">
-              <svg viewBox="0 0 90 92" fill="none" stroke="currentColor" stroke-width="1.35">
-                <text x="2" y="10" font-size="7" font-family="Georgia,serif" font-style="italic" fill="currentColor" stroke="none">Fig. 1 · Acoustic</text>
-                <text x="2" y="18" font-size="7" font-family="Georgia,serif" font-style="italic" fill="currentColor" stroke="none">Propulsion Profile</text>
-                <path d="M40 24c11 0 18 7 18 18v15c0 11-7 22-7 30H29c0-8-7-19-7-30V42c0-11 7-18 18-18z" stroke-opacity="0.72"/>
-                <path d="M36 28c6 3 9 9 6 15s-9 9-6 15 8 8 4 14" stroke-dasharray="2.5 2"/>
-                <path d="M10 38h12M10 54h12M16 38v16" stroke-opacity="0.5"/>
-              </svg>
+              <img src="assets/theme/vault-fig1.jpg?v=20261126b" alt="Fig. 1 The Human Propulsion System" class="labs-vault-fig-img" loading="lazy" />
             </div>
           </div>
 
@@ -661,6 +693,7 @@
 
           <div class="labs-guess-footer-links">
             <button type="button" id="btn-guess-toggle-history" class="labs-quiet-link-btn hidden">🏆 Past Vault Standings</button>
+            <button type="button" id="btn-open-sequence-footer" class="labs-quiet-link-btn">🧠 Sequential Recall (Memory Game) →</button>
             <button type="button" id="btn-open-quickfire-footer" class="labs-quiet-link-btn">⚡ Quick-Fire Mimic Round →</button>
             <button type="button" id="btn-open-blind-footer" class="labs-quiet-link-btn">🔮 Blind Prediction Mode (Beta) →</button>
           </div>
@@ -816,67 +849,220 @@
             </div>
           </section>
         </div>
+
+        <!-- Secondary Game Mode: SEQUENTIAL RECALL (MEMORY SEQUENCE SOLO / MULTIPLAYER) -->
+        <div id="guess-sequence-pane" class="hidden">
+          <div class="labs-subview-bar">
+            <button type="button" id="btn-seq-back" class="labs-btn-ghost labs-btn-sm">← Back to Guess The Fart</button>
+            <span class="labs-chip labs-chip-purple">🧠 Memory Sequence</span>
+          </div>
+
+          <section id="seq-setup-card" class="labs-glass-card labs-challenge-card">
+            <div class="labs-ch-card-head">
+              <div>
+                <div class="labs-eyebrow">AUDITORY WORKING MEMORY TRIAL</div>
+                <h3 class="labs-ch-title">SEQUENTIAL RECALL</h3>
+              </div>
+            </div>
+
+            <div class="labs-seq-briefing">
+              <div class="labs-eyebrow">SCIENCE OF ACOUSTIC RECALL &amp; MEMORY</div>
+              <p><strong>Echoic sensory memory</strong> holds raw sound contours for only 3–4 seconds before decaying into <strong>phonological working memory</strong>. Grouping Pitch + Rhythm chunks improves serial-order accuracy, though <strong>primacy &amp; recency effects</strong> cause middle specimens in longer sequences to blur first.</p>
+            </div>
+
+            <div class="labs-qf-setup-block">
+              <label class="labs-eyebrow" for="seq-count-input">SEQUENCE LENGTH (2–6 FARTS)</label>
+              <div class="labs-qf-count-row">
+                <div id="seq-count-pills" class="labs-qf-count-pills" role="group" aria-label="Sequence length">
+                  <button type="button" class="labs-qf-count-pill active" data-seq-count="3">3</button>
+                  <button type="button" class="labs-qf-count-pill" data-seq-count="4">4</button>
+                  <button type="button" class="labs-qf-count-pill" data-seq-count="5">5</button>
+                </div>
+                <input type="number" id="seq-count-input" class="labs-text-input labs-qf-count-input" min="2" max="6" value="3" aria-label="Custom sequence count" />
+              </div>
+            </div>
+
+            <div class="labs-qf-setup-block">
+              <label class="labs-eyebrow">PLAYERS (SOLO OR MULTIPLAYER)</label>
+              <div id="seq-player-pills" class="labs-qf-count-pills" role="group" aria-label="Player count">
+                <button type="button" class="labs-qf-count-pill active" data-seq-players="1">1P Solo</button>
+                <button type="button" class="labs-qf-count-pill" data-seq-players="2">2P</button>
+                <button type="button" class="labs-qf-count-pill" data-seq-players="3">3P</button>
+                <button type="button" class="labs-qf-count-pill" data-seq-players="4">4P</button>
+              </div>
+              <div id="seq-players-inputs" class="labs-seq-players-inputs hidden"></div>
+            </div>
+
+            <label class="labs-mic-field" for="seq-source-select">
+              <span>Vault Specimen Pool</span>
+              <select id="seq-source-select">
+                <option value="all">All Vault Farts</option>
+                <option value="defaults">Default Pack</option>
+                <option value="recorded">Recorded Farts Only</option>
+              </select>
+            </label>
+            <div id="seq-pool-note" class="labs-hint-text"></div>
+
+            <button type="button" id="btn-seq-start" class="labs-analyze-cta">🧠 Start 3-Fart Memory Sequence</button>
+          </section>
+
+          <section id="seq-live-card" class="labs-glass-card labs-challenge-card labs-qf-card hidden">
+            <div class="labs-qf-live-head">
+              <span id="seq-round-counter" class="labs-eyebrow">MEMORIZE 3 SPECIMENS</span>
+              <button type="button" id="btn-seq-abort" class="labs-btn-ghost labs-btn-xs">✕ Stop</button>
+            </div>
+            <div id="seq-step-pills" class="labs-seq-step-pills" aria-label="Sequence progress"></div>
+
+            <div id="seq-stage-banner" class="labs-qf-stage-banner is-listening" role="status" aria-live="polite">
+              <div id="seq-phase-word" class="labs-qf-phase-word">🔊 MEMORIZE</div>
+              <div id="seq-stage-badge" class="labs-qf-stage-badge">LISTEN TO THE FULL SEQUENCE</div>
+              <div id="seq-stage-title" class="labs-qf-fart-title">Preparing…</div>
+              <div id="seq-stage-sub" class="labs-qf-stage-sub">Pay attention to order, pitch contour, and burst count.</div>
+            </div>
+
+            <div class="labs-qf-bar-track"><div id="seq-timer-bar" class="labs-qf-bar-fill"></div></div>
+            <canvas id="seq-wave-canvas" class="labs-live-wave"></canvas>
+            <div class="labs-result-actions">
+              <button type="button" id="btn-seq-replay" class="labs-btn-ghost labs-btn-sm hidden">🔊 Replay Sequence</button>
+              <button type="button" id="btn-seq-begin-turn" class="labs-btn labs-btn-emerald labs-btn-sm hidden">🎤 Start Recall Turn</button>
+              <button type="button" id="btn-seq-done-early" class="labs-btn labs-btn-orange labs-btn-sm hidden">⏭ Next Fart</button>
+            </div>
+          </section>
+
+          <section id="seq-results-card" class="labs-glass-card labs-challenge-card labs-seq-res-card hidden">
+            <div class="labs-seq-res-head">
+              <div>
+                <div class="labs-eyebrow">SEQUENTIAL RECALL · RESULTS</div>
+                <div class="labs-seq-res-score-row">
+                  <span id="seq-avg-score" class="labs-seq-avg-score">0.0%</span>
+                  <span id="seq-avg-rank" class="labs-rank-pill">Rook</span>
+                </div>
+              </div>
+              <div id="seq-memory-note" class="labs-seq-mem-note"></div>
+            </div>
+
+            <div id="seq-player-tabs" class="labs-seq-player-tabs hidden" role="tablist" aria-label="Player Scores"></div>
+            <div id="seq-results-list" class="labs-seq-compact-list"></div>
+
+            <div class="labs-result-actions">
+              <button type="button" id="btn-seq-rematch" class="labs-btn labs-btn-emerald labs-btn-sm">🔁 Rematch Sequence</button>
+              <button type="button" id="btn-seq-new" class="labs-btn labs-btn-blue labs-btn-sm">🎲 New Sequence</button>
+              <button type="button" id="btn-seq-setup" class="labs-btn-ghost labs-btn-sm">⚙️ Setup</button>
+            </div>
+          </section>
+        </div>
       </section>
 
       <!-- ==================== AREA 3: FARTNALYSIS (NO GAMEPLAY LANGUAGE) ==================== -->
       <section id="labs-view-fartnalysis" class="labs-view">
-        <div class="labs-glass-card labs-fn-hero-dossier">
-          <div class="labs-fn-hero-row">
-            <div>
-              <h2 class="labs-section-heading labs-fn-mega-title">FARTNALYSIS REPORT</h2>
-              <div class="labs-fn-subline">ACOUSTIC ANALYSIS &amp; SCIENTIFIC REVIEW</div>
+        <div class="labs-fn-dossier-wrap">
+          <div class="labs-fn-dossier-sheet">
+            <div class="labs-fn-hero-dossier">
+              <div class="labs-fn-hero-row">
+                <div>
+                  <h2 class="labs-section-heading labs-fn-mega-title">FARTNALYSIS REPORT</h2>
+                  <div class="labs-fn-subline">ACOUSTIC ANALYSIS &amp; SCIENTIFIC REVIEW</div>
+                </div>
+                <div class="labs-fn-stamp-col">
+                  <span class="labs-fn-conf-stamp">LAB REPORT<br />CONFIDENTIAL</span>
+                  <div id="fn-report-date" class="labs-fn-report-date">NOV 26, 2026</div>
+                </div>
+              </div>
+              <div class="labs-fn-hero-actions">
+                <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Back</button>
+                <div class="labs-fn-sticky" aria-hidden="true">
+                  <span>Another good one!</span>
+                  <span class="labs-fn-sticky-smile">☺</span>
+                </div>
+              </div>
             </div>
-            <span class="labs-fn-conf-stamp">LAB REPORT<br />CONFIDENTIAL</span>
+
+            <!-- 3 Analysis Modes -->
+            <div id="fn-mode-tabs" class="labs-mode-tabs labs-fn-mode-strip" role="tablist" aria-label="Analysis Modes">
+              <button type="button" class="labs-mode-tab active" data-fn-mode="original">1. Single Analysis</button>
+              <button type="button" class="labs-mode-tab" data-fn-mode="comparison">2. Compare</button>
+              <button type="button" class="labs-mode-tab" data-fn-mode="group">3. Megamix</button>
+            </div>
+
+            <!-- Selectors & Classification Shipping Tag -->
+            <div id="fn-pickers-bar" class="labs-fn-pickers hidden">
+              <div class="labs-fn-picker-col">
+                <label class="labs-mic-field labs-fn-spec-select-box" for="fn-sample-select">
+                  <span id="fn-sample-label">PRIMARY ACOUSTIC SPECIMEN</span>
+                  <div class="labs-fn-select-shell">
+                    <span class="labs-fn-wave-badge" aria-hidden="true">
+                      <svg viewBox="0 0 28 20" width="22" height="16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+                        <line x1="2" y1="10" x2="2" y2="10"></line>
+                        <line x1="6" y1="6" x2="6" y2="14"></line>
+                        <line x1="10" y1="3" x2="10" y2="17"></line>
+                        <line x1="14" y1="1" x2="14" y2="19"></line>
+                        <line x1="18" y1="4" x2="18" y2="16"></line>
+                        <line x1="22" y1="7" x2="22" y2="13"></line>
+                        <line x1="26" y1="9" x2="26" y2="11"></line>
+                      </svg>
+                    </span>
+                    <select id="fn-sample-select"></select>
+                  </div>
+                </label>
+                <label class="labs-mic-field labs-fn-spec-select-box hidden" id="fn-guess-field" for="fn-guess-select">
+                  <span>COMPARATIVE RECORDING</span>
+                  <div class="labs-fn-select-shell">
+                    <select id="fn-guess-select"></select>
+                  </div>
+                </label>
+              </div>
+              <aside id="fn-specimen-tag" class="labs-fn-shipping-tag" aria-label="Specimen Classification Tag">
+                <div class="labs-fn-tag-stain" aria-hidden="true"></div>
+                <div class="labs-fn-tag-wind" aria-hidden="true">
+                  <svg viewBox="0 0 36 24" width="28" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+                    <path d="M2 8h21a3.5 3.5 0 1 0-3.5-3.5"></path>
+                    <path d="M2 13h28a3.2 3.2 0 1 1-3.2 3.2"></path>
+                    <path d="M5 18h15a2.6 2.6 0 1 1-2.6 2.6"></path>
+                  </svg>
+                </div>
+                <div class="labs-fn-tag-body">
+                  <div class="labs-fn-tag-line"><span>SPECIMEN ID</span><strong id="fn-tag-id">TM-0000</strong></div>
+                  <div class="labs-fn-tag-line"><span>CATEGORY</span><strong id="fn-tag-cat">Archive Specimen</strong></div>
+                  <div class="labs-fn-tag-line"><span>RARITY</span><strong id="fn-tag-rarity">Uncommon</strong></div>
+                </div>
+                <span class="labs-fn-tag-hole" aria-hidden="true"></span>
+              </aside>
+            </div>
+
+            <!-- Ranked Comparative Recording Index (Compare Mode) -->
+            <div id="fn-guess-leaderboard" class="labs-fn-guess-lb hidden" aria-label="Comparative Recording Index"></div>
+
+            <!-- Megamix Source Filter (Mode 3 Only) -->
+            <div id="fn-group-filter-bar" class="labs-group-filter-bar hidden">
+              <div class="labs-group-filter-pills" role="group" aria-label="Megamix Source Filter">
+                <button type="button" class="labs-format-btn active" data-group-source="all">All (0)</button>
+                <button type="button" class="labs-format-btn" data-group-source="recorded">Field Recordings (0)</button>
+                <button type="button" class="labs-format-btn" data-group-source="guesses">Comparative Recordings (0)</button>
+                <button type="button" class="labs-format-btn" data-group-source="defaults">Archive Reference Pack (0)</button>
+              </div>
+              <div class="labs-group-cap-row">
+                <span id="fn-group-cap-note" class="labs-hint-text">Analyzing selected Research Archive specimens</span>
+                <button type="button" id="btn-group-shuffle-defaults" class="labs-btn-ghost labs-btn-xs hidden">🎲 Shuffle 20</button>
+              </div>
+            </div>
+
+            <div id="fn-empty-state" class="labs-empty-card hidden">
+              <h3 id="fn-empty-title">No Specimen Ready</h3>
+              <p id="fn-empty-copy">Record an acoustic specimen to generate an Institute Report and Laboratory Findings.</p>
+              <button type="button" id="btn-fn-go-guess" class="labs-btn labs-btn-emerald">← Return to Research Archive</button>
+            </div>
+
+            <div id="fn-dashboard-mount"></div>
           </div>
-          <div class="labs-fn-hero-actions">
-            <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Back</button>
-            <div class="labs-fn-sticky" aria-hidden="true">Another good one! :)</div>
-          </div>
+
+          <nav id="fn-side-tabs" class="labs-fn-side-tabs" aria-label="Report Sections">
+            <button type="button" class="labs-fn-side-tab active" data-fn-jump="analysis">ANALYSIS</button>
+            <button type="button" class="labs-fn-side-tab" data-fn-jump="metrics">METRICS</button>
+            <button type="button" class="labs-fn-side-tab" data-fn-jump="criteria">CRITERIA</button>
+            <button type="button" class="labs-fn-side-tab" data-fn-jump="environment">ENVIRONMENT</button>
+            <button type="button" class="labs-fn-side-tab" data-fn-jump="notes">NOTES</button>
+          </nav>
         </div>
-
-        <!-- 3 Analysis Modes -->
-        <div id="fn-mode-tabs" class="labs-mode-tabs" role="tablist" aria-label="Analysis Modes">
-          <button type="button" class="labs-mode-tab active" data-fn-mode="original">1. Single Analysis</button>
-          <button type="button" class="labs-mode-tab" data-fn-mode="comparison">2. Compare</button>
-          <button type="button" class="labs-mode-tab" data-fn-mode="group">3. Megamix</button>
-        </div>
-
-        <!-- Selectors for Single Analysis & Compare -->
-        <div id="fn-pickers-bar" class="labs-glass-card labs-fn-pickers hidden">
-          <label class="labs-mic-field" for="fn-sample-select">
-            <span id="fn-sample-label">Primary Acoustic Specimen</span>
-            <select id="fn-sample-select"></select>
-          </label>
-          <label class="labs-mic-field hidden" id="fn-guess-field" for="fn-guess-select">
-            <span>Comparative Recording</span>
-            <select id="fn-guess-select"></select>
-          </label>
-        </div>
-
-        <!-- Ranked Comparative Recording Index (Compare Mode) -->
-        <div id="fn-guess-leaderboard" class="labs-glass-card labs-fn-guess-lb hidden" aria-label="Comparative Recording Index"></div>
-
-        <!-- Megamix Source Filter (Mode 3 Only) -->
-        <div id="fn-group-filter-bar" class="labs-glass-card labs-group-filter-bar hidden">
-          <div class="labs-group-filter-pills" role="group" aria-label="Megamix Source Filter">
-            <button type="button" class="labs-format-btn active" data-group-source="all">All (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="recorded">Field Recordings (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="guesses">Comparative Recordings (0)</button>
-            <button type="button" class="labs-format-btn" data-group-source="defaults">Archive Reference Pack (0)</button>
-          </div>
-          <div class="labs-group-cap-row">
-            <span id="fn-group-cap-note" class="labs-hint-text">Analyzing selected Research Archive specimens</span>
-            <button type="button" id="btn-group-shuffle-defaults" class="labs-btn-ghost labs-btn-xs hidden">🎲 Shuffle 20</button>
-          </div>
-        </div>
-
-        <div id="fn-empty-state" class="labs-glass-card labs-empty-card hidden">
-          <h3 id="fn-empty-title">No Specimen Ready</h3>
-          <p id="fn-empty-copy">Record an acoustic specimen to generate an Institute Report and Laboratory Findings.</p>
-          <button type="button" id="btn-fn-go-guess" class="labs-btn labs-btn-emerald">← Return to Research Archive</button>
-        </div>
-
-        <div id="fn-dashboard-mount"></div>
       </section>
 
       <!-- ==================== INSTITUTIONAL: MEET THE TEAM ==================== -->
@@ -901,6 +1087,94 @@
           <div class="labs-eyebrow">PROPRIETARY COMPUTATIONAL ENGINE</div>
           <h3 class="labs-ch-title">A.S.S. — Acoustic Similarity System v4.2</h3>
           <p class="labs-ch-meta">All Institute Reports, Laboratory Findings, Comparative Acoustic Assessments, and Executive Research Summaries at Toot Match Labs are computed deterministically on-device via A.S.S. (Acoustic Similarity System) telemetry modules.</p>
+        </section>
+      </section>
+
+      <!-- ==================== REAL OR FAKE? AUTHENTICITY SHOWDOWN ==================== -->
+      <section id="labs-view-realfake" class="labs-view">
+        <div class="labs-subview-bar">
+          <button type="button" id="btn-rf-back" class="labs-btn-ghost labs-btn-sm">← Back to Home</button>
+          <span class="labs-clip-tag">🎭 REAL OR FAKE · AUTHENTICITY LAB</span>
+        </div>
+
+        <section id="rf-briefing-card" class="labs-glass-card labs-challenge-card">
+          <div class="labs-ch-card-head">
+            <div>
+              <div class="labs-eyebrow">HUMAN EARS VS. A.S.S. AUTHENTICITY CLASSIFIER</div>
+              <h2 class="labs-ch-title">REAL OR FAKE? SHOWDOWN</h2>
+            </div>
+            <button type="button" id="btn-rf-toggle-brief" class="labs-btn-ghost labs-btn-xs" aria-expanded="true">▴ Hide Info</button>
+          </div>
+          <div id="rf-brief-body" class="labs-rf-briefing">
+            <p><strong>Instructions:</strong> Listen blindly to a mix of known <strong>genuine archive farts</strong> (Default + Field Recordings) and known <strong>human mimic guesses</strong> from your Vault. Vote whether each specimen is Real or Fake, then compare your score directly against our A.S.S. v4.2 Authenticity Algorithm.</p>
+            <p><strong>Scientific Note:</strong> Humans are surprisingly good at mimicking pitch curves, sub-bass flutter, and burst envelopes — making pure acoustic separation notoriously difficult even for spectral DSP. As always at Toot Match Labs: <em>while waveform analysis narrows the odds, the human nose remains the ultimate detector.</em></p>
+          </div>
+        </section>
+
+        <section id="rf-locked-card" class="labs-glass-card labs-empty-card hidden">
+          <h3>Need More Human Mimics First</h3>
+          <p id="rf-locked-copy">Record at least 2 guesses in Guess The Fart or Sequential Recall so the lab has real human mimics to test against genuine archive specimens.</p>
+          <div class="labs-result-actions">
+            <button type="button" id="btn-rf-go-guess" class="labs-btn labs-btn-emerald labs-btn-sm">🎯 Go to Guess The Fart</button>
+            <button type="button" id="btn-rf-go-seq" class="labs-btn labs-btn-blue labs-btn-sm">🧠 Try Sequential Recall</button>
+          </div>
+        </section>
+
+        <section id="rf-play-card" class="labs-glass-card labs-challenge-card hidden">
+          <div class="labs-rf-scoreboard">
+            <span id="rf-counter" class="labs-eyebrow">SPECIMEN 1 OF 6</span>
+            <div class="labs-att-btns">
+              <span id="rf-score-you" class="labs-chip labs-chip-green">🧑 YOU: 0/0</span>
+              <span id="rf-score-ai" class="labs-chip labs-chip-blue">🤖 A.S.S. AI: 0/0</span>
+            </div>
+          </div>
+
+          <div class="labs-waveform-box labs-wave-compact">
+            <canvas id="rf-wave-canvas" class="labs-wave-canvas"></canvas>
+          </div>
+
+          <button type="button" id="btn-rf-play" class="labs-btn labs-btn-blue labs-btn-lg">▶ PLAY SPECIMEN</button>
+
+          <div id="rf-vote-row" class="labs-rf-vote-row">
+            <button type="button" id="btn-rf-vote-real" class="labs-btn labs-btn-emerald">✅ REAL FART</button>
+            <button type="button" id="btn-rf-vote-fake" class="labs-btn labs-btn-orange">🎭 FAKE MIMIC</button>
+          </div>
+
+          <div id="rf-reveal-box" class="labs-rf-reveal-box hidden">
+            <div class="labs-eyebrow" id="rf-reveal-truth">ACTUAL SPECIMEN</div>
+            <div class="labs-rf-duel-grid">
+              <div class="labs-rf-duel-cell" id="rf-res-you">🧑 You: —</div>
+              <div class="labs-rf-duel-cell" id="rf-res-ai">🤖 A.S.S. AI: —</div>
+            </div>
+            <p class="labs-verdict-text" id="rf-reveal-note"></p>
+            <div class="labs-result-actions">
+              <button type="button" id="btn-rf-inspect" class="labs-btn-ghost labs-btn-sm">🔬 Inspect Authenticity</button>
+              <button type="button" id="btn-rf-next" class="labs-btn labs-btn-emerald labs-btn-sm">Next Specimen →</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="rf-results-card" class="labs-glass-card labs-challenge-card hidden">
+          <div class="labs-eyebrow">AUTHENTICITY SHOWDOWN COMPLETE</div>
+          <h3 class="labs-ch-title" id="rf-final-verdict">Head-to-Head Summary</h3>
+          <div class="labs-rf-summary-pair">
+            <div class="labs-rf-big-tile">
+              <div>🧑 YOUR SCORE</div>
+              <div class="labs-rf-big-num" id="rf-final-you">0%</div>
+              <small id="rf-final-you-sub">0 / 0 correct</small>
+            </div>
+            <div class="labs-rf-big-tile">
+              <div>🤖 A.S.S. AI</div>
+              <div class="labs-rf-big-num" id="rf-final-ai">0%</div>
+              <small id="rf-final-ai-sub">0 / 0 correct</small>
+            </div>
+          </div>
+          <p class="labs-verdict-text" id="rf-final-note"></p>
+          <div id="rf-results-list" class="labs-seq-compact-list"></div>
+          <div class="labs-result-actions">
+            <button type="button" id="btn-rf-again" class="labs-btn labs-btn-emerald labs-btn-sm">🔁 Play Again</button>
+            <button type="button" id="btn-rf-home" class="labs-btn-ghost labs-btn-sm">← Home</button>
+          </div>
         </section>
       </section>
     </main>
@@ -987,12 +1261,12 @@
     </div>
   </div>
 
-  <!-- Unified Share / Email Modal -->
+  <!-- Unified Share / Email / PDF Modal -->
   <div id="labs-share-modal" class="labs-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="labs-share-modal-title">
     <div class="labs-glass-card labs-modal-card labs-share-sheet">
       <div class="labs-eyebrow">INSTITUTE DISPATCH · PDF &amp; WAV BUNDLE</div>
-      <h3 id="labs-share-modal-title" class="labs-section-heading">Share or Email Report</h3>
-      <p class="labs-modal-copy" id="labs-share-modal-sub">Choose how to send the full A.S.S. v4.2 PDF report &amp; WAV audio.</p>
+      <h3 id="labs-share-modal-title" class="labs-section-heading">Share Report</h3>
+      <p class="labs-modal-copy" id="labs-share-modal-sub">Choose how to export or send the full A.S.S. v4.2 dossier &amp; audio.</p>
       <div class="labs-share-option-stack">
         <button type="button" id="btn-share-modal-native" class="labs-share-opt-btn labs-share-opt-native">
           <span class="labs-share-opt-ico" aria-hidden="true">📤</span>
@@ -1006,6 +1280,13 @@
           <span class="labs-share-opt-copy">
             <strong>Email (Audio + PDF)</strong>
             <small>Open email draft with full PDF report &amp; WAV audio</small>
+          </span>
+        </button>
+        <button type="button" id="btn-share-modal-pdf" class="labs-share-opt-btn labs-share-opt-pdf">
+          <span class="labs-share-opt-ico" aria-hidden="true">📄</span>
+          <span class="labs-share-opt-copy">
+            <strong>Download PDF Report</strong>
+            <small>Save the full official A.S.S. v4.2 PDF dossier to this device</small>
           </span>
         </button>
       </div>

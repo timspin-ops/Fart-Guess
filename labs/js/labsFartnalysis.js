@@ -551,7 +551,7 @@
     );
   }
 
-  function renderReportSignatureHtml(seedStr) {
+  function renderReportSignatureHtml(seedStr, shareBtnHtml) {
     var chief = getScientistById('bottomsworth');
     var fnBase = hashSeed(seedStr);
     var notes = [];
@@ -565,7 +565,7 @@
       .join('');
 
     return (
-      '<section class="labs-glass-card labs-report-signature" aria-label="Laboratory Certification and Academic Footnotes">' +
+      '<section class="labs-glass-card labs-report-signature" data-fn-sec="notes" aria-label="Laboratory Certification and Academic Footnotes">' +
       '  <div class="labs-sig-top">' +
       '    <div class="labs-sig-reviewer">' +
       '      <img class="labs-sig-portrait" src="' + esc(chief.img) + '" alt="' + esc(chief.name) + '" loading="lazy" />' +
@@ -588,6 +588,7 @@
       '    <div class="labs-eyebrow">ACADEMIC FOOTNOTES</div>' +
       '    <ul>' + notesHtml + '</ul>' +
       '  </div>' +
+      (shareBtnHtml ? '  <div class="labs-sig-share-row">' + shareBtnHtml + '</div>' : '') +
       '</section>'
     );
   }
@@ -979,16 +980,9 @@
       '  <button type="button" class="labs-mini-chip active" data-preset="3d">3D</button>' +
       '  <button type="button" class="labs-mini-chip" data-preset="top">Top</button>' +
       '  <button type="button" class="labs-mini-chip" data-preset="side">Side</button>' +
+      '  <button type="button" class="labs-mini-chip" data-preset="front">Front</button>' +
       '  <button type="button" class="labs-mini-chip" data-preset="spin">Spin</button>' +
       '</div>';
-
-    var headerBtnsHtml =
-      (opts.onShareOrEmail || opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
-        ? '<div class="labs-fn-header-btns">' +
-          (opts.onShareOrEmail || opts.onShare || opts.onEmailAnalysis ? '<button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-cmp-share">📤 Share / Email</button>' : '') +
-          (opts.onDownloadPdf ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>' : '') +
-          '</div>'
-        : '');
 
     var durDiffMs = Math.round(Math.abs(safeNum(featA.durationSec, 0) - safeNum(featB.durationSec, 0)) * 1000);
     var pitchDiffHz = Math.round(Math.abs(safeNum(featA.medianPitchHz, 0) - safeNum(featB.medianPitchHz, 0)));
@@ -1012,20 +1006,14 @@
       opts.archiveSamples,
       (labelA || '') + '|' + (labelB || '') + '|arch'
     );
-    var shareVerdict = pickShareableVerdict(
-      (labelA || '') + '|' + (labelB || '') + '|' + exactScore.toFixed(1)
-    );
     var cmpBottomActionsHtml =
-      (opts.onShareOrEmail || opts.onEmailAnalysis || opts.onShare
-        ? '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-cmp-share">📤 Share / Email</button>'
-        : '') +
-      (opts.onDownloadPdf
-        ? '<button type="button" class="labs-btn-ghost labs-btn-sm labs-cmp-pdf">📄 PDF</button>'
+      (opts.onShareOrEmail || opts.onEmailAnalysis || opts.onShare || opts.onDownloadPdf
+        ? '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-cmp-share">📤 Share</button>'
         : '');
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
-      '  <section class="labs-glass-card labs-fn-header">' +
+      '  <section class="labs-glass-card labs-fn-header" data-fn-sec="metrics">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
       '        <div class="labs-eyebrow">INSTITUTE REPORT · COMPARATIVE ACOUSTIC ASSESSMENT</div>' +
@@ -1053,7 +1041,8 @@
       renderScientistCommentHtml(cmpComment.scientistId, cmpComment.quote, cmpComment.label) +
       renderRareCommentHtml(rareDispatch) +
       '  </section>' +
-      '  <section class="labs-glass-card labs-spec-bay">' +
+      '  <section class="labs-glass-card labs-spec-bay labs-fn-topo-bay" data-fn-sec="analysis">' +
+      '    <span class="labs-fn-paperclip" aria-hidden="true"></span>' +
       '    <div class="labs-spec-bay-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">3D SPECTRAL DISTRIBUTION TOPOLOGY</div>' +
@@ -1101,7 +1090,7 @@
       '    </div>' +
       renderScientistCommentHtml('wobble', specWobbleQuote, '3D Spectrogram Telemetry Commentary') +
       '  </section>' +
-      '  <section class="labs-glass-card labs-analysis-card">' +
+      '  <section class="labs-glass-card labs-analysis-card" data-fn-sec="criteria">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">TELEMETRY DOMAINS · COMPARATIVE ANALYSIS</div>' +
@@ -1116,8 +1105,7 @@
       rowsHtml +
       '    </div>' +
       '  </section>' +
-      renderReportSignatureHtml((labelA || '') + '|' + (labelB || '') + '|cmp') +
-      renderShareableVerdictHtml(shareVerdict, labelA + ' vs ' + labelB, exactScore.toFixed(1) + '% Reproduction Fidelity', cmpBottomActionsHtml) +
+      renderReportSignatureHtml((labelA || '') + '|' + (labelB || '') + '|cmp', cmpBottomActionsHtml) +
       '</div>';
 
     wireArchiveToggles(mountEl);
@@ -5136,6 +5124,201 @@
     );
   }
 
+  function computeSpecimenReadout(sound, featArg, bonusArg, mlArg, label) {
+    var DSP = root.TootApp && root.TootApp.DSP;
+    var Forensics = root.TootApp && root.TootApp.Forensics;
+    var Store = root.TootLabs && root.TootLabs.Store;
+    var samples = (sound && sound.samples) || [];
+    var sr = (sound && sound.sampleRate) || 44100;
+    var feat = featArg || (sound && sound.features) || (DSP && samples.length ? DSP.extractFeatures(samples, sr) : {});
+    var bonus = bonusArg || (Forensics && feat ? Forensics.computeBonusMetrics(feat, feat) : null);
+    var ml = mlArg || (feat ? classifyAcousticProfile(feat, bonus) : { topClass: { name: 'Archive Specimen' }, confidence: 50 });
+
+    var durSec = safeNum(
+      feat.duration,
+      safeNum(feat.durationSec, samples.length > 0 ? samples.length / sr : 0)
+    );
+    var peakAbs = 0;
+    var sumSq = 0;
+    var step = samples.length > 90000 ? 2 : 1;
+    var count = 0;
+    for (var i = 0; i < samples.length; i += step) {
+      var v = Math.abs(samples[i] || 0);
+      if (v > peakAbs) peakAbs = v;
+      sumSq += v * v;
+      count++;
+    }
+    var rmsAmp = count > 0 ? Math.sqrt(sumSq / count) : 0;
+    var peakDb = samples.length > 0 ? clamp(Math.round(20 * Math.log10(Math.max(peakAbs, 1e-4))), -60, 0) : -12;
+    var rmsDb = samples.length > 0 ? clamp(Math.round(20 * Math.log10(Math.max(rmsAmp, 1e-4))), -60, -1) : -24;
+
+    var peakFreqHz = Math.round(
+      safeNum(feat.medianPitchHz, 0) > 0
+        ? feat.medianPitchHz
+        : safeNum(feat.dominantFreqHz, safeNum(feat.spectralCentroidHz, 85))
+    );
+    var centroidHz = Math.round(safeNum(feat.spectralCentroidHz, 420));
+    var wetPct = Math.round(safeNum(bonus && bonus.wetness && bonus.wetness.a ? bonus.wetness.a.wetnessPct : 0, 0));
+    var reachM = safeNum(bonus && bonus.social && bonus.social.a ? bonus.social.a.radiusM : 0, 0);
+    var bursts = Math.round(safeNum(feat.burstCount, 1));
+    var crestDb = safeNum(feat.crestFactorDb, 8);
+
+    var idBase = (sound && sound.id) || (sound && (sound.displayName || sound.name)) || label || 'specimen';
+    var specimenId = 'TM-' + String((hashSeed(String(idBase)) % 8999) + 1000).padStart(4, '0');
+
+    var moodObj = Store && typeof Store.describeAcousticMood === 'function' ? Store.describeAcousticMood(feat, bonus) : null;
+    var category = (moodObj && moodObj.moodLabel) || (ml && ml.topClass && ml.topClass.name) || 'Archive Specimen';
+
+    var rarityScore =
+      clamp(durSec / 2.2, 0, 1) * 28 +
+      clamp(crestDb / 18, 0, 1) * 26 +
+      clamp(bursts / 4, 0, 1) * 24 +
+      clamp(wetPct / 100, 0, 1) * 22;
+    var rarity =
+      rarityScore >= 68
+        ? 'Apex Specimen'
+        : rarityScore >= 52
+        ? 'Rare'
+        : rarityScore >= 36
+        ? 'Uncommon'
+        : 'Common';
+
+    return {
+      specimenId: specimenId,
+      category: category,
+      rarity: rarity,
+      durationSec: durSec,
+      durationLabel: durSec.toFixed(2) + 's',
+      peakFreqHz: peakFreqHz,
+      peakFreqLabel: peakFreqHz + ' Hz',
+      peakDb: peakDb,
+      peakDbLabel: peakDb + ' dB',
+      rmsDb: rmsDb,
+      rmsDbLabel: rmsDb + ' dB',
+      centroidHz: centroidHz,
+      centroidLabel: centroidHz + ' Hz',
+      wetPct: wetPct,
+      reachM: reachM,
+      reachLabel: reachM.toFixed(1) + ' m',
+      dispersionLabel:
+        bursts >= 3
+          ? 'Multi-Wave Plume'
+          : centroidHz < 380
+          ? 'Directional (Lateral)'
+          : 'Broadband Radial',
+      persistenceLabel: clamp(durSec * 2.4 + (wetPct / 100) * 2.1, 0.8, 12.0).toFixed(1) + ' s',
+      particulateLabel: wetPct >= 58 ? 'Elevated' : wetPct >= 34 ? 'Moderate' : 'Low'
+    };
+  }
+
+  function syncDossierShippingTag(meta) {
+    if (!meta || typeof document === 'undefined') return;
+    var idEl = document.getElementById('fn-tag-id');
+    var catEl = document.getElementById('fn-tag-cat');
+    var rarEl = document.getElementById('fn-tag-rarity');
+    if (idEl) idEl.textContent = meta.specimenId || 'TM-0000';
+    if (catEl) catEl.textContent = meta.category || 'Archive Specimen';
+    if (rarEl) rarEl.textContent = meta.rarity || 'Uncommon';
+  }
+
+  function drawMiniSpecimenWaveform(canvas, samples, progress01) {
+    if (!canvas) return;
+    var dpr = Math.min(root.devicePixelRatio || 1, 2);
+    var rect = canvas.getBoundingClientRect ? canvas.getBoundingClientRect() : null;
+    var cssW = rect && rect.width > 20 ? Math.round(rect.width) : 196;
+    var cssH = rect && rect.height > 20 ? Math.round(rect.height) : 76;
+    if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+    }
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    ctx.fillStyle = '#061318';
+    ctx.fillRect(0, 0, cssW, cssH);
+
+    // Subtle oscilloscope reticle grid
+    ctx.strokeStyle = 'rgba(82, 240, 180, 0.12)';
+    ctx.lineWidth = 1;
+    for (var gx = 1; gx < 6; gx++) {
+      var x = Math.round((gx / 6) * cssW) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, cssH);
+      ctx.stroke();
+    }
+    for (var gy = 1; gy < 4; gy++) {
+      var y = Math.round((gy / 4) * cssH) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(cssW, y);
+      ctx.stroke();
+    }
+
+    var midY = cssH * 0.5;
+    if (samples && samples.length > 0) {
+      var bins = Math.max(40, Math.floor(cssW));
+      var peakAbs = 0.001;
+      for (var p = 0; p < samples.length; p += 2) {
+        var av = Math.abs(samples[p] || 0);
+        if (av > peakAbs) peakAbs = av;
+      }
+      var maxAmp = Math.max(peakAbs, 0.05);
+      var step = samples.length / bins;
+
+      ctx.beginPath();
+      for (var bx = 0; bx < bins; bx++) {
+        var s0 = Math.floor(bx * step);
+        var s1 = Math.min(samples.length, Math.max(s0 + 1, Math.floor((bx + 1) * step)));
+        var hi = 0;
+        for (var k = s0; k < s1; k++) {
+          var v = Math.abs(samples[k] || 0);
+          if (v > hi) hi = v;
+        }
+        var ampH = (hi / maxAmp) * (cssH * 0.42);
+        var px = (bx / Math.max(1, bins - 1)) * cssW;
+        if (bx === 0) ctx.moveTo(px, midY - ampH);
+        else ctx.lineTo(px, midY - ampH);
+      }
+      for (var bx2 = bins - 1; bx2 >= 0; bx2--) {
+        var s0b = Math.floor(bx2 * step);
+        var s1b = Math.min(samples.length, Math.max(s0b + 1, Math.floor((bx2 + 1) * step)));
+        var hib = 0;
+        for (var k2 = s0b; k2 < s1b; k2++) {
+          var v2 = Math.abs(samples[k2] || 0);
+          if (v2 > hib) hib = v2;
+        }
+        var ampHb = (hib / maxAmp) * (cssH * 0.42);
+        var pxb = (bx2 / Math.max(1, bins - 1)) * cssW;
+        ctx.lineTo(pxb, midY + ampHb);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(62, 224, 152, 0.34)';
+      ctx.fill();
+      ctx.strokeStyle = '#6cf4bb';
+      ctx.lineWidth = 1.25;
+      ctx.stroke();
+    }
+
+    // Playhead beam during sweep playback
+    if (typeof progress01 === 'number' && Number.isFinite(progress01)) {
+      var phX = clamp(progress01, 0, 1) * cssW;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#52f0b4';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(phX, 2);
+      ctx.lineTo(phX, cssH - 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+
   function renderSingleDashboard(mountEl, opts) {
     if (!mountEl || !opts || !opts.sound) {
       return { destroy: function () {}, resize: function () {} };
@@ -5163,7 +5346,8 @@
         : 'Unvoiced Airband';
     var fieldVerdict = buildSingleFieldVerdict(sound, feat, bonus, ml, noteStr);
     function buildDataDrivenLeadSingle() {
-      var durS = safeNum(feat.durationSec, 0).toFixed(2);
+      var durVal = safeNum(feat.duration, safeNum(feat.durationSec, sound.samples ? sound.samples.length / (sound.sampleRate || 44100) : 0));
+      var durS = durVal.toFixed(2);
       var f0S = Math.round(safeNum(feat.medianPitchHz, 0));
       var crS = safeNum(feat.crestFactorDb, 0).toFixed(1);
       var wetS = Math.round(safeNum(bonus && bonus.wetness && bonus.wetness.a ? bonus.wetness.a.wetnessPct : 0, 0));
@@ -5177,6 +5361,9 @@
       return 'Recorded ' + durS + 's emission locked around ' + f0S + ' Hz (' + noteStr + '), ' + crS + ' dB crest, classified as ' + ml.topClass.name + ' (' + ml.confidence + '%).';
     }
 
+    var readout = computeSpecimenReadout(sound, feat, bonus, ml, label);
+    syncDossierShippingTag(readout);
+
     var sciComment = {
       scientistId: 'bottomsworth',
       label: 'Lead Laboratory Evaluation',
@@ -5187,8 +5374,7 @@
     var archCmp = buildArchiveComparison(feat, bonus, opts.archiveSamples, label + '|' + prof.durationLabel);
     var shareVerdict = pickShareableVerdict(label + '|' + prof.durationLabel + '|' + ml.topClass.name);
     var singleBottomActionsHtml =
-      '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-s-share">📤 Share / Email</button>' +
-      '<button type="button" class="labs-btn-ghost labs-btn-sm labs-s-pdf">📄 PDF</button>';
+      '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-s-share">📤 Share</button>';
     var chartMeta = buildFinalChartsMetadata(sound, feat, bonus, opts.archiveSamples);
     var hoverState = { c_spec: null, c_pitch: null, c_mod: null, c_env: null };
     var activeHotspots = {
@@ -5286,62 +5472,158 @@
       );
     }
 
+    var chiefObj = getScientistById('bottomsworth');
+    var kmPitchPct = Math.round(clamp((readout.peakFreqHz / 480) * 100, 12, 100));
+    var kmAmpPct = Math.round(clamp(((readout.peakDb + 42) / 42) * 100, 14, 100));
+    var kmDurPct = Math.round(clamp((readout.durationSec / 2.2) * 100, 10, 100));
+    var kmCenPct = Math.round(clamp((readout.centroidHz / 1800) * 100, 10, 100));
+    var kmTurbPct = Math.round(clamp(readout.wetPct, 6, 100));
+
+    var windSvg =
+      '<svg viewBox="0 0 36 24" width="26" height="17" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" aria-hidden="true">' +
+      '  <path d="M2 8h21a3.5 3.5 0 1 0-3.5-3.5"></path>' +
+      '  <path d="M2 13h28a3.2 3.2 0 1 1-3.2 3.2"></path>' +
+      '  <path d="M5 18h15a2.6 2.6 0 1 1-2.6 2.6"></path>' +
+      '</svg>';
+
+    var roundSealSvg =
+      '<svg class="labs-fn-round-seal" viewBox="0 0 110 110" width="90" height="90" aria-hidden="true">' +
+      '  <defs><path id="' + uid + 'seal_top" d="M 16,55 a 39,39 0 1,1 78,0"></path>' +
+      '  <path id="' + uid + 'seal_bot" d="M 92,58 a 37,37 0 0,1 -74,0"></path></defs>' +
+      '  <circle cx="55" cy="55" r="50" fill="none" stroke="currentColor" stroke-width="2"></circle>' +
+      '  <circle cx="55" cy="55" r="45" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2"></circle>' +
+      '  <circle cx="55" cy="55" r="24" fill="none" stroke="currentColor" stroke-width="1.2"></circle>' +
+      '  <text font-family="monospace" font-size="9.5" font-weight="800" fill="currentColor" letter-spacing="1.2"><textPath href="#' + uid + 'seal_top" startOffset="50%" text-anchor="middle">TOOTMATCH LABS</textPath></text>' +
+      '  <text font-family="monospace" font-size="8.5" font-weight="700" fill="currentColor" letter-spacing="1.4"><textPath href="#' + uid + 'seal_bot" startOffset="50%" text-anchor="middle">EST. 2024</textPath></text>' +
+      '  <rect x="51" y="42" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"></rect>' +
+      '  <path d="M46 53a9 9 0 0 0 18 0M55 62v6M49 68h12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"></path>' +
+      '</svg>';
+
+    var globeSvg =
+      '<svg class="labs-fn-env-globe" viewBox="0 0 64 64" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+      '  <circle cx="32" cy="32" r="24"></circle>' +
+      '  <ellipse cx="32" cy="32" rx="11" ry="24"></ellipse>' +
+      '  <path d="M10 23h44M8 32h48M10 41h44"></path>' +
+      '  <path d="M21 12c4 5 5 11 3 16-2 4-7 5-9 10M39 14c3 4 4 9 1 13-3 5-2 11 4 15" stroke-width="1.35"></path>' +
+      '</svg>';
+
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
-      '  <section class="labs-glass-card labs-fn-header">' +
-      '    <div class="labs-fn-header-top">' +
-      '      <div>' +
-      '        <div class="labs-eyebrow">' + esc(eyebrow) + '</div>' +
-      '        <h2 class="labs-fn-title">' + esc(label) + '</h2>' +
-      '        <div class="labs-detail-meta">' + esc(prof.durationLabel + ' · ' + prof.pitchLabel + ' (' + noteStr + ') · ' + prof.textureLabel) + '</div>' +
-      '      </div>' +
-      buildClipTag(sound) +
-      '    </div>' +
-      '    <div class="labs-fn-single-actions">' +
-      '      <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play">▶ Play Specimen</button>' +
-      compareBtnHtml +
-      '      <span class="labs-ass-badge">Analysis performed using ' + esc(INSTITUTE.aiAcronym + ' ' + INSTITUTE.aiVersion) + '</span>' +
-      '    </div>' +
-      '    <div class="labs-verdict-banner">' +
-      '      <div class="labs-verdict-banner-head">' +
-      '        <span class="labs-eyebrow">OFFICIAL FINDINGS · ACOUSTIC PROFILE SUMMARY</span>' +
-      '        <span class="labs-verdict-grade">' + esc(Math.round(safeNum(feat.modRateHz, 0)) + ' Hz Modulation') + '</span>' +
-      '      </div>' +
-      '      <p class="labs-verdict-text">' + esc(fieldVerdict) + '</p>' +
-      '    </div>' +
-      renderScientistCommentHtml(sciComment.scientistId, sciComment.quote, sciComment.label) +
-      renderRareCommentHtml(rareDispatch) +
-      '  </section>' +
-      '  <section class="labs-glass-card labs-spec-bay">' +
-      '    <div class="labs-spec-bay-head">' +
-      '      <div>' +
-      '        <div class="labs-eyebrow">3D TIME-FREQUENCY TOPOLOGY</div>' +
-      '        <h3 class="labs-section-title">' + esc(label) + '</h3>' +
-      '      </div>' +
-      '      <div class="labs-spec-actions">' +
-      '        <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play2">▶ Play &amp; Sweep</button>' +
-      '        <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-stop">⏹ Stop</button>' +
+      (compareBtnHtml
+        ? '  <div class="labs-fn-secondary-bar">' +
+          '    <span class="labs-eyebrow">' + esc(eyebrow) + '</span>' +
+          compareBtnHtml +
+          '  </div>'
+        : '') +
+      '  <section class="labs-spec-bay labs-fn-topo-bay" data-fn-sec="analysis">' +
+      '    <span class="labs-fn-paperclip" aria-hidden="true"></span>' +
+      '    <div class="labs-fn-topo-bar">' +
+      '      <div class="labs-eyebrow">3D TIME-FREQUENCY TOPOLOGY</div>' +
+      '      <div class="labs-fn-topo-controls">' +
       '        <div class="labs-spec-presets">' +
       '          <button type="button" class="labs-mini-chip active" data-spreset="3d">3D</button>' +
       '          <button type="button" class="labs-mini-chip" data-spreset="top">Top</button>' +
       '          <button type="button" class="labs-mini-chip" data-spreset="side">Side</button>' +
+      '          <button type="button" class="labs-mini-chip" data-spreset="front">Front</button>' +
       '          <button type="button" class="labs-mini-chip" data-spreset="spin">Spin</button>' +
+      '        </div>' +
+      '        <div class="labs-spec-actions">' +
+      '          <button type="button" class="labs-btn labs-btn-blue labs-btn-sm labs-s-play2">▶ Play &amp; Sweep</button>' +
+      '          <button type="button" class="labs-btn-ghost labs-btn-sm labs-s-stop" aria-label="Stop playback">⏹</button>' +
       '        </div>' +
       '      </div>' +
       '    </div>' +
-      '    <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
-      renderScientistCommentHtml('wobble', specWobbleQuote, '3D Spectrogram Telemetry Commentary') +
+      '    <div class="labs-fn-topo-grid">' +
+      '      <div class="labs-fn-spec-stage">' +
+      '        <canvas class="labs-spec-canvas labs-single-spec-canvas" id="' + uid + 'spec3d"></canvas>' +
+      '      </div>' +
+      '      <div class="labs-fn-wave-panel">' +
+      '        <div class="labs-fn-wave-title">SPECIMEN<br />WAVEFORM</div>' +
+      '        <canvas class="labs-mini-wave-canvas" id="' + uid + 'mini_wave"></canvas>' +
+      '        <dl class="labs-fn-readout-list">' +
+      '          <div><dt>DURATION</dt><dd>' + esc(readout.durationLabel) + '</dd></div>' +
+      '          <div><dt>PEAK FREQ.</dt><dd>' + esc(readout.peakFreqLabel) + '</dd></div>' +
+      '          <div><dt>PEAK AMP.</dt><dd>' + esc(readout.peakDbLabel) + '</dd></div>' +
+      '          <div><dt>RMS LEVEL</dt><dd>' + esc(readout.rmsDbLabel) + '</dd></div>' +
+      '          <div><dt>SPECTRAL CENTROID</dt><dd>' + esc(readout.centroidLabel) + '</dd></div>' +
+      '        </dl>' +
+      '      </div>' +
+      '    </div>' +
       '  </section>' +
-      '  <section class="labs-glass-card labs-analysis-card">' +
+      '  <section class="labs-fn-sec labs-fn-sci-section">' +
+      '    <h3 class="labs-fn-sec-heading">SCIENTIFIC ANALYSIS</h3>' +
+      '    <div class="labs-fn-sci-grid">' +
+      '      <div class="labs-fn-sci-main">' +
+      '        <p class="labs-fn-sci-copy">' + esc(fieldVerdict) + '</p>' +
+      renderRareCommentHtml(rareDispatch) +
+      '      </div>' +
+      '      <div class="labs-fn-sci-aside">' +
+      '        <div class="labs-fn-drw-note">' +
+      '          <p class="labs-fn-drw-quote">' + esc(specWobbleQuote) + '</p>' +
+      '          <div class="labs-fn-drw-sig">— Dr. W.</div>' +
+      '        </div>' +
+      '        <div class="labs-fn-peer-row">' +
+      '          <span class="labs-fn-peer-stamp">🧪 PEER REVIEWED</span>' +
+      '          <span class="labs-fn-coffee-ring" aria-hidden="true"></span>' +
+      '        </div>' +
+      '      </div>' +
+      '    </div>' +
+      '  </section>' +
+      '  <section class="labs-fn-sec labs-fn-exec-grid">' +
+      '    <div class="labs-fn-exec-cell labs-fn-km-cell" data-fn-sec="metrics">' +
+      '      <h4 class="labs-fn-cell-heading">KEY METRICS</h4>' +
+      '      <div class="labs-fn-km-list">' +
+      '        <div class="labs-fn-km-row"><span class="labs-fn-km-lbl">Fundamental Frequency</span><span class="labs-fn-km-bar"><i style="width:' + kmPitchPct + '%"></i></span><strong class="labs-fn-km-val">' + esc(readout.peakFreqLabel) + '</strong></div>' +
+      '        <div class="labs-fn-km-row"><span class="labs-fn-km-lbl">Amplitude (Peak)</span><span class="labs-fn-km-bar"><i style="width:' + kmAmpPct + '%"></i></span><strong class="labs-fn-km-val">' + esc(readout.peakDbLabel) + '</strong></div>' +
+      '        <div class="labs-fn-km-row"><span class="labs-fn-km-lbl">Duration</span><span class="labs-fn-km-bar"><i style="width:' + kmDurPct + '%"></i></span><strong class="labs-fn-km-val">' + esc(readout.durationSec.toFixed(2) + ' s') + '</strong></div>' +
+      '        <div class="labs-fn-km-row"><span class="labs-fn-km-lbl">Spectral Centroid</span><span class="labs-fn-km-bar"><i style="width:' + kmCenPct + '%"></i></span><strong class="labs-fn-km-val">' + esc(readout.centroidLabel) + '</strong></div>' +
+      '        <div class="labs-fn-km-row"><span class="labs-fn-km-lbl">Turbulence Index</span><span class="labs-fn-km-bar"><i style="width:' + kmTurbPct + '%"></i></span><strong class="labs-fn-km-val">' + esc(readout.wetPct + '%') + '</strong></div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="labs-fn-exec-cell labs-fn-class-cell">' +
+      '      <h4 class="labs-fn-cell-heading">CLASSIFICATION</h4>' +
+      '      <div class="labs-fn-class-title-row">' +
+      '        <div class="labs-fn-class-name">' + esc(label) + '</div>' +
+      '        <span class="labs-fn-class-wind">' + windSvg + '</span>' +
+      '      </div>' +
+      '      <div class="labs-fn-class-rows">' +
+      '        <div class="labs-fn-class-row"><span>CATEGORY</span><i></i><strong>' + esc(readout.category) + '</strong></div>' +
+      '        <div class="labs-fn-class-row"><span>CONFIDENCE</span><i></i><strong class="is-green">' + esc(ml.confidence + '%') + '</strong></div>' +
+      '        <div class="labs-fn-class-row"><span>RARITY</span><i></i><strong>' + esc(readout.rarity) + '</strong></div>' +
+      '      </div>' +
+      roundSealSvg +
+      '    </div>' +
+      '    <div class="labs-fn-exec-cell labs-fn-quote-cell">' +
+      '      <img class="labs-fn-quote-portrait" src="' + esc(chiefObj.img) + '" alt="' + esc(chiefObj.name) + '" loading="lazy" />' +
+      '      <div class="labs-fn-quote-body">' +
+      '        <p class="labs-fn-quote-text">"' + esc(sciComment.quote) + '"</p>' +
+      '        <div class="labs-fn-quote-by">— ' + esc(chiefObj.name) + '</div>' +
+      '        <div class="labs-fn-quote-role">' + esc(chiefObj.title) + '</div>' +
+      '      </div>' +
+      '    </div>' +
+      '    <div class="labs-fn-exec-cell labs-fn-env-cell" data-fn-sec="environment">' +
+      '      <h4 class="labs-fn-cell-heading">ENVIRONMENTAL MODELING</h4>' +
+      '      <div class="labs-fn-env-body">' +
+      globeSvg +
+      '        <dl class="labs-fn-env-list">' +
+      '          <div><dt>Estimated reach:</dt><dd>' + esc(readout.reachLabel) + '</dd></div>' +
+      '          <div><dt>Dispersion:</dt><dd>' + esc(readout.dispersionLabel) + '</dd></div>' +
+      '          <div><dt>Persistence:</dt><dd>' + esc(readout.persistenceLabel) + '</dd></div>' +
+      '          <div><dt>Particulate load:</dt><dd>' + esc(readout.particulateLabel) + '</dd></div>' +
+      '        </dl>' +
+      '      </div>' +
+      '    </div>' +
+      '  </section>' +
+      '  <section class="labs-glass-card labs-analysis-card" data-fn-sec="criteria">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">TELEMETRY DOMAINS · LABORATORY FINDINGS</div>' +
-      '        <h3 class="labs-section-title">Telemetry Diagnostics &amp; Interactive Plots</h3>' +
+      '        <h3 class="labs-section-title">Criteria Breakdown &amp; Interactive Plots</h3>' +
       '      </div>' +
-      '      <span class="labs-chip labs-chip-blue">' + displayGauges.length + ' Metrics</span>' +
+      '      <span class="labs-chip labs-chip-blue">' + displayGauges.length + ' Criteria</span>' +
       '    </div>' +
       renderArchiveComparisonHtml(archCmp) +
-      '    <div class="labs-hint-text">Select any telemetry card to inspect interactive charts; individual metric readouts stay collapsed inside until opened.</div>' +
+      '    <div class="labs-hint-text">Scroll through all acoustic criteria below; tap any row to inspect interactive charts and field readouts.</div>' +
       '    <div class="labs-metric-list">' +
       rowsHtml +
       '    </div>' +
@@ -5353,7 +5635,7 @@
       '      </button>' +
       '      <div class="labs-sub-disclosure-body hidden">' +
       '        <div class="labs-single-charts-grid">' +
-      renderFinalChartCardHtml('c_spec', 'Spectral Distribution Map (40-Band FFT)', 'Centroid ' + Math.round(safeNum(feat.spectralCentroidHz, 0)) + ' Hz') +
+      renderFinalChartCardHtml('c_spec', 'Spectral Distribution Map (40-Band FFT)', 'Centroid ' + readout.centroidLabel) +
       renderFinalChartCardHtml('c_pitch', 'Primary Resonance Profile', '32-frame F0 tracker') +
       renderFinalChartCardHtml('c_mod', 'Airflow Modulation FFT (4–45 Hz)', 'Depth ' + (safeNum(feat.modDepth, 0) * 100).toFixed(0) + '%') +
       renderFinalChartCardHtml('c_env', 'Pressure Release Envelope', 'Attack / T50 / Decay') +
@@ -5361,8 +5643,7 @@
       '      </div>' +
       '    </div>' +
       '  </section>' +
-      renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single') +
-      renderShareableVerdictHtml(shareVerdict, label, archCmp.energyPct + 'th Energy Percentile', singleBottomActionsHtml) +
+      renderReportSignatureHtml(label + '|' + prof.durationLabel + '|single', singleBottomActionsHtml) +
       '</div>';
 
     wireArchiveToggles(mountEl);
@@ -5491,7 +5772,7 @@
       var modR = safeNum(feat.modRateHz, 0).toFixed(1);
       var bursts = Math.round(safeNum(feat.burstCount, 1));
       var qMap = {
-        s_crest: 'Measured ' + cr + ' dB peak-to-RMS ratio across ' + safeNum(feat.durationSec, 0).toFixed(2) + 's.',
+        s_crest: 'Measured ' + cr + ' dB peak-to-RMS ratio across ' + readout.durationSec.toFixed(2) + 's.',
         s_tone: 'Spectral center of mass settled at ' + cen + ' Hz.',
         s_resonance: 'Tracking ' + f0 + ' Hz fundamental (' + noteStr + ') with ' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% modal lock.',
         s_turbulence: 'Modulation flutter measured ' + modR + ' Hz (' + Math.round(modR * 60) + ' cycles/min).',
@@ -5678,21 +5959,36 @@
     }
 
     var specCanvas = mountEl.querySelector('#' + uid + 'spec3d');
+    var miniWaveCanvas = mountEl.querySelector('#' + uid + 'mini_wave');
     if (Spectrogram3D && specCanvas) {
       spec = new Spectrogram3D(specCanvas, { spectrogram: feat.spectrogram, colormap: 'plasma' });
     }
 
+    function drawMiniWave(prog) {
+      if (miniWaveCanvas) drawMiniSpecimenWaveform(miniWaveCanvas, sound.samples, prog);
+    }
+
     if (typeof root.requestAnimationFrame === 'function') {
-      root.requestAnimationFrame(drawAllSingleCharts);
+      root.requestAnimationFrame(function () {
+        drawAllSingleCharts();
+        drawMiniWave(null);
+      });
     } else {
       drawAllSingleCharts();
+      drawMiniWave(null);
     }
 
     function playSingle() {
       Audio.playSound(sound.samples, sound.sampleRate, {
         channel: chan,
-        onProgress: function (p) { if (spec) spec.setPlayhead(p); },
-        onEnded: function () { if (spec) spec.setPlayhead(null); }
+        onProgress: function (p) {
+          if (spec) spec.setPlayhead(p);
+          drawMiniWave(p);
+        },
+        onEnded: function () {
+          if (spec) spec.setPlayhead(null);
+          drawMiniWave(null);
+        }
       });
     }
 
@@ -5705,6 +6001,7 @@
       sStop.addEventListener('click', function () {
         Audio.stopAll();
         if (spec) spec.setPlayhead(null);
+        drawMiniWave(null);
       });
     }
 
@@ -5758,6 +6055,7 @@
     return {
       resize: function () {
         drawAllSingleCharts();
+        drawMiniWave(null);
         if (spec) spec.resize();
       },
       destroy: function () {
@@ -6025,12 +6323,11 @@
     var archCmp = buildArchiveComparison(g.features, null, opts.archiveSamples || null, g.name + '|grp');
     var shareVerdict = pickShareableVerdict(g.name + '|' + sortLabel + '|megamix');
     var groupBottomActionsHtml =
-      '<button type="button" class="labs-btn labs-btn-purple labs-btn-sm labs-g-share">📤 Share / Email</button>' +
-      '<button type="button" class="labs-btn-ghost labs-btn-sm labs-g-pdf">📄 PDF</button>';
+      '<button type="button" class="labs-btn labs-btn-emerald labs-btn-sm labs-g-share">📤 Share</button>';
 
     mountEl.innerHTML =
       '<div class="labs-fartnalysis-root">' +
-      '  <section class="labs-glass-card labs-fn-header">' +
+      '  <section class="labs-glass-card labs-fn-header" data-fn-sec="metrics">' +
       '    <div class="labs-fn-header-top">' +
       '      <div>' +
       '        <div class="labs-eyebrow">INSTITUTE REPORT · MULTI-SPECIMEN SYNTHESIS</div>' +
@@ -6063,7 +6360,8 @@
       renderScientistCommentHtml(grpComment.scientistId, grpComment.quote, grpComment.label) +
       renderRareCommentHtml(rareDispatch) +
       '  </section>' +
-      '  <section class="labs-glass-card labs-spec-bay">' +
+      '  <section class="labs-glass-card labs-spec-bay labs-fn-topo-bay" data-fn-sec="analysis">' +
+      '    <span class="labs-fn-paperclip" aria-hidden="true"></span>' +
       '    <div class="labs-spec-bay-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">UNIFIED 3D SPECTROGRAM</div>' +
@@ -6073,6 +6371,7 @@
       '        <button type="button" class="labs-mini-chip active" data-gpreset="3d">3D</button>' +
       '        <button type="button" class="labs-mini-chip" data-gpreset="top">Top</button>' +
       '        <button type="button" class="labs-mini-chip" data-gpreset="side">Side</button>' +
+      '        <button type="button" class="labs-mini-chip" data-gpreset="front">Front</button>' +
       '        <button type="button" class="labs-mini-chip" data-gpreset="spin">Spin</button>' +
       '      </div>' +
       '    </div>' +
@@ -6084,7 +6383,7 @@
       '      <div class="labs-chart-live-bar" id="' + uid + 'c_wave_live">Tap anywhere on waveform to seek to that specimen.</div>' +
       '    </div>' +
       '  </section>' +
-      '  <section class="labs-glass-card labs-analysis-card">' +
+      '  <section class="labs-glass-card labs-analysis-card" data-fn-sec="criteria">' +
       '    <div class="labs-analysis-head">' +
       '      <div>' +
       '        <div class="labs-eyebrow">TELEMETRY DOMAINS · COMPOSITE ANALYSIS</div>' +
@@ -6119,8 +6418,7 @@
       '      </div>' +
       '    </div>' +
       '  </section>' +
-      renderReportSignatureHtml(g.name + '|' + sortLabel + '|group') +
-      renderShareableVerdictHtml(shareVerdict, g.name, (g.segments || []).length + ' Archive Specimens', groupBottomActionsHtml) +
+      renderReportSignatureHtml(g.name + '|' + sortLabel + '|group', groupBottomActionsHtml) +
       '</div>';
 
     wireArchiveToggles(mountEl);
@@ -6459,6 +6757,8 @@
     drawEnvelopePlot: drawEnvelopePlot,
     drawConstellationPlot: drawConstellationPlot,
     drawSegmentedWaveform: drawSegmentedWaveform,
+    computeSpecimenMeta: computeSpecimenReadout,
+    syncShippingTag: syncDossierShippingTag,
     renderDashboard: renderDashboard,
     renderSingleDashboard: renderSingleDashboard,
     renderGroupDashboard: renderGroupDashboard

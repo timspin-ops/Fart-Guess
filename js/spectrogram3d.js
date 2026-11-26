@@ -38,7 +38,7 @@
     ]
   };
 
-  function sampleColormap(name, val, shade) {
+  function sampleColormap(name, val, shade, alpha) {
     var stops = COLORMAPS[name] || COLORMAPS.plasma;
     var v = val < 0 ? 0 : val > 1 ? 1 : val;
     var s = typeof shade === 'number' ? shade : 1.0;
@@ -60,6 +60,10 @@
     r = r < 0 ? 0 : r > 255 ? 255 : r;
     g = g < 0 ? 0 : g > 255 ? 255 : g;
     b = b < 0 ? 0 : b > 255 ? 255 : b;
+    if (typeof alpha === 'number') {
+      var a = clamp(alpha, 0, 1);
+      return 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(3) + ')';
+    }
     return 'rgb(' + r + ',' + g + ',' + b + ')';
   }
 
@@ -300,6 +304,8 @@
       target = { az: 0.0, el: 1.54, zoom: 1.06 };
     } else if (preset === 'side') {
       target = { az: 0.04, el: 0.14, zoom: 1.06 };
+    } else if (preset === 'front') {
+      target = { az: 0.0, el: 0.16, zoom: 1.08 };
     }
     this.autoRotate = false;
     this._tweenTarget = target;
@@ -559,11 +565,12 @@
         ctx.lineTo(p01.x, p01.y);
         ctx.closePath();
 
-        ctx.fillStyle = sampleColormap(this.colormap, vAvg, shade);
+        var quadAlpha = clamp(0.42 + Math.pow(vAvg, 0.72) * 0.48, 0.40, 0.90);
+        ctx.fillStyle = sampleColormap(this.colormap, vAvg, shade, quadAlpha);
         ctx.fill();
 
         if (this.wireframe) {
-          ctx.strokeStyle = vAvg > 0.12 ? 'rgba(220, 245, 255, 0.22)' : 'rgba(95, 155, 220, 0.13)';
+          ctx.strokeStyle = vAvg > 0.14 ? 'rgba(224, 248, 255, 0.20)' : 'rgba(105, 175, 232, 0.12)';
           ctx.lineWidth = 0.55;
           ctx.stroke();
         }
@@ -601,7 +608,7 @@
     var isNarrow = (this.width || 320) < 240;
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+    ctx.strokeStyle = 'rgba(156, 184, 206, 0.21)';
 
     // Floor grid lines (Time & Freq)
     for (var i = 0; i <= 4; i++) {
@@ -622,7 +629,7 @@
     }
 
     // Back walls horizontal dB guides
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.13)';
+    ctx.strokeStyle = 'rgba(156, 184, 206, 0.16)';
     for (var hStep = 0.5; hStep <= 1.0; hStep += 0.5) {
       var yH = hStep * 1.05;
       var w1 = this._project(-1, yH, backZ);
@@ -738,8 +745,8 @@
 
   Spectrogram3D.prototype._drawSkirts = function (ctx, pts, grid, frames, bands, camX, camZ) {
     var maxH = 1.05;
-    ctx.fillStyle = 'rgba(12, 26, 54, 0.48)';
-    ctx.strokeStyle = 'rgba(120, 175, 225, 0.25)';
+    ctx.fillStyle = 'rgba(12, 28, 56, 0.26)';
+    ctx.strokeStyle = 'rgba(130, 190, 235, 0.22)';
     ctx.lineWidth = 1;
 
     // Front Z edge skirt
