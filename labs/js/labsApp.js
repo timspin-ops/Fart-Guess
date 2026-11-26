@@ -106,6 +106,9 @@
     renameTarget: null,
     activeRecStopper: null,
     activeRecCanceller: null,
+    homeOscId: null,
+    homeOscPlaying: false,
+    homeOscProgress: null,
     recordingKind: null,
     recordMode: 'manual',
     inlineSpecA: null,
@@ -1631,6 +1634,9 @@
       state.prevBeforeFartnalysis = prevView === 'vault' || prevView === 'detail' ? 'vault' : prevView === 'guess' ? 'guess' : 'home';
     }
     state.view = viewKey;
+    if (document.body && typeof document.body.setAttribute === 'function') {
+      document.body.setAttribute('data-labs-view', viewKey);
+    }
 
     var brandSub = $('labs-brand-sub');
     if (brandSub) {
@@ -1672,8 +1678,10 @@
 
     if (typeof root.requestAnimationFrame === 'function') {
       root.requestAnimationFrame(function () {
-        if (viewKey === 'home') drawVaultWaveforms('home-recent-vault');
-        else if (viewKey === 'vault') drawVaultWaveforms('vault-grid');
+        if (viewKey === 'home') {
+          drawVaultWaveforms('home-recent-vault');
+          renderHomeOscilloscope();
+        } else if (viewKey === 'vault') drawVaultWaveforms('vault-grid');
         else if (viewKey === 'detail') drawDetailWaveform(null);
         else if (viewKey === 'guess') {
           drawGuessWaveforms();
@@ -2533,17 +2541,47 @@
         }
 
         if (act === 'play') {
-          if (sample.samples && sample.samples.length > 0) {
+          var playVaultCardSample = function (loaded) {
+            if (!loaded || !loaded.samples) return;
+            var waveCvs = containerEl.querySelector('canvas[data-wave-id="' + id + '"]');
+            var sr = loaded.sampleRate || 44100;
             try {
-              var pRes = TootApp.Audio.playSound(sample.samples, sample.sampleRate, { channel: 'vault_play' });
+              var pRes = TootApp.Audio.playSound(loaded.samples, sr, {
+                channel: 'vault_play',
+                onProgress: function (pr) {
+                  if (waveCvs) {
+                    drawStaticWaveform(waveCvs, loaded.samples, {
+                      fallbackW: 260,
+                      fallbackH: 44,
+                      colorA: '#166534',
+                      colorB: '#22c55e',
+                      progress: pr
+                    });
+                  }
+                },
+                onEnded: function () {
+                  if (waveCvs) {
+                    drawStaticWaveform(waveCvs, loaded.samples, {
+                      fallbackW: 260,
+                      fallbackH: 44,
+                      colorA: '#166534',
+                      colorB: '#22c55e',
+                      progress: null
+                    });
+                  }
+                }
+              });
               if (pRes && typeof pRes.catch === 'function') pRes.catch(function () {});
             } catch (e) {}
+          };
+          if (sample.samples && sample.samples.length > 0) {
+            playVaultCardSample(sample);
           } else {
             ensureTargetReady(sample)
               .then(function (loaded) {
                 if (loaded && loaded.samples) {
                   drawVaultWaveforms(containerEl.id);
-                  return TootApp.Audio.playSound(loaded.samples, loaded.sampleRate, { channel: 'vault_play' });
+                  playVaultCardSample(loaded);
                 }
               })
               .catch(function (err) {
@@ -2641,15 +2679,15 @@
         drawStaticWaveform(canvases[i], sample.samples, {
           fallbackW: 260,
           fallbackH: 44,
-          colorA: sample.isBuiltIn ? '#60A5FA' : '#22C55E',
-          colorB: sample.isBuiltIn ? '#818CF8' : '#34D399'
+          colorA: sample.isBuiltIn ? '#166534' : '#145a41',
+          colorB: sample.isBuiltIn ? '#22c55e' : '#34d399'
         });
       } else if (sample && Array.isArray(sample.previewPeaks) && sample.previewPeaks.length > 0) {
         drawPreviewWaveform(canvases[i], sample.previewPeaks, {
           fallbackW: 260,
           fallbackH: 44,
-          colorA: '#60A5FA',
-          colorB: '#818CF8'
+          colorA: '#166534',
+          colorB: '#22c55e'
         });
       } else if (sample && typeof canvases[i].getContext === 'function') {
         var ctx = canvases[i].getContext('2d');
@@ -2681,12 +2719,309 @@
   }
 
   /* ==================== AREA 1: HOME ==================== */
+  function getHomeOscSample() {
+    if (!state.samples || state.samples.length === 0) return null;
+    var active =
+      (state.fnSampleId && getSampleById(state.fnSampleId)) ||
+      (state.guessTargetId && getSampleById(state.guessTargetId)) ||
+      (state.homeOscId && getSampleById(state.homeOscId)) ||
+      state.samples[0];
+    if (active) state.homeOscId = active.id;
+    return active || null;
+  }
+
+  function drawHomeOscCanvas(sample, progress01) {
+    var cvs = $('home-osc-canvas');
+    if (!cvs || typeof cvs.getContext !== 'function') return;
+    var rect = typeof cvs.getBoundingClientRect === 'function' ? cvs.getBoundingClientRect() : null;
+    var cw = rect && rect.width > 10 ? rect.width : 190;
+    var ch = rect && rect.height > 10 ? rect.height : 80;
+    var dpr = Math.min(2, root.devicePixelRatio || 1);
+    var tw = Math.round(cw * dpr);
+    var th = Math.round(ch * dpr);
+    if (cvs.width !== tw || cvs.height !== th) {
+      cvs.width = tw;
+      cvs.height = th;
+    }
+    var ctx = cvs.getContext('2d');
+    if (!ctx) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cw, ch);
+
+    var padL = 16;
+    var padR = 5;
+    var padT = 4;
+    var padB = 11;
+    var pw = Math.max(24, cw - padL - padR);
+    var ph = Math.max(18, ch - padT - padB);
+    var midY = padT + ph * 0.5;
+
+    // Fine minor + major phosphor oscilloscope grid
+    ctx.strokeStyle = 'rgba(82, 240, 180, 0.14)';
+    ctx.lineWidth = 0.7;
+    ctx.beginPath();
+    for (var gx = 1; gx < 8; gx++) {
+      var x = padL + (pw * gx) / 8;
+      ctx.moveTo(x, padT); ctx.lineTo(x, padT + ph);
+    }
+    for (var gy = 0; gy <= 4; gy++) {
+      var y = padT + (ph * gy) / 4;
+      ctx.moveTo(padL, y); ctx.lineTo(padL + pw, y);
+    }
+    ctx.stroke();
+
+    // Explicit X & Y oscilloscope axes + tick marks
+    ctx.strokeStyle = 'rgba(130, 245, 198, 0.52)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT);
+    ctx.lineTo(padL, padT + ph);
+    ctx.lineTo(padL + pw, padT + ph);
+    for (var tx = 0; tx <= 4; tx++) {
+      var tickX = padL + (pw * tx) / 4;
+      ctx.moveTo(tickX, padT + ph);
+      ctx.lineTo(tickX, padT + ph + 2.5);
+    }
+    ctx.moveTo(padL - 2.5, padT + 1); ctx.lineTo(padL, padT + 1);
+    ctx.moveTo(padL - 2.5, midY); ctx.lineTo(padL, midY);
+    ctx.moveTo(padL - 2.5, padT + ph); ctx.lineTo(padL, padT + ph);
+    ctx.stroke();
+
+    // True triggered millisecond oscilloscope trace
+    var raw = sample && sample.samples && sample.samples.length > 0 ? sample.samples : null;
+    var sr = (sample && sample.sampleRate) || 44100;
+    var winMs = 32;
+    var winLen = Math.min(raw ? raw.length : 1400, Math.max(256, Math.round((sr * winMs) / 1000)));
+
+    ctx.fillStyle = 'rgba(170, 248, 214, 0.74)';
+    ctx.font = '600 7px "JetBrains Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('+', padL - 3.5, padT + 5);
+    ctx.fillText('0', padL - 3.5, midY + 2.5);
+    ctx.fillText('-', padL - 3.5, padT + ph + 1);
+    ctx.textAlign = 'left';
+    ctx.fillText('0ms', padL, ch - 1.5);
+    ctx.textAlign = 'center';
+    ctx.fillText('4ms/div', padL + pw * 0.5, ch - 1.5);
+    ctx.textAlign = 'right';
+    ctx.fillText(winMs + 'ms', padL + pw, ch - 1.5);
+
+    var endY = midY;
+    function strokeWavePath() {
+      ctx.beginPath();
+      var pts = Math.min(240, Math.max(84, Math.floor(pw)));
+      if (raw && raw.length > 16) {
+        var gStep = Math.max(1, Math.floor(raw.length / 220));
+        var gSum = 0, gCnt = 0;
+        for (var d = 0; d < raw.length; d += gStep) { gSum += raw[d]; gCnt++; }
+        var dcMean = gCnt > 0 ? gSum / gCnt : 0;
+        var gMax = 0.015;
+        var pkIdx = 0;
+        for (var k = 0; k < raw.length; k += gStep) {
+          var av = Math.abs(raw[k] - dcMean);
+          if (av > gMax) {
+            gMax = av;
+            pkIdx = k;
+          }
+        }
+        var maxStart = Math.max(0, raw.length - winLen);
+        var baseStart =
+          typeof progress01 === 'number'
+            ? Math.floor(Math.max(0, Math.min(1, progress01)) * maxStart)
+            : Math.max(0, Math.min(maxStart, pkIdx - Math.floor(winLen * 0.25)));
+
+        // Rising zero-crossing trigger search (around DC mean)
+        var trigLimit = Math.min(raw.length - 2, baseStart + Math.floor(winLen * 0.35));
+        var trigStart = baseStart;
+        for (var t = Math.max(1, baseStart); t <= trigLimit; t++) {
+          if ((raw[t - 1] - dcMean) <= 0 && (raw[t] - dcMean) > 0) {
+            trigStart = Math.min(maxStart, t);
+            break;
+          }
+        }
+
+        for (var i = 0; i < pts; i++) {
+          var idx = Math.min(raw.length - 1, trigStart + Math.floor((i / Math.max(1, pts - 1)) * (winLen - 1)));
+          var px = padL + (i / Math.max(1, pts - 1)) * pw;
+          var amp = Math.max(-1, Math.min(1, (raw[idx] - dcMean) / gMax));
+          var py = midY - amp * (ph * 0.43);
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+          endY = py;
+        }
+      } else {
+        // Synthesize harmonic triggered scope trace before full PCM decode
+        var hz = 115;
+        var pmMeta = sample ? (sample.meta || sample.previewMeta) : null;
+        if (sample && sample.features && (sample.features.medianPitchHz || sample.features.pitchHz || sample.features.fundamentalHz)) {
+          hz = sample.features.medianPitchHz || sample.features.pitchHz || sample.features.fundamentalHz;
+        } else if (pmMeta && pmMeta.pitchLabel) {
+          var pm = String(pmMeta.pitchLabel).match(/(\d+)\s*Hz/i);
+          if (pm) hz = parseInt(pm[1], 10);
+        }
+        var cyc = Math.max(2.5, Math.min(9.0, hz * (winMs / 1000)));
+        var pkList = sample && (Array.isArray(sample.peaks) ? sample.peaks : Array.isArray(sample.previewPeaks) ? sample.previewPeaks : null);
+        var envPeak = 0.72;
+        if (pkList && pkList.length > 0) {
+          var pkSum = 0;
+          for (var pIdx = 0; pIdx < pkList.length; pIdx++) pkSum = Math.max(pkSum, Number(pkList[pIdx]) || 0);
+          if (pkSum > 0.1) envPeak = Math.max(0.45, Math.min(0.95, pkSum));
+        }
+        for (var si = 0; si < pts; si++) {
+          var u = si / Math.max(1, pts - 1);
+          var ang = u * cyc * Math.PI * 2;
+          var wave = Math.sin(ang) * 0.65 + Math.sin(ang * 2.0 + 0.4) * 0.25 + Math.sin(ang * 3.0 - 0.3) * 0.14;
+          var sx = padL + u * pw;
+          var sy = midY - wave * envPeak * (ph * 0.40);
+          if (si === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+          endY = sy;
+        }
+      }
+    }
+
+    // Phosphor bloom halo + sharp bright CRT beam
+    strokeWavePath();
+    ctx.strokeStyle = 'rgba(76, 230, 172, 0.38)';
+    ctx.lineWidth = 4.2;
+    ctx.stroke();
+
+    strokeWavePath();
+    ctx.strokeStyle = '#92ffd6';
+    ctx.lineWidth = 1.55;
+    ctx.stroke();
+
+    if (typeof progress01 === 'number') {
+      ctx.beginPath();
+      ctx.arc(padL + pw - 1, endY, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#e6fff5';
+      ctx.fill();
+    }
+  }
+
+  function renderHomeOscilloscope() {
+    var sample = getHomeOscSample();
+    var freqEl = $('home-osc-freq');
+    var volEl = $('home-osc-vol');
+    var nameEl = $('home-osc-name');
+    var playLblEl = $('home-osc-play-lbl');
+    var playBtn = $('btn-home-osc-play');
+    var screenEl = $('home-osc-screen');
+    var progEl = $('home-osc-prog');
+
+    var hzTxt = '-- Hz';
+    var lenTxt = '-- s';
+    var hasRmsDb = false;
+    if (sample) {
+      var feat = sample.features;
+      var pmObj = sample.meta || sample.previewMeta;
+      var hz = feat && (feat.medianPitchHz || feat.pitchHz || feat.fundamentalHz);
+      if (!hz && pmObj && pmObj.pitchLabel) {
+        var pm = String(pmObj.pitchLabel).match(/(\d+)\s*Hz/i);
+        if (pm) hz = parseInt(pm[1], 10);
+      }
+      if (hz) hzTxt = Math.round(hz) + ' Hz';
+      if (feat && typeof feat.rmsDb === 'number') {
+        hasRmsDb = true;
+        lenTxt = Math.round(feat.rmsDb) + ' dB';
+      } else {
+        var rawDur = sample.samples && sample.samples.length > 0 ? sample.samples.length / (sample.sampleRate || 44100) : 0;
+        var dSec = sample.durationSec || (pmObj && pmObj.durationSec) || (feat && feat.durationSec) || rawDur;
+        if (dSec) lenTxt = Number(dSec).toFixed(2) + 's';
+      }
+    }
+    if (freqEl) freqEl.textContent = 'FREQ: ' + hzTxt;
+    if (volEl) volEl.textContent = hasRmsDb ? 'LEVEL: ' + lenTxt : 'LEN: ' + lenTxt;
+    if (nameEl) nameEl.textContent = sample ? getSampleName(sample) : 'SPECIMEN STANDBY';
+    if (playLblEl) playLblEl.textContent = state.homeOscPlaying ? '■ STOP' : '▶ PLAY';
+    if (playBtn) playBtn.textContent = state.homeOscPlaying ? '■ Stop' : '▶ Play';
+    var selEl = $('home-osc-select');
+    if (selEl && state.samples) {
+      var sigKey = state.samples.map(function (s) { return s.id; }).join('|');
+      if (selEl._labsSig !== sigKey) {
+        selEl._labsSig = sigKey;
+        selEl.innerHTML = state.samples
+          .map(function (s) {
+            return '<option value="' + esc(s.id) + '">' + esc(getSampleName(s)) + '</option>';
+          })
+          .join('');
+      }
+      if (sample && selEl.value !== sample.id) selEl.value = sample.id;
+    }
+    if (screenEl && screenEl.classList) screenEl.classList.toggle('is-playing', Boolean(state.homeOscPlaying));
+    if (progEl && progEl.style) progEl.style.width = state.homeOscPlaying && typeof state.homeOscProgress === 'number' ? Math.round(state.homeOscProgress * 100) + '%' : '0%';
+    drawHomeOscCanvas(sample, state.homeOscPlaying ? state.homeOscProgress : null);
+  }
+
+  function toggleHomeOscPlay() {
+    var Audio = root.TootApp && root.TootApp.Audio;
+    if (!Audio) return;
+    if (state.homeOscPlaying) {
+      Audio.stopChannel('home_osc');
+      state.homeOscPlaying = false;
+      state.homeOscProgress = null;
+      renderHomeOscilloscope();
+      return;
+    }
+    var sample = getHomeOscSample();
+    if (!sample) {
+      showToast('Record or select a specimen first.', true);
+      return;
+    }
+    ensureTargetReady(sample).then(function (ready) {
+      if (!ready || !ready.samples || ready.samples.length === 0) {
+        showToast('Specimen audio not ready yet.', true);
+        return;
+      }
+      state.homeOscPlaying = true;
+      state.homeOscProgress = 0;
+      renderHomeOscilloscope();
+      Audio.playSound(ready.samples, ready.sampleRate || 44100, {
+        channel: 'home_osc',
+        onProgress: function (p) {
+          if (!state.homeOscPlaying) return;
+          state.homeOscProgress = p;
+          var progEl = $('home-osc-prog');
+          if (progEl && progEl.style) progEl.style.width = Math.round(p * 100) + '%';
+          drawHomeOscCanvas(ready, p);
+        },
+        onEnded: function () {
+          state.homeOscPlaying = false;
+          state.homeOscProgress = null;
+          renderHomeOscilloscope();
+        }
+      });
+    });
+  }
+
+  function nextHomeOscSample() {
+    var Audio = root.TootApp && root.TootApp.Audio;
+    if (state.homeOscPlaying && Audio) Audio.stopChannel('home_osc');
+    state.homeOscPlaying = false;
+    state.homeOscProgress = null;
+    if (!state.samples || state.samples.length === 0) {
+      renderHomeOscilloscope();
+      return;
+    }
+    var cur = getHomeOscSample();
+    var idx = cur ? state.samples.findIndex(function (s) { return s.id === cur.id; }) : -1;
+    var next = state.samples[(idx + 1) % state.samples.length];
+    state.homeOscId = next ? next.id : null;
+    if (next) {
+      state.fnSampleId = next.id;
+      state.guessTargetId = next.id;
+    }
+    renderHomeOscilloscope();
+  }
+
   function renderHomeView() {
     var summary = TootLabs.Store.getSummaryStats(state.samples);
     $('stat-samples-recorded').textContent = String(summary.samplesRecorded);
     $('stat-best-score').textContent = summary.bestMatchScore.toFixed(1) + '%';
     $('stat-challenges-completed').textContent = String(summary.challengesCompleted);
     $('stat-avg-quality').textContent = summary.averageMatchQuality.toFixed(1) + '%';
+
+    renderHomeOscilloscope();
 
     var recentEl = $('home-recent-vault');
     if (state.samples.length === 0) {
@@ -2716,6 +3051,14 @@
     }
     var selIds = getSelectedVaultIds();
     var totalSelected = selIds.sampleIds.length + selIds.attemptIds.length;
+
+    if ($('vault-tab-total')) $('vault-tab-total').textContent = String(buckets.counts.all);
+    if ($('vault-tab-recorded')) $('vault-tab-recorded').textContent = String(buckets.counts.recorded);
+    if ($('vault-tab-guesses')) $('vault-tab-guesses').textContent = String(buckets.counts.guesses);
+    if ($('vault-tab-defaults')) $('vault-tab-defaults').textContent = String(buckets.counts.defaults);
+    document.querySelectorAll('.labs-vtab[data-vault-tab]').forEach(function (vt) {
+      vt.classList.toggle('active', vt.getAttribute('data-vault-tab') === state.vaultFilter);
+    });
 
     if (filterBar) {
       filterBar.classList.remove('hidden');
@@ -6626,6 +6969,30 @@
     $('btn-home-guess-fart').addEventListener('click', function () {
       openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id));
     });
+    if ($('home-osc-screen')) {
+      $('home-osc-screen').addEventListener('click', toggleHomeOscPlay);
+    }
+    if ($('btn-home-osc-play')) {
+      $('btn-home-osc-play').addEventListener('click', toggleHomeOscPlay);
+    }
+    if ($('btn-home-osc-next')) {
+      $('btn-home-osc-next').addEventListener('click', nextHomeOscSample);
+    }
+    if ($('home-osc-select')) {
+      $('home-osc-select').addEventListener('change', function () {
+        var nextId = this.value;
+        var Audio = root.TootApp && root.TootApp.Audio;
+        if (state.homeOscPlaying && Audio) Audio.stopChannel('home_osc');
+        state.homeOscPlaying = false;
+        state.homeOscProgress = null;
+        if (nextId) {
+          state.homeOscId = nextId;
+          state.fnSampleId = nextId;
+          state.guessTargetId = nextId;
+        }
+        renderHomeOscilloscope();
+      });
+    }
     $('btn-home-analyze-fart').addEventListener('click', function () {
       openFartnalysis(
         state.fnMode || 'original',
@@ -6650,6 +7017,11 @@
         });
       });
     }
+    document.querySelectorAll('.labs-vtab[data-vault-tab]').forEach(function (vt) {
+      vt.addEventListener('click', function () {
+        setVaultFilter(this.getAttribute('data-vault-tab') || 'all');
+      });
+    });
     if ($('btn-vault-select')) {
       $('btn-vault-select').addEventListener('click', function () {
         setVaultSelectMode(!state.vaultSelectMode);
@@ -7230,6 +7602,9 @@
     initModals();
     initNavigationAndActions();
     initSwipeNavigation();
+    if (document.body && typeof document.body.setAttribute === 'function') {
+      document.body.setAttribute('data-labs-view', state.view || 'home');
+    }
     setRecordMode(state.recordMode);
 
     var seenSplash = false;

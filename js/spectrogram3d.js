@@ -5,11 +5,22 @@
 
   var COLORMAPS = {
     plasma: [
-      [0.0, [15, 12, 46]],
-      [0.22, [82, 22, 148]],
-      [0.48, [196, 48, 142]],
-      [0.74, [246, 134, 48]],
-      [1.0, [252, 245, 118]]
+      [0.0, [15, 34, 96]],
+      [0.18, [24, 94, 196]],
+      [0.36, [26, 180, 178]],
+      [0.54, [102, 224, 96]],
+      [0.72, [248, 224, 72]],
+      [0.88, [242, 126, 40]],
+      [1.0, [220, 36, 56]]
+    ],
+    scientific: [
+      [0.0, [15, 34, 96]],
+      [0.18, [24, 94, 196]],
+      [0.36, [26, 180, 178]],
+      [0.54, [102, 224, 96]],
+      [0.72, [248, 224, 72]],
+      [0.88, [242, 126, 40]],
+      [1.0, [220, 36, 56]]
     ],
     toxic: [
       [0.0, [10, 22, 34]],
@@ -381,8 +392,9 @@
     }
 
     var isNarrow = w < 240;
+    var showBar = w >= 210;
     var padL = isNarrow ? 8 : 22;
-    var padR = isNarrow ? 8 : 16;
+    var padR = showBar ? 48 : (isNarrow ? 8 : 16);
     var padT = isNarrow ? 8 : 10;
     var padB = isNarrow ? 14 : 22;
     var availW = Math.max(20, w - padL - padR);
@@ -444,10 +456,10 @@
     ctx.save();
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
 
-    // Dark lab background gradient
+    // Scientific slate-navy lab background gradient
     var bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, '#0a0d1a');
-    bgGrad.addColorStop(1, '#101528');
+    bgGrad.addColorStop(0, '#0b1620');
+    bgGrad.addColorStop(1, '#071018');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, w, h);
 
@@ -530,7 +542,8 @@
         ctx.fill();
 
         if (this.wireframe) {
-          ctx.strokeStyle = vAvg > 0.15 ? 'rgba(255,255,255,0.12)' : 'rgba(148,163,184,0.06)';
+          ctx.strokeStyle = vAvg > 0.12 ? 'rgba(220, 245, 255, 0.22)' : 'rgba(95, 155, 220, 0.13)';
+          ctx.lineWidth = 0.55;
           ctx.stroke();
         }
       }
@@ -544,12 +557,16 @@
       this._drawPlayheadCurtain(ctx, spec, maxH);
     }
 
+    if (w >= 210) {
+      this._drawAmplitudeColorbar(ctx, w, h);
+    }
+
     // HUD hint in corner on wider canvases
     if (w >= 260) {
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.58)';
-      ctx.font = '500 10px system-ui, -apple-system, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText('Drag to orbit • Scroll/pinch to zoom • Dbl-click reset', w - 10, h - 8);
+      ctx.fillStyle = 'rgba(176, 206, 224, 0.62)';
+      ctx.font = '500 9.5px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Drag to orbit • Scroll/pinch to zoom • Dbl-click reset', 10, h - 7);
     }
 
     ctx.restore();
@@ -663,10 +680,45 @@
     }
   };
 
+  Spectrogram3D.prototype._drawAmplitudeColorbar = function (ctx, w, h) {
+    var barW = 8;
+    var barX = w - 38;
+    var barY = Math.max(36, Math.round(h * 0.20));
+    var barH = Math.max(68, Math.round(h * 0.56));
+    ctx.fillStyle = 'rgba(220, 236, 245, 0.85)';
+    ctx.font = '700 7px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('AMPLITUDE', barX + barW * 0.5, barY - 16);
+    ctx.fillText('(dB)', barX + barW * 0.5, barY - 7);
+
+    var grad = ctx.createLinearGradient(0, barY, 0, barY + barH);
+    grad.addColorStop(0.0, 'rgb(220,36,56)');
+    grad.addColorStop(0.18, 'rgb(242,126,40)');
+    grad.addColorStop(0.35, 'rgb(248,224,72)');
+    grad.addColorStop(0.54, 'rgb(102,224,96)');
+    grad.addColorStop(0.72, 'rgb(26,180,178)');
+    grad.addColorStop(0.88, 'rgb(24,94,196)');
+    grad.addColorStop(1.0, 'rgb(15,34,96)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = 'rgba(200, 224, 240, 0.45)';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    var dbMarks = ['0', '-12', '-24', '-36', '-48'];
+    ctx.fillStyle = 'rgba(204, 226, 240, 0.88)';
+    ctx.font = '600 7.5px "JetBrains Mono", monospace';
+    ctx.textAlign = 'left';
+    for (var mi = 0; mi < dbMarks.length; mi++) {
+      var my = barY + (mi / (dbMarks.length - 1)) * barH;
+      ctx.fillText(dbMarks[mi], barX + barW + 4, my + 2.5);
+    }
+  };
+
   Spectrogram3D.prototype._drawSkirts = function (ctx, pts, grid, frames, bands, camX, camZ) {
     var maxH = 1.05;
-    ctx.fillStyle = 'rgba(11, 13, 23, 0.72)';
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.22)';
+    ctx.fillStyle = 'rgba(12, 26, 54, 0.48)';
+    ctx.strokeStyle = 'rgba(120, 175, 225, 0.25)';
     ctx.lineWidth = 1;
 
     // Front Z edge skirt

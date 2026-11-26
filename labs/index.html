@@ -6,20 +6,21 @@
   <title>Toot Match Labs — Guess The Fart</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Special+Elite&display=swap" />
   <link rel="stylesheet" href="css/labs.css?v=20261124o" />
+  <link rel="stylesheet" href="css/labs-dossier.css?v=20261125g" />
   <script defer src="../js/dsp.js?v=20261124o"></script>
   <script defer src="../js/audioEngine.js?v=20261124o"></script>
   <script defer src="../js/storage.js?v=20261124o"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261124o"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261125f"></script>
   <script defer src="../js/forensicsCharts.js?v=20261124o"></script>
   <script defer src="js/labsStore.js?v=20261124o"></script>
   <script defer src="js/labsAudioFx.js?v=20261124o"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261124p"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261125g"></script>
   <script defer src="js/labsPdfExport.js?v=20261124o"></script>
-  <script defer src="js/labsApp.js?v=20261124q"></script>
+  <script defer src="js/labsApp.js?v=20261125g"></script>
 </head>
-<body>
+<body data-labs-view="home">
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
 
   <div class="labs-shell">
@@ -33,6 +34,10 @@
           <div class="labs-brand-name">TOOT MATCH <span class="labs-brand-tag">LABS</span></div>
           <div class="labs-brand-sub" id="labs-brand-sub">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
         </div>
+      </div>
+
+      <div class="labs-topbar-motto" aria-hidden="true">
+        SCIENCE · HONESTY<br />BETTER TOOTS FOR A BRIGHTER TOMORROW
       </div>
 
       <div class="labs-topbar-settings-wrap">
@@ -108,59 +113,118 @@
     <main class="labs-main">
       <!-- ==================== AREA 1: HOME ==================== -->
       <section id="labs-view-home" class="labs-view active">
-        <div class="labs-hero">
-          <div class="labs-hero-badge">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
-          <h1 class="labs-hero-title">TOOT MATCH LABS</h1>
-          <div class="labs-hero-kicker">Advancing the scientific understanding of gastrointestinal acoustics.</div>
-          <p class="labs-hero-sub">Determine whether participants can accurately predict or reproduce archived acoustic events using deterministic telemetry, 3D spectrograms, and comparative analysis.</p>
-        </div>
+        <section class="labs-home-stage-wrap" aria-label="Toot Match Labs Acoustic Desk">
+          <div id="home-lab-stage" class="labs-home-stage">
+            <img class="labs-stage-bg" src="assets/theme/lab-home-stage.jpg?v=20261125g" alt="Toot Match Labs Acoustic Workbench" />
+            <h1 class="labs-sr-only">TOOT MATCH LABS</h1>
+            <p class="labs-sr-only">Advancing the scientific understanding of gastrointestinal acoustics.</p>
+
+            <button type="button" id="home-osc-screen" class="labs-home-osc-screen" title="Play or stop live acoustic specimen on oscilloscope">
+              <span class="labs-osc-top">
+                <span class="labs-osc-mon">LIVE ACOUSTIC MONITOR</span>
+                <span class="labs-osc-meta">
+                  <span id="home-osc-freq">FREQ: -- Hz</span>
+                  <span id="home-osc-vol">PEAK: -- dB</span>
+                </span>
+              </span>
+              <canvas id="home-osc-canvas" class="labs-osc-canvas"></canvas>
+              <span class="labs-osc-bot">
+                <span id="home-osc-name" class="labs-osc-name">SPECIMEN STANDBY</span>
+                <span id="home-osc-play-lbl" class="labs-osc-play-lbl">▶ PLAY</span>
+              </span>
+              <span class="labs-osc-prog-track" aria-hidden="true"><span id="home-osc-prog" class="labs-osc-prog"></span></span>
+            </button>
+          </div>
+
+          <div class="labs-home-osc-bar">
+            <button type="button" id="btn-home-osc-play" class="labs-btn labs-btn-emerald labs-btn-xs">▶ Play</button>
+            <select id="home-osc-select" class="labs-home-osc-select" aria-label="Select specimen on oscilloscope"></select>
+            <button type="button" id="btn-home-osc-next" class="labs-btn-ghost labs-btn-xs">↻ Next</button>
+          </div>
+        </section>
 
         <section class="labs-action-cards-grid" aria-label="Primary Actions">
           <button type="button" id="btn-home-guess-fart" class="labs-action-card labs-ac-orange">
-            <span class="labs-ac-icon">🎯</span>
+            <div class="labs-ac-top-row">
+              <span class="labs-ac-icon" aria-hidden="true">
+                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18h5l3.2-10 4.6 20 4.4-16 3.6 10 3.2-4H32"/></svg>
+              </span>
+              <span class="labs-ac-stamp">START HERE</span>
+            </div>
             <span class="labs-ac-title">Guess The Fart</span>
             <span class="labs-ac-desc">Determine whether participants can accurately predict or reproduce the source acoustic event — or switch to Mimic Mode.</span>
+            <span class="labs-ac-cta">PLAY NOW →</span>
           </button>
 
           <div id="btn-home-record-fart" class="labs-action-card labs-ac-emerald" role="button" tabindex="0">
             <div class="labs-ac-top-row">
-              <span class="labs-ac-icon">🎙️</span>
+              <span class="labs-ac-icon" aria-hidden="true">
+                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="13" y="4" width="10" height="16" rx="5" fill="currentColor" fill-opacity="0.18"/><path d="M8 17c0 5.5 4.5 10 10 10s10-4.5 10-10"/><path d="M18 27v5M12 32h12"/></svg>
+              </span>
               <button type="button" id="btn-home-sentry-toggle" class="labs-ac-sentry-pill" aria-pressed="false" title="Toggle Sentry Auto Detect Mode">○ AUTO DETECT: OFF</button>
             </div>
             <span class="labs-ac-title">Record New Fart</span>
             <span class="labs-ac-desc" id="home-rec-desc">Automated acoustic capture armed — verified specimens are logged directly to the Research Archive.</span>
+            <span class="labs-ac-cta">RECORD TOOT →</span>
           </div>
 
           <button type="button" id="btn-home-analyze-fart" class="labs-action-card labs-ac-blue">
-            <span class="labs-ac-icon">🧪</span>
+            <div class="labs-ac-top-row">
+              <span class="labs-ac-icon" aria-hidden="true">
+                <svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 5h10M15 5v9L7.5 27.5A2.5 2.5 0 0 0 9.7 31h16.6a2.5 2.5 0 0 0 2.2-3.5L21 14V5"/><path d="M10.5 23h15" stroke="#1b6d4f" stroke-width="2.6"/></svg>
+              </span>
+              <span class="labs-ac-redstamp">TOP SECRET</span>
+            </div>
             <span class="labs-ac-title">Analyze A Fart</span>
             <span class="labs-ac-desc">Generate official Institute Reports, 3D spectrograms, and comparative acoustic assessments.</span>
+            <span class="labs-ac-cta">OPEN LAB REPORT →</span>
           </button>
         </section>
 
         <section class="labs-glass-card labs-summary-card" aria-label="Executive Research Summary">
           <div class="labs-summary-head">
-            <span class="labs-eyebrow">EXECUTIVE RESEARCH SUMMARY</span>
+            <span class="labs-eyebrow">YOUR RESEARCH STATS · EXECUTIVE SUMMARY</span>
             <span class="labs-live-pill">LABORATORY TELEMETRY</span>
           </div>
           <div class="labs-summary-grid">
             <div class="labs-stat-tile">
-              <div class="labs-stat-num" id="stat-samples-recorded">0</div>
-              <div class="labs-stat-label">Archived Specimens</div>
+              <span class="labs-stat-ico" aria-hidden="true">
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h8M11 3v6.5L5.8 20.8A2 2 0 0 0 7.6 24h12.8a2 2 0 0 0 1.8-3.2L17 9.5V3"/><path d="M8 18h12" stroke-opacity="0.7"/></svg>
+              </span>
+              <div class="labs-stat-body">
+                <div class="labs-stat-num" id="stat-samples-recorded">0</div>
+                <div class="labs-stat-label">Archived Specimens</div>
+              </div>
             </div>
             <div class="labs-stat-tile">
-              <div class="labs-stat-num labs-num-green" id="stat-best-score">0.0%</div>
-              <div class="labs-stat-label">Peak Reproduction Fidelity</div>
+              <span class="labs-stat-ico" aria-hidden="true">
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="3.5" height="9" rx="1"/><rect x="10" y="9" width="3.5" height="14" rx="1"/><rect x="16" y="5" width="3.5" height="18" rx="1"/><rect x="22" y="11" width="3.5" height="12" rx="1"/></svg>
+              </span>
+              <div class="labs-stat-body">
+                <div class="labs-stat-num labs-num-green" id="stat-best-score">0.0%</div>
+                <div class="labs-stat-label">Peak Reproduction Fidelity</div>
+              </div>
             </div>
             <div class="labs-stat-tile">
-              <div class="labs-stat-num labs-num-blue" id="stat-challenges-completed">0</div>
-              <div class="labs-stat-label">Assessments Logged</div>
+              <span class="labs-stat-ico" aria-hidden="true">
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5h12v6a6 6 0 0 1-12 0z"/><path d="M8 7H5a2 2 0 0 0-2 2v1a3 3 0 0 0 3 3h2.2M20 7h3a2 2 0 0 1 2 2v1a3 3 0 0 1-3 3h-2.2"/><path d="M14 17v5M9 23h10"/></svg>
+              </span>
+              <div class="labs-stat-body">
+                <div class="labs-stat-num labs-num-blue" id="stat-challenges-completed">0</div>
+                <div class="labs-stat-label">Assessments Logged</div>
+              </div>
             </div>
             <div class="labs-stat-tile">
-              <div class="labs-stat-num labs-num-purple" id="stat-avg-quality">0.0%</div>
-              <div class="labs-stat-label">Mean Match Confidence</div>
+              <span class="labs-stat-ico" aria-hidden="true">
+                <svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="14" r="10"/><ellipse cx="14" cy="14" rx="4.5" ry="10"/><path d="M4.5 11h19M4.5 17h19"/></svg>
+              </span>
+              <div class="labs-stat-body">
+                <div class="labs-stat-num labs-num-purple" id="stat-avg-quality">0.0%</div>
+                <div class="labs-stat-label">Mean Match Confidence</div>
+              </div>
             </div>
           </div>
+          <div class="labs-summary-sticky" aria-hidden="true">Keep Tooting, Keep Learning — Dr T.</div>
         </section>
 
         <section class="labs-vault-section">
@@ -173,15 +237,61 @@
           </div>
           <div id="home-recent-vault" class="labs-vault-grid"></div>
         </section>
+
+        <footer class="labs-home-footplate" aria-hidden="true">
+          <div class="labs-footplate-left">
+            <span class="labs-foot-seal">IAFR</span>
+            <div>
+              <div>INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH</div>
+              <small>CLASSIFYING TODAY FOR A CLEANER TOMORROW.</small>
+            </div>
+          </div>
+          <div class="labs-footplate-quote">"In farts we trust."<br /><span>— Prof. Bottomsworth</span></div>
+        </footer>
       </section>
 
       <!-- ==================== AREA 2: VAULT ==================== -->
       <section id="labs-view-vault" class="labs-view">
-        <div class="labs-subview-bar labs-wrap-bar">
-          <div>
-            <div class="labs-eyebrow">RESEARCH ARCHIVE · SPECIMEN REPOSITORY</div>
-            <h2 class="labs-section-heading">Research Archive Vault</h2>
+        <div class="labs-glass-card labs-vault-dossier-head">
+          <div class="labs-vault-head-top">
+            <div class="labs-vault-head-left">
+              <span class="labs-vault-stamp">RESEARCH ARCHIVE</span>
+              <h2 class="labs-section-heading labs-vault-mega-title">VAULT</h2>
+              <div class="labs-vault-sub">CATALOGUED FLATULENCE SPECIMENS · Preserving important emissions for a flatter tomorrow.</div>
+            </div>
+            <div class="labs-vault-fig" aria-hidden="true">
+              <svg viewBox="0 0 90 92" fill="none" stroke="currentColor" stroke-width="1.35">
+                <text x="2" y="10" font-size="7" font-family="Georgia,serif" font-style="italic" fill="currentColor" stroke="none">Fig. 1 · Acoustic</text>
+                <text x="2" y="18" font-size="7" font-family="Georgia,serif" font-style="italic" fill="currentColor" stroke="none">Propulsion Profile</text>
+                <path d="M40 24c11 0 18 7 18 18v15c0 11-7 22-7 30H29c0-8-7-19-7-30V42c0-11 7-18 18-18z" stroke-opacity="0.72"/>
+                <path d="M36 28c6 3 9 9 6 15s-9 9-6 15 8 8 4 14" stroke-dasharray="2.5 2"/>
+                <path d="M10 38h12M10 54h12M16 38v16" stroke-opacity="0.5"/>
+              </svg>
+            </div>
           </div>
+
+          <div class="labs-vault-folder-row">
+            <div class="labs-vault-folder-tabs" role="group" aria-label="Vault Archive Counts">
+              <button type="button" class="labs-vtab active" data-vault-tab="all">
+                <span>TOTAL SPECIMENS</span>
+                <strong id="vault-tab-total">0</strong>
+              </button>
+              <button type="button" class="labs-vtab" data-vault-tab="recorded">
+                <span>RECORDED</span>
+                <strong id="vault-tab-recorded">0</strong>
+              </button>
+              <button type="button" class="labs-vtab" data-vault-tab="guesses">
+                <span>GUESSES</span>
+                <strong id="vault-tab-guesses">0</strong>
+              </button>
+              <button type="button" class="labs-vtab" data-vault-tab="defaults">
+                <span>DEFAULT LIBRARY</span>
+                <strong id="vault-tab-defaults">0</strong>
+              </button>
+            </div>
+            <div class="labs-vault-sticky" aria-hidden="true">Science never holds it in. :)</div>
+          </div>
+
           <div class="labs-vault-top-btns">
             <button type="button" id="btn-vault-select" class="labs-btn-ghost labs-btn-sm">☑️ Select</button>
             <button type="button" id="btn-vault-megamix" class="labs-btn labs-btn-purple labs-btn-sm">🎛️ Analyze All (Megamix)</button>
@@ -710,13 +820,17 @@
 
       <!-- ==================== AREA 3: FARTNALYSIS (NO GAMEPLAY LANGUAGE) ==================== -->
       <section id="labs-view-fartnalysis" class="labs-view">
-        <div class="labs-subview-bar labs-wrap-bar">
-          <div>
-            <div class="labs-eyebrow">INSTITUTE OF ACOUSTIC FLATULENCE RESEARCH · SCIENTIFIC REVIEW</div>
-            <h2 class="labs-section-heading">Fartnalysis Report</h2>
+        <div class="labs-glass-card labs-fn-hero-dossier">
+          <div class="labs-fn-hero-row">
+            <div>
+              <h2 class="labs-section-heading labs-fn-mega-title">FARTNALYSIS REPORT</h2>
+              <div class="labs-fn-subline">ACOUSTIC ANALYSIS &amp; SCIENTIFIC REVIEW</div>
+            </div>
+            <span class="labs-fn-conf-stamp">LAB REPORT<br />CONFIDENTIAL</span>
           </div>
-          <div class="labs-vault-top-btns">
+          <div class="labs-fn-hero-actions">
             <button type="button" id="btn-fn-back" class="labs-btn-ghost labs-btn-sm">← Back</button>
+            <div class="labs-fn-sticky" aria-hidden="true">Another good one! :)</div>
           </div>
         </div>
 
@@ -794,15 +908,21 @@
     <!-- Persistent 3-Area Bottom Dock: HOME | VAULT | FARTNALYSIS -->
     <nav class="labs-bottom-nav" aria-label="Primary Navigation">
       <button type="button" class="labs-nav-btn active" data-view="home">
-        <span class="labs-nav-icon">🏠</span>
+        <span class="labs-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z" fill="#dfd5be" fill-opacity="0.92"/><path d="M2.5 11 12 3l9.5 8" stroke="#d97548" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="9.5" y="14.5" width="5" height="6.5" rx="0.6" fill="#3a4542"/></svg>
+        </span>
         <span class="labs-nav-lbl">Home</span>
       </button>
       <button type="button" class="labs-nav-btn" data-view="vault">
-        <span class="labs-nav-icon">📦</span>
+        <span class="labs-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3.5 7.5 12 3.5l8.5 4v9L12 20.5l-8.5-4z" fill="#d3aa76" stroke="#6f5333" stroke-width="1.4" stroke-linejoin="round"/><path d="M3.5 7.5 12 11.5l8.5-4M12 11.5v9" stroke="#6f5333" stroke-width="1.4" stroke-linejoin="round"/><path d="m7.8 5.5 8.4 4" stroke="#f0dcb8" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </span>
         <span class="labs-nav-lbl">Vault</span>
       </button>
       <button type="button" class="labs-nav-btn" data-view="fartnalysis">
-        <span class="labs-nav-icon">🧪</span>
+        <span class="labs-nav-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9.5 3.5h5M10.5 3.5v5.8L5.2 18.4A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.6-2.6L13.5 9.3V3.5" stroke="#d8e3de" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.1 15.2h9.8l1.6 2.8a1.2 1.2 0 0 1-1.1 1.8H6.6a1.2 1.2 0 0 1-1.1-1.8z" fill="#3be095"/></svg>
+        </span>
         <span class="labs-nav-lbl">Fartnalysis</span>
       </button>
     </nav>

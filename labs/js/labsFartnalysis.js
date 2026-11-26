@@ -990,12 +990,20 @@
           '</div>'
         : '');
 
-    var cmpComment = pickScientistComment(
-      'flatley',
-      (labelA || '') + '|' + (labelB || '') + '|' + exactScore.toFixed(1),
-      0
-    );
-    cmpComment.label = 'Comparative Match Review';
+    var durDiffMs = Math.round(Math.abs(safeNum(featA.durationSec, 0) - safeNum(featB.durationSec, 0)) * 1000);
+    var pitchDiffHz = Math.round(Math.abs(safeNum(featA.medianPitchHz, 0) - safeNum(featB.medianPitchHz, 0)));
+    var cmpComment = {
+      scientistId: 'flatley',
+      label: 'Comparative Match Review',
+      quote:
+        'Measured ' +
+        exactScore.toFixed(1) +
+        '% overall reproduction fidelity: duration variance ' +
+        durDiffMs +
+        'ms and resonance delta ' +
+        pitchDiffHz +
+        ' Hz between specimens.'
+    };
     var specWobbleQuote = buildComparison3DSpectrogramCommentary(featA, featB, labelA, labelB);
     var rareDispatch = pickRareComment((labelA || '') + '|' + (labelB || '') + '|cmp');
     var archCmp = buildArchiveComparison(
@@ -1197,16 +1205,27 @@
         return;
       }
 
-      var rowSci = pickScientistComment(
-        DIAL_SCIENTIST_MAP[targetFKey] || DIAL_SCIENTIST_MAP[resolvedId] || 'turbulence',
-        (labelA || '') + '|' + (labelB || '') + '|' + resolvedId,
-        1
-      );
-      slotEl.innerHTML =
-        '<div class="labs-forensics-mount"></div>' +
-        '<div class="labs-acc-sci-slot">' +
-        renderScientistCommentHtml(rowSci.scientistId, rowSci.quote, 'Specialist Telemetry Remark') +
-        '</div>';
+      var showCmpSticky = hashSeed((labelA || '') + '|' + (labelB || '') + '|' + resolvedId) % 3 === 0;
+      var cmpSciHtml = '';
+      if (showCmpSticky) {
+        var rowSid = DIAL_SCIENTIST_MAP[targetFKey] || DIAL_SCIENTIST_MAP[resolvedId] || 'turbulence';
+        var durDelta = Math.round(Math.abs(safeNum(featA.durationSec, 0) - safeNum(featB.durationSec, 0)) * 1000);
+        var f0Delta = Math.round(Math.abs(safeNum(featA.medianPitchHz, 0) - safeNum(featB.medianPitchHz, 0)));
+        var crA = safeNum(featA.crestFactorDb, 0).toFixed(1);
+        var crB = safeNum(featB.crestFactorDb, 0).toFixed(1);
+        var scVal = matched ? matched.score : Math.round(exactScore);
+        var cmpQuote =
+          targetFKey === 'pitch'
+            ? 'Resonance delta measured ' + f0Delta + ' Hz (' + Math.round(safeNum(featA.medianPitchHz, 0)) + ' vs ' + Math.round(safeNum(featB.medianPitchHz, 0)) + ' Hz) — ' + scVal + '% score.'
+            : targetFKey === 'duration' || targetFKey === 'envelope'
+            ? 'Temporal mismatch is ' + durDelta + 'ms with crest ' + crA + ' dB vs ' + crB + ' dB.'
+            : 'Domain fidelity converged at ' + scVal + '% across measured spectral telemetry.';
+        cmpSciHtml =
+          '<div class="labs-acc-sci-slot">' +
+          renderScientistCommentHtml(rowSid, cmpQuote, 'Specialist Telemetry Remark') +
+          '</div>';
+      }
+      slotEl.innerHTML = '<div class="labs-forensics-mount"></div>' + cmpSciHtml;
 
       var fMountEl = slotEl.querySelector('.labs-forensics-mount');
       activeMountEl = fMountEl;
@@ -5143,8 +5162,26 @@
         ? Forensics.hzToNoteName(feat.medianPitchHz)
         : 'Unvoiced Airband';
     var fieldVerdict = buildSingleFieldVerdict(sound, feat, bonus, ml, noteStr);
-    var sciComment = pickScientistComment('bottomsworth', label + '|' + prof.durationLabel, 0);
-    sciComment.label = 'Lead Laboratory Evaluation';
+    function buildDataDrivenLeadSingle() {
+      var durS = safeNum(feat.durationSec, 0).toFixed(2);
+      var f0S = Math.round(safeNum(feat.medianPitchHz, 0));
+      var crS = safeNum(feat.crestFactorDb, 0).toFixed(1);
+      var wetS = Math.round(safeNum(bonus && bonus.wetness && bonus.wetness.a ? bonus.wetness.a.wetnessPct : 0, 0));
+      var radS = safeNum(bonus && bonus.social && bonus.social.a ? bonus.social.a.radiusM : 0, 0).toFixed(1);
+      if (feat.crestFactorDb >= 13.5) {
+        return 'Peak impulse reached ' + crS + ' dB across ' + durS + 's at ' + f0S + ' Hz — elevated initial pressure release with ' + radS + 'm propagation reach.';
+      }
+      if (wetS >= 52) {
+        return 'Hydro-acoustic turbulence measured ' + wetS + '% across ' + durS + 's (' + f0S + ' Hz resonance), consistent with a multi-phase airflow profile.';
+      }
+      return 'Recorded ' + durS + 's emission locked around ' + f0S + ' Hz (' + noteStr + '), ' + crS + ' dB crest, classified as ' + ml.topClass.name + ' (' + ml.confidence + '%).';
+    }
+
+    var sciComment = {
+      scientistId: 'bottomsworth',
+      label: 'Lead Laboratory Evaluation',
+      quote: buildDataDrivenLeadSingle()
+    };
     var specWobbleQuote = buildSingle3DSpectrogramCommentary(feat);
     var rareDispatch = pickRareComment(label + '|' + prof.durationLabel + '|single');
     var archCmp = buildArchiveComparison(feat, bonus, opts.archiveSamples, label + '|' + prof.durationLabel);
@@ -5443,7 +5480,36 @@
         })
         .join('');
 
-      var repSci = pickScientistComment(DIAL_SCIENTIST_MAP[rep.id] || 'wobble', label + '|' + rep.id, 1);
+    function buildDataDrivenCriterionNote(repItem) {
+      if (hashSeed(label + '|' + repItem.id) % 3 !== 0) return null;
+      var sid = DIAL_SCIENTIST_MAP[repItem.id] || 'wobble';
+      var f0 = Math.round(safeNum(feat.medianPitchHz, 0));
+      var cr = safeNum(feat.crestFactorDb, 0).toFixed(1);
+      var cen = Math.round(safeNum(feat.spectralCentroidHz, 0));
+      var wet = Math.round(safeNum(bonus && bonus.wetness && bonus.wetness.a ? bonus.wetness.a.wetnessPct : 0, 0));
+      var rad = safeNum(bonus && bonus.social && bonus.social.a ? bonus.social.a.radiusM : 0, 0).toFixed(1);
+      var modR = safeNum(feat.modRateHz, 0).toFixed(1);
+      var bursts = Math.round(safeNum(feat.burstCount, 1));
+      var qMap = {
+        s_crest: 'Measured ' + cr + ' dB peak-to-RMS ratio across ' + safeNum(feat.durationSec, 0).toFixed(2) + 's.',
+        s_tone: 'Spectral center of mass settled at ' + cen + ' Hz.',
+        s_resonance: 'Tracking ' + f0 + ' Hz fundamental (' + noteStr + ') with ' + Math.round(safeNum(feat.voicedRatio, 0) * 100) + '% modal lock.',
+        s_turbulence: 'Modulation flutter measured ' + modR + ' Hz (' + Math.round(modR * 60) + ' cycles/min).',
+        s_burst: 'Envelope resolved ' + bursts + ' distinct release phase' + (bursts === 1 ? '' : 's') + '.',
+        s_timbre: '13-band MFCC warmth & timbre match recorded at ' + repItem.score + '%.',
+        s_moisture: 'Turbulence moisture index computed at ' + wet + '% (' + cen + ' Hz centroid).',
+        s_twin: 'Archive structural similarity peaked at ' + repItem.score + '%.',
+        s_panic: 'Effective audibility perimeter reaches ' + rad + 'm at ' + cr + ' dB crest.',
+        s_ml: 'Classifier assigned ' + ml.topClass.name + ' at ' + ml.confidence + '% model confidence.',
+        s_velocity: 'Estimated release velocity calibrated to ' + repItem.score + '% envelope power.',
+        s_neighbor: 'Open-air boundary reach ' + rad + 'm; interior barriers attenuate high frequencies above ' + f0 + ' Hz.'
+      };
+      return {
+        scientistId: sid,
+        quote: qMap[repItem.id] || ('Telemetry verified ' + repItem.score + '% (' + repItem.sub + ').')
+      };
+    }
+      var repSci = buildDataDrivenCriterionNote(rep);
       slotEl.innerHTML =
         '<div class="labs-acc-head">' +
         '  <div>' +
@@ -5461,9 +5527,11 @@
           'Individual Telemetry Metrics & Equation',
           'EQUATION'
         ) +
-        '<div class="labs-acc-sci-slot">' +
-        renderScientistCommentHtml(repSci.scientistId, repSci.quote, 'Specialist Metric Observation') +
-        '</div>';
+        (repSci
+          ? '<div class="labs-acc-sci-slot">' +
+            renderScientistCommentHtml(repSci.scientistId, repSci.quote, 'Specialist Metric Observation') +
+            '</div>'
+          : '');
       wireSubDisclosures(slotEl);
 
       var closeBtn = slotEl.querySelector('.labs-acc-close');
