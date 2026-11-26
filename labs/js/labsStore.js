@@ -113,6 +113,7 @@
     nextNickIndex: 0,
     samples: {}
   };
+  var metaLoaded = false;
 
   var memoryAttempts = new Map();
 
@@ -124,7 +125,10 @@
     return typeof v === 'number' && Number.isFinite(v) ? v : (fallback || 0);
   }
 
-  function loadMeta() {
+  function loadMeta(forceReload) {
+    if (metaLoaded && !forceReload) {
+      return memoryMeta;
+    }
     try {
       var raw = root.localStorage ? root.localStorage.getItem(META_STORAGE_KEY) : null;
       if (raw) {
@@ -139,10 +143,12 @@
     } catch (e) {
       // Ignore storage read errors
     }
+    metaLoaded = true;
     return memoryMeta;
   }
 
   function persistMeta() {
+    metaLoaded = true;
     try {
       if (root.localStorage) {
         root.localStorage.setItem(META_STORAGE_KEY, JSON.stringify(memoryMeta));

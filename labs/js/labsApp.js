@@ -101,6 +101,9 @@
     groupShuffleSeed: 0,
     groupRenderGen: 0,
     allAttemptsCache: [],
+    attemptsCacheLoaded: false,
+    fnOpenGen: 0,
+    guessOpenGen: 0,
     groupSortBy: 'pitch',
     groupSortDir: 'asc',
     renameTarget: null,
@@ -392,9 +395,10 @@
   }
 
   /* ==================== WAVEFORM RENDERERS ==================== */
-  function sizeCanvasDpr(canvas, fallbackW, fallbackH) {
+  function sizeCanvasDpr(canvas, fallbackW, fallbackH, opts) {
     if (!canvas) return null;
-    var rect = canvas.getBoundingClientRect();
+    var rect = opts && opts.preMeasuredRect ? opts.preMeasuredRect : null;
+    if (!rect) rect = canvas.getBoundingClientRect();
     var w = rect && rect.width > 0 ? rect.width : fallbackW || 300;
     var h = rect && rect.height > 0 ? rect.height : fallbackH || 80;
     var dpr = Math.min(2, root.devicePixelRatio || 1);
@@ -411,7 +415,7 @@
 
   function drawStaticWaveform(canvas, samples, opts) {
     opts = opts || {};
-    var sized = sizeCanvasDpr(canvas, opts.fallbackW || 280, opts.fallbackH || 54);
+    var sized = sizeCanvasDpr(canvas, opts.fallbackW || 280, opts.fallbackH || 54, opts);
     if (!sized) return;
     var ctx = sized.ctx, w = sized.w, h = sized.h;
 
@@ -478,7 +482,7 @@
 
   function drawPreviewWaveform(canvas, peaks, opts) {
     opts = opts || {};
-    var sized = sizeCanvasDpr(canvas, opts.fallbackW || 260, opts.fallbackH || 44);
+    var sized = sizeCanvasDpr(canvas, opts.fallbackW || 260, opts.fallbackH || 44, opts);
     if (!sized) return;
     var ctx = sized.ctx, w = sized.w, h = sized.h;
 
@@ -1444,10 +1448,10 @@
 
     function finishReturn() {
       dismissVaultDoorImmediate();
+      showView(dest);
       if (dest === 'home') renderHomeView();
       else if (dest === 'guess') renderGuessView();
-      showView(dest);
-      if (dest === 'fartnalysis') renderFartnalysisView();
+      else if (dest === 'fartnalysis') renderFartnalysisView();
     }
 
     var chamber = $('vault-chamber');
@@ -1666,11 +1670,11 @@
     }
 
     if (typeof root.scrollTo === 'function') {
-      root.scrollTo({ top: 0, behavior: 'smooth' });
+      root.scrollTo(0, 0);
     }
 
-    if (viewKey === 'vault' && prevView !== 'vault' && prevView !== 'detail') {
-      triggerVaultDoorOpen();
+    if (viewKey === 'vault') {
+      dismissVaultDoorImmediate();
     }
     if (viewKey === 'team') {
       renderTeamView();
@@ -1678,11 +1682,7 @@
 
     if (typeof root.requestAnimationFrame === 'function') {
       root.requestAnimationFrame(function () {
-        if (viewKey === 'home') {
-          drawVaultWaveforms('home-recent-vault');
-          renderHomeOscilloscope();
-        } else if (viewKey === 'vault') drawVaultWaveforms('vault-grid');
-        else if (viewKey === 'detail') drawDetailWaveform(null);
+        if (viewKey === 'detail') drawDetailWaveform(null);
         else if (viewKey === 'guess') {
           drawGuessWaveforms();
           if (state.inlineSpecA) state.inlineSpecA.resize();
@@ -1889,7 +1889,7 @@
         state.fnSampleId = saved.id;
 
         renderHomeView();
-        renderVaultView();
+        if (state.view === 'vault') renderVaultView();
         if (state.view === 'guess') renderGuessView();
 
         runAnalysisSequence(
@@ -2208,18 +2208,51 @@
     state.allAttemptsCache = merged;
   }
 
-  function refreshAllAttemptsCache() {
+  function refreshAllAttemptsCache(force) {
+    if (!force && state.attemptsCacheLoaded && Array.isArray(state.allAttemptsCache)) {
+      return Promise.resolve(state.allAttemptsCache);
+    }
     if (!TootLabs.Store || typeof TootLabs.Store.loadAllAttempts !== 'function') {
+      state.attemptsCacheLoaded = true;
       return Promise.resolve(state.allAttemptsCache || []);
     }
     return TootLabs.Store.loadAllAttempts()
       .then(function (list) {
         state.allAttemptsCache = Array.isArray(list) ? list : [];
+        state.attemptsCacheLoaded = true;
         return state.allAttemptsCache;
       })
       .catch(function () {
         return state.allAttemptsCache || [];
       });
+  }
+
+  function getCachedAttemptsForSample(sampleId) {
+    if (!sampleId || !Array.isArray(state.allAttemptsCache)) return [];
+    var rows = [];
+    for (var i = 0; i < state.allAttemptsCache.length; i++) {
+      var a = state.allAttemptsCache[i];
+      if (a && a.sampleId === sampleId) rows.push(a);
+    }
+    rows.sort(function (a, b) {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+    return rows;
+  }
+
+  function openHomeView() {
+    showView('home');
+    renderHomeView();
+  }
+
+  function openVaultView() {
+    showView('vault');
+    renderVaultView();
+    if (!state.attemptsCacheLoaded) {
+      refreshAllAttemptsCache(true).then(function () {
+        if (state.view === 'vault') renderVaultView();
+      });
+    }
   }
 
   function getVaultBuckets() {
@@ -2580,7 +2613,15 @@
             ensureTargetReady(sample)
               .then(function (loaded) {
                 if (loaded && loaded.samples) {
-                  drawVaultWaveforms(containerEl.id);
+                  var waveCvs = containerEl.querySelector('canvas[data-wave-id="' + id + '"]');
+                  if (waveCvs) {
+                    drawStaticWaveform(waveCvs, loaded.samples, {
+                      fallbackW: 260,
+                      fallbackH: 44,
+                      colorA: sample.isBuiltIn ? '#166534' : '#145a41',
+                      colorB: sample.isBuiltIn ? '#22c55e' : '#34d399'
+                    });
+                  }
                   playVaultCardSample(loaded);
                 }
               })
@@ -2672,13 +2713,33 @@
 
   function drawVaultWaveforms(containerId) {
     var canvases = document.querySelectorAll('#' + containerId + ' canvas[data-wave-id]');
-    for (var i = 0; i < canvases.length; i++) {
+    var guessCanvases = document.querySelectorAll('#' + containerId + ' canvas[data-guess-wave-id]');
+    var sampleRects = new Array(canvases.length);
+    var guessRects = new Array(guessCanvases.length);
+    var i, j;
+
+    // Pass 1 (Read-only): measure all canvases in one layout pass to prevent read/write thrashing
+    for (i = 0; i < canvases.length; i++) {
+      sampleRects[i] = typeof canvases[i].getBoundingClientRect === 'function'
+        ? canvases[i].getBoundingClientRect()
+        : null;
+    }
+    for (j = 0; j < guessCanvases.length; j++) {
+      guessRects[j] = typeof guessCanvases[j].getBoundingClientRect === 'function'
+        ? guessCanvases[j].getBoundingClientRect()
+        : null;
+    }
+
+    // Pass 2 (Write/Draw): update backing sizes and render
+    for (i = 0; i < canvases.length; i++) {
       var id = canvases[i].getAttribute('data-wave-id');
       var sample = getSampleById(id);
+      var sRect = sampleRects[i];
       if (sample && sample.samples && sample.samples.length > 0) {
         drawStaticWaveform(canvases[i], sample.samples, {
           fallbackW: 260,
           fallbackH: 44,
+          preMeasuredRect: sRect,
           colorA: sample.isBuiltIn ? '#166534' : '#145a41',
           colorB: sample.isBuiltIn ? '#22c55e' : '#34d399'
         });
@@ -2686,6 +2747,7 @@
         drawPreviewWaveform(canvases[i], sample.previewPeaks, {
           fallbackW: 260,
           fallbackH: 44,
+          preMeasuredRect: sRect,
           colorA: '#166534',
           colorB: '#22c55e'
         });
@@ -2703,14 +2765,14 @@
       }
     }
 
-    var guessCanvases = document.querySelectorAll('#' + containerId + ' canvas[data-guess-wave-id]');
-    for (var j = 0; j < guessCanvases.length; j++) {
+    for (j = 0; j < guessCanvases.length; j++) {
       var gId = guessCanvases[j].getAttribute('data-guess-wave-id');
       var att = findAttemptInCacheById(gId);
       if (att && att.samples && att.samples.length > 0) {
         drawStaticWaveform(guessCanvases[j], att.samples, {
           fallbackW: 260,
           fallbackH: 44,
+          preMeasuredRect: guessRects[j],
           colorA: '#F97316',
           colorB: '#FACC15'
         });
@@ -3239,7 +3301,7 @@
   function renderSampleDetail() {
     var sample = getSampleById(state.detailSampleId);
     if (!sample || !sample.samples || sample.samples.length === 0) {
-      showView('vault');
+      openVaultView();
       return;
     }
 
@@ -4849,6 +4911,7 @@
   }
 
   function openGuessMode(sampleId) {
+    var reqGen = ++state.guessOpenGen;
     TootApp.Audio.stopAll();
     clearRevealTimers();
     clearResultAnimations();
@@ -4873,24 +4936,43 @@
     if ($('guess-live-wave')) $('guess-live-wave').classList.add('hidden');
     if ($('guess-rec-status')) $('guess-rec-status').classList.add('hidden');
 
+    showView('guess');
+
     if (!resolvedId) {
       state.guessAttempts = [];
-      showView('guess');
       renderGuessView();
       return Promise.resolve();
     }
 
     var target = getSampleById(resolvedId);
-    return Promise.all([ensureTargetReady(target), TootLabs.Store.loadAttemptsForSample(resolvedId)])
+    var hasAudio = Boolean(target && target.samples && target.samples.length > 0);
+    state.guessAttempts = state.attemptsCacheLoaded ? getCachedAttemptsForSample(resolvedId) : [];
+    renderGuessView();
+
+    if (hasAudio && state.attemptsCacheLoaded) {
+      return Promise.resolve();
+    }
+
+    return Promise.all([
+      hasAudio ? Promise.resolve(target) : ensureTargetReady(target),
+      state.attemptsCacheLoaded
+        ? Promise.resolve(state.guessAttempts)
+        : TootLabs.Store.loadAttemptsForSample(resolvedId)
+    ])
       .then(function (res) {
+        if (reqGen !== state.guessOpenGen || state.view !== 'guess' || state.guessTargetId !== resolvedId) return;
         state.guessAttempts = res[1] || [];
-        showView('guess');
         renderGuessView();
       })
       .catch(function () {
+        if (reqGen !== state.guessOpenGen || state.view !== 'guess' || state.guessTargetId !== resolvedId) return Promise.resolve();
+        if (state.attemptsCacheLoaded) {
+          renderGuessView();
+          return Promise.resolve();
+        }
         return TootLabs.Store.loadAttemptsForSample(resolvedId).then(function (attempts) {
+          if (reqGen !== state.guessOpenGen || state.view !== 'guess' || state.guessTargetId !== resolvedId) return;
           state.guessAttempts = attempts || [];
-          showView('guess');
           renderGuessView();
         });
       });
@@ -5493,7 +5575,7 @@
       state.fnAttemptId = outcomes[0].attempt.id;
 
       renderHomeView();
-      renderVaultView();
+      if (state.view === 'vault') renderVaultView();
 
       runAnalysisSequence(
         {
@@ -5653,7 +5735,7 @@
         state.samples.unshift(saved);
         state.blindOriginal = saved;
         renderHomeView();
-        renderVaultView();
+        if (state.view === 'vault') renderVaultView();
         renderBlindPane();
         showToast('Original Fart "' + getSampleName(saved) + '" saved! Tap ANALYZE RESULTS.');
       });
@@ -6178,6 +6260,7 @@
   }
 
   function openFartnalysis(mode, sampleId, attemptId) {
+    var reqGen = ++state.fnOpenGen;
     if (mode) state.fnMode = mode;
 
     var resolvedSampleId = sampleId;
@@ -6202,20 +6285,27 @@
     }
     state.fnSampleId = resolvedSampleId;
 
+    showView('fartnalysis');
+
     if (state.fnMode === 'group') {
-      var loadAllP =
-        TootLabs.Store && typeof TootLabs.Store.loadAllAttempts === 'function'
-          ? TootLabs.Store.loadAllAttempts()
-          : Promise.resolve([]);
-      return loadAllP
-        .then(function (allAtts) {
-          state.allAttemptsCache = allAtts || [];
-          showView('fartnalysis');
+      if (state.attemptsCacheLoaded) {
+        renderFartnalysisView();
+        return Promise.resolve();
+      }
+      syncFartnalysisPickers();
+      var grpMount = $('fn-dashboard-mount');
+      if (grpMount) {
+        grpMount.innerHTML =
+          '<div class="labs-glass-card labs-empty-card"><h3>Loading Archive Specimens…</h3><p>Preparing multi-specimen anthology.</p></div>';
+      }
+      return refreshAllAttemptsCache(true)
+        .then(function () {
+          if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
           renderFartnalysisView();
         })
         .catch(function () {
+          if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
           state.allAttemptsCache = [];
-          showView('fartnalysis');
           renderFartnalysisView();
         });
     }
@@ -6223,32 +6313,67 @@
     if (!resolvedSampleId) {
       state.fnAttempts = [];
       state.fnAttemptId = null;
-      return refreshAllAttemptsCache().then(function () {
-        showView('fartnalysis');
+      if (state.attemptsCacheLoaded) {
+        renderFartnalysisView();
+        return Promise.resolve();
+      }
+      syncFartnalysisPickers();
+      return refreshAllAttemptsCache(true).then(function () {
+        if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
         renderFartnalysisView();
       });
     }
 
+    var sample = getSampleById(resolvedSampleId);
+    var hasAudio = Boolean(sample && sample.samples && sample.samples.length > 0);
+    function applyAttemptsAndPick(list) {
+      state.fnAttempts = list || [];
+      if (attemptId) {
+        state.fnAttemptId = attemptId;
+      } else if (state.fnAttemptId && state.fnAttempts.some(function (a) { return a.id === state.fnAttemptId; })) {
+        // keep current
+      } else {
+        var sorted = sortAttemptsByScore(state.fnAttempts);
+        state.fnAttemptId = sorted[0] ? sorted[0].id : null;
+      }
+    }
+
+    if (hasAudio && state.attemptsCacheLoaded) {
+      applyAttemptsAndPick(getCachedAttemptsForSample(resolvedSampleId));
+      renderFartnalysisView();
+      return Promise.resolve();
+    }
+
+    if (state.fnController) {
+      state.fnController.destroy();
+      state.fnController = null;
+    }
+    if (state.attemptsCacheLoaded) {
+      applyAttemptsAndPick(getCachedAttemptsForSample(resolvedSampleId));
+    }
+    syncFartnalysisPickers();
+    var emptyEl = $('fn-empty-state');
+    if (emptyEl) emptyEl.classList.add('hidden');
+    var mountEl = $('fn-dashboard-mount');
+    if (mountEl) {
+      mountEl.innerHTML =
+        '<div class="labs-glass-card labs-empty-card"><h3>Loading Specimen Telemetry…</h3><p>Decoding audio waveform for laboratory analysis.</p></div>';
+    }
+
     return Promise.all([
-      ensureTargetReady(getSampleById(resolvedSampleId)),
-      TootLabs.Store.loadAttemptsForSample(resolvedSampleId),
+      hasAudio ? Promise.resolve(sample) : ensureTargetReady(sample),
+      state.attemptsCacheLoaded
+        ? Promise.resolve(getCachedAttemptsForSample(resolvedSampleId))
+        : TootLabs.Store.loadAttemptsForSample(resolvedSampleId),
       refreshAllAttemptsCache()
     ])
       .then(function (res) {
-        var attempts = res[1] || [];
-        state.fnAttempts = attempts;
-        if (attemptId) {
-          state.fnAttemptId = attemptId;
-        } else if (state.fnAttemptId && state.fnAttempts.some(function (a) { return a.id === state.fnAttemptId; })) {
-          // keep current
-        } else {
-          var sorted = sortAttemptsByScore(state.fnAttempts);
-          state.fnAttemptId = sorted[0] ? sorted[0].id : null;
-        }
-        showView('fartnalysis');
+        if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
+        applyAttemptsAndPick(res[1] || []);
         renderFartnalysisView();
       })
       .catch(function (err) {
+        if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
         showToast((err && err.message) || 'Could not load specimen for analysis.', true);
       });
   }
@@ -6694,7 +6819,7 @@
         TootLabs.Store.renameSample(state.renameTarget.item, next).then(function () {
           renameModal.classList.add('hidden');
           renderHomeView();
-          renderVaultView();
+          if (state.view === 'vault') renderVaultView();
           if (state.view === 'detail') renderSampleDetail();
           if (state.view === 'guess') renderGuessView();
           showToast('Renamed to "' + next + '"');
@@ -6704,7 +6829,7 @@
           upsertAttemptsIntoCache([updated || state.renameTarget.item]);
           renameModal.classList.add('hidden');
           renderGuessLeaderboard();
-          renderVaultView();
+          if (state.view === 'vault') renderVaultView();
           if (state.view === 'detail') renderSampleDetail();
           showToast('Guesser named "' + next + '"');
         });
@@ -6770,9 +6895,10 @@
               if (state.view === 'detail') showView('vault');
             }
             renderHomeView();
-            renderVaultView();
+            if (state.view === 'vault') renderVaultView();
             if (state.view === 'fartnalysis') renderFartnalysisView();
             if (state.view === 'guess') renderGuessView();
+            refreshAllAttemptsCache(true);
             var parts = [];
             if (sampleIds.length > 0) parts.push(sampleIds.length + ' recording' + (sampleIds.length === 1 ? '' : 's'));
             if (standaloneAttemptIds.length > 0) parts.push(standaloneAttemptIds.length + ' guess' + (standaloneAttemptIds.length === 1 ? '' : 'es'));
@@ -6810,8 +6936,8 @@
           state.fnAttemptId = null;
         }
         renderHomeView();
-        renderVaultView();
-        showView('vault');
+        openVaultView();
+        refreshAllAttemptsCache(true);
         showToast('Fart deleted from Vault');
       });
     });
@@ -6921,14 +7047,9 @@
       navBtn.addEventListener('click', function () {
         var targetView = this.getAttribute('data-view');
         if (targetView === 'home') {
-          renderHomeView();
-          showView('home');
+          openHomeView();
         } else if (targetView === 'vault') {
-          renderVaultView();
-          showView('vault');
-          refreshAllAttemptsCache().then(function () {
-            if (state.view === 'vault') renderVaultView();
-          });
+          openVaultView();
         } else if (targetView === 'fartnalysis') {
           openFartnalysis(state.fnMode || 'original', state.fnSampleId, state.fnAttemptId);
         }
@@ -7001,11 +7122,7 @@
       );
     });
     $('btn-home-open-vault').addEventListener('click', function () {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      openVaultView();
     });
 
     // Vault View Buttons, Filter, Selection & Airlock Door (Recording Driven From Home Only)
@@ -7057,11 +7174,7 @@
 
     // Detail View Buttons
     $('btn-detail-back').addEventListener('click', function () {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      openVaultView();
     });
     $('btn-detail-play').addEventListener('click', function () {
       var sample = getSampleById(state.detailSampleId);
@@ -7403,32 +7516,25 @@
     $('btn-fn-back').addEventListener('click', function () {
       var dest = state.prevBeforeFartnalysis || 'home';
       if (dest === 'vault') {
-        renderVaultView();
-        showView('vault');
-        refreshAllAttemptsCache().then(function () {
-          if (state.view === 'vault') renderVaultView();
-        });
+        openVaultView();
       } else if (dest === 'guess') {
         showView('guess');
         renderGuessView();
       } else {
-        renderHomeView();
-        showView('home');
+        openHomeView();
       }
     });
 
     $('btn-fn-go-guess').addEventListener('click', function () {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      openVaultView();
     });
 
     if ($('btn-team-back')) {
       $('btn-team-back').addEventListener('click', function () {
         var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
-        showView(backTo);
+        if (backTo === 'vault') openVaultView();
+        else if (backTo === 'home') openHomeView();
+        else showView(backTo);
       });
     }
 
@@ -7445,17 +7551,24 @@
       });
     });
 
+    var resizeDebounceId = null;
     root.addEventListener('resize', function () {
-      if (state.view === 'home') drawVaultWaveforms('home-recent-vault');
-      else if (state.view === 'vault') drawVaultWaveforms('vault-grid');
-      else if (state.view === 'detail') drawDetailWaveform(null);
-      else if (state.view === 'guess') {
-        drawGuessWaveforms();
-        if (state.revealSpecA) state.revealSpecA.resize();
-        if (state.revealSpecB) state.revealSpecB.resize();
-        if (state.inlineSpecA) state.inlineSpecA.resize();
-        if (state.inlineSpecB) state.inlineSpecB.resize();
-      } else if (state.view === 'fartnalysis' && state.fnController) state.fnController.resize();
+      if (resizeDebounceId) clearTimeout(resizeDebounceId);
+      resizeDebounceId = setTimeout(function () {
+        resizeDebounceId = null;
+        if (state.view === 'home') {
+          drawVaultWaveforms('home-recent-vault');
+          renderHomeOscilloscope();
+        } else if (state.view === 'vault') drawVaultWaveforms('vault-grid');
+        else if (state.view === 'detail') drawDetailWaveform(null);
+        else if (state.view === 'guess') {
+          drawGuessWaveforms();
+          if (state.revealSpecA) state.revealSpecA.resize();
+          if (state.revealSpecB) state.revealSpecB.resize();
+          if (state.inlineSpecA) state.inlineSpecA.resize();
+          if (state.inlineSpecB) state.inlineSpecB.resize();
+        } else if (state.view === 'fartnalysis' && state.fnController) state.fnController.resize();
+      }, 120);
     });
   }
 
@@ -7493,16 +7606,11 @@
     var cur = state.view;
 
     if (cur === 'home' && swipeLeft) {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      openVaultView();
       return true;
     }
     if (cur === 'vault' && swipeRight) {
-      renderHomeView();
-      showView('home');
+      openHomeView();
       return true;
     }
     if (cur === 'vault' && swipeLeft) {
@@ -7510,11 +7618,7 @@
       return true;
     }
     if (cur === 'fartnalysis' && swipeRight) {
-      renderVaultView();
-      showView('vault');
-      refreshAllAttemptsCache().then(function () {
-        if (state.view === 'vault') renderVaultView();
-      });
+      openVaultView();
       return true;
     }
     if (cur === 'guess' && swipeRight) {
@@ -7522,22 +7626,22 @@
         setGuessSubMode('standard');
         return true;
       }
-      renderHomeView();
-      showView('home');
+      openHomeView();
       return true;
     }
     if (cur === 'detail' && swipeRight) {
-      renderVaultView();
-      showView('vault');
+      openVaultView();
       return true;
     }
     if (cur === 'team' && swipeRight) {
       var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
-      if (backTo === 'home') renderHomeView();
-      else if (backTo === 'vault') renderVaultView();
-      else if (backTo === 'guess') renderGuessView();
-      else if (backTo === 'fartnalysis') renderFartnalysisView();
-      showView(backTo);
+      if (backTo === 'home') openHomeView();
+      else if (backTo === 'vault') openVaultView();
+      else {
+        showView(backTo);
+        if (backTo === 'guess') renderGuessView();
+        else if (backTo === 'fartnalysis') renderFartnalysisView();
+      }
       return true;
     }
     return false;
@@ -7615,7 +7719,7 @@
       openSplashModal();
     }
 
-    Promise.all([TootLabs.Store.loadVaultSamples(), refreshAllAttemptsCache()])
+    Promise.all([TootLabs.Store.loadVaultSamples(), refreshAllAttemptsCache(true)])
       .then(function (res) {
         state.samples = res[0] || [];
         if (state.samples.length > 0) {
@@ -7623,7 +7727,6 @@
           state.fnSampleId = state.samples[0].id;
         }
         renderHomeView();
-        renderVaultView();
       })
       .catch(function (err) {
         showToast('Vault initialization failed: ' + (err && err.message ? err.message : err), true);

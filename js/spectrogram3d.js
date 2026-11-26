@@ -95,6 +95,8 @@
     this._pinchDist = 0;
     this._projCache = null;
     this._rafAnim = null;
+    this._resizeRaf = null;
+    this._hasRendered = false;
     this._tweenTarget = null;
     this._destroyed = false;
 
@@ -198,7 +200,15 @@
 
     if (typeof ResizeObserver !== 'undefined') {
       this._resizeObserver = new ResizeObserver(function () {
-        self.resize();
+        if (self._destroyed || self._resizeRaf) return;
+        if (typeof requestAnimationFrame === 'function') {
+          self._resizeRaf = requestAnimationFrame(function () {
+            self._resizeRaf = null;
+            self.resize();
+          });
+        } else {
+          self.resize();
+        }
       });
       this._resizeObserver.observe(canvas);
     }
@@ -211,6 +221,16 @@
     var dpr = Math.min(2, root.devicePixelRatio || 1);
     var targetW = Math.round(rect.width * dpr);
     var targetH = Math.round(rect.height * dpr);
+    if (
+      this._hasRendered &&
+      this.canvas.width === targetW &&
+      this.canvas.height === targetH &&
+      this.width === rect.width &&
+      this.height === rect.height &&
+      this.dpr === dpr
+    ) {
+      return;
+    }
     if (this.canvas.width !== targetW || this.canvas.height !== targetH) {
       this.canvas.width = targetW;
       this.canvas.height = targetH;
@@ -448,6 +468,7 @@
   Spectrogram3D.prototype.render = function () {
     if (this._destroyed || !this.ctx) return;
     if (this.width <= 0 || this.height <= 0) return;
+    this._hasRendered = true;
 
     this._computeProjection();
     var ctx = this.ctx;
@@ -804,6 +825,10 @@
     if (this._rafAnim) {
       cancelAnimationFrame(this._rafAnim);
       this._rafAnim = null;
+    }
+    if (this._resizeRaf) {
+      cancelAnimationFrame(this._resizeRaf);
+      this._resizeRaf = null;
     }
     if (this._resizeObserver) {
       this._resizeObserver.disconnect();

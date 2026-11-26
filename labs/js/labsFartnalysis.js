@@ -5579,10 +5579,13 @@
     }
 
     function drawAllSingleCharts() {
-      drawFinalPlotByKey('c_spec');
-      drawFinalPlotByKey('c_pitch');
-      drawFinalPlotByKey('c_mod');
-      drawFinalPlotByKey('c_env');
+      var bottomBody = mountEl.querySelector('.labs-bottom-charts-disclosure .labs-sub-disclosure-body');
+      if (!bottomBody || !bottomBody.classList.contains('hidden')) {
+        drawFinalPlotByKey('c_spec');
+        drawFinalPlotByKey('c_pitch');
+        drawFinalPlotByKey('c_mod');
+        drawFinalPlotByKey('c_env');
+      }
       redrawExpandedSingle();
     }
 
@@ -6140,8 +6143,11 @@
 
     function drawGroupVisuals() {
       drawSegmentedWaveform(mountEl.querySelector('#' + uid + 'c_wave'), g, lastProg);
-      drawConstellationPlot(mountEl.querySelector('#' + uid + 'c_map'), g, grpMapSelIdx);
-      drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), g.features, '#22C55E', grpSpecHover != null ? { hoverNorm: grpSpecHover } : null);
+      var bottomBody = mountEl.querySelector('.labs-bottom-charts-disclosure .labs-sub-disclosure-body');
+      if (!bottomBody || !bottomBody.classList.contains('hidden')) {
+        drawConstellationPlot(mountEl.querySelector('#' + uid + 'c_map'), g, grpMapSelIdx);
+        drawSpectrumPlot(mountEl.querySelector('#' + uid + 'c_spec'), g.features, '#22C55E', grpSpecHover != null ? { hoverNorm: grpSpecHover } : null);
+      }
       if (authGrpOpen && authGrpSlotEl) {
         var ac = authGrpSlotEl.querySelector('canvas[data-auth-chart]');
         if (ac) drawAuthenticityPlot(ac, authGrp, null, null, null, typeof ac._labsSelIdx === 'number' ? { selectedIdx: ac._labsSelIdx } : null);
