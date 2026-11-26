@@ -5487,24 +5487,36 @@
       '</svg>';
 
     var roundSealSvg =
-      '<svg class="labs-fn-round-seal" viewBox="0 0 110 110" width="90" height="90" aria-hidden="true">' +
-      '  <defs><path id="' + uid + 'seal_top" d="M 16,55 a 39,39 0 1,1 78,0"></path>' +
-      '  <path id="' + uid + 'seal_bot" d="M 92,58 a 37,37 0 0,1 -74,0"></path></defs>' +
-      '  <circle cx="55" cy="55" r="50" fill="none" stroke="currentColor" stroke-width="2"></circle>' +
-      '  <circle cx="55" cy="55" r="45" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="2 2"></circle>' +
-      '  <circle cx="55" cy="55" r="24" fill="none" stroke="currentColor" stroke-width="1.2"></circle>' +
-      '  <text font-family="monospace" font-size="9.5" font-weight="800" fill="currentColor" letter-spacing="1.2"><textPath href="#' + uid + 'seal_top" startOffset="50%" text-anchor="middle">TOOTMATCH LABS</textPath></text>' +
-      '  <text font-family="monospace" font-size="8.5" font-weight="700" fill="currentColor" letter-spacing="1.4"><textPath href="#' + uid + 'seal_bot" startOffset="50%" text-anchor="middle">EST. 2024</textPath></text>' +
-      '  <rect x="51" y="42" width="8" height="14" rx="4" fill="none" stroke="currentColor" stroke-width="1.6"></rect>' +
-      '  <path d="M46 53a9 9 0 0 0 18 0M55 62v6M49 68h12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"></path>' +
+      '<svg class="labs-fn-round-seal" viewBox="0 0 120 120" width="108" height="108" aria-hidden="true">' +
+      '  <defs>' +
+      '    <path id="' + uid + 'seal_top" d="M 16,60 a 44,44 0 1,1 88,0"></path>' +
+      '    <path id="' + uid + 'seal_bot" d="M 103,64 a 43,43 0 0,1 -86,0"></path>' +
+      '  </defs>' +
+      '  <circle cx="60" cy="60" r="55" fill="none" stroke="currentColor" stroke-width="2.6" stroke-dasharray="4 2.2"></circle>' +
+      '  <circle cx="60" cy="60" r="51" fill="none" stroke="currentColor" stroke-width="2.2"></circle>' +
+      '  <circle cx="60" cy="60" r="31" fill="none" stroke="currentColor" stroke-width="1.6"></circle>' +
+      '  <circle cx="60" cy="60" r="27" fill="none" stroke="currentColor" stroke-width="0.9" stroke-dasharray="2 2"></circle>' +
+      '  <text font-family="monospace" font-size="9" font-weight="800" fill="currentColor" letter-spacing="1.4"><textPath href="#' + uid + 'seal_top" startOffset="50%" text-anchor="middle">★ TOOTMATCH LABS ★</textPath></text>' +
+      '  <text font-family="monospace" font-size="8.2" font-weight="800" fill="currentColor" letter-spacing="1.2"><textPath href="#' + uid + 'seal_bot" startOffset="50%" text-anchor="middle">OFFICIAL SEAL · EST. 2024</textPath></text>' +
+      '  <rect x="55" y="42" width="10" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2"></rect>' +
+      '  <path d="M49 56a11 11 0 0 0 22 0M60 67v7M52 74h16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"></path>' +
+      '  <text x="60" y="96" font-family="monospace" font-size="6.4" font-weight="800" fill="currentColor" text-anchor="middle" letter-spacing="1">IAFR CERTIFIED</text>' +
       '</svg>';
 
     var globeSvg =
-      '<svg class="labs-fn-env-globe" viewBox="0 0 64 64" width="54" height="54" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
-      '  <circle cx="32" cy="32" r="24"></circle>' +
-      '  <ellipse cx="32" cy="32" rx="11" ry="24"></ellipse>' +
-      '  <path d="M10 23h44M8 32h48M10 41h44"></path>' +
-      '  <path d="M21 12c4 5 5 11 3 16-2 4-7 5-9 10M39 14c3 4 4 9 1 13-3 5-2 11 4 15" stroke-width="1.35"></path>' +
+      '<svg class="labs-fn-env-globe" viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" aria-hidden="true">' +
+      '  <defs><clipPath id="' + uid + 'globe_clip"><circle cx="32" cy="32" r="23"/></clipPath></defs>' +
+      '  <circle cx="32" cy="32" r="24" stroke-width="1.6" fill="currentColor" fill-opacity="0.06"></circle>' +
+      '  <g clip-path="url(#' + uid + 'globe_clip)">' +
+      '    <ellipse cx="32" cy="32" rx="11.5" ry="23.5" stroke-width="0.9" stroke-opacity="0.34"></ellipse>' +
+      '    <line x1="32" y1="8" x2="32" y2="56" stroke-width="0.9" stroke-opacity="0.34"></line>' +
+      '    <path d="M9 23h46M8 32h48M9 41h46" stroke-width="0.9" stroke-opacity="0.34"></path>' +
+      '    <path d="M12 16l6-2 4 4-2 5 3 4-4 3 4 5-2 8-4 4-2-7-3-5 1-6-3-5z" fill="currentColor" fill-opacity="0.30" stroke-width="1.05" stroke-linejoin="round"></path>' +
+      '    <path d="M29 14l9-2 10 3 5 6-2 5-7 2 4 4-3 5-5-1-3-5-4-1 2-5-5-3z" fill="currentColor" fill-opacity="0.30" stroke-width="1.05" stroke-linejoin="round"></path>' +
+      '    <path d="M29 29l7-1 4 4-1 7-4 8-3-1-2-7-2-5z" fill="currentColor" fill-opacity="0.30" stroke-width="1.05" stroke-linejoin="round"></path>' +
+      '    <path d="M46 39l5 1 2 4-4 3-3-3z" fill="currentColor" fill-opacity="0.30" stroke-width="1.0"></path>' +
+      '  </g>' +
+      '  <circle cx="32" cy="32" r="24" stroke-width="1.6"></circle>' +
       '</svg>';
 
     mountEl.innerHTML =
@@ -5564,7 +5576,6 @@
       '        </div>' +
       '        <div class="labs-fn-peer-row">' +
       '          <span class="labs-fn-peer-stamp">🧪 PEER REVIEWED</span>' +
-      '          <span class="labs-fn-coffee-ring" aria-hidden="true"></span>' +
       '        </div>' +
       '      </div>' +
       '    </div>' +
