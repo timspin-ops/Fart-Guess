@@ -57,6 +57,8 @@ body {
   background-attachment: scroll !important;
   color: var(--ink);
   overflow-x: clip;
+  overscroll-behavior-x: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -1423,12 +1425,108 @@ h1, h2, h3, h4,
   text-align: right;
 }
 
+.labs-fn-class-head-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.labs-fn-class-head-bar .labs-fn-cell-heading {
+  margin: 0;
+}
+
+.labs-fn-class-info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(58, 48, 34, 0.36);
+  background: rgba(255, 252, 245, 0.85);
+  color: #164431;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.labs-fn-class-info-btn:hover {
+  background: #e3f2eb;
+  border-color: #145a41;
+}
+
 .labs-fn-class-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  margin-bottom: 6px;
+}
+
+.labs-fn-dsp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
   margin-bottom: 8px;
+  border-radius: 5px;
+  border: 1.5px solid #145a41;
+  background: #dff3e8;
+  color: #0b3c29;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  max-width: 100%;
+}
+
+.labs-fn-dsp-badge.is-compact {
+  font-size: 0.61rem;
+  padding: 2px 7px;
+  margin-bottom: 0;
+  margin-top: 3px;
+}
+
+.labs-fn-dsp-badge.tier-s {
+  background: #fae4c8;
+  border-color: #8f3d06;
+  color: #542100;
+}
+
+.labs-fn-dsp-badge.tier-a {
+  background: #dff3e8;
+  border-color: #146a44;
+  color: #0a3c25;
+}
+
+.labs-fn-dsp-badge.tier-b {
+  background: #ddebf9;
+  border-color: #1d568f;
+  color: #0e3257;
+}
+
+.labs-fn-dsp-badge.tier-c {
+  background: #f6ebc9;
+  border-color: #8c6411;
+  color: #3f2b00;
+}
+
+.labs-fn-dsp-badge.tier-d {
+  background: #ece9e1;
+  border-color: #66635b;
+  color: #292a26;
+}
+
+.labs-spec-title-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  flex: 1;
 }
 
 .labs-fn-class-name {
@@ -4960,10 +5058,13 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
 
 .labs-vc-tags {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   font-weight: 600;
   color: #3d3e36;
   margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .labs-vc-stamp-col {
@@ -5640,4 +5741,111 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
   background: #dcecfb !important;
   border-color: #1c5b94 !important;
   color: #0d3559 !important;
+}
+
+/* ==================== SETTINGS CLASSIFICATION GUIDE & IPHONE TOUCH ERGO ==================== */
+.labs-settings-sheet {
+  max-height: 86dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.labs-settings-class-guide {
+  margin: 0 0 14px;
+  border: 1.5px solid rgba(58, 48, 34, 0.34);
+  border-radius: 7px;
+  background: rgba(251, 248, 240, 0.94);
+  color: #161a18;
+  overflow: hidden;
+}
+
+.labs-settings-guide-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 11px;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #143f2d;
+  background: rgba(235, 224, 198, 0.72);
+  border-bottom: 1px solid rgba(58, 48, 34, 0.18);
+  cursor: pointer;
+  list-style: none;
+}
+
+.labs-settings-guide-summary::-webkit-details-marker {
+  display: none;
+}
+
+.labs-settings-guide-body {
+  padding: 10px 11px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.labs-settings-guide-intro {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: #272c28;
+}
+
+.labs-guide-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.labs-guide-block {
+  border-top: 1px dashed rgba(58, 48, 34, 0.24);
+  padding-top: 8px;
+}
+
+.labs-guide-heading {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 0.71rem;
+  font-weight: 800;
+  color: #141816;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.labs-guide-sub {
+  margin: 0 0 5px;
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: #3a3f38;
+}
+
+.labs-guide-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.71rem;
+  line-height: 1.38;
+  color: #202521;
+}
+
+.labs-guide-list li strong {
+  color: #111614;
+}
+
+/* iPhone Fast Tap Response Without Double-Tap Zoom Delay */
+button,
+.labs-nav-btn,
+.labs-action-card,
+.labs-vault-card,
+.labs-mode-tab,
+.labs-vtab,
+.labs-vc-ink-act,
+.labs-fn-class-info-btn {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }

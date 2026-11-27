@@ -48,6 +48,7 @@
 
   var state = {
     view: 'home',
+    navStack: [],
     prevNonTeamView: 'home',
     prevBeforeVault: 'home',
     prevBeforeFartnalysis: 'home',
@@ -133,6 +134,8 @@
     activeRecCanceller: null,
     homeOscId: null,
     homeOscPlaying: false,
+    homeOscLoading: false,
+    homePrewarmId: null,
     homeOscProgress: null,
     recordingKind: null,
     recordMode: 'manual',
@@ -187,6 +190,16 @@
   function getSampleName(s) {
     if (!s) return 'Saved Fart';
     return s.displayName || (TootLabs.Store ? TootLabs.Store.ensureNickname(s) : s.name) || 'Saved Fart';
+  }
+
+  function getSampleDescriptiveName(s) {
+    if (!s) return 'Standard Acoustic';
+    if (s.descriptiveName) return s.descriptiveName;
+    if (TootLabs.Store && typeof TootLabs.Store.computeDescriptiveName === 'function') {
+      s.descriptiveName = TootLabs.Store.computeDescriptiveName(s, s.features);
+      return s.descriptiveName;
+    }
+    return 'Standard Acoustic';
   }
 
   /* ==================== SHARE, EMAIL AUDIO & EMAIL ANALYSIS ==================== */
@@ -1467,16 +1480,16 @@
     if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.stopAll === 'function') {
       root.TootApp.Audio.stopAll();
     }
-    var dest = state.prevBeforeVault && state.prevBeforeVault !== 'vault' && state.prevBeforeVault !== 'detail'
-      ? state.prevBeforeVault
-      : 'home';
+    var dest =
+      state.navStack && state.navStack.length > 0
+        ? state.navStack[state.navStack.length - 1].view
+        : state.prevBeforeVault && state.prevBeforeVault !== 'vault' && state.prevBeforeVault !== 'detail'
+        ? state.prevBeforeVault
+        : 'home';
 
     function finishReturn() {
       dismissVaultDoorImmediate();
-      showView(dest);
-      if (dest === 'home') renderHomeView();
-      else if (dest === 'guess') renderGuessView();
-      else if (dest === 'fartnalysis') renderFartnalysisView();
+      navigateBack('home');
     }
 
     var chamber = $('vault-chamber');
@@ -1586,15 +1599,197 @@
       .join('');
   }
 
-  function openTeamView() {
+  function openTeamView(opts) {
     if (state.view && state.view !== 'team') {
       state.prevNonTeamView = state.view;
     }
     renderTeamView();
-    showView('team');
+    showView('team', opts);
   }
 
   /* ==================== NAVIGATION ==================== */
+  var NAV_LABELS = {
+    home: 'Home',
+    games: 'Games',
+    vault: 'Vault',
+    detail: 'Specimen',
+    guess: 'Guess The Fart',
+    realfake: 'Real or Fake',
+    chain: 'Signal Decay',
+    fartnalysis: 'Fartnalysis',
+    team: 'Team'
+  };
+
+  function getScrollY() {
+    if (typeof root.scrollY === 'number') return root.scrollY;
+    if (typeof root.pageYOffset === 'number') return root.pageYOffset;
+    if (typeof document !== 'undefined' && document.documentElement) {
+      return document.documentElement.scrollTop || 0;
+    }
+    return 0;
+  }
+
+  function restoreScrollPos(y) {
+    var targetY = typeof y === 'number' && y >= 0 ? y : 0;
+    if (typeof root.scrollTo !== 'function') return;
+    root.scrollTo(0, targetY);
+    if (typeof root.requestAnimationFrame === 'function') {
+      root.requestAnimationFrame(function () {
+        root.scrollTo(0, targetY);
+        root.requestAnimationFrame(function () {
+          root.scrollTo(0, targetY);
+        });
+      });
+    }
+  }
+
+  function getSnapshotDisplayLabel(snap) {
+    if (!snap || !snap.view) return 'Home';
+    if (snap.view === 'guess') {
+      if (snap.guessSubMode === 'quickfire') return 'Quick-Fire';
+      if (snap.guessSubMode === 'sequence') return 'Sequential Recall';
+      if (snap.guessSubMode === 'blind') return 'Blind Prediction';
+    }
+    return NAV_LABELS[snap.view] || 'Home';
+  }
+
+  function captureNavSnapshot() {
+    return {
+      view: state.view || 'home',
+      scrollY: getScrollY(),
+      detailSampleId: state.detailSampleId || null,
+      guessSubMode: state.guessSubMode || 'standard',
+      guessTargetId: state.guessTargetId || null,
+      fnMode: state.fnMode || 'original',
+      fnSampleId: state.fnSampleId || null,
+      fnAttemptId: state.fnAttemptId || null,
+      vaultFilter: state.vaultFilter || 'all',
+      vaultSearchQuery: state.vaultSearchQuery || ''
+    };
+  }
+
+  function pushNavSnapshot(nextView, opts) {
+    opts = opts || {};
+    var snap = captureNavSnapshot();
+    var targetSub = nextView === 'guess' ? (opts.targetSubMode || null) : null;
+    var isDifferentView = snap.view !== nextView;
+    var isDifferentSubMode = nextView === 'guess' && snap.view === 'guess' && targetSub && targetSub !== snap.guessSubMode;
+    if (!isDifferentView && !isDifferentSubMode) return;
+
+    if (!Array.isArray(state.navStack)) state.navStack = [];
+    var top = state.navStack.length > 0 ? state.navStack[state.navStack.length - 1] : null;
+    if (
+      top &&
+      top.view === snap.view &&
+      (snap.view !== 'guess' || top.guessSubMode === snap.guessSubMode)
+    ) {
+      state.navStack[state.navStack.length - 1] = snap;
+      return;
+    }
+    state.navStack.push(snap);
+    if (state.navStack.length > 30) state.navStack.shift();
+  }
+
+  function syncBackButtons() {
+    var top = Array.isArray(state.navStack) && state.navStack.length > 0
+      ? state.navStack[state.navStack.length - 1]
+      : null;
+    var topLbl = top ? getSnapshotDisplayLabel(top) : null;
+
+    if ($('btn-detail-back')) {
+      $('btn-detail-back').textContent = '← Back to ' + (topLbl || 'Vault');
+    }
+    if ($('btn-fn-back')) {
+      $('btn-fn-back').textContent = topLbl ? '← Back to ' + topLbl : '← Back';
+    }
+    if ($('btn-rf-back')) {
+      $('btn-rf-back').textContent = '← Back to ' + (topLbl || 'Home');
+    }
+    if ($('btn-team-back')) {
+      $('btn-team-back').textContent = topLbl ? '← Back to ' + topLbl : '← Back';
+    }
+    var subFallback =
+      state.subModeReturnTo === 'guess'
+        ? 'Guess The Fart'
+        : state.subModeReturnTo === 'games'
+        ? 'Games'
+        : 'Home';
+    var subLabel = '← Back to ' + (topLbl || subFallback);
+    if ($('btn-seq-back')) $('btn-seq-back').textContent = subLabel;
+    if ($('btn-qf-back')) $('btn-qf-back').textContent = subLabel;
+    if ($('btn-blind-back')) $('btn-blind-back').textContent = subLabel;
+    var chainLobby = $('chain-pane-lobby');
+    if ($('btn-chain-back') && (!chainLobby || !chainLobby.classList.contains('hidden'))) {
+      $('btn-chain-back').textContent = '← ' + (topLbl || 'Games');
+    }
+  }
+
+  function navigateBack(fallbackView) {
+    closeSettingsMenu();
+    if (state.qfActive) abortQuickFireRound(true);
+    if (state.seqActive) abortSequenceRound(true);
+    var stack = Array.isArray(state.navStack) ? state.navStack : [];
+    var snap = stack.length > 0 ? stack.pop() : null;
+    if (
+      snap &&
+      snap.view === state.view &&
+      (snap.view !== 'guess' || snap.guessSubMode === state.guessSubMode)
+    ) {
+      snap = stack.length > 0 ? stack.pop() : null;
+    }
+
+    var dest = (snap && snap.view) || fallbackView || 'home';
+    var scrollPos = snap && typeof snap.scrollY === 'number' ? snap.scrollY : 0;
+
+    if (dest === 'home') {
+      openHomeView({ fromBack: true, restoreScrollY: scrollPos });
+    } else if (dest === 'vault') {
+      if (snap) {
+        state.vaultFilter = snap.vaultFilter || 'all';
+        state.vaultSearchQuery = snap.vaultSearchQuery || '';
+        if ($('vault-search-input')) $('vault-search-input').value = state.vaultSearchQuery;
+      }
+      openVaultView({ fromBack: true, restoreScrollY: scrollPos });
+    } else if (dest === 'games') {
+      openGamesView({ fromBack: true, restoreScrollY: scrollPos });
+    } else if (dest === 'detail') {
+      var sid = (snap && snap.detailSampleId) || state.detailSampleId;
+      if (sid) {
+        openSampleDetail(sid, { fromBack: true, restoreScrollY: scrollPos });
+      } else {
+        openVaultView({ fromBack: true, restoreScrollY: 0 });
+      }
+    } else if (dest === 'realfake') {
+      showView('realfake', { fromBack: true, restoreScrollY: scrollPos });
+      if (state.rfDeck && state.rfDeck.length > 0) renderRealFakeStage();
+      else openRealFakeView({ fromBack: true, restoreScrollY: scrollPos });
+    } else if (dest === 'chain') {
+      showView('chain', { fromBack: true, restoreScrollY: scrollPos });
+      if (TootLabs.SignalChain && typeof TootLabs.SignalChain.resize === 'function') {
+        TootLabs.SignalChain.resize();
+      }
+    } else if (dest === 'team') {
+      renderTeamView();
+      showView('team', { fromBack: true, restoreScrollY: scrollPos });
+    } else if (dest === 'fartnalysis') {
+      openFartnalysis(
+        (snap && snap.fnMode) || state.fnMode || 'original',
+        (snap && snap.fnSampleId) || state.fnSampleId,
+        snap && snap.fnAttemptId !== undefined ? snap.fnAttemptId : state.fnAttemptId,
+        { fromBack: true, restoreScrollY: scrollPos }
+      );
+    } else if (dest === 'guess') {
+      var sub = (snap && snap.guessSubMode) || 'standard';
+      if (snap && snap.guessTargetId) state.guessTargetId = snap.guessTargetId;
+      showView('guess', { fromBack: true, restoreScrollY: scrollPos });
+      setGuessSubMode(sub);
+      restoreScrollPos(scrollPos);
+    } else {
+      openHomeView({ fromBack: true, restoreScrollY: scrollPos });
+    }
+    return dest;
+  }
+
   function closeSettingsMenu() {
     var menu = $('labs-settings-menu');
     var gear = $('btn-labs-settings');
@@ -1642,7 +1837,8 @@
     }
   }
 
-  function showView(viewKey) {
+  function showView(viewKey, opts) {
+    opts = opts || {};
     closeSettingsMenu();
     if (viewKey === 'result') viewKey = 'guess';
     var prevView = state.view;
@@ -1676,6 +1872,13 @@
           ? 'games'
           : 'home';
     }
+
+    if (opts.resetStack) {
+      state.navStack = [];
+    } else if (!opts.fromBack && !opts.skipPush) {
+      pushNavSnapshot(viewKey, opts);
+    }
+
     state.view = viewKey;
     if (document.body && typeof document.body.setAttribute === 'function') {
       document.body.setAttribute('data-labs-view', viewKey);
@@ -1707,7 +1910,9 @@
       navBtns[n].classList.toggle('active', navBtns[n].getAttribute('data-view') === navTarget);
     }
 
-    if (typeof root.scrollTo === 'function') {
+    if (typeof opts.restoreScrollY === 'number') {
+      restoreScrollPos(opts.restoreScrollY);
+    } else if (typeof root.scrollTo === 'function') {
       root.scrollTo(0, 0);
     }
 
@@ -1717,6 +1922,8 @@
     if (viewKey === 'team') {
       renderTeamView();
     }
+
+    syncBackButtons();
 
     if (typeof root.requestAnimationFrame === 'function') {
       root.requestAnimationFrame(function () {
@@ -1731,6 +1938,9 @@
           renderRealFakeStage();
         } else if (viewKey === 'chain' && TootLabs.SignalChain && TootLabs.SignalChain.resize) {
           TootLabs.SignalChain.resize();
+        }
+        if (typeof opts.restoreScrollY === 'number') {
+          restoreScrollPos(opts.restoreScrollY);
         }
       });
     }
@@ -2289,17 +2499,30 @@
     return rows;
   }
 
-  function openHomeView() {
-    showView('home');
+  function openHomeView(opts) {
+    opts = opts || {};
+    showView('home', opts);
     renderHomeView();
+    if (typeof opts.restoreScrollY === 'number') {
+      restoreScrollPos(opts.restoreScrollY);
+    }
   }
 
-  function openVaultView() {
-    showView('vault');
+  function openVaultView(opts) {
+    opts = opts || {};
+    showView('vault', opts);
     renderVaultView();
+    if (typeof opts.restoreScrollY === 'number') {
+      restoreScrollPos(opts.restoreScrollY);
+    }
     if (!state.attemptsCacheLoaded) {
       refreshAllAttemptsCache(true).then(function () {
-        if (state.view === 'vault') renderVaultView();
+        if (state.view === 'vault') {
+          renderVaultView();
+          if (typeof opts.restoreScrollY === 'number') {
+            restoreScrollPos(opts.restoreScrollY);
+          }
+        }
       });
     }
   }
@@ -2470,6 +2693,9 @@
   }
 
   function getVaultFileNumber(rawId) {
+    if (TootLabs.Store && typeof TootLabs.Store.getSpecimenNumber === 'function') {
+      return TootLabs.Store.getSpecimenNumber(rawId);
+    }
     var s = String(rawId || '00000');
     var hash = 0;
     for (var i = 0; i < s.length; i++) {
@@ -2561,15 +2787,8 @@
     return stamps[h];
   }
 
-  function getVaultDescriptors(s, isDef) {
-    if (s && s.features && root.TootApp && root.TootApp.DSP && typeof root.TootApp.DSP.describeSoundProfile === 'function') {
-      var prof = root.TootApp.DSP.describeSoundProfile(s.features);
-      var pitchWord = String(prof.pitchLabel || 'Acoustic').split('(')[0].trim();
-      var texWord = String(prof.textureLabel || 'Resonant').split('·')[0].trim();
-      var originWord = isDef ? 'Archive Pack' : 'User Recording';
-      return pitchWord + ' · ' + texWord + ' · ' + originWord;
-    }
-    return isDef ? 'Archive Library · Acoustic Specimen' : 'Field Recording · Captured Emission';
+  function getVaultDescriptors(s) {
+    return getSampleDescriptiveName(s);
   }
 
   function buildVaultCardHtml(s, opts) {
@@ -2578,6 +2797,7 @@
     var name = getSampleName(s);
     var isDef = Boolean(s.isBuiltIn);
     var inVault = Boolean(opts.inVault);
+    var compactHome = Boolean(opts.compactHome);
     var isSelected = inVault && !isDef && Boolean(state.vaultSelectedSamples && state.vaultSelectedSamples[s.id]);
     var hasAudio = Boolean(s.samples && s.samples.length > 0);
     var dur = hasAudio
@@ -2587,15 +2807,18 @@
       : 'Ready';
     var bestTxt = st.attemptCount > 0 ? st.bestScore.toFixed(1) + '%' : '';
     var attTxt = st.attemptCount === 1 ? '1 guess' : st.attemptCount + ' guesses';
-    var fileCode = getVaultFileNumber(s.id);
+    var fileCode = (s && s.number) || getVaultFileNumber(s.id);
     var agingInfo = (opts.agingMap && opts.agingMap[s.id]) || {
       archiveMs: getSpecimenArchiveDateMs(s),
       ageTier: isDef ? 1 : 0,
       isOldest: false
     };
     var archiveDateStr = formatArchiveDate(agingInfo.archiveMs, isDef);
+    var fileLineTxt = compactHome
+      ? 'FILE #' + fileCode
+      : 'FILE #' + fileCode + ' · ' + archiveDateStr.toUpperCase();
     var stamp = getVaultStampInfo(s, isDef, st.attemptCount, agingInfo);
-    var descLine = getVaultDescriptors(s, isDef);
+    var descLine = getVaultDescriptors(s);
 
     var checkBtnHtml =
       inVault && !isDef
@@ -2650,7 +2873,7 @@
       '    <div class="labs-vc-sleeve-meta">' +
       '      <div class="labs-vc-file-row">' +
       checkBtnHtml +
-      '        <span class="labs-vc-file-code">FILE #' + esc(fileCode) + ' · ' + esc(archiveDateStr.toUpperCase()) + '</span>' +
+      '        <span class="labs-vc-file-code">' + esc(fileLineTxt) + '</span>' +
       oldestBadgeHtml +
       '      </div>' +
       '      <div class="labs-vc-name">' + esc(name) + '</div>' +
@@ -2850,8 +3073,16 @@
         }
 
         if (act === 'play') {
+          if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+            TootApp.Audio.unlockAudio();
+          }
           var playVaultCardSample = function (loaded) {
             if (!loaded || !loaded.samples) return;
+            var cardRoot = btn.closest ? btn.closest('.labs-vault-card') : null;
+            var tagsEl = cardRoot && cardRoot.querySelector ? cardRoot.querySelector('.labs-vc-tags') : null;
+            if (tagsEl && loaded.descriptiveName) {
+              tagsEl.textContent = loaded.descriptiveName;
+            }
             var waveCvs = containerEl.querySelector('canvas[data-wave-id="' + id + '"]');
             var sr = loaded.sampleRate || 44100;
             try {
@@ -2952,6 +3183,9 @@
         var resolvedSampleId = sampleId || att.sampleId;
 
         if (act === 'play') {
+          if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+            TootApp.Audio.unlockAudio();
+          }
           if (att.samples && att.samples.length > 0) {
             var gWaveCvs = containerEl.querySelector('canvas[data-guess-wave-id="' + attId + '"]');
             try {
@@ -3336,8 +3570,12 @@
     if (freqEl) freqEl.textContent = 'FREQ: ' + hzTxt;
     if (volEl) volEl.textContent = hasRmsDb ? 'LEVEL: ' + lenTxt : 'LEN: ' + lenTxt;
     if (nameEl) nameEl.textContent = sample ? getSampleName(sample) : 'SPECIMEN STANDBY';
-    if (playLblEl) playLblEl.textContent = state.homeOscPlaying ? '■ STOP' : '▶ PLAY';
-    if (playBtn) playBtn.textContent = state.homeOscPlaying ? '■ Stop' : '▶ Play';
+    if (playLblEl) {
+      playLblEl.textContent = state.homeOscLoading ? 'LOADING' : state.homeOscPlaying ? '■ STOP' : '▶ PLAY';
+    }
+    if (playBtn) {
+      playBtn.textContent = state.homeOscLoading ? '… Loading' : state.homeOscPlaying ? '■ Stop' : '▶ Play';
+    }
     var selEl = $('home-osc-select');
     if (selEl && state.samples) {
       var sigKey = state.samples.map(function (s) { return s.id; }).join('|');
@@ -3354,11 +3592,31 @@
     if (screenEl && screenEl.classList) screenEl.classList.toggle('is-playing', Boolean(state.homeOscPlaying));
     if (progEl && progEl.style) progEl.style.width = state.homeOscPlaying && typeof state.homeOscProgress === 'number' ? Math.round(state.homeOscProgress * 100) + '%' : '0%';
     drawHomeOscCanvas(sample, state.homeOscPlaying ? state.homeOscProgress : null);
+
+    // Pre-warm currently selected oscilloscope specimen quietly so iPhone first tap hits synchronous BufferSource path
+    if (sample && (!sample.samples || sample.samples.length === 0) && state.homePrewarmId !== sample.id) {
+      var warmTargetId = sample.id;
+      state.homePrewarmId = warmTargetId;
+      ensureTargetReady(sample)
+        .then(function (ready) {
+          if (ready && ready.samples && ready.samples.length > 0 && state.view === 'home') {
+            var curSample = getHomeOscSample();
+            if (curSample && curSample.id === warmTargetId) {
+              renderHomeOscilloscope();
+            }
+          }
+        })
+        .catch(function () {});
+    }
   }
 
   function toggleHomeOscPlay() {
     var Audio = root.TootApp && root.TootApp.Audio;
     if (!Audio) return;
+    if (typeof Audio.unlockAudio === 'function') {
+      Audio.unlockAudio();
+    }
+    if (state.homeOscLoading) return;
     if (state.homeOscPlaying) {
       Audio.stopChannel('home_osc');
       state.homeOscPlaying = false;
@@ -3371,36 +3629,72 @@
       showToast('Record or select a specimen first.', true);
       return;
     }
-    ensureTargetReady(sample).then(function (ready) {
+
+    function startOscPlayback(ready) {
       if (!ready || !ready.samples || ready.samples.length === 0) {
+        state.homeOscLoading = false;
+        renderHomeOscilloscope();
         showToast('Specimen audio not ready yet.', true);
         return;
       }
+      state.homeOscLoading = false;
       state.homeOscPlaying = true;
       state.homeOscProgress = 0;
       renderHomeOscilloscope();
-      Audio.playSound(ready.samples, ready.sampleRate || 44100, {
-        channel: 'home_osc',
-        onProgress: function (p) {
-          if (!state.homeOscPlaying) return;
-          state.homeOscProgress = p;
-          var progEl = $('home-osc-prog');
-          if (progEl && progEl.style) progEl.style.width = Math.round(p * 100) + '%';
-          drawHomeOscCanvas(ready, p);
-        },
-        onEnded: function () {
-          state.homeOscPlaying = false;
-          state.homeOscProgress = null;
-          renderHomeOscilloscope();
+      try {
+        var playRes = Audio.playSound(ready.samples, ready.sampleRate || 44100, {
+          channel: 'home_osc',
+          onProgress: function (p) {
+            if (!state.homeOscPlaying) return;
+            state.homeOscProgress = p;
+            var progEl = $('home-osc-prog');
+            if (progEl && progEl.style) progEl.style.width = Math.round(p * 100) + '%';
+            drawHomeOscCanvas(ready, p);
+          },
+          onEnded: function () {
+            state.homeOscPlaying = false;
+            state.homeOscProgress = null;
+            renderHomeOscilloscope();
+          }
+        });
+        if (playRes && typeof playRes.catch === 'function') {
+          playRes.catch(function () {
+            state.homeOscPlaying = false;
+            state.homeOscProgress = null;
+            renderHomeOscilloscope();
+          });
         }
+      } catch (err) {
+        state.homeOscPlaying = false;
+        state.homeOscProgress = null;
+        renderHomeOscilloscope();
+      }
+    }
+
+    if (sample.samples && sample.samples.length > 0) {
+      startOscPlayback(sample);
+      return;
+    }
+
+    state.homeOscLoading = true;
+    renderHomeOscilloscope();
+    ensureTargetReady(sample)
+      .then(function (ready) {
+        startOscPlayback(ready);
+      })
+      .catch(function () {
+        state.homeOscLoading = false;
+        state.homeOscPlaying = false;
+        renderHomeOscilloscope();
+        showToast('Could not load specimen audio.', true);
       });
-    });
   }
 
   function nextHomeOscSample() {
     var Audio = root.TootApp && root.TootApp.Audio;
     if (state.homeOscPlaying && Audio) Audio.stopChannel('home_osc');
     state.homeOscPlaying = false;
+    state.homeOscLoading = false;
     state.homeOscProgress = null;
     if (!state.samples || state.samples.length === 0) {
       renderHomeOscilloscope();
@@ -3438,7 +3732,7 @@
 
     var topSamples = state.samples.slice(0, 4);
     var homeAgingMap = computeVaultAgingMap(state.samples);
-    recentEl.innerHTML = topSamples.map(function (s) { return buildVaultCardHtml(s, { agingMap: homeAgingMap }); }).join('');
+    recentEl.innerHTML = topSamples.map(function (s) { return buildVaultCardHtml(s, { agingMap: homeAgingMap, compactHome: true }); }).join('');
     wireVaultCards(recentEl);
     drawVaultWaveforms('home-recent-vault');
   }
@@ -3661,14 +3955,17 @@
   function renderSampleDetail() {
     var sample = getSampleById(state.detailSampleId);
     if (!sample || !sample.samples || sample.samples.length === 0) {
-      openVaultView();
+      navigateBack('vault');
       return;
     }
 
     var stats = TootLabs.Store.getSampleStats(sample.id);
     var feat = sample.features || TootApp.DSP.extractFeatures(sample.samples, sample.sampleRate);
     sample.features = feat;
-    var prof = TootApp.DSP.describeSoundProfile(feat);
+    if (TootLabs.Store && typeof TootLabs.Store.ensureSpecimenFields === 'function') {
+      TootLabs.Store.ensureSpecimenFields(sample, feat);
+    }
+    var descName = getSampleDescriptiveName(sample);
 
     if ($('detail-sample-eyebrow')) {
       $('detail-sample-eyebrow').textContent = sample.isBuiltIn ? '📦 ARCHIVE REFERENCE SPECIMEN' : '🎙️ USER RECORDED FART';
@@ -3680,11 +3977,11 @@
     if ($('btn-detail-delete')) {
       $('btn-detail-delete').classList.toggle('hidden', Boolean(sample.isBuiltIn));
     }
-    $('detail-specimen-id').textContent = 'FILE #' + getVaultFileNumber(sample.id);
+    $('detail-specimen-id').textContent = 'FILE #' + ((sample && sample.number) || getVaultFileNumber(sample.id));
     $('detail-sample-name').textContent = getSampleName(sample);
     $('detail-sample-dur').textContent = (sample.samples.length / sample.sampleRate).toFixed(2) + 's';
     var detailDate = formatArchiveDate(getSpecimenArchiveDateMs(sample), Boolean(sample.isBuiltIn));
-    $('detail-sample-meta').textContent = (sample.isBuiltIn ? 'Archived ' + detailDate : formatTimeShort(sample.createdAt)) + ' · ' + prof.pitchLabel + ' · ' + prof.textureLabel;
+    $('detail-sample-meta').textContent = (sample.isBuiltIn ? 'Archived ' + detailDate : formatTimeShort(sample.createdAt)) + ' · ' + descName;
 
     var f0Txt = feat && feat.medianPitchHz > 0 && feat.voicedRatio >= 0.15
       ? Math.round(feat.medianPitchHz) + ' Hz'
@@ -3775,6 +4072,9 @@
 
       listEl.querySelectorAll('[data-datt-play]').forEach(function (b) {
         b.addEventListener('click', function () {
+          if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+            TootApp.Audio.unlockAudio();
+          }
           var found = state.detailAttempts.find(function (x) { return x.id === b.getAttribute('data-datt-play'); });
           if (found) TootApp.Audio.playSound(found.samples, found.sampleRate, { channel: 'detail_att' });
         });
@@ -3794,14 +4094,25 @@
     drawDetailWaveform(null);
   }
 
-  function openSampleDetail(sampleId) {
+  function openSampleDetail(sampleId, opts) {
+    opts = opts || {};
     state.detailSampleId = sampleId;
     var sample = getSampleById(sampleId);
+    if (!opts.fromBack && !opts.skipPush) {
+      pushNavSnapshot('detail');
+    }
     Promise.all([ensureTargetReady(sample), TootLabs.Store.loadAttemptsForSample(sampleId)])
       .then(function (res) {
         state.detailAttempts = res[1] || [];
-        showView('detail');
+        showView('detail', {
+          skipPush: true,
+          fromBack: Boolean(opts.fromBack),
+          restoreScrollY: opts.restoreScrollY
+        });
         renderSampleDetail();
+        if (typeof opts.restoreScrollY === 'number') {
+          restoreScrollPos(opts.restoreScrollY);
+        }
       })
       .catch(function (err) {
         showToast((err && err.message) || 'Could not load specimen audio.', true);
@@ -4062,9 +4373,10 @@
     }
   }
 
-  function openGamesView() {
+  function openGamesView(opts) {
+    opts = opts || {};
     closeSettingsMenu();
-    showView('games');
+    showView('games', opts);
     var rfStats = loadRealFakeStats();
     var rfBadge = $('games-rf-badge');
     if (rfBadge) {
@@ -4078,6 +4390,9 @@
         var cnt = Array.isArray(list) ? list.length : 0;
         chBadge.textContent = cnt > 0 ? cnt + (cnt === 1 ? ' CHAIN SAVED' : ' CHAINS SAVED') : 'RELAY CHAIN';
       }).catch(function () {});
+    }
+    if (typeof opts.restoreScrollY === 'number') {
+      restoreScrollPos(opts.restoreScrollY);
     }
   }
 
@@ -4096,12 +4411,26 @@
     }
   }
 
-  function openSettingsModal() {
+  function openSettingsModal(opts) {
+    opts = opts || {};
     closeSettingsMenu();
     syncSettingsModalState();
     refreshMicDevices();
     var m = $('labs-settings-modal');
     if (m) m.classList.remove('hidden');
+    if (opts.scrollToGuide) {
+      var guideEl = $('settings-class-guide');
+      if (guideEl) {
+        guideEl.open = true;
+        var scrollFn = function () {
+          if (typeof guideEl.scrollIntoView === 'function') {
+            try { guideEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { guideEl.scrollIntoView(); }
+          }
+        };
+        if (typeof root.requestAnimationFrame === 'function') root.requestAnimationFrame(scrollFn);
+        else scrollFn();
+      }
+    }
   }
 
   function closeSettingsModal() {
@@ -4154,15 +4483,7 @@
   }
 
   function syncSubModeBackButtons() {
-    var label =
-      state.subModeReturnTo === 'guess'
-        ? '← Back to Guess The Fart'
-        : state.subModeReturnTo === 'games'
-        ? '← Back to Games'
-        : '← Home';
-    if ($('btn-seq-back')) $('btn-seq-back').textContent = label;
-    if ($('btn-qf-back')) $('btn-qf-back').textContent = label;
-    if ($('btn-blind-back')) $('btn-blind-back').textContent = label;
+    syncBackButtons();
   }
 
   function handleSubModeBack() {
@@ -4170,13 +4491,7 @@
     if (state.seqActive) {
       abortSequenceRound(true);
     }
-    if (state.subModeReturnTo === 'guess') {
-      setGuessSubMode('standard');
-    } else if (state.subModeReturnTo === 'games') {
-      openGamesView();
-    } else {
-      openHomeView();
-    }
+    navigateBack(state.subModeReturnTo || 'home');
   }
 
   function setGuessSubMode(subMode) {
@@ -4723,14 +5038,15 @@
     }
   }
 
-  function openQuickFireMode(count, returnDest) {
+  function openQuickFireMode(count, returnDest, opts) {
+    opts = opts || {};
     closeSettingsMenu();
     state.subModeReturnTo = returnDest === 'guess' ? 'guess' : returnDest === 'games' ? 'games' : 'home';
     if (typeof count === 'number' || typeof count === 'string') {
       setQuickFireCount(count);
     }
     if (!state.qfActive) state.qfPhase = 'setup';
-    showView('guess');
+    showView('guess', Object.assign({ targetSubMode: 'quickfire' }, opts));
     setGuessSubMode('quickfire');
   }
 
@@ -5015,15 +5331,19 @@
     }
   }
 
-  function openSequenceMode(returnDest) {
+  function openSequenceMode(returnDest, opts) {
+    opts = opts || {};
     closeSettingsMenu();
     state.subModeReturnTo = returnDest === 'guess' ? 'guess' : returnDest === 'games' ? 'games' : 'home';
     if (!state.seqActive && state.seqPhase !== 'results') state.seqPhase = 'setup';
-    showView('guess');
+    showView('guess', Object.assign({ targetSubMode: 'sequence' }, opts));
     setGuessSubMode('sequence');
   }
 
   function startSequenceRound(reuseSameDeck) {
+    if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+      TootApp.Audio.unlockAudio();
+    }
     if (state.revealInProgress) {
       showToast('Finish the current reveal first.', true);
       return Promise.resolve([]);
@@ -5813,9 +6133,10 @@
       });
   }
 
-  function openRealFakeView() {
+  function openRealFakeView(opts) {
+    opts = opts || {};
     closeSettingsMenu();
-    showView('realfake');
+    showView('realfake', opts);
     if (state.attemptsCacheLoaded) {
       startNewRealFakeDeck();
       return Promise.resolve();
@@ -5827,6 +6148,9 @@
 
   function startQuickFireRound(opts) {
     opts = opts || {};
+    if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+      TootApp.Audio.unlockAudio();
+    }
     var fastMode = Boolean(opts.fastMode);
     var mockCaptureFn = typeof opts.mockCaptureFn === 'function' ? opts.mockCaptureFn : null;
     if (state.revealInProgress) {
@@ -6544,11 +6868,15 @@
     drawGuessWaveforms();
   }
 
-  function openGuessMode(sampleId) {
+  function openGuessMode(sampleId, opts) {
+    opts = opts || {};
     var reqGen = ++state.guessOpenGen;
     TootApp.Audio.stopAll();
     clearRevealTimers();
     clearResultAnimations();
+    if (!opts.fromBack && !opts.skipPush) {
+      pushNavSnapshot('guess', opts);
+    }
 
     var resolvedId = sampleId || state.guessTargetId || (state.samples[0] && state.samples[0].id) || null;
     state.guessTargetId = resolvedId;
@@ -6574,7 +6902,11 @@
     if ($('guess-live-wave')) $('guess-live-wave').classList.add('hidden');
     if ($('guess-rec-status')) $('guess-rec-status').classList.add('hidden');
 
-    showView('guess');
+    showView('guess', {
+      skipPush: true,
+      fromBack: Boolean(opts.fromBack),
+      restoreScrollY: opts.restoreScrollY
+    });
 
     if (!resolvedId) {
       state.guessAttempts = [];
@@ -6632,6 +6964,9 @@
   }
 
   function playFartFirst() {
+    if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+      TootApp.Audio.unlockAudio();
+    }
     if (state.revealInProgress) return;
     var target = getSampleById(state.guessTargetId);
     if (!target) {
@@ -7921,8 +8256,12 @@
     });
   }
 
-  function openFartnalysis(mode, sampleId, attemptId) {
+  function openFartnalysis(mode, sampleId, attemptId, opts) {
+    opts = opts || {};
     var reqGen = ++state.fnOpenGen;
+    if (!opts.fromBack && !opts.skipPush && state.view !== 'fartnalysis') {
+      pushNavSnapshot('fartnalysis');
+    }
     if (mode) state.fnMode = mode;
 
     var resolvedSampleId = sampleId;
@@ -7947,11 +8286,22 @@
     }
     state.fnSampleId = resolvedSampleId;
 
-    showView('fartnalysis');
+    showView('fartnalysis', {
+      skipPush: true,
+      fromBack: Boolean(opts.fromBack),
+      restoreScrollY: opts.restoreScrollY
+    });
+
+    function finishRenderFn() {
+      renderFartnalysisView();
+      if (typeof opts.restoreScrollY === 'number') {
+        restoreScrollPos(opts.restoreScrollY);
+      }
+    }
 
     if (state.fnMode === 'group') {
       if (state.attemptsCacheLoaded) {
-        renderFartnalysisView();
+        finishRenderFn();
         return Promise.resolve();
       }
       syncFartnalysisPickers();
@@ -7963,12 +8313,12 @@
       return refreshAllAttemptsCache(true)
         .then(function () {
           if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
-          renderFartnalysisView();
+          finishRenderFn();
         })
         .catch(function () {
           if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
           state.allAttemptsCache = [];
-          renderFartnalysisView();
+          finishRenderFn();
         });
     }
 
@@ -7976,13 +8326,13 @@
       state.fnAttempts = [];
       state.fnAttemptId = null;
       if (state.attemptsCacheLoaded) {
-        renderFartnalysisView();
+        finishRenderFn();
         return Promise.resolve();
       }
       syncFartnalysisPickers();
       return refreshAllAttemptsCache(true).then(function () {
         if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
-        renderFartnalysisView();
+        finishRenderFn();
       });
     }
 
@@ -8002,7 +8352,7 @@
 
     if (hasAudio && state.attemptsCacheLoaded) {
       applyAttemptsAndPick(getCachedAttemptsForSample(resolvedSampleId));
-      renderFartnalysisView();
+      finishRenderFn();
       return Promise.resolve();
     }
 
@@ -8032,7 +8382,7 @@
       .then(function (res) {
         if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
         applyAttemptsAndPick(res[1] || []);
-        renderFartnalysisView();
+        finishRenderFn();
       })
       .catch(function (err) {
         if (reqGen !== state.fnOpenGen || state.view !== 'fartnalysis') return;
@@ -8792,7 +9142,7 @@
       navBtn.addEventListener('click', function () {
         var targetView = this.getAttribute('data-view');
         if (targetView === 'home') {
-          openHomeView();
+          openHomeView({ resetStack: true });
         } else if (targetView === 'games') {
           openGamesView();
         } else if (targetView === 'vault') {
@@ -8804,6 +9154,17 @@
         }
       });
     });
+
+    if (typeof document.addEventListener === 'function') {
+      document.addEventListener('click', function (ev) {
+        var tgt = ev && ev.target;
+        var guideBtn = tgt && typeof tgt.closest === 'function' ? tgt.closest('[data-open-class-guide]') : null;
+        if (guideBtn) {
+          ev.preventDefault();
+          openSettingsModal({ scrollToGuide: true });
+        }
+      });
+    }
 
     // Dedicated Games Hub Cards
     if ($('btn-games-home')) $('btn-games-home').addEventListener('click', openHomeView);
@@ -8834,7 +9195,7 @@
     }
     if ($('btn-games-blind')) {
       $('btn-games-blind').addEventListener('click', function () {
-        openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id)).then(function () {
+        openGuessMode(state.guessTargetId || (state.samples[0] && state.samples[0].id), { targetSubMode: 'blind' }).then(function () {
           state.subModeReturnTo = 'games';
           setGuessSubMode('blind');
         });
@@ -9017,12 +9378,15 @@
 
     // Detail View Buttons
     $('btn-detail-back').addEventListener('click', function () {
-      openVaultView();
+      navigateBack('vault');
     });
     $('btn-detail-play').addEventListener('click', function () {
+      if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+        TootApp.Audio.unlockAudio();
+      }
       var sample = getSampleById(state.detailSampleId);
       if (!sample) return;
-      ensureTargetReady(sample).then(function (loaded) {
+      var runDetailPlay = function (loaded) {
         if (loaded && loaded.samples) {
           TootApp.Audio.playSound(loaded.samples, loaded.sampleRate, {
             channel: 'detail_play',
@@ -9030,7 +9394,12 @@
             onEnded: function () { drawDetailWaveform(null); }
           });
         }
-      });
+      };
+      if (sample.samples && sample.samples.length > 0) {
+        runDetailPlay(sample);
+      } else {
+        ensureTargetReady(sample).then(runDetailPlay);
+      }
     });
     $('btn-detail-guess').addEventListener('click', function () {
       if (state.detailSampleId) openGuessMode(state.detailSampleId);
@@ -9135,8 +9504,10 @@
     }
     if ($('btn-open-blind-footer')) {
       $('btn-open-blind-footer').addEventListener('click', function () {
+        pushNavSnapshot('guess', { targetSubMode: 'blind' });
         state.subModeReturnTo = 'guess';
         setGuessSubMode('blind');
+        syncBackButtons();
       });
     }
     if ($('btn-blind-back')) {
@@ -9208,12 +9579,12 @@
     // Real or Fake? Showdown Bindings
     if ($('btn-rf-back')) {
       $('btn-rf-back').addEventListener('click', function () {
-        openHomeView();
+        navigateBack('home');
       });
     }
     if ($('btn-rf-home')) {
       $('btn-rf-home').addEventListener('click', function () {
-        openHomeView();
+        openHomeView({ resetStack: true });
       });
     }
     if ($('btn-rf-toggle-brief')) {
@@ -9232,11 +9603,14 @@
     }
     if ($('btn-rf-go-seq')) {
       $('btn-rf-go-seq').addEventListener('click', function () {
-        openSequenceMode();
+        openSequenceMode('realfake');
       });
     }
     if ($('btn-rf-play')) {
       $('btn-rf-play').addEventListener('click', function () {
+        if (TootApp.Audio && typeof TootApp.Audio.unlockAudio === 'function') {
+          TootApp.Audio.unlockAudio();
+        }
         var item = (state.rfDeck || [])[state.rfIndex || 0];
         if (!item || !item.sound || !item.sound.samples) return;
         TootApp.Audio.playSound(item.sound.samples, item.sound.sampleRate || 44100, {
@@ -9499,25 +9873,7 @@
     });
 
     $('btn-fn-back').addEventListener('click', function () {
-      var dest = state.prevBeforeFartnalysis || 'home';
-      if (dest === 'vault') {
-        openVaultView();
-      } else if (dest === 'realfake') {
-        showView('realfake');
-        renderRealFakeStage();
-      } else if (dest === 'chain') {
-        showView('chain');
-      } else if (dest === 'games') {
-        openGamesView();
-      } else if (dest === 'guess') {
-        showView('guess');
-        if (state.guessSubMode === 'sequence') renderSequencePane();
-        else if (state.guessSubMode === 'quickfire') renderQuickFirePane();
-        else if (state.guessSubMode === 'blind') renderBlindPane();
-        else renderGuessView();
-      } else {
-        openHomeView();
-      }
+      navigateBack('home');
     });
 
     $('btn-fn-go-guess').addEventListener('click', function () {
@@ -9548,10 +9904,7 @@
 
     if ($('btn-team-back')) {
       $('btn-team-back').addEventListener('click', function () {
-        var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
-        if (backTo === 'vault') openVaultView();
-        else if (backTo === 'home') openHomeView();
-        else showView(backTo);
+        navigateBack('home');
       });
     }
 
@@ -9614,14 +9967,14 @@
   }
 
   function handleSwipeNavigation(dx, dy, elapsedMs) {
-    if (state.qfActive) return false;
+    if (state.qfActive || state.seqActive) return false;
     if (TootApp.Audio && typeof TootApp.Audio.isRecordingOrStarting === 'function' && TootApp.Audio.isRecordingOrStarting()) {
       return false;
     }
     if (isAnyModalOrOverlayOpen()) return false;
     var absX = Math.abs(dx);
     var absY = Math.abs(dy);
-    if (absX < 58 || absX < absY * 1.45 || elapsedMs > 700) return false;
+    if (absX < 68 || absX < absY * 1.75 || absY > 64 || elapsedMs > 550) return false;
 
     var swipeLeft = dx < 0;
     var swipeRight = dx > 0;
@@ -9632,7 +9985,7 @@
       return true;
     }
     if (cur === 'vault' && swipeRight) {
-      openHomeView();
+      navigateBack('home');
       return true;
     }
     if (cur === 'vault' && swipeLeft) {
@@ -9640,35 +9993,44 @@
       return true;
     }
     if (cur === 'fartnalysis' && swipeRight) {
-      openVaultView();
+      navigateBack('vault');
       return true;
     }
     if (cur === 'guess' && swipeRight) {
-      if (state.guessSubMode === 'quickfire' || state.guessSubMode === 'sequence') {
-        setGuessSubMode('standard');
+      if (state.guessSubMode === 'quickfire' || state.guessSubMode === 'sequence' || state.guessSubMode === 'blind') {
+        handleSubModeBack();
         return true;
       }
-      openHomeView();
+      navigateBack('home');
       return true;
     }
     if (cur === 'realfake' && swipeRight) {
-      openHomeView();
+      navigateBack('home');
+      return true;
+    }
+    if (cur === 'chain' && swipeRight) {
+      navigateBack('games');
       return true;
     }
     if (cur === 'detail' && swipeRight) {
-      openVaultView();
+      navigateBack('vault');
       return true;
     }
     if (cur === 'team' && swipeRight) {
-      var backTo = state.prevNonTeamView && state.prevNonTeamView !== 'team' ? state.prevNonTeamView : 'home';
-      if (backTo === 'home') openHomeView();
-      else if (backTo === 'vault') openVaultView();
-      else {
-        showView(backTo);
-        if (backTo === 'guess') renderGuessView();
-        else if (backTo === 'fartnalysis') renderFartnalysisView();
-      }
+      navigateBack('home');
       return true;
+    }
+    return false;
+  }
+
+  function hasHorizontalScrollAncestor(el) {
+    var node = el;
+    while (node && node !== document.body && node !== document.documentElement) {
+      if (node.scrollWidth > node.clientWidth + 4 && typeof root.getComputedStyle === 'function') {
+        var ox = root.getComputedStyle(node).overflowX;
+        if (ox === 'auto' || ox === 'scroll') return true;
+      }
+      node = node.parentElement;
     }
     return false;
   }
@@ -9683,22 +10045,57 @@
           swipeStart = null;
           return;
         }
+        var touch = ev.touches[0];
+        var vw = root.innerWidth || (document.documentElement && document.documentElement.clientWidth) || 412;
+        // Ignore iOS Safari system edge-back / forward swipe gutters
+        if (touch.clientX < 28 || touch.clientX > vw - 28) {
+          swipeStart = null;
+          return;
+        }
         var tgt = ev.target;
         var blocked =
           tgt &&
           typeof tgt.closest === 'function' &&
           Boolean(
             tgt.closest(
-              'canvas, input, select, textarea, button, a, [data-no-swipe], .labs-fn-glb-pills, .labs-group-filter-pills, .labs-vault-tabs, .labs-3d-wrap, .labs-modal, .labs-overlay, .labs-settings-menu'
+              'canvas, input, select, textarea, button, a, summary, details, [role="slider"], [role="tablist"], [data-no-swipe], .labs-fn-glb-pills, .labs-group-filter-pills, .labs-vault-tabs, .labs-mode-tabs, .labs-vault-stats-row, .labs-fn-side-tabs, .labs-seq-player-tabs, .labs-vc-wave-wrap, .labs-3d-wrap, .labs-modal, .labs-overlay, .labs-settings-menu'
             )
           );
-        var touch = ev.touches[0];
+        if (!blocked && tgt && hasHorizontalScrollAncestor(tgt)) {
+          blocked = true;
+        }
         swipeStart = {
           x: touch.clientX,
           y: touch.clientY,
           t: Date.now(),
           ignore: blocked
         };
+      },
+      { passive: true }
+    );
+
+    document.addEventListener(
+      'touchmove',
+      function (ev) {
+        if (!swipeStart || swipeStart.ignore) return;
+        if (!ev.touches || ev.touches.length !== 1) {
+          swipeStart = null;
+          return;
+        }
+        var t = ev.touches[0];
+        var adx = Math.abs(t.clientX - swipeStart.x);
+        var ady = Math.abs(t.clientY - swipeStart.y);
+        if (ady > 24 && ady > adx) {
+          swipeStart = null;
+        }
+      },
+      { passive: true }
+    );
+
+    document.addEventListener(
+      'touchcancel',
+      function () {
+        swipeStart = null;
       },
       { passive: true }
     );
@@ -9741,7 +10138,7 @@
         showView: showView,
         showToast: showToast,
         openComparePair: openCustomFartnalysisPair,
-        onExit: openGamesView
+        onExit: function () { navigateBack('games'); }
       });
     }
     initSwipeNavigation();
@@ -9781,6 +10178,8 @@
   TootLabs.App = {
     getState: function () { return state; },
     showView: showView,
+    navigateBack: navigateBack,
+    getNavStack: function () { return (state.navStack || []).slice(); },
     openSequenceMode: openSequenceMode,
     openRealFakeView: openRealFakeView,
     resealVaultAndReturn: resealVaultAndReturn,

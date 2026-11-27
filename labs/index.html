@@ -8,18 +8,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Special+Elite&display=swap" />
   <link rel="stylesheet" href="css/labs.css?v=20261124o" />
-  <link rel="stylesheet" href="css/labs-dossier.css?v=20261126l" />
-  <script defer src="../js/dsp.js?v=20261124o"></script>
-  <script defer src="../js/audioEngine.js?v=20261124o"></script>
+  <link rel="stylesheet" href="css/labs-dossier.css?v=20261127a" />
+  <script defer src="../js/dsp.js?v=20261127a"></script>
+  <script defer src="../js/audioEngine.js?v=20261127a"></script>
   <script defer src="../js/storage.js?v=20261124o"></script>
-  <script defer src="../js/spectrogram3d.js?v=20261126d"></script>
+  <script defer src="../js/spectrogram3d.js?v=20261127a"></script>
   <script defer src="../js/forensicsCharts.js?v=20261124o"></script>
-  <script defer src="js/labsStore.js?v=20261126a"></script>
+  <script defer src="js/labsStore.js?v=20261127a"></script>
   <script defer src="js/labsAudioFx.js?v=20261124o"></script>
-  <script defer src="js/labsFartnalysis.js?v=20261126g"></script>
+  <script defer src="js/labsFartnalysis.js?v=20261127a"></script>
   <script defer src="js/labsPdfExport.js?v=20261124o"></script>
-  <script defer src="js/labsSignalChain.js?v=20261126g"></script>
-  <script defer src="js/labsApp.js?v=20261126l"></script>
+  <script defer src="js/labsSignalChain.js?v=20261127a"></script>
+  <script defer src="js/labsApp.js?v=20261127a"></script>
 </head>
 <body data-labs-view="home">
   <canvas id="result-confetti-canvas" class="labs-confetti-canvas" aria-hidden="true"></canvas>
@@ -1796,6 +1796,55 @@
         <button type="button" id="btn-settings-howto" class="labs-btn-ghost labs-btn-sm">📖 How To Play</button>
         <button type="button" id="btn-settings-reset-rf" class="labs-btn-ghost labs-btn-sm">↻ Reset Real/Fake Score</button>
       </div>
+
+      <details id="settings-class-guide" class="labs-settings-class-guide" open>
+        <summary class="labs-settings-guide-summary">
+          <span>🔬 Acoustic Classification System Guide</span>
+          <span class="labs-settings-guide-chev" aria-hidden="true">▾</span>
+        </summary>
+        <div class="labs-settings-guide-body">
+          <p class="labs-settings-guide-intro">
+            Every specimen badge is computed live from FFT spectral peaks, RMS/Peak intensity, emission length, and envelope modulation:
+          </p>
+          <div class="labs-guide-examples">
+            <span class="labs-fn-dsp-badge is-compact tier-a">Class A • 148 Hz Sub-Bass (Flutter)</span>
+            <span class="labs-fn-dsp-badge is-compact tier-c">Class C • 740 Hz Brass / Horn (Snap)</span>
+          </div>
+
+          <div class="labs-guide-block">
+            <h4 class="labs-guide-heading">1. Class Tier (S / A / B / C / D)</h4>
+            <p class="labs-guide-sub">Composite of Acoustic Intensity (RMS &amp; Peak dB) + Duration:</p>
+            <ul class="labs-guide-list">
+              <li><strong>Class S — Long &amp; Thunderous:</strong> Extended high-output release (&ge; 0.95s, high RMS energy)</li>
+              <li><strong>Class A — Heavy Hitter:</strong> Strong amplitude presence across peak and body</li>
+              <li><strong>Class B — Solid Mid-Tier:</strong> Balanced acoustic power and moderate sustain</li>
+              <li><strong>Class C — Compact / Crisp:</strong> Short or moderate level punchy burst</li>
+              <li><strong>Class D — Stealth / Micro:</strong> Brief or low-amplitude subtle signature</li>
+            </ul>
+          </div>
+
+          <div class="labs-guide-block">
+            <h4 class="labs-guide-heading">2. Frequency Band (Dominant FFT Peak Hz)</h4>
+            <ul class="labs-guide-list">
+              <li><strong>&lt; 120 Hz &rarr; Sub-Bass:</strong> Deep structural room rumble</li>
+              <li><strong>120–250 Hz &rarr; Low Bass:</strong> Warm low-end fundamental punch</li>
+              <li><strong>250–500 Hz &rarr; Baritone Rumble:</strong> Resonant midrange buzz &amp; horn character</li>
+              <li><strong>500–1200 Hz &rarr; Brass / Horn:</strong> Focused trumpet-like midrange projection</li>
+              <li><strong>&gt; 1200 Hz &rarr; High Squeak:</strong> Sharp treble whistle or airy hiss</li>
+            </ul>
+          </div>
+
+          <div class="labs-guide-block">
+            <h4 class="labs-guide-heading">3. Acoustic Texture Trait (Envelope &amp; Modulation)</h4>
+            <ul class="labs-guide-list">
+              <li><strong>Sustained:</strong> Long, steady continuous airflow energy</li>
+              <li><strong>Flutter / Ripple:</strong> Rapid on/off amplitude oscillation or multi-burst chatter</li>
+              <li><strong>Snap / Pop:</strong> Short (&lt; 0.40s) sharp transient attack</li>
+              <li><strong>Pitch-Bend:</strong> Dominant pitch or centroid shifts clearly from start to end</li>
+            </ul>
+          </div>
+        </div>
+      </details>
 
       <div class="labs-modal-actions">
         <button type="button" id="btn-settings-close" class="labs-btn labs-btn-emerald labs-btn-sm">Done</button>

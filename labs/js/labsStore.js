@@ -111,7 +111,8 @@
     totalChallenges: 0,
     scoreSum: 0,
     nextNickIndex: 0,
-    samples: {}
+    samples: {},
+    descriptiveNames: {}
   };
   var metaLoaded = false;
 
@@ -138,6 +139,8 @@
           memoryMeta.scoreSum = safeNum(parsed.scoreSum, 0);
           memoryMeta.nextNickIndex = safeNum(parsed.nextNickIndex, 0);
           memoryMeta.samples = parsed.samples && typeof parsed.samples === 'object' ? parsed.samples : {};
+          memoryMeta.descriptiveNames =
+            parsed.descriptiveNames && typeof parsed.descriptiveNames === 'object' ? parsed.descriptiveNames : {};
         }
       }
     } catch (e) {
@@ -195,6 +198,91 @@
     return 'Specimen #' + String(meta.nextNickIndex).padStart(2, '0');
   }
 
+  function getSpecimenNumber(rawId) {
+    var s = String(rawId || '00000');
+    var h = 0;
+    for (var i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) % 90000;
+    }
+    var n = (h % 8999) + 1001;
+    return 'TM-0' + String(n);
+  }
+
+  function computeDescriptiveName(sound, featArg) {
+    if (!sound) return 'Standard Acoustic';
+    var meta = loadMeta();
+    var rec = sound.id ? meta.samples[sound.id] : null;
+    if (!meta.descriptiveNames || typeof meta.descriptiveNames !== 'object') {
+      meta.descriptiveNames = {};
+    }
+    var feat = featArg || sound.features;
+    var DSP = root.TootApp && root.TootApp.DSP;
+
+    if (feat && DSP && typeof DSP.classifySpecimen === 'function') {
+      var cls = DSP.classifySpecimen(feat, sound.samples, sound.sampleRate || 44100);
+      if (cls && cls.descriptiveName) {
+        var metaChanged = false;
+        if (rec && rec.descriptiveName !== cls.descriptiveName) {
+          rec.descriptiveName = cls.descriptiveName;
+          metaChanged = true;
+        }
+        if (sound.id && meta.descriptiveNames[sound.id] !== cls.descriptiveName) {
+          meta.descriptiveNames[sound.id] = cls.descriptiveName;
+          metaChanged = true;
+        }
+        if (metaChanged) persistMeta();
+        return cls.descriptiveName;
+      }
+    }
+
+    if (rec && rec.descriptiveName) return rec.descriptiveName;
+    if (sound.id && meta.descriptiveNames[sound.id]) return meta.descriptiveNames[sound.id];
+
+    var pm = sound.previewMeta;
+    if (pm && pm.pitchLabel && pm.textureLabel) {
+      var pShort = String(pm.pitchLabel).split('(')[0].trim();
+      var tShort = String(pm.textureLabel).split('·')[0].trim();
+      if (pShort && tShort) return pShort + ' · ' + tShort;
+    }
+
+    var dur =
+      typeof sound.previewDurationSec === 'number' && sound.previewDurationSec > 0
+        ? sound.previewDurationSec
+        : sound.samples && sound.samples.length > 0
+        ? sound.samples.length / (sound.sampleRate || 44100)
+        : 0;
+    var peaks = Array.isArray(sound.previewPeaks) ? sound.previewPeaks : null;
+    var distinctPeaks = 0;
+    if (peaks && peaks.length >= 6) {
+      var pMax = 1;
+      for (var k = 0; k < peaks.length; k++) if (peaks[k] > pMax) pMax = peaks[k];
+      var armedP = true;
+      for (var k2 = 0; k2 < peaks.length; k2++) {
+        var normP = peaks[k2] / pMax;
+        if (armedP && normP > 0.42) {
+          distinctPeaks++;
+          armedP = false;
+        } else if (!armedP && normP < 0.18) {
+          armedP = true;
+        }
+      }
+    }
+    if (dur > 0 && dur < 0.40) return 'Compact Transient';
+    if (distinctPeaks >= 3) return 'Multi-Burst Archive';
+    if (dur >= 1.1) return 'Sustained Archive';
+    return 'Standard Acoustic';
+  }
+
+  function ensureSpecimenFields(sound, featArg) {
+    if (!sound) return sound;
+    sound.number = getSpecimenNumber(sound.id);
+    if (!sound.displayName) {
+      sound.displayName = sound.isBuiltIn ? (sound.name || 'Saved Fart') : ensureNickname(sound);
+    }
+    sound.descriptiveName = computeDescriptiveName(sound, featArg);
+    return sound;
+  }
+
   function ensureSampleMeta(sound) {
     var meta = loadMeta();
     if (!sound || !sound.id) return null;
@@ -221,7 +309,9 @@
     }
 
     if (changed) persistMeta();
+    sound.number = getSpecimenNumber(sound.id);
     sound.displayName = rec.nickname;
+    sound.descriptiveName = computeDescriptiveName(sound, sound.features);
     return rec;
   }
 
@@ -921,10 +1011,13 @@
             var itemCodec = item.codec || '';
             if (!normUrl || !isCodecSupportedForUrl(normUrl, itemCodec)) return null;
             var label = item.name || ('Vault Fart #' + (idx + 1));
-            return {
-              id: item.id || ('preload_' + idx),
+            var objId = item.id || ('preload_' + idx);
+            var entry = {
+              id: objId,
+              number: getSpecimenNumber(objId),
               name: label,
               displayName: label,
+              descriptiveName: '',
               emoji: '💨',
               description: 'Pre-loaded Default Vault specimen',
               isBuiltIn: true,
@@ -941,6 +1034,8 @@
               features: null,
               loaded: false
             };
+            entry.descriptiveName = computeDescriptiveName(entry, null);
+            return entry;
           })
           .filter(Boolean);
         return preloadCatalogCache.slice();
@@ -957,6 +1052,7 @@
       if (!sound.features && root.TootApp && root.TootApp.DSP) {
         sound.features = root.TootApp.DSP.extractFeatures(sound.samples, sound.sampleRate || 44100);
       }
+      ensureSpecimenFields(sound, sound.features);
       return Promise.resolve(sound);
     }
     if (!sound.preloadUrl || typeof root.fetch !== 'function') {
@@ -998,6 +1094,7 @@
           sound.clipInfo = clipInfo;
           sound.loaded = true;
           sound.features = DSP ? DSP.extractFeatures(finalSamples, sound.sampleRate) : null;
+          ensureSpecimenFields(sound, sound.features);
           if (preloadInFlight) preloadInFlight.delete(sound.id);
           return sound;
         });
@@ -1018,6 +1115,7 @@
         s.isBuiltIn = false;
         s.loaded = Boolean(s.samples && s.samples.length > 0);
         ensureSampleMeta(s);
+        ensureSpecimenFields(s, s.features);
         return s;
       });
       var seen = new Set(customRows.map(function (r) { return r.id; }));
@@ -1031,6 +1129,7 @@
         } else {
           b.displayName = b.name;
         }
+        ensureSpecimenFields(b, b.features);
       });
       return customRows.concat(builtIns);
     });
@@ -1060,9 +1159,14 @@
     };
     return storage.saveCustomSound(toSave).then(function (saved) {
       var meta = loadMeta();
+      var descName = computeDescriptiveName(
+        { id: saved.id, samples: samples, sampleRate: sr, features: feat },
+        feat
+      );
       meta.samples[saved.id] = {
         nickname: nickname,
         customRenamed: true,
+        descriptiveName: descName,
         bestScore: 0,
         previousScore: null,
         latestScore: null,
@@ -1070,7 +1174,9 @@
         lastAttemptAt: null
       };
       persistMeta();
+      saved.number = getSpecimenNumber(saved.id);
       saved.displayName = nickname;
+      saved.descriptiveName = descName;
       saved.clipInfo = recResult.clipInfo;
       if (!saved.features && feat) saved.features = feat;
       if (!saved.preOnsetBreath && toSave.preOnsetBreath) saved.preOnsetBreath = toSave.preOnsetBreath;
@@ -1095,10 +1201,14 @@
 
     sound.name = clean;
     sound.displayName = clean;
+    if (!sound.number) sound.number = getSpecimenNumber(sound.id);
+    if (!sound.descriptiveName) sound.descriptiveName = computeDescriptiveName(sound, sound.features);
 
     if (!storage || sound.isBuiltIn) return Promise.resolve(sound);
     return storage.saveCustomSound(sound).then(function (saved) {
       saved.displayName = clean;
+      saved.number = sound.number;
+      saved.descriptiveName = sound.descriptiveName;
       return saved;
     });
   }
@@ -1639,6 +1749,9 @@
     LEGENDARY_TITLES: LEGENDARY_TITLES,
     GROUP_SORT_OPTIONS: GROUP_SORT_OPTIONS,
     MAX_DEFAULT_MEGAMIX: MAX_DEFAULT_MEGAMIX,
+    getSpecimenNumber: getSpecimenNumber,
+    computeDescriptiveName: computeDescriptiveName,
+    ensureSpecimenFields: ensureSpecimenFields,
     ensureNickname: ensureNickname,
     generateNewSpecimenName: generateNewSpecimenName,
     describeAcousticMood: describeAcousticMood,

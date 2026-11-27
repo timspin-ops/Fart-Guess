@@ -4,6 +4,9 @@
   var TootApp = (root.TootApp = root.TootApp || {});
 
   var audioCtx = null;
+  var audioUnlocked = false;
+  var audioSessionMode = '';
+  var unlockListenersBound = false;
   var activeChannels = new Map();
   var seqGeneration = 0;
   var recState = null;
@@ -18,6 +21,84 @@
   var startingRecording = false;
   var startingAutoDetect = false;
 
+  function isContextRunning(ctx) {
+    return Boolean(ctx && ctx.state === 'running');
+  }
+
+  function configureAudioSession(mode) {
+    if (typeof navigator === 'undefined' || !navigator || !navigator.audioSession) return;
+    if (audioSessionMode === mode) return;
+    try {
+      navigator.audioSession.type = mode;
+      audioSessionMode = mode;
+    } catch (e) {
+      // Ignore unsupported audioSession transitions
+    }
+  }
+
+  function bindAudioStateChange(ctx) {
+    if (!ctx || ctx._tootStateBound || typeof ctx.addEventListener !== 'function') return;
+    ctx._tootStateBound = true;
+    ctx.addEventListener('statechange', function () {
+      if (ctx.state === 'running') {
+        audioUnlocked = true;
+      } else {
+        audioUnlocked = false;
+      }
+    });
+  }
+
+  function unlockAudio() {
+    if (!audioCtx) {
+      var Ctx = root.AudioContext || root.webkitAudioContext;
+      if (!Ctx) return null;
+      audioCtx = new Ctx();
+      bindAudioStateChange(audioCtx);
+    }
+    if (!isRecordingOrStarting() && !isMicTesting()) {
+      configureAudioSession('playback');
+    }
+    if (!isContextRunning(audioCtx)) {
+      try {
+        var resumeP = audioCtx.resume();
+        if (resumeP && typeof resumeP.then === 'function') {
+          resumeP
+            .then(function () {
+              if (audioCtx && audioCtx.state === 'running') audioUnlocked = true;
+            })
+            .catch(function () {});
+        }
+      } catch (e) {}
+    }
+    if (!audioUnlocked || !isContextRunning(audioCtx)) {
+      try {
+        var silentBuf = audioCtx.createBuffer(1, 1, 22050);
+        var silentSrc = audioCtx.createBufferSource();
+        silentSrc.buffer = silentBuf;
+        silentSrc.connect(audioCtx.destination);
+        silentSrc.start(0);
+        if (isContextRunning(audioCtx)) {
+          audioUnlocked = true;
+        }
+      } catch (e) {}
+    }
+    return audioCtx;
+  }
+
+  function installGestureUnlockListeners() {
+    if (unlockListenersBound || typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+    unlockListenersBound = true;
+    var onGesture = function () {
+      if (!audioCtx || !audioUnlocked || !isContextRunning(audioCtx)) {
+        unlockAudio();
+      }
+    };
+    ['touchstart', 'pointerdown', 'click', 'keydown'].forEach(function (evt) {
+      document.addEventListener(evt, onGesture, { passive: true, capture: true });
+    });
+  }
+  installGestureUnlockListeners();
+
   function ensureContext() {
     if (!audioCtx) {
       var Ctx = root.AudioContext || root.webkitAudioContext;
@@ -25,25 +106,34 @@
         throw new Error('Web Audio API is not supported in this browser.');
       }
       audioCtx = new Ctx();
+      bindAudioStateChange(audioCtx);
     }
-    if (audioCtx.state === 'suspended') {
+    if (!isRecordingOrStarting() && !isMicTesting()) {
+      configureAudioSession('playback');
+    }
+    if (audioCtx.state !== 'running') {
       return audioCtx.resume().then(function () {
+        if (audioCtx && audioCtx.state === 'running') audioUnlocked = true;
         return audioCtx;
       });
     }
+    audioUnlocked = true;
     return Promise.resolve(audioCtx);
   }
 
   function getDecodeContext() {
     if (audioCtx) return audioCtx;
+    var OfflineCtx = root.OfflineAudioContext || root.webkitOfflineAudioContext;
+    if (OfflineCtx) {
+      try {
+        return new OfflineCtx(1, 1, 44100);
+      } catch (e) {}
+    }
     var Ctx = root.AudioContext || root.webkitAudioContext;
     if (Ctx) {
       audioCtx = new Ctx();
+      bindAudioStateChange(audioCtx);
       return audioCtx;
-    }
-    var OfflineCtx = root.OfflineAudioContext || root.webkitOfflineAudioContext;
-    if (OfflineCtx) {
-      return new OfflineCtx(1, 44100, 44100);
     }
     throw new Error('Web Audio API is not supported in this browser.');
   }
@@ -178,7 +268,11 @@
 
     stopChannel(channel);
 
-    return ensureContext().then(function (ctx) {
+    try {
+      unlockAudio();
+    } catch (e) {}
+
+    function startOnContext(ctx) {
       var audioBuf = samplesToAudioBuffer(ctx, samples, sampleRate);
       var source = ctx.createBufferSource();
       source.buffer = audioBuf;
@@ -217,6 +311,7 @@
         lastPerfMs: performance.now(),
         rafId: null,
         stopped: false,
+        resumeRetried: false,
         onEnded: onEnded
       };
 
@@ -224,6 +319,18 @@
 
       function tick(nowMs) {
         if (entry.stopped || !activeChannels.has(channel)) return;
+        if (entry.ctx && entry.ctx.state !== 'running') {
+          entry.lastPerfMs = nowMs;
+          if (!entry.resumeRetried && typeof entry.ctx.resume === 'function') {
+            entry.resumeRetried = true;
+            try {
+              var rp = entry.ctx.resume();
+              if (rp && typeof rp.catch === 'function') rp.catch(function () {});
+            } catch (err) {}
+          }
+          entry.rafId = requestAnimationFrame(tick);
+          return;
+        }
         var dt = Math.max(0, (nowMs - entry.lastPerfMs) / 1000);
         entry.lastPerfMs = nowMs;
         entry.playedAudioSec += dt * entry.rate;
@@ -253,7 +360,14 @@
         onProgress(durationSec > 0 ? Math.min(1, startOffset / durationSec) : 0);
         entry.rafId = requestAnimationFrame(tick);
       }
-    });
+    }
+
+    if (audioCtx && isContextRunning(audioCtx)) {
+      startOnContext(audioCtx);
+      return Promise.resolve();
+    }
+
+    return ensureContext().then(startOnContext);
   }
 
   /**
@@ -441,6 +555,7 @@
     warmDeviceId = null;
     warmSourceNode = null;
     warmSourceCtx = null;
+    configureAudioSession('playback');
   }
 
   function getOrCreateSourceNode(ctx, stream) {
@@ -544,6 +659,7 @@
       return Promise.reject(new Error('Stop recording before testing microphone.'));
     }
 
+    configureAudioSession('play-and-record');
     return ensureContext().then(function (ctx) {
       return openMicStream(selectedDeviceId).then(function (stream) {
         var sourceNode = getOrCreateSourceNode(ctx, stream);
@@ -633,6 +749,7 @@
     stopMicTest();
     stopAll();
     startingRecording = true;
+    configureAudioSession('play-and-record');
 
     var onLevel = typeof opts.onLevel === 'function' ? opts.onLevel : null;
     var onAutoStop = typeof opts.onAutoStop === 'function' ? opts.onAutoStop : null;
@@ -1918,6 +2035,7 @@
     stopMicTest();
     stopAll();
     startingAutoDetect = true;
+    configureAudioSession('play-and-record');
 
     var onStarted = typeof opts.onStarted === 'function' ? opts.onStarted : null;
     var onLevel = typeof opts.onLevel === 'function' ? opts.onLevel : null;
@@ -2184,6 +2302,7 @@
   }
 
   TootApp.Audio = {
+    unlockAudio: unlockAudio,
     ensureContext: ensureContext,
     samplesToAudioBuffer: samplesToAudioBuffer,
     audioBufferToMono: audioBufferToMono,

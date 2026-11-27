@@ -868,6 +868,8 @@
       }
     }
     var rmsTotal = n > 0 ? Math.sqrt(totalSqSum / n) : 0;
+    var rmsDb = n > 0 ? Number(clamp(20 * Math.log10(Math.max(rmsTotal, 1e-4)), -60, 0).toFixed(1)) : -24;
+    var peakDb = n > 0 ? Number(clamp(20 * Math.log10(Math.max(peakAbs, 1e-4)), -60, 0).toFixed(1)) : -12;
     var crestFactorDb = rmsTotal > 1e-9 ? 20 * Math.log10(Math.max(peakAbs, 1e-9) / rmsTotal) : 0;
     var peakTimeRatio = envLen > 1 ? peakIdx / (envLen - 1) : 0.5;
     var attackSec = peakTimeRatio * duration;
@@ -1176,6 +1178,7 @@
     var rollMaxBin = Math.min(halfRollBins, Math.floor(Math.min(8000, sr * 0.48) / rollBinHz));
     var spectralRolloff85Hz = 800;
     var above2kPowerShare = 0;
+    var dominantPeakHz = medianPitchHz > 0 ? medianPitchHz : spectralCentroidHz;
     if (n > 0 && rollMaxBin >= rollMinBin) {
       var hannR = new Float32Array(rollFftSize);
       for (var hr = 0; hr < rollFftSize; hr++) {
@@ -1197,6 +1200,28 @@
         for (var kbR = rollMinBin; kbR <= rollMaxBin; kbR++) {
           accumPowR[kbR] += reR[kbR] * reR[kbR] + imR[kbR] * imR[kbR];
         }
+      }
+      var peakMaxBin = Math.min(rollMaxBin, Math.floor(Math.min(4500, sr * 0.48) / rollBinHz));
+      var bestBin = rollMinBin;
+      var bestPow = -1;
+      for (var kbP = rollMinBin; kbP <= peakMaxBin; kbP++) {
+        if (accumPowR[kbP] > bestPow) {
+          bestPow = accumPowR[kbP];
+          bestBin = kbP;
+        }
+      }
+      if (bestPow > 1e-12) {
+        var fracPeak = 0;
+        if (bestBin > rollMinBin && bestBin < peakMaxBin) {
+          var alpha = accumPowR[bestBin - 1];
+          var beta = accumPowR[bestBin];
+          var gamma = accumPowR[bestBin + 1];
+          var denom = alpha - 2 * beta + gamma;
+          if (Math.abs(denom) > 1e-18) {
+            fracPeak = clamp(0.5 * (alpha - gamma) / denom, -0.5, 0.5);
+          }
+        }
+        dominantPeakHz = clamp((bestBin + fracPeak) * rollBinHz, 35, 4500);
       }
       var totalLinPow = 0;
       var above2kPow = 0;
@@ -1230,6 +1255,9 @@
 
     return {
       duration: duration,
+      rmsDb: rmsDb,
+      peakDb: peakDb,
+      dominantPeakHz: Number(dominantPeakHz.toFixed(1)),
       envelope: envelope,
       peakTimeRatio: peakTimeRatio,
       crestFactorDb: crestFactorDb,
@@ -1335,6 +1363,167 @@
       pitchLabel: pitchLabel,
       textureLabel: textureLabel,
       profileTag: profileTag
+    };
+  }
+
+  /**
+   * Classify a specimen into Class Tier (S/A/B/C/D), dominant FFT Frequency Band, and 1-word Texture Trait.
+   */
+  function classifySpecimen(feat, samples, sampleRate) {
+    var sr = sampleRate || 44100;
+    if ((!feat || typeof feat !== 'object') && samples && samples.length > 0) {
+      feat = extractFeatures(samples, sr);
+    }
+    var f = feat || {};
+    var dur =
+      typeof f.duration === 'number' && Number.isFinite(f.duration) && f.duration > 0
+        ? f.duration
+        : typeof f.durationSec === 'number' && Number.isFinite(f.durationSec) && f.durationSec > 0
+        ? f.durationSec
+        : samples && samples.length > 0
+        ? samples.length / sr
+        : 0.65;
+
+    var rmsDb = typeof f.rmsDb === 'number' && Number.isFinite(f.rmsDb) ? f.rmsDb : null;
+    var peakDb = typeof f.peakDb === 'number' && Number.isFinite(f.peakDb) ? f.peakDb : null;
+    if ((rmsDb === null || peakDb === null) && samples && samples.length > 0) {
+      var pAbs = 0;
+      var sq = 0;
+      var n = samples.length;
+      for (var i = 0; i < n; i++) {
+        var v = samples[i];
+        var av = v < 0 ? -v : v;
+        if (av > pAbs) pAbs = av;
+        sq += v * v;
+      }
+      var rTot = Math.sqrt(sq / n);
+      if (rmsDb === null) rmsDb = Number(clamp(20 * Math.log10(Math.max(rTot, 1e-4)), -60, 0).toFixed(1));
+      if (peakDb === null) peakDb = Number(clamp(20 * Math.log10(Math.max(pAbs, 1e-4)), -60, 0).toFixed(1));
+    }
+    if (rmsDb === null) rmsDb = -24;
+    if (peakDb === null) peakDb = -12;
+
+    var crestDb =
+      typeof f.crestFactorDb === 'number' && Number.isFinite(f.crestFactorDb)
+        ? f.crestFactorDb
+        : clamp(peakDb - rmsDb, 0, 36);
+    var attackSec =
+      typeof f.attackSec === 'number' && Number.isFinite(f.attackSec)
+        ? f.attackSec
+        : dur * 0.25;
+    var burstCount =
+      typeof f.burstCount === 'number' && Number.isFinite(f.burstCount)
+        ? f.burstCount
+        : 1;
+    var modDepth =
+      typeof f.modDepth === 'number' && Number.isFinite(f.modDepth)
+        ? f.modDepth
+        : 0.2;
+    var modRateHz =
+      typeof f.modRateHz === 'number' && Number.isFinite(f.modRateHz)
+        ? f.modRateHz
+        : 6;
+    var pitchTrend =
+      typeof f.pitchTrend === 'number' && Number.isFinite(f.pitchTrend)
+        ? f.pitchTrend
+        : 0;
+    var centroidTrend =
+      typeof f.centroidTrend === 'number' && Number.isFinite(f.centroidTrend)
+        ? f.centroidTrend
+        : 0;
+    var pitchRangeSt =
+      typeof f.pitchRangeSemitones === 'number' && Number.isFinite(f.pitchRangeSemitones)
+        ? f.pitchRangeSemitones
+        : 0;
+
+    var rawDomHz =
+      typeof f.dominantPeakHz === 'number' && Number.isFinite(f.dominantPeakHz) && f.dominantPeakHz > 0
+        ? f.dominantPeakHz
+        : typeof f.medianPitchHz === 'number' && Number.isFinite(f.medianPitchHz) && f.medianPitchHz > 0
+        ? f.medianPitchHz
+        : typeof f.spectralCentroidHz === 'number' && Number.isFinite(f.spectralCentroidHz) && f.spectralCentroidHz > 0
+        ? f.spectralCentroidHz
+        : 180;
+    var hz = Math.max(30, Math.round(rawDomHz));
+
+    // Composite Class Score from Intensity (RMS + Peak dB) and Duration
+    var rmsNorm = clamp((rmsDb - (-38)) / 30, 0, 1);
+    var peakNorm = clamp((peakDb - (-28)) / 27, 0, 1);
+    var intensityNorm = 0.62 * rmsNorm + 0.38 * peakNorm;
+    var durNorm = clamp((dur - 0.12) / 2.08, 0, 1);
+    var composite = Math.round(clamp(100 * (0.58 * intensityNorm + 0.42 * durNorm), 0, 100));
+
+    var tier, tierDesc;
+    if (composite >= 76 && dur >= 0.95 && rmsDb >= -21) {
+      tier = 'S';
+      tierDesc = 'Long & Thunderous';
+    } else if (composite >= 58) {
+      tier = 'A';
+      tierDesc = 'Heavy Hitter';
+    } else if (composite >= 40) {
+      tier = 'B';
+      tierDesc = 'Solid Mid-Tier';
+    } else if (composite >= 24) {
+      tier = 'C';
+      tierDesc = 'Compact / Crisp';
+    } else {
+      tier = 'D';
+      tierDesc = 'Stealth / Micro';
+    }
+
+    var bandKey, bandLabel;
+    if (hz < 120) {
+      bandKey = 'sub_bass';
+      bandLabel = 'Sub-Bass';
+    } else if (hz < 250) {
+      bandKey = 'low_bass';
+      bandLabel = 'Low Bass';
+    } else if (hz < 500) {
+      bandKey = 'baritone';
+      bandLabel = 'Baritone Rumble';
+    } else if (hz <= 1200) {
+      bandKey = 'brass';
+      bandLabel = 'Brass / Horn';
+    } else {
+      bandKey = 'high_squeak';
+      bandLabel = 'High Squeak';
+    }
+
+    var trait;
+    if (dur < 0.40 && (crestDb >= 9.0 || attackSec < 0.085)) {
+      trait = dur < 0.24 && crestDb >= 11.5 ? 'Pop' : 'Snap';
+    } else if (burstCount >= 3 || (modDepth >= 0.36 && modRateHz >= 7)) {
+      trait = modRateHz >= 11 || burstCount >= 3 ? 'Flutter' : 'Ripple';
+    } else if (Math.abs(pitchTrend) >= 0.34 || Math.abs(centroidTrend) >= 0.42 || pitchRangeSt >= 5.5) {
+      trait = 'Pitch-Bend';
+    } else if (modDepth >= 0.28 && modRateHz >= 5) {
+      trait = 'Ripple';
+    } else if (dur < 0.40) {
+      trait = 'Snap';
+    } else {
+      trait = 'Sustained';
+    }
+
+    var tierLabel = 'Class ' + tier;
+    var badgeShort = tierLabel + ' • ' + hz + ' Hz ' + bandLabel;
+    var badgeFull = badgeShort + ' (' + trait + ')';
+    var descriptiveName = hz + ' Hz ' + bandLabel + ' · ' + trait;
+
+    return {
+      tier: tier,
+      tierLabel: tierLabel,
+      tierDesc: tierDesc,
+      compositeScore: composite,
+      rmsDb: Number(rmsDb.toFixed(1)),
+      peakDb: Number(peakDb.toFixed(1)),
+      durationSec: Number(dur.toFixed(3)),
+      dominantHz: hz,
+      bandKey: bandKey,
+      bandLabel: bandLabel,
+      trait: trait,
+      badgeShort: badgeShort,
+      badgeFull: badgeFull,
+      descriptiveName: descriptiveName
     };
   }
 
@@ -1743,6 +1932,7 @@
     computeEnvelopeLagProfile: computeEnvelopeLagProfile,
     extractFeatures: extractFeatures,
     describeSoundProfile: describeSoundProfile,
+    classifySpecimen: classifySpecimen,
     compareSounds: compareSounds
   };
 })(typeof window !== 'undefined' ? window : globalThis);

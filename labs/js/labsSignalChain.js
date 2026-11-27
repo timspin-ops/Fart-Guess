@@ -710,6 +710,7 @@
           var arg = this.getAttribute('data-ledger-play');
           var Audio = root.TootApp && root.TootApp.Audio;
           if (!Audio) return;
+          if (typeof Audio.unlockAudio === 'function') Audio.unlockAudio();
           if (arg === 'orig') {
             Audio.playSound(ch.origin.samples, ch.origin.sampleRate, { channel: 'chain_ledger' });
           } else {
@@ -954,10 +955,11 @@
 
     if ($('btn-chain-play-prev')) {
       $('btn-chain-play-prev').addEventListener('click', function () {
+        var Audio = root.TootApp && root.TootApp.Audio;
+        if (Audio && typeof Audio.unlockAudio === 'function') Audio.unlockAudio();
         var ch = getActiveChain();
         if (!ch) return;
         var prevSound = ch.links && ch.links.length > 0 ? ch.links[ch.links.length - 1] : ch.origin;
-        var Audio = root.TootApp && root.TootApp.Audio;
         if (!Audio || !prevSound || !prevSound.samples) return;
         Audio.playSound(prevSound.samples, prevSound.sampleRate, {
           channel: 'chain_prev',
@@ -975,8 +977,9 @@
 
     if ($('btn-chain-preview-mimic')) {
       $('btn-chain-preview-mimic').addEventListener('click', function () {
-        var pm = chainState.pendingMimic;
         var Audio = root.TootApp && root.TootApp.Audio;
+        if (Audio && typeof Audio.unlockAudio === 'function') Audio.unlockAudio();
+        var pm = chainState.pendingMimic;
         if (!pm || !pm.samples || !Audio) return;
         Audio.playSound(pm.samples, pm.sampleRate, {
           channel: 'chain_preview',
@@ -1020,12 +1023,18 @@
 
     if ($('btn-chain-quick-orig-final')) {
       $('btn-chain-quick-orig-final').addEventListener('click', function () {
+        if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.unlockAudio === 'function') {
+          root.TootApp.Audio.unlockAudio();
+        }
         if (chainState.activeChainId) playOrigAndFinal(chainState.activeChainId);
       });
     }
 
     if ($('btn-chain-play-all')) {
       $('btn-chain-play-all').addEventListener('click', function () {
+        if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.unlockAudio === 'function') {
+          root.TootApp.Audio.unlockAudio();
+        }
         if (chainState.activeChainId) playFullChain(chainState.activeChainId);
       });
     }
@@ -1038,12 +1047,18 @@
 
     if ($('btn-chain-ana-orig-final')) {
       $('btn-chain-ana-orig-final').addEventListener('click', function () {
+        if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.unlockAudio === 'function') {
+          root.TootApp.Audio.unlockAudio();
+        }
         if (chainState.activeChainId) playOrigAndFinal(chainState.activeChainId);
       });
     }
 
     if ($('btn-chain-ana-play-all')) {
       $('btn-chain-ana-play-all').addEventListener('click', function () {
+        if (root.TootApp && root.TootApp.Audio && typeof root.TootApp.Audio.unlockAudio === 'function') {
+          root.TootApp.Audio.unlockAudio();
+        }
         if (chainState.activeChainId) playFullChain(chainState.activeChainId);
       });
     }

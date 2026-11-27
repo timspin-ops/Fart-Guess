@@ -102,8 +102,14 @@
     this._resizeRaf = null;
     this._hasRendered = false;
     this._tweenTarget = null;
+    this._lastTapTime = 0;
+    this._lastTapX = 0;
+    this._lastTapY = 0;
     this._destroyed = false;
 
+    if (this.canvas && this.canvas.style) {
+      this.canvas.style.touchAction = 'none';
+    }
     this._bindEvents();
     this.resize();
     if (this.autoRotate) {
@@ -119,6 +125,18 @@
       if (e.button && e.button !== 0) return;
       if (self._pointers && e.pointerId !== undefined) {
         self._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+      if (e.pointerType === 'touch' && (!self._pointers || self._pointers.size === 1)) {
+        var nowT = Date.now();
+        var distT = Math.hypot(e.clientX - self._lastTapX, e.clientY - self._lastTapY);
+        if (self._lastTapTime && (nowT - self._lastTapTime) < 300 && distT < 24) {
+          self._lastTapTime = 0;
+          self.setPreset('3d');
+        } else {
+          self._lastTapTime = nowT;
+          self._lastTapX = e.clientX;
+          self._lastTapY = e.clientY;
+        }
       }
       if (self._pointers && self._pointers.size === 2) {
         self._dragging = false;

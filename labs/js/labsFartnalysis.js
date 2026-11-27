@@ -882,6 +882,8 @@
     soundB.features = featB;
 
     var result = opts.result || DSP.compareSounds(featA, featB);
+    var dspClassA = DSP && typeof DSP.classifySpecimen === 'function' ? DSP.classifySpecimen(featA, soundA.samples, soundA.sampleRate) : null;
+    var dspClassB = DSP && typeof DSP.classifySpecimen === 'function' ? DSP.classifySpecimen(featB, soundB.samples, soundB.sampleRate) : null;
     var gauges = buildExecutiveGauges(soundA, soundB, result);
     var bonus = Forensics && typeof Forensics.computeBonusMetrics === 'function' ? Forensics.computeBonusMetrics(featA, featB) : null;
     var labelA = opts.labelA || soundA.displayName || soundA.name || 'Reference';
@@ -1067,7 +1069,10 @@
       '    <div class="labs-spec-grid">' +
       '      <div class="labs-spec-card" data-side="A">' +
       '        <div class="labs-spec-card-head">' +
-      '          <div class="labs-spec-name">' + esc(labelA) + '</div>' +
+      '          <div class="labs-spec-title-stack">' +
+      '            <div class="labs-spec-name">' + esc(labelA) + '</div>' +
+      (dspClassA ? '<span class="labs-fn-dsp-badge is-compact tier-' + esc(String(dspClassA.tier || 'c').toLowerCase()) + '">' + esc(dspClassA.badgeFull) + '</span>' : '') +
+      '          </div>' +
       buildClipTag(soundA) +
       '        </div>' +
       '        <div class="labs-spec-card-bar">' +
@@ -1078,7 +1083,10 @@
       '      </div>' +
       '      <div class="labs-spec-card" data-side="B">' +
       '        <div class="labs-spec-card-head">' +
-      '          <div class="labs-spec-name">' + esc(labelB) + '</div>' +
+      '          <div class="labs-spec-title-stack">' +
+      '            <div class="labs-spec-name">' + esc(labelB) + '</div>' +
+      (dspClassB ? '<span class="labs-fn-dsp-badge is-compact tier-' + esc(String(dspClassB.tier || 'c').toLowerCase()) + '">' + esc(dspClassB.badgeFull) + '</span>' : '') +
+      '          </div>' +
       buildClipTag(soundB) +
       '        </div>' +
       '        <div class="labs-spec-card-bar">' +
@@ -5163,11 +5171,28 @@
     var bursts = Math.round(safeNum(feat.burstCount, 1));
     var crestDb = safeNum(feat.crestFactorDb, 8);
 
-    var idBase = (sound && sound.id) || (sound && (sound.displayName || sound.name)) || label || 'specimen';
-    var specimenId = 'TM-' + String((hashSeed(String(idBase)) % 8999) + 1000).padStart(4, '0');
+    var rawIdBase = (sound && sound.id) || (sound && (sound.displayName || sound.name)) || label || 'specimen';
+    var specimenId =
+      (sound && sound.number) ||
+      (Store && typeof Store.getSpecimenNumber === 'function'
+        ? Store.getSpecimenNumber(rawIdBase)
+        : 'TM-0' + String((hashSeed(String(rawIdBase)) % 8999) + 1001));
+
+    var dspClass =
+      DSP && typeof DSP.classifySpecimen === 'function'
+        ? DSP.classifySpecimen(feat, samples, sr)
+        : null;
+    if (sound && Store && typeof Store.ensureSpecimenFields === 'function') {
+      Store.ensureSpecimenFields(sound, feat);
+    }
 
     var moodObj = Store && typeof Store.describeAcousticMood === 'function' ? Store.describeAcousticMood(feat, bonus) : null;
-    var category = (moodObj && moodObj.moodLabel) || (ml && ml.topClass && ml.topClass.name) || 'Archive Specimen';
+    var moodCategory = (moodObj && moodObj.moodLabel) || (ml && ml.topClass && ml.topClass.name) || 'Archive Specimen';
+    var category = dspClass ? dspClass.tierLabel + ' · ' + dspClass.bandLabel : moodCategory;
+    var descriptiveName =
+      (sound && sound.descriptiveName) ||
+      (dspClass && dspClass.descriptiveName) ||
+      moodCategory;
 
     var rarityScore =
       clamp(durSec / 2.2, 0, 1) * 28 +
@@ -5186,6 +5211,9 @@
     return {
       specimenId: specimenId,
       category: category,
+      fullCategory: moodCategory,
+      descriptiveName: descriptiveName,
+      dspClass: dspClass,
       rarity: rarity,
       durationSec: durSec,
       durationLabel: durSec.toFixed(2) + 's',
@@ -5592,13 +5620,21 @@
       '      </div>' +
       '    </div>' +
       '    <div class="labs-fn-exec-cell labs-fn-class-cell">' +
-      '      <h4 class="labs-fn-cell-heading">CLASSIFICATION</h4>' +
+      '      <div class="labs-fn-class-head-bar">' +
+      '        <h4 class="labs-fn-cell-heading">CLASSIFICATION</h4>' +
+      '        <button type="button" class="labs-fn-class-info-btn" data-open-class-guide="1" title="Explain Class Tiers, Frequency Bands &amp; Traits">ⓘ Classification Guide</button>' +
+      '      </div>' +
       '      <div class="labs-fn-class-title-row">' +
       '        <div class="labs-fn-class-name">' + esc(label) + '</div>' +
       '        <span class="labs-fn-class-wind">' + windSvg + '</span>' +
       '      </div>' +
+      (readout.dspClass
+        ? '<div class="labs-fn-dsp-badge tier-' + esc(String(readout.dspClass.tier || 'c').toLowerCase()) + '">' + esc(readout.dspClass.badgeFull) + '</div>'
+        : '') +
       '      <div class="labs-fn-class-rows">' +
-      '        <div class="labs-fn-class-row"><span>CATEGORY</span><i></i><strong>' + esc(readout.category) + '</strong></div>' +
+      '        <div class="labs-fn-class-row"><span>CLASS TIER</span><i></i><strong>' + esc(readout.dspClass ? readout.dspClass.tierLabel + ' · ' + readout.dspClass.tierDesc : readout.category) + '</strong></div>' +
+      '        <div class="labs-fn-class-row"><span>FREQUENCY BAND</span><i></i><strong>' + esc(readout.dspClass ? readout.dspClass.dominantHz + ' Hz · ' + readout.dspClass.bandLabel : readout.peakFreqLabel) + '</strong></div>' +
+      '        <div class="labs-fn-class-row"><span>TEXTURE TRAIT</span><i></i><strong>' + esc(readout.dspClass ? readout.dspClass.trait : 'Sustained') + '</strong></div>' +
       '        <div class="labs-fn-class-row"><span>CONFIDENCE</span><i></i><strong class="is-green">' + esc(ml.confidence + '%') + '</strong></div>' +
       '        <div class="labs-fn-class-row"><span>RARITY</span><i></i><strong>' + esc(readout.rarity) + '</strong></div>' +
       '      </div>' +
