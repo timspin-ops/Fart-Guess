@@ -2645,6 +2645,7 @@
       '"' +
       (agingInfo.isOldest ? ' data-oldest="true"' : '') +
       ' tabindex="0">' +
+      '  <div class="labs-vc-top-sheet">' +
       '  <div class="labs-vc-sleeve-top">' +
       '    <div class="labs-vc-sleeve-meta">' +
       '      <div class="labs-vc-file-row">' +
@@ -2675,6 +2676,7 @@
       '      <button type="button" class="labs-vc-ink-act vc-guess" data-vc-act="guess" data-vc-id="' + esc(s.id) + '" title="Guess This Fart">🎯 Guess</button>' +
       deleteBtnHtml +
       '    </div>' +
+      '  </div>' +
       '  </div>' +
       '</article>'
     );
@@ -2717,6 +2719,7 @@
       '" data-open-guess-sample="' +
       esc(att.sampleId || '') +
       '" data-vc-kind="guess" data-age-tier="0" tabindex="0">' +
+      '  <div class="labs-vc-top-sheet">' +
       '  <div class="labs-vc-sleeve-top">' +
       '    <div class="labs-vc-sleeve-meta">' +
       '      <div class="labs-vc-file-row">' +
@@ -2747,6 +2750,7 @@
       '      <button type="button" class="labs-vc-ink-act vc-compare" data-vg-act="compare" data-vg-id="' + esc(att.id) + '" data-vg-sample="' + esc(att.sampleId || '') + '" title="Compare with target">⚖️ Compare</button>' +
       '      <button type="button" class="labs-vc-ink-act is-del" data-vg-act="delete" data-vg-id="' + esc(att.id) + '" aria-label="Delete guess" title="Delete guess">🗑️ Delete</button>' +
       '    </div>' +
+      '  </div>' +
       '  </div>' +
       '</article>'
     );
