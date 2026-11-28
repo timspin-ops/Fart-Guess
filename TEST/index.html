@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Toot Match Labs // Acoustic Fart Lab — Auto Sentry &amp; Real-vs-Mouth Spread (TEST)</title>
+  <link rel="stylesheet" href="./css/testLab.css?v=20261127t10" />
+</head>
+<body>
+  <!-- ==================== COMPACT SCIENTIFIC COCKPIT (2-PAGE SWITCHER + ACTIVE DIAL + PLAYBACK) ==================== -->
+  <header class="tl-sticky-cockpit" id="tl-sticky-cockpit">
+    <div class="tl-topbar">
+      <div class="tl-brand-cluster">
+        <div class="tl-brand">
+          <div class="tl-logo">TM</div>
+          <div class="tl-brand-text">
+            <h1>ACOUSTIC FART LAB <span class="tl-badge-env">TEST</span></h1>
+            <p>Fast Live Sentry &amp; Corpus Forensics</p>
+          </div>
+        </div>
+
+        <nav id="lab-page-switcher" class="tl-page-switcher" role="tablist" aria-label="Primary lab mode">
+          <button type="button" id="btn-page-sentry" data-lab-page="sentry" class="tl-page-btn is-active" role="tab" aria-selected="true">
+            <span class="tl-page-btn-main">📡 Auto Sentry Lab</span>
+            <small>Live Detector (~2 ms)</small>
+          </button>
+          <button type="button" id="btn-page-auth" data-lab-page="authenticity" class="tl-page-btn" role="tab" aria-selected="false">
+            <span class="tl-page-btn-main">🔬 Real vs. Mouth Lab</span>
+            <small>Authenticity &amp; Spread</small>
+          </button>
+        </nav>
+      </div>
+
+      <div class="tl-top-controls">
+        <label class="tl-preset-wrap" title="Load a preset Sentry + Authenticity configuration">
+          <span>Preset:</span>
+          <select id="sel-preset"></select>
+        </label>
+        <button type="button" id="btn-auto-suggest" class="tl-btn tl-btn-accent tl-btn-sm" title="Auto-optimize separation thresholds across analyzed Real vs Decoy/Noise clips">✨ Auto-Suggest</button>
+        <button type="button" id="btn-lock-limits" class="tl-btn tl-btn-primary tl-btn-sm" title="Lock Sentry thresholds to active fart and reject sampled room control">🎯 Lock Limits</button>
+        <button type="button" id="btn-copy-config" class="tl-btn tl-btn-ghost tl-btn-sm" title="Copy current Sentry &amp; Authenticity config as JSON">📋 Copy</button>
+        <button type="button" id="btn-reset-config" class="tl-btn tl-btn-ghost tl-btn-sm" title="Reset criteria back to selected preset defaults">↺ Reset</button>
+        <span id="disk-status-pill" class="tl-pill tl-pill-muted">Checking Disk API...</span>
+        <a href="/labs/" class="tl-btn tl-btn-outline tl-btn-sm">← Main App</a>
+        <button type="button" id="btn-toggle-cockpit" class="tl-btn tl-btn-outline tl-btn-sm tl-mobile-only" aria-expanded="true">▾ Dial</button>
+      </div>
+    </div>
+
+    <div class="tl-pinned-console" id="tl-pinned-console">
+      <!-- Page 1 Dial: Auto Sentry Detection -->
+      <div class="tl-pinned-dial-card" id="dial-card-sentry">
+        <canvas id="canvas-detect-meter" class="tl-meter-canvas" width="262" height="136"></canvas>
+        <div class="tl-meter-caption">
+          <span id="detect-status-led" class="tl-status-led is-idle">STANDBY</span>
+          <span id="detect-verdict-line" class="tl-verdict-text">Load a clip or arm Live Mic Sentry Monitor.</span>
+        </div>
+        <div class="tl-dial-subhint">Page 1 Detector · Gates + Pass Score</div>
+      </div>
+
+      <!-- Page 2 Dial: Real Organic vs Mouth Authenticity -->
+      <div class="tl-pinned-dial-card hidden" id="dial-card-auth">
+        <canvas id="canvas-auth-meter" class="tl-meter-canvas" width="262" height="136"></canvas>
+        <div class="tl-meter-caption">
+          <span id="auth-status-led" class="tl-status-led is-idle">ORIGIN</span>
+          <span id="auth-verdict-line" class="tl-verdict-text">Mouth Decoy vs. Real Organic likelihood.</span>
+        </div>
+        <div class="tl-dial-subhint">Page 2 Classifier · Under = Mouth · Over = Real</div>
+      </div>
+
+      <div class="tl-pinned-transport-card">
+        <div class="tl-pinned-track-row">
+          <div class="tl-track-title-wrap">
+            <strong id="deck-specimen-title">Select or Record a Specimen</strong>
+            <span id="deck-label-pill" class="tl-pill tl-pill-real">REAL</span>
+            <span id="deck-dsp-class-pill" class="tl-pill tl-pill-dark">Standing By</span>
+          </div>
+          <div id="native-sentry-verdict" class="tl-native-inline">Sentry v3: —</div>
+        </div>
+
+        <div class="tl-pinned-play-row">
+          <div class="tl-transport-btns">
+            <button type="button" id="btn-deck-play" class="tl-btn tl-btn-primary tl-btn-sm">▶ Play</button>
+            <button type="button" id="btn-deck-pause" class="tl-btn tl-btn-ghost tl-btn-sm">⏸ Pause</button>
+            <button type="button" id="btn-deck-stop" class="tl-btn tl-btn-ghost tl-btn-sm">⏹ Stop</button>
+            <label class="tl-loop-chk"><input type="checkbox" id="chk-deck-loop" checked /> Loop</label>
+          </div>
+          <div class="tl-ab-audition-btns">
+            <button type="button" id="btn-play-a" class="tl-btn tl-btn-a tl-btn-xs" title="Play Specimen A (Real / Reference)">▶ A</button>
+            <button type="button" id="btn-play-b" class="tl-btn tl-btn-b tl-btn-xs" title="Play Specimen B (Decoy / Comparison)">▶ B</button>
+            <button type="button" id="btn-play-ab" class="tl-btn tl-btn-accent tl-btn-xs" title="Play A then B back-to-back">▶ A→B</button>
+          </div>
+        </div>
+
+        <div class="tl-pinned-sliders-row">
+          <div class="tl-speed-controls">
+            <span class="tl-mono-light" title="Playback speed (-2.5x reverse to +2.5x forward)">Speed:</span>
+            <input type="range" id="rng-deck-rate" min="-2.5" max="2.5" step="0.05" value="1.0" />
+            <span id="lbl-deck-rate" class="tl-mono-bright">+1.00x</span>
+            <div class="tl-rate-pills">
+              <button type="button" class="tl-rate-pill" data-rate="-1">-1x</button>
+              <button type="button" class="tl-rate-pill" data-rate="0.25">0.25x</button>
+              <button type="button" class="tl-rate-pill" data-rate="0.5">0.5x</button>
+              <button type="button" class="tl-rate-pill is-active" data-rate="1">1x</button>
+              <button type="button" class="tl-rate-pill" data-rate="1.5">1.5x</button>
+            </div>
+          </div>
+
+          <!-- Page 1 Master Controls -->
+          <div id="cockpit-ctrl-sentry" class="tl-master-inline">
+            <label for="rng-master-thresh" class="tl-mono-light" title="Minimum Sentry Pass Score % required to trigger">Pass Score:</label>
+            <input type="range" id="rng-master-thresh" min="15" max="90" step="1" value="54" />
+            <span id="lbl-master-thresh" class="tl-mono-bright">54%</span>
+            <label class="tl-loop-chk" title="When checked, all enabled Sentry Stage 1 &amp; 2 gates must pass">
+              <input type="checkbox" id="chk-hard-gate" checked /> Hard-Gate
+            </label>
+            <label class="tl-loop-chk tl-bridge-chk" title="Optional: once a live burst finishes capturing, verify it with Page 2's Authenticity classifier (zero impact on ~2ms live monitoring)">
+              <input type="checkbox" id="chk-sentry-bridge-auth" /> Anti-Mouth Filter
+            </label>
+          </div>
+
+          <!-- Page 2 Master Controls -->
+          <div id="cockpit-ctrl-auth" class="tl-master-inline hidden">
+            <label for="rng-auth-thresh" class="tl-mono-light" title="Threshold splitting Mouth Decoys vs Real Organic Farts">Real Split:</label>
+            <input type="range" id="rng-auth-thresh" min="25" max="75" step="1" value="50" />
+            <span id="lbl-auth-thresh" class="tl-mono-bright">50%</span>
+            <button type="button" id="btn-cockpit-analyze-all" class="tl-btn tl-btn-accent tl-btn-xs" title="Decode all 48 pre-recorded farts &amp; decoys for the Frequency Spread map">⚡ Analyze All 48</button>
+            <button type="button" id="btn-cockpit-rec-decoy" class="tl-btn tl-btn-b tl-btn-xs" title="Record a mouth decoy directly into the bank">🎙️ Record Mouth Decoy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cockpit-live-scope-bar" class="tl-cockpit-live-scope hidden">
+      <div class="tl-cockpit-osc-info">
+        <div class="tl-osc-status-row">
+          <span class="tl-live-dot" aria-hidden="true"></span>
+          <span id="cockpit-osc-status">LIVE RECORDING</span>
+        </div>
+        <span id="cockpit-osc-readout" class="tl-mono-light">-inf dB · — Hz · 0.0s</span>
+      </div>
+      <canvas id="canvas-cockpit-oscilloscope" class="tl-cockpit-osc-canvas" width="760" height="64"></canvas>
+      <button type="button" id="btn-cockpit-stop-rec" class="tl-btn tl-btn-danger tl-btn-xs">⏹ Stop</button>
+    </div>
+  </header>
+
+  <main class="tl-workspace">
+    <!-- ==================== UNIFIED STICKY LEFT SIDEBAR (CAPTURE & FULL CORPUS BANK) ==================== -->
+    <aside class="tl-sidebar" id="tl-sidebar">
+      <div id="file-proto-banner" class="tl-banner-warn hidden">
+        Opened via <code>file://</code> — browser blocks folder scanning. Run <strong>TEST/Launch TEST Lab.bat</strong> (<code>http://localhost:3000/TEST/</code>) OR click <strong>📂 Import Folder</strong> below and pick <code>VaultPreLoads</code>.
+      </div>
+
+      <section class="tl-card tl-recorder-card">
+        <div class="tl-card-head">
+          <div>
+            <span class="tl-eyebrow">CAPTURE &amp; LIVE SENTRY MIC</span>
+            <h2>Record &amp; Ground-Truth Label</h2>
+          </div>
+          <span id="rec-timer-badge" class="tl-pill tl-pill-muted">IDLE</span>
+        </div>
+
+        <div class="tl-label-radios" role="radiogroup" aria-label="Ground truth label for next recording">
+          <label class="tl-tag-opt is-real">
+            <input type="radio" name="rec-label" value="real" checked />
+            <span>💨 Real Fart</span>
+          </label>
+          <label class="tl-tag-opt is-fake">
+            <input type="radio" name="rec-label" value="fake" />
+            <span>🎭 Decoy (Mouth)</span>
+          </label>
+          <label class="tl-tag-opt is-noise">
+            <input type="radio" name="rec-label" value="noise" />
+            <span>🔊 Noise / Speech</span>
+          </label>
+        </div>
+
+        <input type="text" id="inp-rec-name" class="tl-input" placeholder="Optional name (e.g. Lip Buzz Decoy #1)" maxlength="70" />
+
+        <div class="tl-rec-actions">
+          <button type="button" id="btn-record-toggle" class="tl-btn tl-btn-primary tl-btn-block">🎙️ Record Specimen</button>
+          <button type="button" id="btn-live-monitor" class="tl-btn tl-btn-dark tl-btn-block">🔴 Live Mic Sentry Monitor: OFF</button>
+        </div>
+
+        <div class="tl-rec-osc-wrap">
+          <div class="tl-rec-osc-head">
+            <span>REAL-TIME OSCILLOSCOPE</span>
+            <span id="rec-osc-metrics" class="tl-mono-light">STANDBY</span>
+          </div>
+          <canvas id="canvas-rec-oscilloscope" class="tl-rec-osc-canvas" width="320" height="96"></canvas>
+        </div>
+
+        <div class="tl-bg-control-box" id="bg-control-box">
+          <div class="tl-bg-control-head">
+            <span>ROOM CONTROL · IGNORE TV &amp; DOGS</span>
+            <span id="bg-control-badge" class="tl-pill tl-pill-muted">OFF</span>
+          </div>
+          <p class="tl-bg-lead">Sample quiet room/TV noise first so Live Sentry ignores talking, fans &amp; ambient clutter.</p>
+          <div class="tl-bg-control-btns">
+            <button type="button" id="btn-sample-bg" class="tl-btn tl-btn-xs tl-btn-accent" title="Record 3 seconds of your room (TV, podcast, dogs, AC) as a rejection control">🔇 Sample Room (3s)</button>
+            <button type="button" id="btn-bg-from-active" class="tl-btn tl-btn-xs tl-btn-ghost" title="Use the currently loaded Noise/TV clip as the Room Background Control">Use Active Clip</button>
+            <button type="button" id="btn-clear-bg" class="tl-btn tl-btn-xs tl-btn-danger hidden" title="Clear Room Background Control">✕ Clear</button>
+          </div>
+          <label class="tl-chk-line tl-bg-auto-chk">
+            <input type="checkbox" id="chk-auto-bg-before-live" checked />
+            <span>Auto-sample 3s room control before Live Monitor</span>
+          </label>
+          <div id="bg-control-status" class="tl-bg-status">No room control sampled yet. Press Sample Room (3s) while TV or chatter plays normally.</div>
+          <details id="bg-help-details" class="tl-help-details">
+            <summary>❓ How Room Background Sampling Helps</summary>
+            <ul>
+              <li><strong>1. Sample 3s of Room:</strong> Let TV/talking play normally (stay quiet) and press <strong>Sample Room (3s)</strong> — or leave <em>Auto-sample</em> ticked before arming Live Monitor.</li>
+              <li><strong>2. Blocks Matching Noise:</strong> Maps room volume + spectrum (dashed <strong>cyan curve</strong>). Sounds without a <strong>+3 dB punch in 55–750 Hz core</strong> are ignored (<code>ROOM_CTRL</code>).</li>
+              <li><strong>3. Smarter Cutoffs:</strong> <strong>🎯 Lock Limits to Sound</strong> sets gate cutoffs cleanly <em>between</em> room noise and your fart.</li>
+            </ul>
+          </details>
+        </div>
+
+        <div class="tl-rec-subrow">
+          <label class="tl-chk-line">
+            <input type="checkbox" id="chk-auto-save-disk" checked />
+            <span>Auto-save WAVs to <code>TEST/recordings/</code></span>
+          </label>
+          <div class="tl-import-group">
+            <label class="tl-file-btn" title="Import .wav, .mp3, .m4a, .ogg, .webm or .flac files">
+              📂 Import Files
+              <input type="file" id="inp-import-audio" accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac" multiple hidden />
+            </label>
+            <label class="tl-file-btn" title="Pick the VaultPreLoads folder or any folder of audio clips">
+              📂 Import Folder
+              <input type="file" id="inp-import-folder" webkitdirectory directory multiple hidden />
+            </label>
+          </div>
+        </div>
+        <div id="live-mic-status" class="tl-mic-status">Ready. Page 1 runs ~2ms live Sentry detection; Page 2 analyzes full Real-vs-Mouth frequency spread.</div>
+      </section>
+
+      <section class="tl-card tl-bank-card" id="bank-drop-zone">
+        <div class="tl-card-head">
+          <div>
+            <span class="tl-eyebrow">SHARED CORPUS LIBRARY</span>
+            <h2>Specimen Bank <span id="bank-count-badge" class="tl-pill tl-pill-dark">0</span></h2>
+          </div>
+          <div class="tl-bank-head-btns">
+            <button type="button" id="btn-analyze-selected" class="tl-btn tl-btn-xs tl-btn-accent" title="Decode and extract telemetry for checked items">⚡ Selected</button>
+            <button type="button" id="btn-analyze-all" class="tl-btn tl-btn-xs tl-btn-primary" title="Select and decode ALL clips in the visible bank">⚡ Analyze All</button>
+          </div>
+        </div>
+        <div class="tl-bank-legend">Click row to audition · <b>☑</b> Cohort &amp; Spread · <b>A/B</b> Autopsy · Tag chip edits label</div>
+
+        <div class="tl-filter-tabs" role="tablist">
+          <button type="button" class="tl-tab is-active" data-bank-filter="all">All</button>
+          <button type="button" class="tl-tab" data-bank-filter="real">Real</button>
+          <button type="button" class="tl-tab" data-bank-filter="fake">Decoys</button>
+          <button type="button" class="tl-tab" data-bank-filter="noise">Noise</button>
+          <button type="button" class="tl-tab" data-bank-filter="recorded">My Recs</button>
+        </div>
+
+        <div class="tl-bank-search-row">
+          <input type="search" id="inp-bank-search" class="tl-input" placeholder="Search 48+ specimens or ID..." />
+        </div>
+
+        <div class="tl-select-tools">
+          <button type="button" id="btn-sel-visible" class="tl-mini-btn">Select Visible</button>
+          <button type="button" id="btn-sel-real" class="tl-mini-btn">+ All Real</button>
+          <button type="button" id="btn-sel-fake" class="tl-mini-btn">+ All Decoys</button>
+          <button type="button" id="btn-sel-clear" class="tl-mini-btn">Clear</button>
+          <button type="button" id="btn-delete-selected" class="tl-mini-btn tl-mini-danger" disabled title="Delete checked user-recorded farts, decoys, or disk recordings">🗑 Delete Sel (0)</button>
+        </div>
+
+        <div id="cohort-decode-progress" class="tl-progress-bar hidden">
+          <div id="cohort-decode-fill" class="tl-progress-fill"></div>
+          <span id="cohort-decode-text">Decoding...</span>
+        </div>
+
+        <div id="bank-list" class="tl-bank-list" aria-label="Stored Farts, Decoys &amp; Recordings"></div>
+      </section>
+    </aside>
+
+    <!-- ==================== RIGHT SCIENTIFIC WORKBENCH (2 SEPARATE LAB PAGES) ==================== -->
+    <section class="tl-workbench">
+
+      <!-- ════════════════════ PAGE 1: AUTO SENTRY LAB (FAST LIVE DETECTOR) ════════════════════ -->
+      <div id="page-sentry" class="tl-lab-page" data-page="sentry">
+        <section id="sentry-pipeline-card" class="tl-pipeline-card">
+          <div class="tl-pipeline-flow">
+            <div class="tl-pipe-node is-active">
+              <span class="tl-pipe-step">STAGE 1 · LIVE SENTRY (~2 MS/TICK)</span>
+              <strong>Trigger vs. Room Noise, TV, Voices &amp; Dogs</strong>
+              <small>Runs Stage 1 Energy + Stage 2 Spectral bands + Room Control subtraction with zero UI lag.</small>
+            </div>
+            <div class="tl-pipe-arrow" aria-hidden="true">→</div>
+            <div class="tl-pipe-node is-bridge">
+              <span class="tl-pipe-step">OPTIONAL POST-CAPTURE BRIDGE</span>
+              <strong>Capture Ends → Optional Anti-Mouth Check</strong>
+              <small>Toggle <em>Anti-Mouth Filter</em> in the header to apply Page 2's rules after a burst completes.</small>
+            </div>
+            <div class="tl-pipe-arrow" aria-hidden="true">→</div>
+            <div class="tl-pipe-node is-auth">
+              <span class="tl-pipe-step">STAGE 2 · REAL VS. MOUTH LAB</span>
+              <strong>Corpus Frequency Spread &amp; Mouth Forensics</strong>
+              <small>Offline pitch, lip-trill, formant &amp; breath analysis live in their own clean workspace.</small>
+            </div>
+          </div>
+          <button type="button" id="btn-jump-to-auth" class="tl-btn tl-btn-accent tl-btn-sm tl-pipe-jump">Open Real vs. Mouth Lab →</button>
+        </section>
+
+        <!-- COMPACT LIVE STREAM SPECTRUM & TRIGGER LOG (PAGE 1 DETECTOR ONLY) -->
+        <section class="tl-card tl-sentry-stream-card" id="sentry-stream-card">
+          <div class="tl-card-head">
+            <div>
+              <span class="tl-eyebrow">LIVE SENTRY STREAM · ROOM CONTROL FLOOR &amp; CAPTURE LOG</span>
+              <h2>Real-Time Stream Spectrum &amp; Trigger Log</h2>
+            </div>
+            <span class="tl-pill tl-pill-dark">Inspect Clip Tools Moved → Real vs. Mouth Lab</span>
+          </div>
+
+          <div class="tl-sentry-stream-grid">
+            <div class="tl-scope-wrap">
+              <div class="tl-scope-label">
+                <span>LIVE SPECTRUM &amp; ROOM CONTROL FLOOR (Sub55 / B1 Core / B2 Mid / B3 Air)</span>
+                <span id="lbl-rolloff-marker" class="tl-mono-muted">85% Roll-Off: — Hz</span>
+              </div>
+              <canvas id="canvas-live-spectrum" class="tl-spec-canvas" width="760" height="118"></canvas>
+            </div>
+
+            <div class="tl-event-log-box">
+              <div class="tl-eyebrow">LIVE SENTRY TRIGGER / REJECT LOG (Click any capture to inspect)</div>
+              <div id="live-event-log" class="tl-event-log">
+                <div class="tl-empty-mini">Live mic monitor events will appear here when armed.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SENTRY GATES CONSOLE (11 FAST / SPECTRAL GATES ONLY) -->
+        <section class="tl-card tl-criteria-card" data-wb-section="criteria">
+          <div class="tl-card-head">
+            <div>
+              <span class="tl-eyebrow">AUTO SENTRY DETECTOR GATES (11 TRIGGERS &amp; SPECTRAL FILTERS)</span>
+              <h2>Sentry Gates Equalizer &amp; Live Cutoffs — Mouth Forensics Moved to Page 2</h2>
+            </div>
+            <div class="tl-criteria-summary-pills">
+              <button type="button" id="btn-crit-expand-all" class="tl-btn tl-btn-xs tl-btn-ghost">▾ Expand All</button>
+              <button type="button" id="btn-lock-limits-criteria" class="tl-btn tl-btn-xs tl-btn-primary" title="Lock Sentry thresholds to active sound and reject sampled room control">🎯 Lock Limits to Active Sound</button>
+              <span id="lbl-criteria-passing" class="tl-pill tl-pill-dark">0 / 0 Active Passing</span>
+            </div>
+          </div>
+
+          <div id="criteria-graph-panel" class="tl-crit-graph-panel">
+            <div class="tl-crit-graph-head">
+              <div class="tl-crit-graph-title-col">
+                <strong>11 SENTRY GATES PROFILE · VALUE, PEAK &amp; DRAGGABLE CUTOFFS</strong>
+                <span class="tl-crit-graph-legend">
+                  <span><i class="dot-val"></i> Active Val</span>
+                  <span><i class="dot-peak"></i> Peak Hold</span>
+                  <span><i class="dot-cut"></i> Cutoff Handle</span>
+                  <span class="tl-dir-cue">▲ ≥ Pass Above · ▼ ≤ Pass Below</span>
+                </span>
+              </div>
+              <div class="tl-crit-graph-actions">
+                <button type="button" id="btn-graph-auto-active" class="tl-mini-btn tl-mini-accent" title="Auto-adjust Sentry cutoffs around currently active sound">🎯 Auto-Adjust (Active)</button>
+                <button type="button" id="btn-graph-auto-peaks" class="tl-mini-btn tl-mini-amber" title="Auto-adjust Sentry cutoffs around observed Peak levels">📈 Auto-Adjust (Peaks)</button>
+                <button type="button" id="btn-graph-auto-cohort" class="tl-mini-btn" title="Optimize Sentry cutoffs across checked Real vs Noise/Decoy clips">✨ Cohort Optimize</button>
+                <button type="button" id="btn-graph-reset-peaks" class="tl-mini-btn" title="Clear observed Peak-Hold markers">↺ Clear Peaks</button>
+              </div>
+            </div>
+            <canvas id="canvas-criteria-graph" class="tl-crit-graph-canvas" width="960" height="270" aria-label="Interactive 11-gate Sentry profile graph"></canvas>
+            <div id="criteria-graph-tip" class="tl-chart-tip">Drag any cyan cutoff knob up/down to adjust · Click any gate label or bar to jump to &amp; expand its slider row</div>
+          </div>
+
+          <div id="criteria-groups-mount" class="tl-criteria-groups"></div>
+        </section>
+      </div>
+
+      <!-- ════════════════════ PAGE 2: REAL VS. MOUTH LAB (FREQUENCY SPREAD + INSPECT + AUTOPSY + COHORT) ════════════════════ -->
+      <div id="page-authenticity" class="tl-lab-page hidden" data-page="authenticity">
+        <div id="auth-subtabs-bar" class="tl-wb-tabs-bar" role="tablist" aria-label="Real vs. Mouth forensic views">
+          <div class="tl-wb-tabs-group">
+            <button type="button" class="tl-wb-tab is-active" data-auth-tab="spread">📊 Frequency Spread &amp; Profile</button>
+            <button type="button" class="tl-wb-tab" data-auth-tab="deck">🎛️ Inspect Active Sound</button>
+            <button type="button" class="tl-wb-tab" data-auth-tab="autopsy">🔬 1-vs-1 Forensic Autopsy</button>
+            <button type="button" class="tl-wb-tab" data-auth-tab="cohort">📈 Multi-Clip Stats &amp; Clusters</button>
+          </div>
+          <div class="tl-auth-bar-right">
+            <span id="lbl-corpus-coverage" class="tl-pill tl-pill-dark">0 Real · 0 Decoy Analyzed</span>
+            <button type="button" id="btn-spread-analyze-all" class="tl-btn tl-btn-accent tl-btn-xs" title="Decode all 48 real farts + decoys into the Frequency Spread map">⚡ Decode All 48 Real</button>
+          </div>
+        </div>
+
+        <!-- SUB-TAB 2A: FREQUENCY SPREAD & REAL-VS-MOUTH PROFILE -->
+        <div id="auth-tab-spread" class="tl-auth-subpane" data-auth-section="spread">
+          <!-- CARD A: 40 Hz - 6 kHz FREQUENCY SPREAD & HIT/DEAD ZONE MAP -->
+          <section class="tl-card tl-spread-card" id="spread-section">
+            <div class="tl-card-head">
+              <div>
+                <span class="tl-eyebrow">CORPUS SPECTRAL ENVELOPE · 40 HZ TO 6 KHZ ACROSS ALL REAL FARTS VS. MOUTH DECOYS</span>
+                <h2>Frequency Spread &amp; Hit / Dead-Zone Map</h2>
+              </div>
+              <div class="tl-spread-legend-pills">
+                <span class="tl-pill tl-pill-real">Emerald = Real Farts (Med + P10–P90 + Min–Max)</span>
+                <span class="tl-pill tl-pill-fake">Orange = Mouth Decoys</span>
+              </div>
+            </div>
+
+            <div class="tl-spread-split">
+              <div class="tl-spread-canvas-col">
+                <canvas id="canvas-freq-spread" class="tl-spread-canvas" width="860" height="395" aria-label="Real farts vs. mouth decoys 40 Hz to 6 kHz spectral spread and hit rate"></canvas>
+                <div id="freq-spread-hover-tip" class="tl-chart-tip">Hover across frequencies (40 Hz – 6 kHz) to inspect exact Real vs. Mouth energy &amp; % Hit Rate</div>
+              </div>
+
+              <aside class="tl-spread-controls-col" aria-label="Frequency spread controls">
+                <div class="tl-panel-subhead">CORPUS &amp; SPREAD CONTROLS</div>
+                <div class="tl-spread-action-stack">
+                  <button type="button" id="btn-spread-analyze-all-2" class="tl-btn tl-btn-primary tl-btn-sm tl-btn-block">⚡ Decode All 48 Farts</button>
+                  <button type="button" id="btn-spread-rec-decoy" class="tl-btn tl-btn-b tl-btn-sm tl-btn-block">🎙️ Record Mouth Decoy</button>
+                </div>
+
+                <div class="tl-control-group">
+                  <div class="tl-control-label-row">
+                    <span>Hit Energy Threshold</span>
+                    <strong id="lbl-spread-hit-thr" class="tl-mono-accent">25%</strong>
+                  </div>
+                  <input type="range" id="rng-spread-hit-thr" min="0.10" max="0.60" step="0.05" value="0.25" />
+                  <small class="tl-control-note">Minimum normalized spectral height to count as a clip "hitting" a frequency bin.</small>
+                </div>
+
+                <div class="tl-control-group">
+                  <div class="tl-control-label-row"><span>Map Layers (Live)</span></div>
+                  <label class="tl-chk-line"><input type="checkbox" id="chk-spread-p1090" checked /><span>P10–P90 Spread Band</span></label>
+                  <label class="tl-chk-line"><input type="checkbox" id="chk-spread-minmax" checked /><span>Min–Max Outer Envelope</span></label>
+                  <label class="tl-chk-line"><input type="checkbox" id="chk-spread-traces" /><span>Individual Clip Spaghetti</span></label>
+                  <label class="tl-chk-line"><input type="checkbox" id="chk-spread-zones" checked /><span>Mic Low-Cut &amp; Formant Zones</span></label>
+                  <label class="tl-chk-line"><input type="checkbox" id="chk-spread-active" checked /><span>Overlay Active Deck Clip</span></label>
+                </div>
+
+                <div id="spread-corpus-meta" class="tl-spread-corpus-meta">Analyzing decoded clips...</div>
+              </aside>
+            </div>
+
+            <div id="spread-summary-cards" class="tl-spread-summary-grid"></div>
+          </section>
+
+          <!-- CARD B: REAL VS. MOUTH 6-AXIS AUTHENTICITY PROFILE + LIVE SLIDERS -->
+          <section class="tl-card tl-auth-profile-card" id="auth-profile-section">
+            <div class="tl-card-head">
+              <div>
+                <span class="tl-eyebrow">INDEPENDENT AUTHENTICITY CLASSIFIER · 6 ACOUSTIC FINGERPRINTS</span>
+                <h2>Profile Real Fart vs. Mouth Fart — Visual Spread &amp; Live Cutoffs</h2>
+              </div>
+              <div class="tl-auth-actions-top">
+                <button type="button" id="btn-auth-auto-tune" class="tl-btn tl-btn-accent tl-btn-xs" title="Auto-optimize Real vs. Mouth cutoffs across analyzed clips">✨ Auto-Tune Real vs. Mouth</button>
+                <button type="button" id="btn-auth-reset" class="tl-btn tl-btn-ghost tl-btn-xs" title="Reset Authenticity cutoffs to defaults">↺ Reset Auth</button>
+                <button type="button" id="btn-auth-push-sentry" class="tl-btn tl-btn-primary tl-btn-xs" title="Enable/toggle post-capture Anti-Mouth Bridge on Page 1">↗ Enable in Sentry Bridge</button>
+              </div>
+            </div>
+
+            <div class="tl-auth-split">
+              <div class="tl-auth-canvas-col">
+                <canvas id="canvas-auth-profile" class="tl-auth-canvas" width="640" height="310" aria-label="6-axis Real vs Mouth authenticity fingerprint plot"></canvas>
+                <div id="auth-profile-tip" class="tl-chart-tip">Green = Real P10–P90 · Orange = Mouth P10–P90 · Drag cyan cutoff handles directly or tune sliders on the right</div>
+              </div>
+
+              <div class="tl-auth-controls-col">
+                <div id="auth-kpi-mini" class="tl-auth-kpi-mini"></div>
+                <div id="auth-criteria-mount" class="tl-auth-criteria-list"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- SUB-TAB 2D: INSPECT ACTIVE SOUND (SPEED/JOG WHEEL + SCRUB WAVEFORM + SPECTRUM) -->
+        <section class="tl-card tl-deck-card hidden" id="deck-section" data-auth-section="deck">
+          <div class="tl-card-head">
+            <div>
+              <span class="tl-eyebrow">OFFLINE SPECIMEN INSPECTOR · SPEED / JOG WHEEL &amp; SCRUB WAVEFORM</span>
+              <h2>Inspect Active Sound (Slow Down to Hear Sphincter Flaps)</h2>
+            </div>
+            <div class="tl-specimen-actions">
+              <button type="button" id="btn-scrub-a" class="tl-btn tl-btn-xs tl-btn-a">Load A</button>
+              <button type="button" id="btn-scrub-b" class="tl-btn tl-btn-xs tl-btn-b">Load B</button>
+              <button type="button" id="btn-cycle-tag" class="tl-btn tl-btn-xs tl-btn-outline" title="Cycle ground-truth label (Real / Decoy / Noise)">🏷 Re-Tag</button>
+              <button type="button" id="btn-save-disk" class="tl-btn tl-btn-xs tl-btn-accent" title="Save loaded audio as WAV into TEST/recordings/">💾 Save WAV</button>
+              <button type="button" id="btn-download-wav" class="tl-btn tl-btn-xs tl-btn-ghost" title="Download WAV file to computer">⬇ WAV</button>
+              <button type="button" id="btn-delete-disk" class="tl-btn tl-btn-xs tl-btn-danger hidden" title="Delete this recorded fart or decoy">🗑 Delete</button>
+            </div>
+          </div>
+
+          <div class="tl-deck-grid">
+            <div class="tl-turntable-col tl-wheel-col">
+              <div class="tl-wheel-mode-row" role="group" aria-label="Wheel control mode">
+                <button type="button" id="btn-wheel-speed" class="tl-mode-pill is-active">Speed Wheel</button>
+                <button type="button" id="btn-wheel-jog" class="tl-mode-pill">Jog Scrub</button>
+                <button type="button" id="btn-wheel-reset-1x" class="tl-mini-btn" title="Reset playback rate to +1.00x">1x</button>
+              </div>
+              <canvas id="canvas-speed-wheel" class="tl-wheel-canvas" width="220" height="220" aria-label="Interactive playback speed and jog wheel"></canvas>
+              <div class="tl-vinyl-readout">
+                <span id="lbl-scrub-speed">SPEED: +1.00x</span>
+                <span id="lbl-scrub-time">0.000s / 0.000s</span>
+              </div>
+            </div>
+
+            <div class="tl-scopes-col">
+              <div class="tl-scope-wrap">
+                <div class="tl-scope-label">
+                  <span>SCRUB WAVEFORM (drag left or right to inspect pulse &amp; flap timing)</span>
+                  <span id="lbl-wave-info" class="tl-mono-muted">44.1 kHz · Idle</span>
+                </div>
+                <canvas id="canvas-scrub-wave" class="tl-wave-canvas" width="760" height="128"></canvas>
+              </div>
+
+              <div class="tl-scope-wrap">
+                <div class="tl-scope-label">
+                  <span>PLAYBACK SPECTRUM &amp; CROSSOVER BANDS (Sub55 / B1 Core / B2 Mid / B3 Air)</span>
+                  <span id="lbl-deck-rolloff-marker" class="tl-mono-muted">85% Roll-Off: — Hz</span>
+                </div>
+                <canvas id="canvas-deck-spectrum" class="tl-spec-canvas" width="760" height="118"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SUB-TAB 2B: 1-VS-1 FORENSIC AUTOPSY -->
+        <section class="tl-card tl-autopsy-card hidden" id="autopsy-section" data-auth-section="autopsy">
+          <div class="tl-card-head tl-autopsy-head-wrap">
+            <div>
+              <span class="tl-eyebrow">FART AUTOPSY · FORENSIC SIDE-BY-SIDE DISSECTION</span>
+              <h2>Compare Real Fart(s) vs. My Decoys (Single or Group Average)</h2>
+            </div>
+            <div class="tl-autopsy-tools">
+              <div class="tl-autopsy-mode-bar" role="group" aria-label="Comparison Mode">
+                <button type="button" class="tl-mode-pill is-active" data-autopsy-mode="single" id="btn-mode-single">1 vs 1</button>
+                <button type="button" class="tl-mode-pill" data-autopsy-mode="group_vs_group" id="btn-mode-real-vs-decoys">Real Farts vs. My Decoys</button>
+                <button type="button" class="tl-mode-pill" data-autopsy-mode="one_vs_decoys" id="btn-mode-one-vs-decoys">Active Real vs. All Decoys</button>
+              </div>
+              <label class="tl-chk-line" title="Align start &amp; end (0–100% duration) so visual dynamics overlap even when lengths differ">
+                <input type="checkbox" id="chk-autopsy-norm-time" checked />
+                <span>Normalize Time</span>
+              </label>
+              <button type="button" id="btn-autopsy-swap" class="tl-btn tl-btn-xs tl-btn-ghost">⇄ Swap A/B</button>
+              <button type="button" id="btn-rec-mimic-b" class="tl-btn tl-btn-xs tl-btn-b" title="Record a Decoy / Mouth emission right now and load directly into Slot B for autopsy">🎙️ Record Decoy → B</button>
+            </div>
+          </div>
+
+          <div class="tl-autopsy-selectors">
+            <div class="tl-autopsy-slot is-a">
+              <div class="tl-slot-badge">SPECIMEN A</div>
+              <select id="sel-autopsy-a" class="tl-slot-select" aria-label="Specimen A"></select>
+              <span id="autopsy-meta-a" class="tl-slot-meta">—</span>
+            </div>
+            <div class="tl-autopsy-slot is-b">
+              <div class="tl-slot-badge">SPECIMEN B</div>
+              <select id="sel-autopsy-b" class="tl-slot-select" aria-label="Specimen B"></select>
+              <span id="autopsy-meta-b" class="tl-slot-meta">—</span>
+            </div>
+          </div>
+
+          <div id="autopsy-findings" class="tl-autopsy-findings">
+            <div class="tl-finding-pill">Select or decode two clips or groups to see the biggest visual &amp; DSP differences.</div>
+          </div>
+
+          <div class="tl-autopsy-canvases-grid">
+            <div class="tl-scope-wrap">
+              <div class="tl-scope-label">
+                <span>1. WAVEFORM &amp; PRESSURE ENVELOPE OVERLAY</span>
+                <span class="tl-legend-ab"><i class="dot-a"></i> A Envel &nbsp; <i class="dot-b"></i> B Envel</span>
+              </div>
+              <canvas id="canvas-autopsy-env" class="tl-autopsy-canvas" width="600" height="190"></canvas>
+            </div>
+
+            <div class="tl-scope-wrap">
+              <div class="tl-scope-label">
+                <span>2. TIME-FREQUENCY SPECTROGRAMS (45 Hz – 4.2 kHz + 85% Roll-Off)</span>
+                <span class="tl-legend-ab">Top: A · Bot: B</span>
+              </div>
+              <div class="tl-spec-pair">
+                <canvas id="canvas-autopsy-spec-a" class="tl-autopsy-spec-half" width="600" height="90"></canvas>
+                <canvas id="canvas-autopsy-spec-b" class="tl-autopsy-spec-half" width="600" height="90"></canvas>
+              </div>
+            </div>
+
+            <div class="tl-scope-wrap">
+              <div class="tl-scope-label">
+                <span>3. SPECTRUM OVERLAY &amp; DIFFERENCE (Orange Up = B Brighter · Green Down = A Deeper)</span>
+                <span class="tl-legend-ab">40 Hz – 6 kHz</span>
+              </div>
+              <canvas id="canvas-autopsy-fft-diff" class="tl-autopsy-canvas" width="600" height="190"></canvas>
+            </div>
+
+            <div class="tl-scope-wrap">
+              <div class="tl-scope-label">
+                <span>4. PITCH CONTOUR F0 (Left) &amp; MODULATION / 22–42 Hz LIP-TRILL (Right)</span>
+                <span class="tl-legend-ab">Steady Vocal vs. Chaotic Gas</span>
+              </div>
+              <canvas id="canvas-autopsy-pitch-mod" class="tl-autopsy-canvas" width="600" height="190"></canvas>
+            </div>
+          </div>
+
+          <div class="tl-table-wrap tl-autopsy-table-wrap">
+            <table class="tl-autopsy-table" aria-label="Side-by-side metric comparison">
+              <thead>
+                <tr>
+                  <th>Criterion / Physical Metric</th>
+                  <th id="th-autopsy-a">Specimen A</th>
+                  <th>Divergence (Green=A Higher · Orange=B Higher)</th>
+                  <th id="th-autopsy-b">Specimen B</th>
+                  <th>Autopsy Callout</th>
+                </tr>
+              </thead>
+              <tbody id="autopsy-diff-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- SUB-TAB 2C: MULTI-CLIP STATS & CLUSTERS -->
+        <section class="tl-card tl-cohort-card hidden" data-auth-section="cohort">
+          <div class="tl-card-head">
+            <div>
+              <span class="tl-eyebrow">MULTI-SPECIMEN DYNAMICS &amp; SEPARATION CHARTS</span>
+              <h2>Cohort Analysis Across Selected Real Farts &amp; Decoys</h2>
+            </div>
+            <span id="cohort-selection-summary" class="tl-pill tl-pill-dark">0 Selected</span>
+          </div>
+
+          <div id="cohort-kpi-strip" class="tl-kpi-strip"></div>
+
+          <div class="tl-charts-grid">
+            <div class="tl-chart-panel">
+              <div class="tl-chart-head">
+                <strong>Criterion Strip Distribution (Drag Red Handle Directly on Chart)</strong>
+                <select id="sel-strip-criterion" class="tl-select-sm"></select>
+              </div>
+              <canvas id="canvas-strip-chart" class="tl-chart-canvas" width="600" height="230"></canvas>
+              <div id="strip-hover-tip" class="tl-chart-tip">Hover dots to inspect · Drag red handle to tune threshold · Click dot to load onto deck</div>
+            </div>
+
+            <div class="tl-chart-panel">
+              <div class="tl-chart-head">
+                <strong>2D Cluster Scatter (Real vs Decoy vs Noise)</strong>
+                <div class="tl-scatter-sels">
+                  <select id="sel-scatter-x" class="tl-select-sm" aria-label="Scatter X axis"></select>
+                  <span>vs</span>
+                  <select id="sel-scatter-y" class="tl-select-sm" aria-label="Scatter Y axis"></select>
+                </div>
+              </div>
+              <canvas id="canvas-scatter-chart" class="tl-chart-canvas" width="600" height="230"></canvas>
+              <div id="scatter-hover-tip" class="tl-chart-tip">🟢 Real Fart · 🟠 Decoy (Mouth) · ⚪ Noise · Click any dot to load &amp; play</div>
+            </div>
+          </div>
+
+          <div class="tl-table-wrap">
+            <table class="tl-cohort-table" aria-label="Cohort criteria statistical breakdown">
+              <thead>
+                <tr>
+                  <th>Criterion</th>
+                  <th>Threshold</th>
+                  <th>Real Median (P10–P90)</th>
+                  <th>Decoy/Noise Med (P10–P90)</th>
+                  <th>All Min–Max</th>
+                  <th>Real Pass</th>
+                  <th>Decoy/Noise Pass</th>
+                  <th>Separation (d)</th>
+                </tr>
+              </thead>
+              <tbody id="cohort-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="tl-toast" class="tl-toast hidden" role="status"></div>
+
+  <script src="../js/dsp.js?v=20261127t10"></script>
+  <script src="../js/audioEngine.js?v=20261127t10"></script>
+  <script src="../js/storage.js?v=20261127t10"></script>
+  <script src="../labs/js/labsStore.js?v=20261127t10"></script>
+  <script src="./js/preloadsCatalog.js?v=20261127t10"></script>
+  <script src="./js/vinylScrub.js?v=20261127t10"></script>
+  <script src="./js/detectorLab.js?v=20261127t10"></script>
+  <script src="./js/testApp.js?v=20261127t10"></script>
+</body>
+</html>

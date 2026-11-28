@@ -10,6 +10,9 @@ var ROOT_DIR = __dirname;
 
 var PRELOAD_DIR = path.join(ROOT_DIR, 'VaultPreLoads');
 var PRELOAD_AUDIO_RE = /\.(wav|mp3|m4a|ogg|webm|aac|flac)$/i;
+var TEST_REC_DIR = path.join(ROOT_DIR, 'TEST', 'recordings');
+var TEST_LABELS = { real: true, fake: true, noise: true };
+var MAX_TEST_UPLOAD_BYTES = 26 * 1024 * 1024;
 
 var MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -365,6 +368,135 @@ if (process.argv.indexOf('--write-manifest') !== -1) {
   process.exit(0);
 }
 
+function sendJson(res, statusCode, payload) {
+  res.writeHead(statusCode, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store, no-cache, must-revalidate'
+  });
+  res.end(JSON.stringify(payload));
+}
+
+function sanitizeSlug(text, fallback) {
+  var s = String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+  return s || fallback || 'specimen';
+}
+
+function isStrictSingleFilename(name) {
+  if (!name || typeof name !== 'string') return false;
+  if (name.indexOf('..') !== -1 || name.indexOf('/') !== -1 || name.indexOf('\\') !== -1) return false;
+  if (path.basename(name) !== name) return false;
+  return PRELOAD_AUDIO_RE.test(name);
+}
+
+function scanTestRecordingsSync() {
+  var results = [];
+  var labels = ['real', 'fake', 'noise'];
+  for (var li = 0; li < labels.length; li++) {
+    var label = labels[li];
+    var dirPath = path.join(TEST_REC_DIR, label);
+    if (!fs.existsSync(dirPath)) continue;
+    var entries;
+    try {
+      entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    } catch (e) {
+      continue;
+    }
+    for (var i = 0; i < entries.length; i++) {
+      var ent = entries[i];
+      if (!ent || !ent.isFile()) continue;
+      if (ent.name.charAt(0) === '.' || /\.meta\.json$/i.test(ent.name)) continue;
+      if (!PRELOAD_AUDIO_RE.test(ent.name)) continue;
+      var full = path.join(dirPath, ent.name);
+      var stat;
+      try {
+        stat = fs.statSync(full);
+      } catch (e) {
+        continue;
+      }
+      var meta = null;
+      var metaPath = full + '.meta.json';
+      try {
+        if (fs.existsSync(metaPath)) {
+          meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        }
+      } catch (e) {
+        meta = null;
+      }
+      var ext = path.extname(ent.name).toLowerCase();
+      var durationSec = meta && typeof meta.durationSec === 'number' ? meta.durationSec : null;
+      var peaks = meta && Array.isArray(meta.peaks) ? meta.peaks : null;
+      if (ext === '.wav' && (durationSec === null || !peaks)) {
+        try {
+          var prev = extractWavPreview(fs.readFileSync(full), 56);
+          if (prev) {
+            if (durationSec === null) durationSec = prev.durationSec;
+            if (!peaks) peaks = prev.peaks;
+          }
+        } catch (e) {}
+      }
+      var createdAt = meta && meta.createdAt ? meta.createdAt : stat.mtime.toISOString();
+      var displayName = (meta && meta.name) ? String(meta.name) : humanizeFilename(ent.name);
+      results.push({
+        id: 'testrec_' + label + '_' + ent.name,
+        label: label,
+        name: displayName,
+        filename: ent.name,
+        ext: ext,
+        size: stat.size,
+        durationSec: durationSec,
+        sampleRate: meta && typeof meta.sampleRate === 'number' ? meta.sampleRate : null,
+        peaks: peaks || null,
+        notes: meta && meta.notes ? String(meta.notes) : '',
+        createdAt: createdAt,
+        url: '/TEST/recordings/' + label + '/' + encodeURIComponent(ent.name)
+      });
+    }
+  }
+  results.sort(function (a, b) {
+    var ta = Date.parse(a.createdAt || '') || 0;
+    var tb = Date.parse(b.createdAt || '') || 0;
+    if (tb !== ta) return tb - ta;
+    return String(b.filename).localeCompare(String(a.filename));
+  });
+  return results;
+}
+
+function readJsonBody(req, maxBytes, cb) {
+  var chunks = [];
+  var total = 0;
+  var done = false;
+  req.on('data', function (chunk) {
+    if (done) return;
+    total += chunk.length;
+    if (total > maxBytes) {
+      done = true;
+      cb(new Error('PAYLOAD_TOO_LARGE'));
+      return;
+    }
+    chunks.push(chunk);
+  });
+  req.on('end', function () {
+    if (done) return;
+    done = true;
+    try {
+      var raw = Buffer.concat(chunks).toString('utf8');
+      var parsed = raw ? JSON.parse(raw) : {};
+      cb(null, parsed);
+    } catch (e) {
+      cb(new Error('INVALID_JSON'));
+    }
+  });
+  req.on('error', function (err) {
+    if (done) return;
+    done = true;
+    cb(err || new Error('READ_ERROR'));
+  });
+}
+
 var server = http.createServer(function (req, res) {
   var rawUrl = req.url || '/';
   var qIdx = rawUrl.indexOf('?');
@@ -384,6 +516,134 @@ var server = http.createServer(function (req, res) {
       'Cache-Control': 'no-store, no-cache, must-revalidate'
     });
     res.end(JSON.stringify({ count: files.length, files: files }));
+    return;
+  }
+
+  if (reqUrl === '/api/test/recordings') {
+    var method = String(req.method || 'GET').toUpperCase();
+    if (method === 'GET') {
+      var recFiles = scanTestRecordingsSync();
+      sendJson(res, 200, { ok: true, count: recFiles.length, files: recFiles });
+      return;
+    }
+    if (method === 'POST') {
+      readJsonBody(req, MAX_TEST_UPLOAD_BYTES, function (err, body) {
+        if (err) {
+          if (err.message === 'PAYLOAD_TOO_LARGE') {
+            sendJson(res, 413, { ok: false, error: 'Payload too large' });
+          } else {
+            sendJson(res, 400, { ok: false, error: 'Invalid JSON body' });
+          }
+          return;
+        }
+        var label = String((body && body.label) || '').toLowerCase();
+        if (!TEST_LABELS[label]) {
+          sendJson(res, 400, { ok: false, error: 'Invalid label; expected real, fake, or noise' });
+          return;
+        }
+        var b64 = String((body && body.wavBase64) || '').replace(/^data:audio\/[^;]+;base64,/i, '');
+        if (!b64) {
+          sendJson(res, 400, { ok: false, error: 'Missing wavBase64' });
+          return;
+        }
+        var wavBuf = Buffer.from(b64, 'base64');
+        if (wavBuf.length < 44 || wavBuf.toString('ascii', 0, 4) !== 'RIFF' || wavBuf.toString('ascii', 8, 12) !== 'WAVE') {
+          sendJson(res, 400, { ok: false, error: 'Invalid RIFF/WAVE PCM data' });
+          return;
+        }
+        var name = String((body && body.name) || 'Recorded ' + label).trim().slice(0, 80);
+        var notes = String((body && body.notes) || '').trim().slice(0, 300);
+        var createdAt = new Date().toISOString();
+        var stamp = createdAt.replace(/[:.]/g, '').replace(/-/g, '').replace('Z', '');
+        var randHex = crypto.randomBytes(2).toString('hex');
+        var filename = stamp + '_' + randHex + '_' + sanitizeSlug(name, label) + '.wav';
+        var labelDir = path.join(TEST_REC_DIR, label);
+        fs.mkdirSync(labelDir, { recursive: true });
+        var fullPath = path.join(labelDir, filename);
+        fs.writeFileSync(fullPath, wavBuf);
+
+        var prev = extractWavPreview(wavBuf, 56);
+        var durationSec = typeof body.durationSec === 'number' && Number.isFinite(body.durationSec)
+          ? Number(body.durationSec.toFixed(3))
+          : (prev ? prev.durationSec : null);
+        var sampleRate = typeof body.sampleRate === 'number' && Number.isFinite(body.sampleRate)
+          ? Math.round(body.sampleRate)
+          : null;
+        var peaks = prev ? prev.peaks : null;
+
+        var metaObj = {
+          name: name,
+          label: label,
+          notes: notes,
+          createdAt: createdAt,
+          durationSec: durationSec,
+          sampleRate: sampleRate,
+          peaks: peaks
+        };
+        fs.writeFileSync(fullPath + '.meta.json', JSON.stringify(metaObj, null, 2) + '\n', 'utf8');
+
+        sendJson(res, 201, {
+          ok: true,
+          file: {
+            id: 'testrec_' + label + '_' + filename,
+            label: label,
+            name: name,
+            filename: filename,
+            ext: '.wav',
+            size: wavBuf.length,
+            durationSec: durationSec,
+            sampleRate: sampleRate,
+            peaks: peaks,
+            notes: notes,
+            createdAt: createdAt,
+            url: '/TEST/recordings/' + label + '/' + encodeURIComponent(filename)
+          }
+        });
+      });
+      return;
+    }
+    if (method === 'DELETE') {
+      var parsedReqUrl;
+      try {
+        parsedReqUrl = new URL(rawUrl, 'http://127.0.0.1');
+      } catch (e) {
+        sendJson(res, 400, { ok: false, error: 'Malformed URL' });
+        return;
+      }
+      var delLabel = String(parsedReqUrl.searchParams.get('label') || '').toLowerCase();
+      var delFile = String(parsedReqUrl.searchParams.get('file') || '');
+      if (!TEST_LABELS[delLabel]) {
+        sendJson(res, 400, { ok: false, error: 'Invalid label' });
+        return;
+      }
+      if (!isStrictSingleFilename(delFile)) {
+        sendJson(res, 403, { ok: false, error: 'Invalid filename' });
+        return;
+      }
+      var baseLabelDir = path.resolve(TEST_REC_DIR, delLabel);
+      var targetFile = path.resolve(baseLabelDir, delFile);
+      if (targetFile.indexOf(baseLabelDir + path.sep) !== 0) {
+        sendJson(res, 403, { ok: false, error: 'Forbidden path' });
+        return;
+      }
+      if (!fs.existsSync(targetFile)) {
+        sendJson(res, 404, { ok: false, error: 'File not found' });
+        return;
+      }
+      try {
+        fs.unlinkSync(targetFile);
+      } catch (e) {
+        sendJson(res, 500, { ok: false, error: 'Could not delete audio file' });
+        return;
+      }
+      var targetMeta = targetFile + '.meta.json';
+      if (fs.existsSync(targetMeta)) {
+        try { fs.unlinkSync(targetMeta); } catch (e) {}
+      }
+      sendJson(res, 200, { ok: true, deleted: delFile });
+      return;
+    }
+    sendJson(res, 405, { ok: false, error: 'Method not allowed' });
     return;
   }
 

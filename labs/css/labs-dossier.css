@@ -1543,12 +1543,16 @@ h1, h2, h3, h4,
   flex-shrink: 0;
 }
 
+.labs-fn-class-cell {
+  padding-bottom: 18px;
+}
+
 .labs-fn-class-rows {
   display: flex;
   flex-direction: column;
   gap: 4px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .labs-fn-class-row {
@@ -1557,6 +1561,14 @@ h1, h2, h3, h4,
   gap: 5px;
   font-family: var(--font-mono);
   font-size: 0.65rem;
+}
+
+.labs-fn-class-row:nth-last-child(-n+2) {
+  padding-right: 104px;
+}
+
+.labs-fn-class-row:nth-last-child(3) {
+  padding-right: 78px;
 }
 
 .labs-fn-class-row span {
@@ -1583,14 +1595,14 @@ h1, h2, h3, h4,
 
 .labs-fn-round-seal {
   position: absolute;
-  right: 4px;
-  bottom: -16px;
-  width: 108px;
-  height: 108px;
-  color: rgba(161, 30, 22, 0.84);
+  right: 6px;
+  bottom: -18px;
+  width: 94px;
+  height: 94px;
+  color: rgba(161, 30, 22, 0.8);
   transform: rotate(-11deg);
   pointer-events: none;
-  z-index: 2;
+  z-index: 1;
   filter: drop-shadow(0 1px 0 rgba(255, 245, 242, 0.35));
 }
 
@@ -3366,6 +3378,15 @@ body[data-labs-view="vault"] .labs-nav-btn[data-view="vault"].active .labs-nav-l
     width: 72px;
     height: 72px;
     bottom: -10px;
+    right: 6px;
+  }
+
+  .labs-fn-class-row:nth-last-child(-n+2) {
+    padding-right: 84px;
+  }
+
+  .labs-fn-class-row:nth-last-child(3) {
+    padding-right: 0;
   }
 
   .labs-fn-side-tabs {
